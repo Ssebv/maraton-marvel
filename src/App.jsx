@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DATA, JOYA_MIN, KEY } from './data.js'
 import { POSTERS } from './posters.js'
+import { PEOPLE } from './people.js'
 
 const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
 
@@ -17,9 +18,10 @@ function fmtDur(d) {
   return `${h} h${m ? ` ${m} min` : ''}`
 }
 
+const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
 const urlTrailer = t => `https://www.youtube.com/results?search_query=${encodeURIComponent(t + ' tráiler español')}`
 const urlImdb = t => `https://www.imdb.com/find/?q=${encodeURIComponent(t)}`
-const urlPersona = n => `https://www.imdb.com/find/?q=${encodeURIComponent(n.replace(/ \((voz|creador|creadora|showrunner)\)$/, ''))}&s=nm`
+const urlPersona = n => `https://www.imdb.com/find/?q=${encodeURIComponent(limpiaNombre(n))}&s=nm`
 
 function Cover({ item, c, esComic }) {
   const [c1, c2] = c
@@ -89,7 +91,17 @@ const CheckIcon = () => (
   </svg>
 )
 
-function Card({ item, num, c, esComic, vista, onToggle, delay }) {
+function Avatar({ nombre }) {
+  const [err, setErr] = useState(false)
+  const limpio = limpiaNombre(nombre)
+  const src = PEOPLE[limpio]
+  if (!src || err) {
+    return <span className="avatar avatar-ini" aria-hidden="true">{iniciales(limpio)}</span>
+  }
+  return <img className="avatar" src={src} alt="" loading="lazy" onError={() => setErr(true)} />
+}
+
+function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay }) {
   return (
     <article className={`card${vista ? ' vista' : ''}`}
       style={{ animationDelay: `${delay}ms`, '--glow': c[0] }}>
@@ -98,39 +110,27 @@ function Card({ item, num, c, esComic, vista, onToggle, delay }) {
         <CheckIcon />
         <span className="checkbox-label">{vista ? 'Vista' : ''}</span>
       </button>
-      <div className="cover-wrap">
-        <Portada item={item} c={c} esComic={esComic} />
-        {item.s != null && !esComic && <span className="rating-badge">★ {item.s.toFixed(1)}</span>}
-      </div>
-      <div className="centro">
-        <button className="toggle" aria-pressed={vista} onClick={onToggle}
-          title={vista ? 'Marcar como pendiente' : 'Marcar como vista'}>
-          <span className="num">{num}</span>
-          <span className="info">
-            <span className="titulo">{item.t}</span>
-            <span className="meta">
-              {esComic
-                ? <><span className="hist">{item.a}</span> · {item.r}</>
-                : <><span className="hist">{item.h}</span> · estreno {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
-            </span>
-            {item.res && <span className="res">{item.res}</span>}
-            {item.n && <span className="nota">{item.n}</span>}
-            {(item.dir || item.cast) && (
-              <span className="credits">
-                {item.dir && <>Dir. {item.dir}</>}
-              </span>
-            )}
+      <button className="abrir" onClick={onAbrir} title="Ver ficha">
+        <span className="cover-wrap">
+          <Portada item={item} c={c} esComic={esComic} />
+          {item.s != null && !esComic && <span className="rating-badge">★ {item.s.toFixed(1)}</span>}
+        </span>
+        <span className="info">
+          <span className="fila-titulo"><span className="num">{num}</span><span className="titulo">{item.t}</span></span>
+          <span className="meta">
+            {esComic
+              ? <><span className="hist">{item.a}</span> · {item.r}</>
+              : <><span className="hist">{item.h}</span> · estreno {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
           </span>
-        </button>
-        {item.cast && (
-          <div className="cast">
-            {item.cast.map(p => (
-              <a key={p} href={urlPersona(p)} target="_blank" rel="noopener noreferrer"
-                title={`Ver filmografía de ${p}`}>{p}</a>
-            ))}
-          </div>
-        )}
-      </div>
+          {item.res && <span className="res">{item.res}</span>}
+          {(item.dir || item.cast) && (
+            <span className="credits">
+              {item.dir && <>Dir. {item.dir}</>}
+              {item.cast && <> · Con {item.cast.map(limpiaNombre).join(', ')}</>}
+            </span>
+          )}
+        </span>
+      </button>
       <div className="lado">
         <div className="chips">
           {item.uni && <span className="tipo uni">{item.uni}</span>}
@@ -139,14 +139,80 @@ function Card({ item, num, c, esComic, vista, onToggle, delay }) {
           {item.opt && <span className="tipo opc">Opcional</span>}
           {item.plat && <span className="tipo plat">{item.plat}</span>}
         </div>
-        {!esComic && (
-          <div className="enlaces">
-            <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer">▶ Tráiler</a>
-            <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb</a>
-          </div>
-        )}
       </div>
     </article>
+  )
+}
+
+function Detalle({ d, vista, onToggle, onClose }) {
+  const { item, c, esComic } = d
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+  }, [onClose])
+  const directores = item.dir
+    ? limpiaNombre(item.dir).split(/ y | & /).map(s => s.trim()).filter(Boolean)
+    : []
+  return (
+    <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={item.t}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
+        <div className="modal-cover">
+          <Portada item={item} c={c} esComic={esComic} />
+        </div>
+        <div className="modal-info">
+          <div className="modal-chips">
+            {item.uni && <span className="tipo uni">{item.uni}</span>}
+            {item.tipo === 'serie' && <span className="tipo serie">Serie</span>}
+            {item.tipo === 'esp' && <span className="tipo esp">Especial</span>}
+            {item.opt && <span className="tipo opc">Opcional</span>}
+            {item.plat && <span className="tipo plat">{item.plat}</span>}
+          </div>
+          <h2 className="modal-titulo">{item.t}</h2>
+          <p className="modal-meta">
+            {item.s != null && <span className="star">★ {item.s.toFixed(1)} en IMDb · </span>}
+            {esComic
+              ? <>{item.a} · {item.r}</>
+              : <><span className="hist">{item.h}</span> · estreno {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
+          </p>
+          {item.res && <p className="modal-res">{item.res}</p>}
+          {item.n && <p className="modal-nota">{item.n}</p>}
+          {(directores.length > 0 || item.cast) && (
+            <div className="personas">
+              {directores.map(p => (
+                <a className="persona" key={p} href={urlPersona(p)} target="_blank" rel="noopener noreferrer"
+                  title={`Ver filmografía de ${p}`}>
+                  <Avatar nombre={p} />
+                  <span className="persona-nombre">{p}</span>
+                  <span className="persona-rol">Dirección</span>
+                </a>
+              ))}
+              {(item.cast || []).map(p => (
+                <a className="persona" key={p} href={urlPersona(p)} target="_blank" rel="noopener noreferrer"
+                  title={`Ver filmografía de ${limpiaNombre(p)}`}>
+                  <Avatar nombre={p} />
+                  <span className="persona-nombre">{limpiaNombre(p)}</span>
+                  <span className="persona-rol">Reparto</span>
+                </a>
+              ))}
+            </div>
+          )}
+          <div className="modal-acciones">
+            <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
+              {vista ? '✓ Vista — marcar pendiente' : esComic ? 'Marcar como leído' : 'Marcar como vista'}
+            </button>
+            {!esComic && (
+              <>
+                <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer">▶ Tráiler</a>
+                <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb</a>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -156,6 +222,7 @@ export default function App() {
   })
   const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
   const [vista, setVista] = useState('crono')
+  const [detalle, setDetalle] = useState(null)
 
   const toggle = id => setVistas(prev => {
     const next = { ...prev }
@@ -245,6 +312,27 @@ export default function App() {
             </div>
           )}
         </div>
+        <div className="mapa" aria-label="Mapa de progreso">
+          {DATA.map(saga => {
+            const items = saga.eras.flatMap(era => era.items.map(item => ({ item, c: era.c })))
+            const v = items.filter(({ item }) => vistas[item.id]).length
+            return (
+              <div className="mapa-fila" key={saga.saga}>
+                <span className="mapa-label">
+                  {saga.saga === 'xmen' ? 'X-Men' : saga.saga === 'ucm' ? 'UCM' : 'Cómics'}
+                </span>
+                <div className="mapa-dots">
+                  {items.map(({ item, c }) => (
+                    <button key={item.id} className={`dot${vistas[item.id] ? ' on' : ''}`}
+                      style={{ '--dc': c[0] }} title={item.t}
+                      onClick={() => setDetalle({ item, c, esComic: saga.saga === 'comics' })} />
+                  ))}
+                </div>
+                <span className="mapa-count">{v}/{items.length}</span>
+              </div>
+            )
+          })}
+        </div>
       </section>
 
       <header className="toolbar">
@@ -292,11 +380,16 @@ export default function App() {
                   if (!numerados.length) return null
                   const base = num
                   num += numerados.length
+                  const vEra = numerados.filter(it => vistas[it.id]).length
                   return (
                     <div className="era" key={era.era} style={{ '--era': era.c[0] }}>
                       <div className="era-head">
                         <h3>{era.era}</h3>
                         <span className="era-rango">{era.rango}</span>
+                        <span className="era-prog">
+                          <i style={{ width: `${100 * vEra / numerados.length}%` }} />
+                        </span>
+                        <span className="era-count">{vEra}/{numerados.length}</span>
                       </div>
                       <div className="era-borde">
                         <div className="grid">
@@ -304,7 +397,9 @@ export default function App() {
                             visibles.includes(item) && (
                               <Card key={item.id} item={item} num={base + i + 1} c={era.c}
                                 esComic={esComic} vista={!!vistas[item.id]}
-                                onToggle={() => toggle(item.id)} delay={nextDelay()} />
+                                onToggle={() => toggle(item.id)}
+                                onAbrir={() => setDetalle({ item, c: era.c, esComic })}
+                                delay={nextDelay()} />
                             )
                           )}
                         </div>
@@ -333,16 +428,24 @@ export default function App() {
                   {visibles.map((item, i) => (
                     <Card key={item.id} item={item} num={i + 1} c={item.c}
                       esComic={false} vista={!!vistas[item.id]}
-                      onToggle={() => toggle(item.id)} delay={nextDelay()} />
+                      onToggle={() => toggle(item.id)}
+                      onAbrir={() => setDetalle({ item, c: item.c, esComic: false })}
+                      delay={nextDelay()} />
                   ))}
                 </div>
               </section>
             )
           })}
           <p className="saga-desc" style={{ marginTop: 24 }}>
-            La vista por estreno ordena películas y series por su año de salida (los cómics solo aparecen en la vista cronológica).
+            La vista por estreno ordena películas y series por su año de salida (los cómics solo aparecen en su pestaña).
           </p>
         </main>
+      )}
+
+      {detalle && (
+        <Detalle d={detalle} vista={!!vistas[detalle.item.id]}
+          onToggle={() => toggle(detalle.item.id)}
+          onClose={() => setDetalle(null)} />
       )}
 
       <Footer onReset={() => { setVistas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
@@ -355,7 +458,7 @@ function Footer({ onReset }) {
   return (
     <footer>
       <p className="nota-pie">
-        Tu progreso se guarda en este navegador automáticamente. El año coloreado es cuándo ocurre la historia; el gris, el de estreno.
+        Pulsa una tarjeta para ver su ficha completa; la casilla redonda marca vista o pendiente y se guarda en este navegador.
         Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas.
         La ⚡ Ruta express deja solo lo imprescindible para llegar a Vengadores: Doomsday.
       </p>

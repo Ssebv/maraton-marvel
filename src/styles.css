@@ -99,6 +99,27 @@ h1 .rojo{
   border-radius:3px; transition:width .5s cubic-bezier(.22,1,.36,1);
 }
 
+.mapa{
+  width:100%; margin-top:16px;
+  background:var(--panel); border:1px solid var(--line); border-radius:16px;
+  padding:14px 18px; display:flex; flex-direction:column; gap:10px;
+  box-shadow:var(--card-shadow);
+}
+.mapa-fila{display:flex; align-items:center; gap:12px}
+.mapa-label{
+  width:52px; flex:none; font-size:10.5px; font-weight:700;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--ink3);
+}
+.mapa-dots{display:flex; flex-wrap:wrap; gap:4px; flex:1}
+.dot{
+  width:12px; height:12px; border-radius:3.5px; padding:0; cursor:pointer;
+  border:1px solid var(--line); background:var(--panel2);
+  transition:transform .15s, background .2s, border-color .2s;
+}
+.dot:hover{transform:scale(1.4); border-color:var(--ink2)}
+.dot.on{background:var(--dc); border-color:var(--dc)}
+.mapa-count{flex:none; font-size:11px; color:var(--ink2); font-variant-numeric:tabular-nums}
+
 /* ── Barra de herramientas fija ── */
 .toolbar{
   position:sticky; top:0; z-index:10;
@@ -164,6 +185,12 @@ h3{
   font-size:11px; font-weight:600; color:var(--ink3);
   font-variant-numeric:tabular-nums;
 }
+.era-prog{
+  margin-left:auto; width:72px; height:4px; border-radius:2px;
+  background:var(--panel2); overflow:hidden;
+}
+.era-prog i{display:block; height:100%; background:var(--era, var(--ink2)); border-radius:2px; transition:width .4s}
+.era-count{font-size:11px; color:var(--ink2); font-variant-numeric:tabular-nums}
 .era-borde{position:relative}
 
 /* ── Tarjetas ── */
@@ -184,7 +211,7 @@ h3{
     0 8px 40px -12px color-mix(in srgb, var(--glow, var(--red)) 45%, transparent);
 }
 .card:active{transform:translateY(-1px) scale(.997)}
-.card.vista{opacity:.62}
+.card.vista{opacity:.68; box-shadow:inset 3px 0 0 var(--done), var(--card-shadow)}
 .card.vista:hover{opacity:.85}
 @keyframes riseIn{
   from{opacity:0; transform:translateY(14px)}
@@ -237,17 +264,17 @@ h3{
 .lc-year{color:#fff; opacity:.9; font-weight:600; font-size:12px; font-variant-numeric:tabular-nums; position:relative; z-index:1}
 .lc-tipo{color:#fff; opacity:.55; font-size:7px; font-weight:700; letter-spacing:2px; position:relative; z-index:1}
 
-.centro{flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; gap:6px; padding:4px 0}
-.toggle{
-  display:flex; align-items:flex-start; gap:12px; width:100%; min-width:0;
+.abrir{
+  display:flex; align-items:center; gap:18px; flex:1; min-width:0;
   background:none; border:none; padding:0; margin:0; cursor:pointer;
   text-align:left; color:inherit;
 }
+.fila-titulo{display:flex; align-items:baseline; gap:10px}
 .num{
   flex:none; font-size:12px; font-weight:700; color:var(--ink3);
-  font-variant-numeric:tabular-nums; padding-top:4px; min-width:20px;
+  font-variant-numeric:tabular-nums;
 }
-.info{min-width:0; flex:1; display:flex; flex-direction:column; gap:3px}
+.info{min-width:0; flex:1; display:flex; flex-direction:column; gap:3px; padding:4px 0}
 .titulo{font-weight:700; font-size:16px; line-height:1.25; letter-spacing:-.01em}
 .card.vista .titulo{color:var(--ink2); text-decoration:line-through; text-decoration-thickness:1.5px}
 .meta{font-size:12.5px; color:var(--ink2); font-variant-numeric:tabular-nums}
@@ -255,13 +282,6 @@ h3{
 .res{font-size:13.5px; color:var(--ink2); max-width:60ch; line-height:1.45}
 .nota{font-size:12px; color:var(--ink3); font-style:italic}
 .credits{font-size:12px; color:var(--ink3)}
-.cast{display:flex; flex-wrap:wrap; gap:6px; padding-left:32px}
-.cast a{
-  font-size:11.5px; font-weight:600; color:var(--ink2); text-decoration:none;
-  background:var(--panel2); border-radius:999px; padding:2px 9px;
-  transition:all .15s;
-}
-.cast a:hover{color:var(--ink); background:var(--line)}
 
 .lado{
   flex:none; display:flex; flex-direction:column; align-items:flex-end;
@@ -284,6 +304,71 @@ h3{
   white-space:nowrap; transition:all .15s;
 }
 .ghost:hover{color:var(--ink); border-color:var(--ink2); background:var(--panel2)}
+
+/* ── Ficha de detalle ── */
+.overlay{
+  position:fixed; inset:0; z-index:50;
+  background:rgba(8,10,14,.62);
+  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+  display:grid; place-items:center; padding:20px;
+  animation:fadeIn .2s ease both;
+}
+@keyframes fadeIn{from{opacity:0} to{opacity:1}}
+.modal{
+  position:relative; background:var(--panel); border:1px solid var(--line);
+  border-radius:24px; max-width:760px; width:100%; max-height:90vh; overflow:auto;
+  padding:28px; display:flex; gap:28px;
+  box-shadow:var(--card-shadow-up);
+  animation:riseIn .3s cubic-bezier(.22,1,.36,1) both;
+}
+.cerrar{
+  position:absolute; top:14px; right:14px; z-index:1;
+  width:34px; height:34px; border-radius:50%;
+  border:1px solid var(--line); background:var(--panel2); color:var(--ink2);
+  cursor:pointer; font-size:14px; display:grid; place-items:center;
+  transition:all .15s;
+}
+.cerrar:hover{color:var(--ink); border-color:var(--ink2)}
+.modal-cover{flex:none; align-self:flex-start}
+.modal-cover .cover{width:190px; height:285px; border-radius:16px}
+.modal-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:10px}
+.modal-chips{display:flex; flex-wrap:wrap; gap:6px}
+.modal-titulo{font-size:26px; font-weight:800; letter-spacing:-.02em; margin:0; text-transform:none}
+.modal-meta{margin:0; font-size:13.5px; color:var(--ink2); font-variant-numeric:tabular-nums}
+.modal-meta .star{color:var(--gold); font-weight:700}
+.modal-meta .hist{color:var(--blue); font-weight:600}
+.modal-res{margin:0; font-size:15px; line-height:1.55}
+.modal-nota{margin:0; font-size:13px; color:var(--ink3); font-style:italic}
+.personas{display:flex; flex-wrap:wrap; gap:14px 10px; margin-top:6px}
+.persona{
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  width:76px; text-align:center; text-decoration:none; color:inherit;
+}
+.avatar{
+  width:52px; height:52px; border-radius:50%; object-fit:cover;
+  background:var(--panel2); border:2px solid var(--line);
+  transition:transform .2s, border-color .2s;
+}
+.persona:hover .avatar{transform:scale(1.08); border-color:var(--blue)}
+.avatar-ini{
+  display:grid; place-items:center; font-size:15px; font-weight:700; color:var(--ink2);
+}
+.persona-nombre{font-size:11px; font-weight:600; line-height:1.25}
+.persona-rol{font-size:9.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
+.modal-acciones{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center}
+.accion-principal{
+  border:none; border-radius:999px; padding:10px 20px; cursor:pointer;
+  font-size:14px; font-weight:700; color:#fff;
+  background:linear-gradient(120deg, var(--red), #C8681E);
+  transition:transform .15s, filter .15s;
+}
+.accion-principal:hover{filter:brightness(1.1)}
+.accion-principal:active{transform:scale(.97)}
+.accion-principal.hecha{background:var(--done)}
+@media (max-width:640px){
+  .modal{flex-direction:column; padding:20px; gap:16px}
+  .modal-cover{align-self:center}
+}
 
 /* ── Vista por estreno ── */
 .anio{margin-top:36px}
