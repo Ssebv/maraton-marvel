@@ -320,6 +320,7 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
   main.crono .saga[data-saga="ucm"]{grid-column:2; grid-row:1 / span 2}
   main.crono .saga[data-saga="comics"]{grid-column:1; grid-row:2}
   main.estreno .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  main.comics .era .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 }
 @media (max-width:640px){
   .hero{padding:36px 0 16px}

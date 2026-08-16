@@ -252,6 +252,7 @@ export default function App() {
           <div className="tabs">
             <button className="tab" aria-pressed={vista === 'crono'} onClick={() => setVista('crono')}>Cronológico</button>
             <button className="tab" aria-pressed={vista === 'estreno'} onClick={() => setVista('estreno')}>Por estreno</button>
+            <button className="tab" aria-pressed={vista === 'comics'} onClick={() => setVista('comics')}>Cómics</button>
           </div>
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>⚡ Ruta express</button>
           <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>Sin series</button>
@@ -262,15 +263,14 @@ export default function App() {
             <nav className="atajos">
               <a href="#saga-xmen">X-Men</a>
               <a href="#saga-ucm">UCM</a>
-              <a href="#saga-comics">Cómics</a>
             </nav>
           )}
         </div>
       </header>
 
-      {vista === 'crono' ? (
-        <main className="crono">
-          {DATA.map(saga => {
+      {vista !== 'estreno' ? (
+        <main className={vista === 'comics' ? 'comics' : 'crono'}>
+          {DATA.filter(saga => (vista === 'comics') === (saga.saga === 'comics')).map(saga => {
             const esComic = saga.saga === 'comics'
             const s = stats.porSaga[saga.saga]
             if (!s.n) return null
