@@ -310,7 +310,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp }) {
                             </span>
                             <span className="ep-info">
                               <span className="ep-titulo">{e.t}</span>
-                              {e.f && <span className="ep-fecha">{e.f}</span>}
+                              {e.f && <span className="ep-fecha">{new Date(e.f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                             </span>
                           </button>
                         )
@@ -343,7 +343,13 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem(KEY)) || {} } catch { return {} }
   })
   const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
-  const [vista, setVista] = useState('crono')
+  const [vista, setVista] = useState(() => {
+    const h = window.location.hash.replace('#', '')
+    return ['crono', 'estreno', 'comics', 'stats'].includes(h) ? h : 'crono'
+  })
+  useEffect(() => {
+    history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
+  }, [vista])
   const [detalle, setDetalle] = useState(null)
   const [busca, setBusca] = useState('')
   const [eps, setEps] = useState(() => {
@@ -626,9 +632,9 @@ export default function App() {
               setDetalle({ item: e.item, c: e.c, esComic: false })
             }
           }}>🎲 Sorpréndeme</button>
-          <input className="busca" type="search" placeholder="Buscar…" value={busca}
-            onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
-          <button className={`chip-btn sync-btn ${syncEstado}`} onClick={() => setSyncModal(true)}
+          <input className="busca" type="search" name="busqueda" placeholder="Buscar…" value={busca} spellCheck={false}
+            autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
+          <button className={`chip-btn sync-btn ${syncEstado}`} aria-live="polite" onClick={() => setSyncModal(true)}
             title={sync ? 'Sincronización activa' : 'Sincronizar entre dispositivos'}>
             {syncEstado === 'ok' ? '☁️ Sincronizado' : syncEstado === 'syncing' ? '☁️ Guardando…'
               : syncEstado === 'error' ? '☁️ Sin conexión' : '☁️ Sincronizar'}
@@ -876,8 +882,8 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose }) {
                 <li>En la pestaña <b>Reglas</b>, deja lectura y escritura en <code>true</code> y publica.</li>
                 <li>Copia la <b>URL</b> que aparece arriba de la pestaña Datos (algo como <code>https://tu-proyecto-default-rtdb.europe-west1.firebasedatabase.app</code>) y pégala aquí:</li>
               </ol>
-              <input className="busca sync-input" placeholder="https://…firebasedatabase.app"
-                value={url} onChange={e => setUrl(e.target.value)} />
+              <input className="busca sync-input" type="url" name="dburl" placeholder="https://…firebasedatabase.app" spellCheck={false}
+                autoComplete="off" aria-label="URL de la base de datos" value={url} onChange={e => setUrl(e.target.value)} />
               {error && <p className="import-error">{error}</p>}
               <div className="modal-acciones">
                 <button className="accion-principal" onClick={crear}>Activar sincronización</button>
@@ -887,8 +893,8 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose }) {
           ) : modo === 'unir' ? (
             <>
               <p className="modal-res">Pega el código que te dio tu otro dispositivo:</p>
-              <input className="busca sync-input" placeholder="Código de sincronización"
-                value={codigo} onChange={e => setCodigo(e.target.value)} />
+              <input className="busca sync-input" name="codigo" placeholder="Código de sincronización" spellCheck={false}
+                autoComplete="off" aria-label="Código de sincronización" value={codigo} onChange={e => setCodigo(e.target.value)} />
               {error && <p className="import-error">{error}</p>}
               <div className="modal-acciones">
                 <button className="accion-principal" onClick={unirse}>Conectar</button>
@@ -955,8 +961,8 @@ function Footer({ onReset }) {
         </button>
         {importando && (
           <span className="importar">
-            <input className="busca" placeholder="Pega el código aquí" value={codigo}
-              onChange={e => setCodigo(e.target.value)} />
+            <input className="busca" name="codigo-progreso" placeholder="Pega el código aquí" spellCheck={false} autoComplete="off"
+              aria-label="Código de progreso" value={codigo} onChange={e => setCodigo(e.target.value)} />
             <button className="chip-btn" onClick={importar}>Cargar</button>
             {msgImport && <span className="import-error">{msgImport}</span>}
           </span>
