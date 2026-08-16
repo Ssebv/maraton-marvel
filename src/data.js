@@ -341,5 +341,17 @@ export const DATA = [
 },
 ]
 
+// Próximos estrenos anunciados (fecha en ISO o null si está por confirmar)
+export const ESTRENOS = [
+  { t: "Vengadores: Doomsday", fecha: "2026-12-18", tipo: "Película · Cine",
+    n: "El Doctor Doom de Robert Downey Jr. contra Vengadores, 4 Fantásticos y X-Men." },
+  { t: "Vision Quest", fecha: null, aprox: "Finales de 2026", tipo: "Serie · Disney+",
+    n: "Visión busca recuperar su memoria; con Paul Bettany y James Spader (Ultrón)." },
+  { t: "Avengers: Secret Wars", fecha: "2027-12-17", tipo: "Película · Cine",
+    n: "El cierre de la Saga del Multiverso." },
+  { t: "X-Men (UCM)", fecha: null, aprox: "En desarrollo", tipo: "Película",
+    n: "El reinicio mutante dentro del UCM, tras Secret Wars." },
+]
+
 export const JOYA_MIN = 7.5
 export const KEY = "maraton-marvel-v1"

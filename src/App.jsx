@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { DATA, JOYA_MIN, KEY } from './data.js'
+import { DATA, ESTRENOS, JOYA_MIN, KEY } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
 import { EPISODES } from './episodes.js'
@@ -103,6 +103,59 @@ function Avatar({ nombre }) {
     return <span className="avatar avatar-ini" aria-hidden="true">{iniciales(limpio)}</span>
   }
   return <img className="avatar" src={src} alt="" loading="lazy" onError={() => setErr(true)} />
+}
+
+function Calendario() {
+  const [ahora, setAhora] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setAhora(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const objetivo = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > ahora)
+  const fmtFecha = f => f
+    ? new Date(f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
+  let cuenta = null
+  if (objetivo) {
+    const diff = new Date(objetivo.fecha + 'T00:00:00') - ahora
+    const dias = Math.floor(diff / 86400000)
+    const hh = String(Math.floor(diff / 3600000) % 24).padStart(2, '0')
+    const mm = String(Math.floor(diff / 60000) % 60).padStart(2, '0')
+    const ss = String(Math.floor(diff / 1000) % 60).padStart(2, '0')
+    cuenta = { dias, hh, mm, ss }
+  }
+  return (
+    <section className="calendario" aria-label="Calendario de estrenos">
+      {objetivo && cuenta && (
+        <div className="cuenta">
+          <div className="cuenta-info">
+            <span className="cuenta-label">⏳ Próximo gran estreno</span>
+            <span className="cuenta-titulo">{objetivo.t}</span>
+            <span className="cuenta-fecha">{fmtFecha(objetivo.fecha)} · {objetivo.tipo}</span>
+          </div>
+          <div className="cuenta-reloj" role="timer">
+            <span className="cr-bloque"><b>{cuenta.dias}</b><small>días</small></span>
+            <span className="cr-sep">:</span>
+            <span className="cr-bloque"><b>{cuenta.hh}</b><small>horas</small></span>
+            <span className="cr-sep">:</span>
+            <span className="cr-bloque"><b>{cuenta.mm}</b><small>min</small></span>
+            <span className="cr-sep">:</span>
+            <span className="cr-bloque"><b>{cuenta.ss}</b><small>seg</small></span>
+          </div>
+        </div>
+      )}
+      <div className="proximos">
+        {ESTRENOS.filter(e => !objetivo || e.t !== objetivo.t).map(e => (
+          <div className="proximo" key={e.t}>
+            <span className="proximo-fecha">{fmtFecha(e.fecha) || e.aprox}</span>
+            <span className="proximo-titulo">{e.t}</span>
+            <span className="proximo-tipo">{e.tipo}</span>
+            <span className="proximo-nota">{e.n}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps }) {
@@ -393,6 +446,8 @@ export default function App() {
           })}
         </div>
       </section>
+
+      <Calendario />
 
       <header className="toolbar">
         <div className="controles" role="group" aria-label="Vista y filtros">
