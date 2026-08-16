@@ -2,11 +2,10 @@ import { useMemo, useState } from 'react'
 import { DATA, JOYA_MIN, KEY } from './data.js'
 import { POSTERS } from './posters.js'
 
-const STOP = new Set(['de','del','la','el','los','las','y','en','the','of','a','al','un','una'])
+const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
 
 function iniciales(t) {
-  const limpio = t.replace(/^(X-Men|Capitán América|Spider-Man|Vengadores|Guardianes de la Galaxia|Doctor Strange|Iron Man|Thor|Ant-Man y la Avispa|Black Panther):\s*/i, m => m)
-  const palabras = limpio.split(/[\s:·(]+/).filter(w => w && !STOP.has(w.toLowerCase()))
+  const palabras = t.split(/[\s:·(]+/).filter(w => w && !STOP.has(w.toLowerCase()))
   return palabras.slice(0, 2).map(w => w[0].toUpperCase()).join('')
 }
 
@@ -41,8 +40,8 @@ function Cover({ item, c, esComic }) {
       </g>
       <path d="M0 128 L120 88 L120 180 L0 180 Z" fill="#000" opacity="0.22" />
       <text x="60" y="96" textAnchor="middle" fill="#fff" opacity="0.95"
-        fontFamily="'Avenir Next Condensed','Arial Narrow',sans-serif"
-        fontWeight="800" fontSize={esComic ? 34 : 42} letterSpacing="1">
+        fontFamily="'Inter',system-ui,sans-serif"
+        fontWeight="800" fontSize={esComic ? 32 : 40} letterSpacing="1">
         {iniciales(item.t)}
       </text>
       <text x="60" y="156" textAnchor="middle" fill="#fff" opacity="0.8"
@@ -91,43 +90,40 @@ const CheckIcon = () => (
 )
 
 function Card({ item, num, c, esComic, vista, onToggle, delay }) {
-  const meta = esComic
-    ? <><span className="hist">{item.a}</span> · {item.r}</>
-    : <>
-        {item.s != null && <><span className="star">★ {item.s.toFixed(1)}</span> · </>}
-        <span className="hist">{item.h}</span> · estreno {item.r}
-        {item.d ? <> · {fmtDur(item.d)}</> : null}
-      </>
   return (
-    <div className={`card${vista ? ' vista' : ''}`} style={{ animationDelay: `${delay}ms` }}>
+    <article className={`card${vista ? ' vista' : ''}`}
+      style={{ animationDelay: `${delay}ms`, '--glow': c[0] }}>
       <div className="cover-wrap">
         <Portada item={item} c={c} esComic={esComic} />
+        {item.s != null && !esComic && <span className="rating-badge">★ {item.s.toFixed(1)}</span>}
         {vista && <span className="cover-check"><CheckIcon /></span>}
       </div>
       <div className="centro">
-        <button className="toggle" aria-pressed={vista} onClick={onToggle}>
+        <button className="toggle" aria-pressed={vista} onClick={onToggle}
+          title={vista ? 'Marcar como pendiente' : 'Marcar como vista'}>
+          <span className="num">{num}</span>
           <span className="info">
-            <div className="titulo">{num}. {item.t}</div>
-            <div className="meta">{meta}</div>
-            {item.res && <div className="res">{item.res}</div>}
-            {item.n && <div className="nota">{item.n}</div>}
-          </span>
-        </button>
-        {(item.dir || item.cast) && (
-          <div className="credits">
-            {item.dir && <span>Dir. {item.dir}</span>}
-            {item.cast && (
-              <span>
-                {' · Con '}
-                {item.cast.map((p, i) => (
-                  <span key={p}>
-                    {i > 0 && ', '}
-                    <a href={urlPersona(p)} target="_blank" rel="noopener noreferrer"
-                      title={`Ver filmografía de ${p}`}>{p}</a>
-                  </span>
-                ))}
+            <span className="titulo">{item.t}</span>
+            <span className="meta">
+              {esComic
+                ? <><span className="hist">{item.a}</span> · {item.r}</>
+                : <><span className="hist">{item.h}</span> · estreno {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
+            </span>
+            {item.res && <span className="res">{item.res}</span>}
+            {item.n && <span className="nota">{item.n}</span>}
+            {(item.dir || item.cast) && (
+              <span className="credits">
+                {item.dir && <>Dir. {item.dir}</>}
               </span>
             )}
+          </span>
+        </button>
+        {item.cast && (
+          <div className="cast">
+            {item.cast.map(p => (
+              <a key={p} href={urlPersona(p)} target="_blank" rel="noopener noreferrer"
+                title={`Ver filmografía de ${p}`}>{p}</a>
+            ))}
           </div>
         )}
       </div>
@@ -141,12 +137,12 @@ function Card({ item, num, c, esComic, vista, onToggle, delay }) {
         </div>
         {!esComic && (
           <div className="enlaces">
-            <a href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer">▶<span> Tráiler</span></a>
-            <a href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb</a>
+            <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer">▶ Tráiler</a>
+            <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb</a>
           </div>
         )}
       </div>
-    </div>
+    </article>
   )
 }
 
@@ -185,7 +181,7 @@ export default function App() {
         if (vistas[item.id]) v++
         else {
           if (item.d) m += item.d
-          if (!esComic && !siguiente) siguiente = item.t
+          if (!esComic && !siguiente) siguiente = item
         }
       }))
       porSaga[saga.saga] = { v, n, m: esComic ? 0 : m }
@@ -215,29 +211,47 @@ export default function App() {
   const oculto = (item, esComic) => filtros.vistas && vistas[item.id] && pasaFiltro(item, esComic)
 
   let delayIdx = 0
-  const nextDelay = () => Math.min((delayIdx++) * 35, 420)
+  const nextDelay = () => Math.min((delayIdx++) * 30, 360)
+  const pct = stats.totN ? Math.round(100 * stats.totV / stats.totN) : 0
 
   return (
     <div className="wrap">
-      <header>
-        <div className="masthead">
-          <h1>Maratón <span className="rojo">Marvel</span> &amp; X-Men</h1>
-          <div className="total-num">
-            <strong>{stats.totV}</strong> / {stats.totN} completados
-            {stats.mins > 0 && ` · quedan ~${Math.round(stats.mins / 60)} h`}
+      <section className="hero">
+        <p className="hero-eyebrow">Guía de maratón · cronología completa</p>
+        <h1>Maratón <span className="rojo">Marvel</span> &amp; X-Men</h1>
+        <div className="stats">
+          <div className="stat">
+            <span className="stat-label">Completados</span>
+            <span className="stat-num">{stats.totV}<small> / {stats.totN}</small></span>
+            <div className="barra"><i style={{ width: `${pct}%` }} /></div>
+            <span className="stat-foot">{pct}% del maratón</span>
           </div>
+          <div className="stat">
+            <span className="stat-label">Te quedan</span>
+            <span className="stat-num">{Math.round(stats.mins / 60)}<small> h</small></span>
+            <span className="stat-foot">de películas y series</span>
+          </div>
+          {stats.siguiente && (
+            <div className="stat siguiente-stat">
+              <span className="stat-label">▶ Siguiente</span>
+              <span className="stat-sig">{stats.siguiente.t}</span>
+              <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>
+            </div>
+          )}
         </div>
-        <div className="barra"><i style={{ width: `${stats.totN ? 100 * stats.totV / stats.totN : 0}%` }} /></div>
+      </section>
+
+      <header className="toolbar">
         <div className="controles" role="group" aria-label="Vista y filtros">
           <div className="tabs">
             <button className="tab" aria-pressed={vista === 'crono'} onClick={() => setVista('crono')}>Cronológico</button>
             <button className="tab" aria-pressed={vista === 'estreno'} onClick={() => setVista('estreno')}>Por estreno</button>
           </div>
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>⚡ Ruta express</button>
-          <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>Ocultar series</button>
-          <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>Ocultar opcionales</button>
-          <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>Ocultar completados</button>
-          <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>Solo joyas ★7,5+</button>
+          <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>Sin series</button>
+          <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>Sin opcionales</button>
+          <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>Solo pendientes</button>
+          <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>Joyas ★7,5+</button>
           {vista === 'crono' && (
             <nav className="atajos">
               <a href="#saga-xmen">X-Men</a>
@@ -247,13 +261,6 @@ export default function App() {
           )}
         </div>
       </header>
-
-      {stats.siguiente && stats.totV > 0 && stats.totV < stats.totN && (
-        <div className="siguiente">
-          <span className="tag">▶ Siguiente</span>
-          <span className="peli">{stats.siguiente}</span>
-        </div>
-      )}
 
       {vista === 'crono' ? (
         <main>
@@ -280,13 +287,12 @@ export default function App() {
                   const base = num
                   num += numerados.length
                   return (
-                    <div className="era" key={era.era}>
+                    <div className="era" key={era.era} style={{ '--era': era.c[0] }}>
                       <div className="era-head">
-                        <span className="era-dot" style={{ background: era.c[0] }} />
                         <h3>{era.era}</h3>
                         <span className="era-rango">{era.rango}</span>
                       </div>
-                      <div className="era-borde" style={{ borderColor: era.c[0] }}>
+                      <div className="era-borde">
                         <div className="grid">
                           {numerados.map((item, i) =>
                             visibles.includes(item) && (
@@ -343,8 +349,8 @@ function Footer({ onReset }) {
   return (
     <footer>
       <p className="nota-pie">
-        Tu progreso se guarda en este navegador automáticamente. El año azul es cuándo ocurre la historia; el gris, el de estreno.
-        Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas (instantánea de agosto de 2026).
+        Tu progreso se guarda en este navegador automáticamente. El año coloreado es cuándo ocurre la historia; el gris, el de estreno.
+        Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas.
         La ⚡ Ruta express deja solo lo imprescindible para llegar a Vengadores: Doomsday.
       </p>
       <div className="reset">
