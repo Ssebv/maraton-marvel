@@ -460,6 +460,41 @@ h3{
 .importar{display:flex; gap:6px; align-items:center}
 .import-error{font-size:12px; color:var(--red)}
 
+/* ── Estadísticas ── */
+.stats-vista{display:flex; flex-direction:column; gap:20px; margin-top:24px}
+.stats-tiles{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px}
+.grafica{
+  background:var(--panel); border:1px solid var(--line); border-radius:16px;
+  padding:20px 22px; box-shadow:var(--card-shadow);
+}
+.grafica-titulo{margin:0 0 2px; font-size:15px; font-weight:700; letter-spacing:normal; text-transform:none; color:var(--ink)}
+.grafica-sub{margin:0 0 14px; font-size:12.5px; color:var(--ink2)}
+.grafica-grupo{margin-top:10px}
+.grafica-grupo-nombre{
+  font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink3); margin:8px 0 6px;
+}
+.gbar{display:flex; align-items:center; gap:12px; padding:4px 0}
+.gbar-label{
+  flex:none; width:270px; font-size:13px; color:var(--ink);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.gbar-label em{font-style:normal; color:var(--ink3); font-size:11.5px; font-variant-numeric:tabular-nums}
+.gbar-pista{
+  flex:1; height:14px; background:var(--panel2); border-radius:4px; overflow:hidden;
+}
+.gbar-pista i{display:block; height:100%; border-radius:0 4px 4px 0; min-width:0; transition:width .5s cubic-bezier(.22,1,.36,1)}
+.gbar-valor{
+  flex:none; width:86px; text-align:right; font-size:12px; color:var(--ink2);
+  font-variant-numeric:tabular-nums;
+}
+@media (max-width:640px){
+  .gbar{flex-wrap:wrap; gap:6px}
+  .gbar-label{width:100%}
+  .gbar-pista{width:100%; flex:auto}
+  .gbar-valor{width:auto; margin-left:auto}
+}
+
 /* ── Vista por estreno ── */
 .anio{margin-top:36px}
 .anio-head{display:flex; align-items:center; gap:14px; margin-bottom:12px}

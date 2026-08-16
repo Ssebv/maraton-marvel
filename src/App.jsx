@@ -374,6 +374,46 @@ export default function App() {
     return { totV, totN, mins, siguiente, porSaga }
   }, [vistas, filtros])
 
+  const estadisticas = useMemo(() => {
+    const minutosVistos = item => {
+      if (vistas[item.id]) return item.d || 0
+      if (item.tipo === 'serie' && EPISODES[item.id] && item.d) {
+        const lista = EPISODES[item.id]
+        const hechos = lista.filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length
+        return Math.round(item.d * hechos / lista.length)
+      }
+      return 0
+    }
+    const fases = []
+    let totMin = 0, vistoMin = 0, titulosVistos = 0, titulosTot = 0
+    const tipos = { peli: { t: 'Películas', tot: 0, visto: 0 }, serie: { t: 'Series', tot: 0, visto: 0 }, esp: { t: 'Especiales', tot: 0, visto: 0 } }
+    DATA.forEach(saga => {
+      if (saga.saga === 'comics') return
+      saga.eras.forEach(era => {
+        const f = { era: era.era, rango: era.rango, saga: saga.saga, c: era.c, tot: 0, visto: 0, items: era.items.length, vistos: 0 }
+        era.items.forEach(item => {
+          const v = minutosVistos(item)
+          f.tot += item.d || 0; f.visto += v
+          titulosTot++
+          if (vistas[item.id]) { f.vistos++; titulosVistos++ }
+          const clave = item.tipo === 'serie' ? 'serie' : item.tipo === 'esp' ? 'esp' : 'peli'
+          tipos[clave].tot += item.d || 0; tipos[clave].visto += v
+        })
+        totMin += f.tot; vistoMin += f.visto
+        fases.push(f)
+      })
+    })
+    let epVistos = 0, epTot = 0
+    Object.entries(EPISODES).forEach(([sid, lista]) => {
+      epTot += lista.length
+      epVistos += lista.filter(e => eps[`${sid}:${e.s}:${e.n}`] || vistas[sid]).length
+    })
+    const comics = DATA.find(sg => sg.saga === 'comics')
+    const comicsTot = comics.eras.reduce((a, e) => a + e.items.length, 0)
+    const comicsVistos = comics.eras.reduce((a, e) => a + e.items.filter(i => vistas[i.id]).length, 0)
+    return { fases, totMin, vistoMin, titulosVistos, titulosTot, tipos: Object.values(tipos), epVistos, epTot, comicsTot, comicsVistos }
+  }, [vistas, eps])
+
   const porAnio = useMemo(() => {
     const items = []
     DATA.forEach(saga => {
@@ -455,6 +495,7 @@ export default function App() {
             <button className="tab" aria-pressed={vista === 'crono'} onClick={() => setVista('crono')}>Cronológico</button>
             <button className="tab" aria-pressed={vista === 'estreno'} onClick={() => setVista('estreno')}>Por estreno</button>
             <button className="tab" aria-pressed={vista === 'comics'} onClick={() => setVista('comics')}>Cómics</button>
+            <button className="tab" aria-pressed={vista === 'stats'} onClick={() => setVista('stats')}>Estadísticas</button>
           </div>
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>⚡ Ruta express</button>
           <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>Sin series</button>
@@ -483,7 +524,70 @@ export default function App() {
         </div>
       </header>
 
-      {vista !== 'estreno' ? (
+      {vista === 'stats' ? (
+        <main className="stats-vista">
+          <div className="stats-tiles">
+            <div className="stat">
+              <span className="stat-label">Horas vistas</span>
+              <span className="stat-num">{Math.round(estadisticas.vistoMin / 60)}<small> / {Math.round(estadisticas.totMin / 60)} h</small></span>
+              <div className="barra"><i style={{ width: `${estadisticas.totMin ? 100 * estadisticas.vistoMin / estadisticas.totMin : 0}%` }} /></div>
+              <span className="stat-foot">{estadisticas.totMin ? Math.round(100 * estadisticas.vistoMin / estadisticas.totMin) : 0}% del tiempo total</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Títulos vistos</span>
+              <span className="stat-num">{estadisticas.titulosVistos}<small> / {estadisticas.titulosTot}</small></span>
+              <span className="stat-foot">películas, series y especiales</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Episodios vistos</span>
+              <span className="stat-num">{estadisticas.epVistos}<small> / {estadisticas.epTot}</small></span>
+              <span className="stat-foot">de las series con lista</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Cómics leídos</span>
+              <span className="stat-num">{estadisticas.comicsVistos}<small> / {estadisticas.comicsTot}</small></span>
+              <span className="stat-foot">lecturas esenciales</span>
+            </div>
+          </div>
+
+          <section className="grafica">
+            <h3 className="grafica-titulo">Horas por fase y era</h3>
+            <p className="grafica-sub">La barra tenue es la duración total de cada era; el relleno, lo que ya has visto.</p>
+            {['xmen', 'ucm'].map(sg => (
+              <div key={sg} className="grafica-grupo">
+                <div className="grafica-grupo-nombre">{sg === 'xmen' ? 'Saga X-Men' : 'UCM'}</div>
+                {estadisticas.fases.filter(f => f.saga === sg).map(f => {
+                  const pct = f.tot ? 100 * f.visto / f.tot : 0
+                  return (
+                    <div className="gbar" key={f.era}
+                      title={`${f.era}: ${Math.round(f.visto / 60)} h de ${Math.round(f.tot / 60)} h · ${f.vistos}/${f.items} títulos`}>
+                      <span className="gbar-label">{f.era} <em>{f.rango}</em></span>
+                      <span className="gbar-pista">
+                        <i style={{ width: `${pct}%`, background: f.c[0] }} />
+                      </span>
+                      <span className="gbar-valor">{Math.round(f.visto / 60)} / {Math.round(f.tot / 60)} h</span>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+          </section>
+
+          <section className="grafica">
+            <h3 className="grafica-titulo">Avance por tipo</h3>
+            {estadisticas.tipos.map(t => {
+              const pct = t.tot ? 100 * t.visto / t.tot : 0
+              return (
+                <div className="gbar" key={t.t} title={`${t.t}: ${Math.round(t.visto / 60)} h de ${Math.round(t.tot / 60)} h`}>
+                  <span className="gbar-label">{t.t}</span>
+                  <span className="gbar-pista"><i style={{ width: `${pct}%`, background: 'var(--red)' }} /></span>
+                  <span className="gbar-valor">{Math.round(t.visto / 60)} / {Math.round(t.tot / 60)} h</span>
+                </div>
+              )
+            })}
+          </section>
+        </main>
+      ) : vista !== 'estreno' ? (
         <main className={vista === 'comics' ? 'comics' : 'crono'}>
           {DATA.filter(saga => (vista === 'comics') === (saga.saga === 'comics')).map(saga => {
             const esComic = saga.saga === 'comics'
