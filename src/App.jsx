@@ -63,9 +63,21 @@ function Portada({ item, c, esComic }) {
   const [ancha, setAncha] = useState(false)
   const src = POSTERS[item.id]
   if (!src || err) return <Cover item={item} c={c} esComic={esComic} />
+  if (ancha) {
+    return (
+      <div className="cover logo-cover" role="img" aria-label={`Carátula de ${item.t}`}
+        style={{ background: `linear-gradient(160deg, ${c[0]}, ${c[1]})` }}>
+        <img src={src} alt="" onError={() => setErr(true)} />
+        <span className="lc-year">{item.r}</span>
+        <span className="lc-tipo">
+          {esComic ? 'CÓMIC' : item.tipo === 'serie' ? 'SERIE' : item.tipo === 'esp' ? 'ESPECIAL' : 'PELÍCULA'}
+        </span>
+      </div>
+    )
+  }
   return (
-    <img className={`cover foto${ancha ? ' ancha' : ''}`} src={src} alt={`Póster de ${item.t}`}
-      loading="lazy" style={ancha ? { background: `linear-gradient(135deg, ${c[0]}, ${c[1]})` } : undefined}
+    <img className="cover foto" src={src} alt={`Póster de ${item.t}`}
+      loading="lazy"
       onLoad={e => { if (e.target.naturalWidth > e.target.naturalHeight * 1.05) setAncha(true) }}
       onError={() => setErr(true)} />
   )
