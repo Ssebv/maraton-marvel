@@ -163,6 +163,7 @@ h3{
   transition:transform .25s cubic-bezier(.22,1,.36,1), filter .3s, box-shadow .25s;
 }
 .cover.foto{object-fit:cover; background:var(--panel2)}
+.cover.foto.ancha{object-fit:contain; padding:6px}
 .card:hover .cover{box-shadow:0 8px 20px rgba(0,0,0,.4)}
 .card:hover .cover{transform:rotate(-2deg) scale(1.05)}
 .card.vista .cover{filter:grayscale(.75) brightness(.85)}
