@@ -1,10 +1,27 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { DATA, ESTRENOS, JOYA_MIN, KEY } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
 import { EPISODES } from './episodes.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
+const KEY_SYNC = 'maraton-marvel-sync-v1'
+
+function normalizaDbUrl(txt) {
+  let u = txt.trim().replace(/\/+$/, '')
+  if (!u) return null
+  if (!/^https?:\/\//.test(u)) u = 'https://' + u
+  if (!/firebaseio\.com|firebasedatabase\.app/.test(u)) return null
+  return u
+}
+const codigoSync = (url, room) => btoa(unescape(encodeURIComponent(url + '|' + room)))
+const decodificaSync = cod => {
+  try {
+    const [url, room] = decodeURIComponent(escape(atob(cod.trim()))).split('|')
+    if (normalizaDbUrl(url) && room) return { url: normalizaDbUrl(url), room }
+  } catch {}
+  return null
+}
 const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
@@ -328,6 +345,93 @@ export default function App() {
   const [eps, setEps] = useState(() => {
     try { return JSON.parse(localStorage.getItem(KEY_EPS)) || {} } catch { return {} }
   })
+  const [sync, setSync] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(KEY_SYNC)) } catch { return null }
+  })
+  const [syncEstado, setSyncEstado] = useState('off')
+  const [syncModal, setSyncModal] = useState(false)
+  const aplicandoRemoto = React.useRef(false)
+  const ultimoAplicado = React.useRef(0)
+
+  const endpoint = s => `${s.url}/maraton/${s.room}.json`
+
+  const empujar = async (conf, v, e) => {
+    try {
+      setSyncEstado('syncing')
+      const t = Date.now()
+      const r = await fetch(endpoint(conf), {
+        method: 'PUT',
+        body: JSON.stringify({ v, e, t }),
+      })
+      if (!r.ok) throw new Error(r.status)
+      ultimoAplicado.current = t
+      setSyncEstado('ok')
+    } catch { setSyncEstado('error') }
+  }
+
+  const tirar = async conf => {
+    try {
+      const r = await fetch(endpoint(conf))
+      if (!r.ok) throw new Error(r.status)
+      const datos = await r.json()
+      if (datos && datos.t && datos.t > ultimoAplicado.current) {
+        ultimoAplicado.current = datos.t
+        aplicandoRemoto.current = true
+        setVistas(datos.v || {})
+        setEps(datos.e || {})
+        try {
+          localStorage.setItem(KEY, JSON.stringify(datos.v || {}))
+          localStorage.setItem(KEY_EPS, JSON.stringify(datos.e || {}))
+        } catch {}
+      }
+      setSyncEstado('ok')
+    } catch { setSyncEstado('error') }
+  }
+
+  useEffect(() => {
+    if (!sync) { setSyncEstado('off'); return }
+    tirar(sync)
+    const id = setInterval(() => tirar(sync), 25000)
+    const alFoco = () => tirar(sync)
+    window.addEventListener('focus', alFoco)
+    return () => { clearInterval(id); window.removeEventListener('focus', alFoco) }
+  }, [sync])
+
+  useEffect(() => {
+    if (!sync) return
+    if (aplicandoRemoto.current) { aplicandoRemoto.current = false; return }
+    const id = setTimeout(() => empujar(sync, vistas, eps), 1200)
+    return () => clearTimeout(id)
+  }, [vistas, eps])
+
+  const activarSync = async (url, roomExistente) => {
+    const room = roomExistente || Math.random().toString(36).slice(2, 10)
+    const conf = { url, room }
+    if (roomExistente) {
+      // unirse: fusionar lo remoto con lo local y subir la unión
+      try {
+        const r = await fetch(endpoint(conf))
+        const datos = r.ok ? await r.json() : null
+        const v = { ...(datos && datos.v || {}), ...vistas }
+        const e = { ...(datos && datos.e || {}), ...eps }
+        aplicandoRemoto.current = true
+        setVistas(v); setEps(e)
+        localStorage.setItem(KEY, JSON.stringify(v))
+        localStorage.setItem(KEY_EPS, JSON.stringify(e))
+        await empujar(conf, v, e)
+      } catch { setSyncEstado('error'); return false }
+    } else {
+      await empujar(conf, vistas, eps)
+    }
+    setSync(conf)
+    localStorage.setItem(KEY_SYNC, JSON.stringify(conf))
+    return true
+  }
+  const desactivarSync = () => {
+    setSync(null); setSyncEstado('off')
+    localStorage.removeItem(KEY_SYNC)
+  }
+
   const toggleEp = clave => setEps(prev => {
     const next = { ...prev }
     if (next[clave]) delete next[clave]; else next[clave] = 1
@@ -464,6 +568,9 @@ export default function App() {
             </div>
           )}
         </div>
+      </section>
+
+      <div className="panel-superior">
         <div className="mapa" aria-label="Mapa de progreso">
           {DATA.map(saga => {
             const items = saga.eras.flatMap(era => era.items.map(item => ({ item, c: era.c })))
@@ -485,9 +592,8 @@ export default function App() {
             )
           })}
         </div>
-      </section>
-
-      <Calendario />
+        <Calendario />
+      </div>
 
       <header className="toolbar">
         <div className="controles" role="group" aria-label="Vista y filtros">
@@ -515,6 +621,11 @@ export default function App() {
           }}>🎲 Sorpréndeme</button>
           <input className="busca" type="search" placeholder="Buscar…" value={busca}
             onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
+          <button className={`chip-btn sync-btn ${syncEstado}`} onClick={() => setSyncModal(true)}
+            title={sync ? 'Sincronización activa' : 'Sincronizar entre dispositivos'}>
+            {syncEstado === 'ok' ? '☁️ Sincronizado' : syncEstado === 'syncing' ? '☁️ Guardando…'
+              : syncEstado === 'error' ? '☁️ Sin conexión' : '☁️ Sincronizar'}
+          </button>
           {vista === 'crono' && (
             <nav className="atajos">
               <a href="#saga-xmen">X-Men</a>
@@ -673,6 +784,12 @@ export default function App() {
         </main>
       )}
 
+      {syncModal && (
+        <SyncModal sync={sync} estado={syncEstado}
+          onActivar={activarSync} onDesactivar={desactivarSync}
+          onClose={() => setSyncModal(false)} />
+      )}
+
       {detalle && (
         <Detalle d={detalle} vista={!!vistas[detalle.item.id]}
           onToggle={() => toggle(detalle.item.id)}
@@ -681,6 +798,108 @@ export default function App() {
       )}
 
       <Footer onReset={() => { setVistas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
+    </div>
+  )
+}
+
+function SyncModal({ sync, estado, onActivar, onDesactivar, onClose }) {
+  const [modo, setModo] = useState(sync ? 'activo' : 'menu')
+  const [url, setUrl] = useState('')
+  const [codigo, setCodigo] = useState('')
+  const [error, setError] = useState('')
+  const [copiado, setCopiado] = useState(false)
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  const crear = async () => {
+    const u = normalizaDbUrl(url)
+    if (!u) { setError('Esa URL no parece de Firebase (debe terminar en firebaseio.com o firebasedatabase.app).'); return }
+    setError('')
+    const ok = await onActivar(u, null)
+    if (ok) setModo('activo')
+    else setError('No se pudo escribir en la base de datos. Revisa que las reglas permitan lectura y escritura.')
+  }
+  const unirse = async () => {
+    const conf = decodificaSync(codigo)
+    if (!conf) { setError('Código no válido.'); return }
+    setError('')
+    const ok = await onActivar(conf.url, conf.room)
+    if (ok) setModo('activo')
+    else setError('No se pudo conectar con ese código.')
+  }
+  const copiarCodigo = () => {
+    if (!sync) return
+    navigator.clipboard.writeText(codigoSync(sync.url, sync.room)).then(() => {
+      setCopiado(true); setTimeout(() => setCopiado(false), 2500)
+    })
+  }
+  return (
+    <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Sincronización">
+      <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+        <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
+        <div className="modal-info">
+          <h2 className="modal-titulo">☁️ Sincronización entre dispositivos</h2>
+          {modo === 'activo' && sync ? (
+            <>
+              <p className="modal-res">
+                Tu progreso se guarda en tu base de datos de Firebase y se actualiza solo
+                (al momento en este dispositivo; cada pocos segundos en los demás).
+                Estado: <b>{estado === 'ok' ? 'conectado' : estado === 'error' ? 'sin conexión' : 'guardando…'}</b>
+              </p>
+              <p className="modal-res">Para conectar otro dispositivo (el móvil, por ejemplo), abre allí la web,
+                pulsa ☁️ Sincronizar → «Conectar con un código» y pega este código:</p>
+              <div className="sync-codigo">
+                <code>{codigoSync(sync.url, sync.room)}</code>
+                <button className="chip-btn" onClick={copiarCodigo}>{copiado ? '¡Copiado!' : 'Copiar'}</button>
+              </div>
+              <div className="modal-acciones">
+                <button className="chip-btn peligro" onClick={() => { onDesactivar(); setModo('menu') }}>
+                  Desconectar este dispositivo
+                </button>
+              </div>
+            </>
+          ) : modo === 'crear' ? (
+            <>
+              <p className="modal-res">Necesitas una base de datos gratuita de Firebase (2 minutos, una sola vez):</p>
+              <ol className="sync-pasos">
+                <li>Entra en <b>console.firebase.google.com</b> con tu cuenta de Google y crea un proyecto (el nombre da igual).</li>
+                <li>En el menú: <b>Compilación → Realtime Database → Crear base de datos</b>, elige la zona y el <b>modo de prueba</b>.</li>
+                <li>En la pestaña <b>Reglas</b>, deja lectura y escritura en <code>true</code> y publica.</li>
+                <li>Copia la <b>URL</b> que aparece arriba de la pestaña Datos (algo como <code>https://tu-proyecto-default-rtdb.europe-west1.firebasedatabase.app</code>) y pégala aquí:</li>
+              </ol>
+              <input className="busca sync-input" placeholder="https://…firebasedatabase.app"
+                value={url} onChange={e => setUrl(e.target.value)} />
+              {error && <p className="import-error">{error}</p>}
+              <div className="modal-acciones">
+                <button className="accion-principal" onClick={crear}>Activar sincronización</button>
+                <button className="chip-btn" onClick={() => { setModo('menu'); setError('') }}>Volver</button>
+              </div>
+            </>
+          ) : modo === 'unir' ? (
+            <>
+              <p className="modal-res">Pega el código que te dio tu otro dispositivo:</p>
+              <input className="busca sync-input" placeholder="Código de sincronización"
+                value={codigo} onChange={e => setCodigo(e.target.value)} />
+              {error && <p className="import-error">{error}</p>}
+              <div className="modal-acciones">
+                <button className="accion-principal" onClick={unirse}>Conectar</button>
+                <button className="chip-btn" onClick={() => { setModo('menu'); setError('') }}>Volver</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="modal-res">Conecta tus dispositivos para que el progreso se comparta solo,
+                usando tu propia base de datos gratuita de Firebase (tus datos son solo tuyos).</p>
+              <div className="modal-acciones">
+                <button className="accion-principal" onClick={() => setModo('crear')}>Soy el primer dispositivo</button>
+                <button className="chip-btn" onClick={() => setModo('unir')}>Conectar con un código</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
