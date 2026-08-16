@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { DATA, JOYA_MIN, KEY } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
+import { EPISODES } from './episodes.js'
+
+const KEY_EPS = 'maraton-marvel-eps-v1'
+const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
 
@@ -101,7 +105,13 @@ function Avatar({ nombre }) {
   return <img className="avatar" src={src} alt="" loading="lazy" onError={() => setErr(true)} />
 }
 
-function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay }) {
+function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps }) {
+  let epProg = null
+  if (item.tipo === 'serie' && EPISODES[item.id]) {
+    const total = EPISODES[item.id].length
+    const hechos = EPISODES[item.id].filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length
+    if (hechos > 0 && !vista) epProg = `${hechos}/${total} ep`
+  }
   return (
     <article className={`card${vista ? ' vista' : ''}`}
       style={{ animationDelay: `${delay}ms`, '--glow': c[0] }}>
@@ -121,6 +131,7 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay }) {
             {esComic
               ? <><span className="hist">{item.a}</span> · {item.r}</>
               : <><span className="hist">{item.h}</span> · estreno {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
+            {epProg && <span className="ep-prog"> · {epProg}</span>}
           </span>
           {item.res && <span className="res">{item.res}</span>}
           {(item.dir || item.cast) && (
@@ -144,7 +155,7 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay }) {
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp }) {
   const { item, c, esComic } = d
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -199,6 +210,43 @@ function Detalle({ d, vista, onToggle, onClose }) {
               ))}
             </div>
           )}
+          {item.tipo === 'serie' && EPISODES[item.id] && (() => {
+            const lista = EPISODES[item.id]
+            const temporadas = [...new Set(lista.map(e => e.s))]
+            const hechos = lista.filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length
+            return (
+              <div className="episodios">
+                <div className="episodios-head">
+                  <h3>Episodios</h3>
+                  <span className="episodios-count">{hechos}/{lista.length}</span>
+                </div>
+                {temporadas.map(t => (
+                  <div key={t}>
+                    {temporadas.length > 1 && <div className="temporada">Temporada {t}</div>}
+                    <div className="ep-lista">
+                      {lista.filter(e => e.s === t).map(e => {
+                        const clave = `${item.id}:${e.s}:${e.n}`
+                        const hecho = !!eps[clave]
+                        return (
+                          <button key={clave} className={`ep${hecho ? ' hecho' : ''}`}
+                            onClick={() => toggleEp(clave)}
+                            title={hecho ? 'Marcar pendiente' : 'Marcar visto'}>
+                            <span className="ep-thumb" style={{ background: `linear-gradient(135deg, ${c[0]}, ${c[1]})` }}>
+                              {hecho ? <CheckIcon /> : <span className="ep-num">{e.n}</span>}
+                            </span>
+                            <span className="ep-info">
+                              <span className="ep-titulo">{e.t}</span>
+                              {e.f && <span className="ep-fecha">{e.f}</span>}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
           <div className="modal-acciones">
             <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
               {vista ? '✓ Vista — marcar pendiente' : esComic ? 'Marcar como leído' : 'Marcar como vista'}
@@ -223,6 +271,16 @@ export default function App() {
   const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
   const [vista, setVista] = useState('crono')
   const [detalle, setDetalle] = useState(null)
+  const [busca, setBusca] = useState('')
+  const [eps, setEps] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(KEY_EPS)) || {} } catch { return {} }
+  })
+  const toggleEp = clave => setEps(prev => {
+    const next = { ...prev }
+    if (next[clave]) delete next[clave]; else next[clave] = 1
+    try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
+    return next
+  })
 
   const toggle = id => setVistas(prev => {
     const next = { ...prev }
@@ -233,6 +291,7 @@ export default function App() {
   const setF = k => setFiltros(f => ({ ...f, [k]: !f[k] }))
 
   const pasaFiltro = (item, esComic) => {
+    if (busca && !norm(item.t).includes(norm(busca))) return false
     if (filtros.series && item.tipo === 'serie') return false
     if (filtros.opc && item.opt) return false
     if (filtros.joyas && !esComic && (item.s == null || item.s < JOYA_MIN)) return false
@@ -347,6 +406,19 @@ export default function App() {
           <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>Sin opcionales</button>
           <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>Solo pendientes</button>
           <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>Joyas ★7,5+</button>
+          <button className="chip-btn" onClick={() => {
+            const pendientes = []
+            DATA.forEach(saga => { if (saga.saga === 'comics') return
+              saga.eras.forEach(era => era.items.forEach(item => {
+                if (pasaFiltro(item, false) && !vistas[item.id]) pendientes.push({ item, c: era.c })
+              })) })
+            if (pendientes.length) {
+              const e = pendientes[Math.floor(Math.random() * pendientes.length)]
+              setDetalle({ item: e.item, c: e.c, esComic: false })
+            }
+          }}>🎲 Sorpréndeme</button>
+          <input className="busca" type="search" placeholder="Buscar…" value={busca}
+            onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
           {vista === 'crono' && (
             <nav className="atajos">
               <a href="#saga-xmen">X-Men</a>
@@ -399,7 +471,7 @@ export default function App() {
                                 esComic={esComic} vista={!!vistas[item.id]}
                                 onToggle={() => toggle(item.id)}
                                 onAbrir={() => setDetalle({ item, c: era.c, esComic })}
-                                delay={nextDelay()} />
+                                delay={nextDelay()} eps={eps} />
                             )
                           )}
                         </div>
@@ -430,7 +502,7 @@ export default function App() {
                       esComic={false} vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
                       onAbrir={() => setDetalle({ item, c: item.c, esComic: false })}
-                      delay={nextDelay()} />
+                      delay={nextDelay()} eps={eps} />
                   ))}
                 </div>
               </section>
@@ -445,7 +517,8 @@ export default function App() {
       {detalle && (
         <Detalle d={detalle} vista={!!vistas[detalle.item.id]}
           onToggle={() => toggle(detalle.item.id)}
-          onClose={() => setDetalle(null)} />
+          onClose={() => setDetalle(null)}
+          eps={eps} toggleEp={toggleEp} />
       )}
 
       <Footer onReset={() => { setVistas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
@@ -455,6 +528,32 @@ export default function App() {
 
 function Footer({ onReset }) {
   const [confirmando, setConfirmando] = useState(false)
+  const [copiado, setCopiado] = useState(false)
+  const [importando, setImportando] = useState(false)
+  const [codigo, setCodigo] = useState('')
+  const [msgImport, setMsgImport] = useState('')
+  const exportar = () => {
+    try {
+      const datos = {
+        v: JSON.parse(localStorage.getItem(KEY) || '{}'),
+        e: JSON.parse(localStorage.getItem(KEY_EPS) || '{}'),
+      }
+      const cod = btoa(unescape(encodeURIComponent(JSON.stringify(datos))))
+      navigator.clipboard.writeText(cod).then(() => {
+        setCopiado(true); setTimeout(() => setCopiado(false), 2500)
+      })
+    } catch {}
+  }
+  const importar = () => {
+    try {
+      const datos = JSON.parse(decodeURIComponent(escape(atob(codigo.trim()))))
+      if (datos.v) localStorage.setItem(KEY, JSON.stringify(datos.v))
+      if (datos.e) localStorage.setItem(KEY_EPS, JSON.stringify(datos.e))
+      window.location.reload()
+    } catch {
+      setMsgImport('Código no válido')
+    }
+  }
   return (
     <footer>
       <p className="nota-pie">
@@ -463,6 +562,20 @@ function Footer({ onReset }) {
         La ⚡ Ruta express deja solo lo imprescindible para llegar a Vengadores: Doomsday.
       </p>
       <div className="reset">
+        <button className="chip-btn" onClick={exportar}>
+          {copiado ? '¡Copiado!' : 'Copiar código de progreso'}
+        </button>
+        <button className="chip-btn" onClick={() => { setImportando(i => !i); setMsgImport('') }}>
+          {importando ? 'Cancelar' : 'Cargar código'}
+        </button>
+        {importando && (
+          <span className="importar">
+            <input className="busca" placeholder="Pega el código aquí" value={codigo}
+              onChange={e => setCodigo(e.target.value)} />
+            <button className="chip-btn" onClick={importar}>Cargar</button>
+            {msgImport && <span className="import-error">{msgImport}</span>}
+          </span>
+        )}
         <button className="chip-btn" onClick={() => setConfirmando(c => !c)}>
           {confirmando ? 'Cancelar' : 'Reiniciar progreso'}
         </button>

@@ -370,6 +370,50 @@ h3{
   .modal-cover{align-self:center}
 }
 
+/* ── Episodios ── */
+.episodios{margin-top:10px; border-top:1px solid var(--line); padding-top:12px}
+.episodios-head{display:flex; align-items:baseline; gap:10px; margin-bottom:8px}
+.episodios-head h3{margin:0}
+.episodios-count{font-size:12px; color:var(--ink2); font-variant-numeric:tabular-nums}
+.temporada{
+  font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink3); margin:10px 0 6px;
+}
+.ep-lista{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+.ep{
+  display:flex; align-items:center; gap:10px; text-align:left;
+  background:var(--panel2); border:1px solid transparent; border-radius:10px;
+  padding:6px 8px; cursor:pointer; color:inherit; transition:all .15s;
+}
+.ep:hover{border-color:var(--ink2)}
+.ep.hecho{opacity:.65}
+.ep.hecho .ep-titulo{text-decoration:line-through; color:var(--ink2)}
+.ep-thumb{
+  flex:none; width:52px; height:30px; border-radius:6px;
+  display:grid; place-items:center; color:#fff; position:relative; overflow:hidden;
+}
+.ep-thumb::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(200deg, rgba(255,255,255,.14), transparent 50%, rgba(0,0,0,.25));
+}
+.ep-thumb svg{width:14px; height:14px; position:relative; z-index:1}
+.ep-num{font-size:13px; font-weight:800; position:relative; z-index:1}
+.ep-info{min-width:0; display:flex; flex-direction:column}
+.ep-titulo{font-size:12px; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ep-fecha{font-size:10.5px; color:var(--ink3); font-variant-numeric:tabular-nums}
+@media (max-width:640px){ .ep-lista{grid-template-columns:1fr} }
+
+/* ── Buscador e importación ── */
+.busca{
+  border:1px solid var(--line); background:var(--panel); color:var(--ink);
+  border-radius:999px; padding:5px 14px; font-size:13px; font-family:inherit;
+  width:150px; transition:width .2s, border-color .15s;
+}
+.busca:focus{width:210px; outline:none; border-color:var(--blue)}
+.busca::placeholder{color:var(--ink3)}
+.importar{display:flex; gap:6px; align-items:center}
+.import-error{font-size:12px; color:var(--red)}
+
 /* ── Vista por estreno ── */
 .anio{margin-top:36px}
 .anio-head{display:flex; align-items:center; gap:14px; margin-bottom:12px}
