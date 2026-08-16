@@ -102,15 +102,13 @@ h1 .rojo{
   border-radius:3px; transition:width .5s cubic-bezier(.22,1,.36,1);
 }
 
-.panel-superior{display:grid; gap:12px; margin-top:16px; align-items:start}
+.panel-superior{display:grid; gap:12px; margin-top:16px; align-items:stretch}
+.panel-izq{display:flex; flex-direction:column; gap:12px}
 @media (min-width:1240px){
-  .panel-superior{grid-template-columns:1fr 400px}
-  .calendario .cuenta{flex-direction:column; align-items:flex-start; gap:10px; padding:16px 18px}
-  .calendario .cr-bloque b{font-size:24px}
-  .calendario .cr-bloque{min-width:44px}
-  .calendario .proximos{grid-template-columns:1fr}
-  .calendario .proximo{padding:10px 14px}
-  .calendario .proximo-nota{display:none}
+  .panel-superior{grid-template-columns:1fr 380px}
+  .cuenta{flex-direction:column; align-items:flex-start; justify-content:center; gap:12px; padding:20px 22px; height:100%}
+  .proximo-nota{display:none}
+  .proximo{padding:10px 14px}
 }
 .mapa{
   width:100%;
@@ -134,7 +132,7 @@ h1 .rojo{
 .mapa-count{flex:none; font-size:11px; color:var(--ink2); font-variant-numeric:tabular-nums}
 
 /* ── Calendario de estrenos ── */
-.calendario{display:flex; flex-direction:column; gap:10px}
+
 .cuenta{
   display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
   background:linear-gradient(120deg, var(--doom-soft), transparent 60%), var(--panel);

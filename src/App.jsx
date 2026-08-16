@@ -122,16 +122,17 @@ function Avatar({ nombre }) {
   return <img className="avatar" src={src} alt="" loading="lazy" onError={() => setErr(true)} />
 }
 
-function Calendario() {
+const fmtFecha = f => f
+  ? new Date(f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+  : null
+
+function CuentaAtras() {
   const [ahora, setAhora] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setAhora(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
   const objetivo = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > ahora)
-  const fmtFecha = f => f
-    ? new Date(f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
-    : null
   let cuenta = null
   if (objetivo) {
     const diff = new Date(objetivo.fecha + 'T00:00:00') - ahora
@@ -141,37 +142,40 @@ function Calendario() {
     const ss = String(Math.floor(diff / 1000) % 60).padStart(2, '0')
     cuenta = { dias, hh, mm, ss }
   }
+  if (!objetivo || !cuenta) return null
   return (
-    <section className="calendario" aria-label="Calendario de estrenos">
-      {objetivo && cuenta && (
-        <div className="cuenta">
+    <div className="cuenta">
           <div className="cuenta-info">
             <span className="cuenta-label">⏳ Próximo gran estreno</span>
             <span className="cuenta-titulo">{objetivo.t}</span>
             <span className="cuenta-fecha">{fmtFecha(objetivo.fecha)} · {objetivo.tipo}</span>
           </div>
-          <div className="cuenta-reloj" role="timer">
-            <span className="cr-bloque"><b>{cuenta.dias}</b><small>días</small></span>
-            <span className="cr-sep">:</span>
-            <span className="cr-bloque"><b>{cuenta.hh}</b><small>horas</small></span>
-            <span className="cr-sep">:</span>
-            <span className="cr-bloque"><b>{cuenta.mm}</b><small>min</small></span>
-            <span className="cr-sep">:</span>
-            <span className="cr-bloque"><b>{cuenta.ss}</b><small>seg</small></span>
-          </div>
-        </div>
-      )}
-      <div className="proximos">
-        {ESTRENOS.filter(e => !objetivo || e.t !== objetivo.t).map(e => (
-          <div className="proximo" key={e.t}>
-            <span className="proximo-fecha">{fmtFecha(e.fecha) || e.aprox}</span>
-            <span className="proximo-titulo">{e.t}</span>
-            <span className="proximo-tipo">{e.tipo}</span>
-            <span className="proximo-nota">{e.n}</span>
-          </div>
-        ))}
+      <div className="cuenta-reloj" role="timer">
+        <span className="cr-bloque"><b>{cuenta.dias}</b><small>días</small></span>
+        <span className="cr-sep">:</span>
+        <span className="cr-bloque"><b>{cuenta.hh}</b><small>horas</small></span>
+        <span className="cr-sep">:</span>
+        <span className="cr-bloque"><b>{cuenta.mm}</b><small>min</small></span>
+        <span className="cr-sep">:</span>
+        <span className="cr-bloque"><b>{cuenta.ss}</b><small>seg</small></span>
       </div>
-    </section>
+    </div>
+  )
+}
+
+function Proximos() {
+  const primero = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
+  return (
+    <div className="proximos">
+      {ESTRENOS.filter(e => !primero || e.t !== primero.t).map(e => (
+        <div className="proximo" key={e.t}>
+          <span className="proximo-fecha">{fmtFecha(e.fecha) || e.aprox}</span>
+          <span className="proximo-titulo">{e.t}</span>
+          <span className="proximo-tipo">{e.tipo}</span>
+          <span className="proximo-nota">{e.n}</span>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -571,6 +575,7 @@ export default function App() {
       </section>
 
       <div className="panel-superior">
+        <div className="panel-izq">
         <div className="mapa" aria-label="Mapa de progreso">
           {DATA.map(saga => {
             const items = saga.eras.flatMap(era => era.items.map(item => ({ item, c: era.c })))
@@ -592,7 +597,9 @@ export default function App() {
             )
           })}
         </div>
-        <Calendario />
+        <Proximos />
+        </div>
+        <CuentaAtras />
       </div>
 
       <header className="toolbar">
