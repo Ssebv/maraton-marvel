@@ -93,10 +93,14 @@ function Card({ item, num, c, esComic, vista, onToggle, delay }) {
   return (
     <article className={`card${vista ? ' vista' : ''}`}
       style={{ animationDelay: `${delay}ms`, '--glow': c[0] }}>
+      <button className="checkbox" aria-pressed={vista} onClick={onToggle}
+        title={vista ? 'Vista — pulsa para marcar pendiente' : 'Pendiente — pulsa para marcar vista'}>
+        <CheckIcon />
+        <span className="checkbox-label">{vista ? 'Vista' : ''}</span>
+      </button>
       <div className="cover-wrap">
         <Portada item={item} c={c} esComic={esComic} />
         {item.s != null && !esComic && <span className="rating-badge">★ {item.s.toFixed(1)}</span>}
-        {vista && <span className="cover-check"><CheckIcon /></span>}
       </div>
       <div className="centro">
         <button className="toggle" aria-pressed={vista} onClick={onToggle}
@@ -217,8 +221,10 @@ export default function App() {
   return (
     <div className="wrap">
       <section className="hero">
-        <p className="hero-eyebrow">Guía de maratón · cronología completa</p>
-        <h1>Maratón <span className="rojo">Marvel</span> &amp; X-Men</h1>
+        <div className="hero-titulo">
+          <p className="hero-eyebrow">Guía de maratón · cronología completa</p>
+          <h1>Maratón <span className="rojo">Marvel</span> &amp; X-Men</h1>
+        </div>
         <div className="stats">
           <div className="stat">
             <span className="stat-label">Completados</span>
@@ -263,7 +269,7 @@ export default function App() {
       </header>
 
       {vista === 'crono' ? (
-        <main>
+        <main className="crono">
           {DATA.map(saga => {
             const esComic = saga.saga === 'comics'
             const s = stats.porSaga[saga.saga]
@@ -311,7 +317,7 @@ export default function App() {
           })}
         </main>
       ) : (
-        <main>
+        <main className="estreno">
           {porAnio.map(([anio, items]) => {
             const visibles = items.filter(it => !(filtros.vistas && vistas[it.id]))
             if (!visibles.length) return null

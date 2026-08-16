@@ -207,14 +207,22 @@ h3{
   padding:3px 7px; border-radius:8px; letter-spacing:.02em;
   -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
 }
-.cover-check{
-  position:absolute; right:-7px; bottom:-7px; width:26px; height:26px;
-  background:var(--done); border-radius:50%; border:2.5px solid var(--panel);
-  display:grid; place-items:center; z-index:1;
-  animation:pop .35s cubic-bezier(.34,1.56,.64,1) both;
+.checkbox{
+  flex:none; align-self:center;
+  width:30px; height:30px; border-radius:50%;
+  border:2px solid var(--line); background:transparent; cursor:pointer;
+  display:grid; place-items:center; position:relative; padding:0;
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
 }
-.cover-check svg{width:13px; height:13px}
-@keyframes pop{from{transform:scale(0)} to{transform:scale(1)}}
+.checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:all .2s}
+.checkbox:hover{border-color:var(--done); box-shadow:0 0 0 4px color-mix(in srgb, var(--done) 15%, transparent)}
+.card.vista .checkbox{background:var(--done); border-color:var(--done)}
+.card.vista .checkbox svg{opacity:1; transform:scale(1)}
+.checkbox-label{
+  position:absolute; top:calc(100% + 4px); left:50%; transform:translateX(-50%);
+  font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--done); white-space:nowrap;
+}
 
 .logo-cover{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -297,6 +305,21 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
 @media (prefers-reduced-motion: reduce){
   *{animation:none !important; transition:none !important}
   html{scroll-behavior:auto}
+}
+@media (min-width:1240px){
+  .wrap{max-width:1720px; padding:0 40px}
+  .hero{display:flex; align-items:flex-end; justify-content:space-between; gap:40px; flex-wrap:wrap}
+  .hero-titulo{flex:none}
+  .stats{margin-top:0; flex:1; max-width:880px; min-width:560px}
+  main.crono{
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:0 48px; align-items:start;
+  }
+  main.crono .saga{margin-top:48px}
+  main.crono .saga[data-saga="xmen"]{grid-column:1; grid-row:1}
+  main.crono .saga[data-saga="ucm"]{grid-column:2; grid-row:1 / span 2}
+  main.crono .saga[data-saga="comics"]{grid-column:1; grid-row:2}
+  main.estreno .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 }
 @media (max-width:640px){
   .hero{padding:36px 0 16px}
