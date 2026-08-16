@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { DATA, JOYA_MIN, KEY } from './data.js'
+import { POSTERS } from './posters.js'
 
 const STOP = new Set(['de','del','la','el','los','las','y','en','the','of','a','al','un','una'])
 
@@ -57,6 +58,16 @@ function Cover({ item, c, esComic }) {
   )
 }
 
+function Portada({ item, c, esComic }) {
+  const [err, setErr] = useState(false)
+  const src = POSTERS[item.id]
+  if (!src || err) return <Cover item={item} c={c} esComic={esComic} />
+  return (
+    <img className="cover foto" src={src} alt={`Póster de ${item.t}`}
+      loading="lazy" referrerPolicy="no-referrer" onError={() => setErr(true)} />
+  )
+}
+
 const CheckIcon = () => (
   <svg viewBox="0 0 16 16" aria-hidden="true">
     <path d="M2.5 8.5l3.5 3.5 7-8" fill="none" stroke="#fff" strokeWidth="2.5"
@@ -75,7 +86,7 @@ function Card({ item, num, c, esComic, vista, onToggle, delay }) {
   return (
     <div className={`card${vista ? ' vista' : ''}`} style={{ animationDelay: `${delay}ms` }}>
       <div className="cover-wrap">
-        <Cover item={item} c={c} esComic={esComic} />
+        <Portada item={item} c={c} esComic={esComic} />
         {vista && <span className="cover-check"><CheckIcon /></span>}
       </div>
       <div className="centro">
@@ -256,6 +267,7 @@ export default function App() {
                   return (
                     <div className="era" key={era.era}>
                       <div className="era-head">
+                        <span className="era-dot" style={{ background: era.c[0] }} />
                         <h3>{era.era}</h3>
                         <span className="era-rango">{era.rango}</span>
                       </div>
