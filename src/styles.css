@@ -537,6 +537,31 @@ h3{
   max-height:60px; overflow:auto;
 }
 
+/* ── Valoración personal y modo compacto ── */
+.mi-nota{color:var(--gold); font-weight:600}
+.valoracion{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:4px}
+.valoracion-label{font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
+.estrellas{display:flex; gap:2px}
+.estrella{
+  background:none; border:none; cursor:pointer; padding:2px;
+  font-size:20px; line-height:1; color:var(--line);
+  transition:color .15s, transform .15s;
+}
+.estrella:hover{transform:scale(1.2)}
+.estrella.on{color:var(--gold)}
+.nota-input{flex:1; min-width:180px; border-radius:8px}
+.siguiente-stat{cursor:pointer; text-align:left; font:inherit; color:inherit}
+.siguiente-stat:hover{border-color:var(--red)}
+.card.destello{
+  border-color:var(--red);
+  box-shadow:5px 6px 0 color-mix(in srgb, var(--red) 40%, transparent);
+}
+main.compacto .cover-wrap{display:none}
+main.compacto .res, main.compacto .credits{display:none}
+main.compacto .card{padding:10px 14px; border-radius:10px}
+main.compacto .grid{gap:6px}
+main.compacto .checkbox{width:24px; height:24px}
+
 /* ── Vista por estreno ── */
 .anio{margin-top:36px}
 .anio-head{display:flex; align-items:center; gap:14px; margin-bottom:12px}

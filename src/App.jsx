@@ -6,6 +6,8 @@ import { EPISODES } from './episodes.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
+const KEY_NOTAS = 'maraton-marvel-notas-v1'
+const KEY_COMPACTO = 'maraton-marvel-compacto'
 
 function normalizaDbUrl(txt) {
   let u = txt.trim().replace(/\/+$/, '')
@@ -179,7 +181,7 @@ function Proximos() {
   )
 }
 
-function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps }) {
+function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miNota }) {
   let epProg = null
   if (item.tipo === 'serie' && EPISODES[item.id]) {
     const total = EPISODES[item.id].length
@@ -187,7 +189,7 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps }) {
     if (hechos > 0 && !vista) epProg = `${hechos}/${total} ep`
   }
   return (
-    <article className={`card${vista ? ' vista' : ''}`}
+    <article className={`card${vista ? ' vista' : ''}`} id={`card-${item.id}`}
       style={{ animationDelay: `${delay}ms`, '--glow': c[0] }}>
       <button className="checkbox" aria-pressed={vista} onClick={onToggle}
         title={vista ? 'Vista — pulsa para marcar pendiente' : 'Pendiente — pulsa para marcar vista'}>
@@ -206,6 +208,7 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps }) {
               ? <><span className="hist">{item.a}</span> · {item.r}</>
               : <><span className="hist">{item.h}</span> · estreno {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
             {epProg && <span className="ep-prog"> · {epProg}</span>}
+            {miNota && <span className="mi-nota"> · Tú: ★{miNota}</span>}
           </span>
           {item.res && <span className="res">{item.res}</span>}
           {(item.dir || item.cast) && (
@@ -229,7 +232,7 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps }) {
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota }) {
   const { item, c, esComic } = d
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -321,6 +324,18 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp }) {
               </div>
             )
           })()}
+          <div className="valoracion">
+            <span className="valoracion-label">Tu valoración</span>
+            <span className="estrellas" role="radiogroup" aria-label="Tu valoración">
+              {[1, 2, 3, 4, 5].map(p => (
+                <button key={p} className={`estrella${nota.p >= p ? ' on' : ''}`}
+                  aria-label={`${p} estrellas`} onClick={() => ponNota('p', p)}>★</button>
+              ))}
+            </span>
+            <input className="busca nota-input" placeholder="Tus notas (solo tuyas)…"
+              value={nota.txt || ''} maxLength={280} spellCheck={true}
+              onChange={e => ponNota('txt', e.target.value)} aria-label="Tus notas" />
+          </div>
           <div className="modal-acciones">
             <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
               {vista ? '✓ Vista — marcar pendiente' : esComic ? 'Marcar como leído' : 'Marcar como vista'}
@@ -352,6 +367,22 @@ export default function App() {
   }, [vista])
   const [detalle, setDetalle] = useState(null)
   const [busca, setBusca] = useState('')
+  const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
+  const [notas, setNotas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(KEY_NOTAS)) || {} } catch { return {} }
+  })
+  const ponNota = (id, campo, valor) => setNotas(prev => {
+    const item = { ...(prev[id] || {}) }
+    if (valor === undefined || valor === '' || (campo === 'p' && item.p === valor)) delete item[campo]
+    else item[campo] = valor
+    const next = { ...prev }
+    if (Object.keys(item).length) next[id] = item; else delete next[id]
+    try { localStorage.setItem(KEY_NOTAS, JSON.stringify(next)) } catch {}
+    return next
+  })
+  const alternaCompacto = () => setCompacto(c => {
+    localStorage.setItem(KEY_COMPACTO, c ? '0' : '1'); return !c
+  })
   const [eps, setEps] = useState(() => {
     try { return JSON.parse(localStorage.getItem(KEY_EPS)) || {} } catch { return {} }
   })
@@ -365,13 +396,13 @@ export default function App() {
 
   const endpoint = s => `${s.url}/maraton/${s.room}.json`
 
-  const empujar = async (conf, v, e) => {
+  const empujar = async (conf, v, e, n) => {
     try {
       setSyncEstado('syncing')
       const t = Date.now()
       const r = await fetch(endpoint(conf), {
         method: 'PUT',
-        body: JSON.stringify({ v, e, t }),
+        body: JSON.stringify({ v, e, n: n || notas, t }),
       })
       if (!r.ok) throw new Error(r.status)
       ultimoAplicado.current = t
@@ -389,9 +420,11 @@ export default function App() {
         aplicandoRemoto.current = true
         setVistas(datos.v || {})
         setEps(datos.e || {})
+        setNotas(datos.n || {})
         try {
           localStorage.setItem(KEY, JSON.stringify(datos.v || {}))
           localStorage.setItem(KEY_EPS, JSON.stringify(datos.e || {}))
+          localStorage.setItem(KEY_NOTAS, JSON.stringify(datos.n || {}))
         } catch {}
       }
       setSyncEstado('ok')
@@ -410,9 +443,9 @@ export default function App() {
   useEffect(() => {
     if (!sync) return
     if (aplicandoRemoto.current) { aplicandoRemoto.current = false; return }
-    const id = setTimeout(() => empujar(sync, vistas, eps), 1200)
+    const id = setTimeout(() => empujar(sync, vistas, eps, notas), 1200)
     return () => clearTimeout(id)
-  }, [vistas, eps])
+  }, [vistas, eps, notas])
 
   const activarSync = async (url, roomExistente) => {
     const room = roomExistente || Math.random().toString(36).slice(2, 10)
@@ -424,11 +457,13 @@ export default function App() {
         const datos = r.ok ? await r.json() : null
         const v = { ...(datos && datos.v || {}), ...vistas }
         const e = { ...(datos && datos.e || {}), ...eps }
+        const n = { ...(datos && datos.n || {}), ...notas }
         aplicandoRemoto.current = true
-        setVistas(v); setEps(e)
+        setVistas(v); setEps(e); setNotas(n)
         localStorage.setItem(KEY, JSON.stringify(v))
         localStorage.setItem(KEY_EPS, JSON.stringify(e))
-        await empujar(conf, v, e)
+        localStorage.setItem(KEY_NOTAS, JSON.stringify(n))
+        await empujar(conf, v, e, n)
       } catch { setSyncEstado('error'); return false }
     } else {
       await empujar(conf, vistas, eps)
@@ -571,11 +606,21 @@ export default function App() {
             <span className="stat-foot">de películas y series</span>
           </div>
           {stats.siguiente && (
-            <div className="stat siguiente-stat">
+            <button className="stat siguiente-stat" title="Ir a la tarjeta" onClick={() => {
+              if (vista !== 'crono') setVista('crono')
+              setTimeout(() => {
+                const el = document.getElementById('card-' + stats.siguiente.id)
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  el.classList.add('destello')
+                  setTimeout(() => el.classList.remove('destello'), 1600)
+                }
+              }, vista !== 'crono' ? 120 : 0)
+            }}>
               <span className="stat-label">▶ Siguiente</span>
               <span className="stat-sig">{stats.siguiente.t}</span>
               <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>
-            </div>
+            </button>
           )}
         </div>
       </section>
@@ -621,6 +666,7 @@ export default function App() {
           <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>Sin opcionales</button>
           <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>Solo pendientes</button>
           <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>Joyas ★7,5+</button>
+          <button className="chip-btn" aria-pressed={compacto} onClick={alternaCompacto}>Compacto</button>
           <button className="chip-btn" onClick={() => {
             const pendientes = []
             DATA.forEach(saga => { if (saga.saga === 'comics') return
@@ -712,7 +758,7 @@ export default function App() {
           </section>
         </main>
       ) : vista !== 'estreno' ? (
-        <main className={vista === 'comics' ? 'comics' : 'crono'}>
+        <main className={(vista === 'comics' ? 'comics' : 'crono') + (compacto ? ' compacto' : '')}>
           {DATA.filter(saga => (vista === 'comics') === (saga.saga === 'comics')).map(saga => {
             const esComic = saga.saga === 'comics'
             const s = stats.porSaga[saga.saga]
@@ -754,7 +800,7 @@ export default function App() {
                                 esComic={esComic} vista={!!vistas[item.id]}
                                 onToggle={() => toggle(item.id)}
                                 onAbrir={() => setDetalle({ item, c: era.c, esComic })}
-                                delay={nextDelay()} eps={eps} />
+                                delay={nextDelay()} eps={eps} miNota={notas[item.id] && notas[item.id].p} />
                             )
                           )}
                         </div>
@@ -767,7 +813,7 @@ export default function App() {
           })}
         </main>
       ) : (
-        <main className="estreno">
+        <main className={'estreno' + (compacto ? ' compacto' : '')}>
           {porAnio.map(([anio, items]) => {
             const visibles = items.filter(it => !(filtros.vistas && vistas[it.id]))
             if (!visibles.length) return null
@@ -785,7 +831,7 @@ export default function App() {
                       esComic={false} vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
                       onAbrir={() => setDetalle({ item, c: item.c, esComic: false })}
-                      delay={nextDelay()} eps={eps} />
+                      delay={nextDelay()} eps={eps} miNota={notas[item.id] && notas[item.id].p} />
                   ))}
                 </div>
               </section>
@@ -807,7 +853,9 @@ export default function App() {
         <Detalle d={detalle} vista={!!vistas[detalle.item.id]}
           onToggle={() => toggle(detalle.item.id)}
           onClose={() => setDetalle(null)}
-          eps={eps} toggleEp={toggleEp} />
+          eps={eps} toggleEp={toggleEp}
+          nota={notas[detalle.item.id] || {}}
+          ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)} />
       )}
 
       <Footer onReset={() => { setVistas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
