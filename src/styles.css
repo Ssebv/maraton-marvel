@@ -577,6 +577,43 @@ main.compacto .grid{gap:6px}
 main.compacto .checkbox{width:24px; height:24px}
 .compartir{align-self:flex-start}
 
+/* ── Actividad, logros y galería ── */
+.heatmap{
+  display:grid; grid-template-rows:repeat(7, 13px); grid-auto-flow:column;
+  grid-auto-columns:13px; gap:3px; overflow-x:auto; padding-bottom:4px;
+}
+.hm-celda{width:13px; height:13px; border-radius:3px; background:var(--panel2)}
+.logros{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px}
+.logro{
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:3px;
+  border:1.5px solid var(--line); border-radius:12px; padding:14px 10px;
+  opacity:.45; filter:grayscale(1); transition:opacity .3s, filter .3s, border-color .3s;
+}
+.logro.ok{opacity:1; filter:none; border-color:color-mix(in srgb, var(--gold) 55%, var(--line))}
+.logro-emoji{font-size:26px}
+.logro-nombre{font-size:12.5px; font-weight:700}
+.logro-desc{font-size:11px; color:var(--ink2); line-height:1.35}
+main.galeria{margin-top:24px}
+.galeria-saga{margin-top:28px}
+.galeria-titulo{margin:0 0 12px}
+.galeria-titulo.xmen{color:var(--gold)}
+.galeria-titulo.ucm{color:var(--red)}
+.galeria-titulo.comics{color:var(--violet)}
+.galeria-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:10px}
+.galeria-item{
+  position:relative; background:none; border:none; padding:0; cursor:pointer;
+  transition:transform .2s cubic-bezier(.22,1,.36,1);
+}
+.galeria-item:hover{transform:translateY(-3px) scale(1.03)}
+.galeria-item .cover{width:100%; height:auto; aspect-ratio:2/3}
+.galeria-item.vista .cover{filter:grayscale(.75) brightness(.8)}
+.galeria-check{
+  position:absolute; right:6px; bottom:6px; width:24px; height:24px;
+  background:var(--done); border-radius:50%; border:2px solid var(--panel);
+  display:grid; place-items:center;
+}
+.galeria-check svg{width:12px; height:12px}
+
 /* ── Vista por estreno ── */
 .anio{margin-top:36px}
 .anio-head{display:flex; align-items:center; gap:14px; margin-bottom:12px}

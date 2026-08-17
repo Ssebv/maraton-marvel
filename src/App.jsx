@@ -387,6 +387,78 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota }) 
   )
 }
 
+function Actividad({ vistas, eps }) {
+  const dias = new Map()
+  const suma = t => {
+    if (typeof t === 'number' && t > 1e12) {
+      const d = new Date(t); d.setHours(0, 0, 0, 0)
+      dias.set(d.getTime(), (dias.get(d.getTime()) || 0) + 1)
+    }
+  }
+  Object.values(vistas).forEach(suma)
+  Object.values(eps).forEach(suma)
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  const celdas = []
+  for (let i = 139; i >= 0; i--) {
+    const d = new Date(hoy); d.setDate(d.getDate() - i)
+    celdas.push({ t: d.getTime(), n: dias.get(d.getTime()) || 0, f: d })
+  }
+  const max = Math.max(1, ...celdas.map(c => c.n))
+  let racha = 0
+  for (let i = celdas.length - 1; i >= 0 && celdas[i].n > 0; i--) racha++
+  const total = [...dias.values()].reduce((a, b) => a + b, 0)
+  return (
+    <section className="grafica">
+      <h3 className="grafica-titulo">Actividad del maratón</h3>
+      <p className="grafica-sub">
+        Últimas 20 semanas · {total} marcas con fecha{racha > 0 ? ` · 🔥 racha de ${racha} día${racha > 1 ? 's' : ''}` : ''}
+      </p>
+      <div className="heatmap" role="img" aria-label="Calendario de actividad">
+        {celdas.map(c => (
+          <span key={c.t} className="hm-celda"
+            title={`${c.f.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}: ${c.n} marca${c.n === 1 ? '' : 's'}`}
+            style={c.n ? { background: `color-mix(in srgb, var(--red) ${25 + 75 * c.n / max}%, var(--panel2))` } : undefined} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+const LOGROS = [
+  { id: 'primero', e: '🎬', t: 'Primer paso', d: 'Marca tu primer título', f: (v) => Object.keys(v.vistas).some(id => !id.startsWith('c-')) },
+  { id: 'capi', e: '🛡️', t: 'Trilogía del Capi', d: 'El primer vengador, Soldado de Invierno y Civil War', f: v => ['cap1', 'cap2', 'civilwar'].every(id => v.vistas[id]) },
+  { id: 'thanos', e: '🧤', t: 'El chasquido', d: 'Infinity War y Endgame', f: v => ['infinitywar', 'endgame'].every(id => v.vistas[id]) },
+  { id: 'mutante', e: '🧬', t: 'Mutante y orgulloso', d: 'Toda la saga X-Men', f: v => v.xmenCompleto },
+  { id: 'defensores', e: '🥊', t: 'Los Defensores', d: 'Las 6 series de Netflix', f: v => ['daredevil', 'jessicajones', 'lukecage', 'ironfist', 'defenders', 'punisher'].every(id => v.vistas[id]) },
+  { id: 'express', e: '⚡', t: 'Ruta express', d: 'Todo lo imprescindible para Doomsday', f: v => v.expressCompleta },
+  { id: 'lector', e: '📚', t: 'Ratón de biblioteca', d: 'Lee 5 cómics esenciales', f: v => Object.keys(v.vistas).filter(id => id.startsWith('c-')).length >= 5 },
+  { id: 'cien', e: '💯', t: 'Cien horas', d: '100 horas de maratón vistas', f: v => v.horasVistas >= 100 },
+  { id: 'mitad', e: '🌗', t: 'Media maratón', d: 'La mitad de los títulos', f: v => v.titulosVistos >= Math.ceil(v.titulosTot / 2) },
+  { id: 'completista', e: '🏆', t: 'Completista', d: 'Absolutamente todo visto y leído', f: v => v.todoCompleto },
+]
+
+function Logros({ ctx }) {
+  const desbloqueados = LOGROS.filter(l => l.f(ctx)).length
+  return (
+    <section className="grafica">
+      <h3 className="grafica-titulo">Logros</h3>
+      <p className="grafica-sub">{desbloqueados} de {LOGROS.length} desbloqueados</p>
+      <div className="logros">
+        {LOGROS.map(l => {
+          const ok = l.f(ctx)
+          return (
+            <div key={l.id} className={`logro${ok ? ' ok' : ''}`} title={l.d}>
+              <span className="logro-emoji">{l.e}</span>
+              <span className="logro-nombre">{l.t}</span>
+              <span className="logro-desc">{l.d}</span>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 async function compartirImagen(est, comicsVistos, comicsTot) {
   try { await document.fonts.ready } catch {}
   const W = 1080, H = 1350
@@ -483,7 +555,7 @@ export default function App() {
   const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
   const [vista, setVista] = useState(() => {
     const h = window.location.hash.replace('#', '')
-    return ['crono', 'estreno', 'comics', 'stats'].includes(h) ? h : 'crono'
+    return ['crono', 'estreno', 'comics', 'stats', 'galeria'].includes(h) ? h : 'crono'
   })
   useEffect(() => {
     history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
@@ -602,14 +674,14 @@ export default function App() {
 
   const toggleEp = clave => setEps(prev => {
     const next = { ...prev }
-    if (next[clave]) delete next[clave]; else next[clave] = 1
+    if (next[clave]) delete next[clave]; else next[clave] = Date.now()
     try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
     return next
   })
 
   const toggle = id => setVistas(prev => {
     const next = { ...prev }
-    if (next[id]) delete next[id]; else next[id] = 1
+    if (next[id]) delete next[id]; else next[id] = Date.now()
     try { localStorage.setItem(KEY, JSON.stringify(next)) } catch {}
     return next
   })
@@ -782,6 +854,7 @@ export default function App() {
             <button className="tab" aria-pressed={vista === 'crono'} onClick={() => setVista('crono')}>Cronológico</button>
             <button className="tab" aria-pressed={vista === 'estreno'} onClick={() => setVista('estreno')}>Por estreno</button>
             <button className="tab" aria-pressed={vista === 'comics'} onClick={() => setVista('comics')}>Cómics</button>
+            <button className="tab" aria-pressed={vista === 'galeria'} onClick={() => setVista('galeria')}>Galería</button>
             <button className="tab" aria-pressed={vista === 'stats'} onClick={() => setVista('stats')}>Estadísticas</button>
           </div>
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>⚡ Ruta express</button>
@@ -817,7 +890,31 @@ export default function App() {
         </div>
       </header>
 
-      {vista === 'stats' ? (
+      {vista === 'galeria' ? (
+        <main className="galeria">
+          {DATA.map(saga => {
+            const esComic = saga.saga === 'comics'
+            const items = saga.eras.flatMap(era => era.items
+              .filter(it => pasaFiltro(it, esComic) && !oculto(it, esComic))
+              .map(item => ({ item, c: era.c })))
+            if (!items.length) return null
+            return (
+              <section key={saga.saga} className="galeria-saga">
+                <h2 className={`galeria-titulo ${saga.saga}`}>{saga.titulo}</h2>
+                <div className="galeria-grid">
+                  {items.map(({ item, c }) => (
+                    <button key={item.id} className={`galeria-item${vistas[item.id] ? ' vista' : ''}`}
+                      title={item.t} onClick={() => setDetalle({ item, c, esComic })}>
+                      <Portada item={item} c={c} esComic={esComic} />
+                      {vistas[item.id] && <span className="galeria-check"><CheckIcon /></span>}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )
+          })}
+        </main>
+      ) : vista === 'stats' ? (
         <main className="stats-vista">
           <div className="stats-tiles">
             <div className="stat">
@@ -847,6 +944,18 @@ export default function App() {
             onClick={() => compartirImagen(estadisticas, estadisticas.comicsVistos, estadisticas.comicsTot)}>
             📸 Compartir mi progreso como imagen
           </button>
+
+          <Actividad vistas={vistas} eps={eps} />
+
+          <Logros ctx={{
+            vistas,
+            horasVistas: estadisticas.vistoMin / 60,
+            titulosVistos: estadisticas.titulosVistos,
+            titulosTot: estadisticas.titulosTot,
+            xmenCompleto: DATA[0].eras.every(era => era.items.every(it => vistas[it.id])),
+            expressCompleta: DATA.slice(0, 2).every(sg => sg.eras.every(era => era.items.filter(it => it.exp).every(it => vistas[it.id]))),
+            todoCompleto: DATA.every(sg => sg.eras.every(era => era.items.every(it => vistas[it.id]))),
+          }} />
 
           <section className="grafica">
             <h3 className="grafica-titulo">Horas por fase y era</h3>
