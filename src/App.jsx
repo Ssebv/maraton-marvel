@@ -810,28 +810,6 @@ export default function App() {
   const [vistas, setVistas] = useState(() => {
     try { return JSON.parse(localStorage.getItem(KEY)) || {} } catch { return {} }
   })
-  const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
-  const [vista, setVista] = useState(() => {
-    const h = window.location.hash.replace('#', '')
-    return ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo'].includes(h) ? h : 'crono'
-  })
-  useEffect(() => {
-    if (perfil) return
-    history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
-  }, [vista, perfil])
-  const [detalle, setDetalle] = useState(null)
-  const [tierra, setTierra] = useState(null)
-  const [mvModo, setMvModo] = useState('sistema')
-  const [planModal, setPlanModal] = useState(false)
-  const [planHoras, setPlanHoras] = useState(2)
-  const [planExpress, setPlanExpress] = useState(true)
-  const [orden, setOrden] = useState('crono')
-  const [listas, setListas] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(KEY_LISTAS)) || [] } catch { return [] }
-  })
-  const [listaActiva, setListaActiva] = useState(null)
-  const [cine, setCine] = useState(false)
-  const [cineIdx, setCineIdx] = useState(0)
   const [perfilModal, setPerfilModal] = useState(false)
   const [perfilNombre, setPerfilNombre] = useState('')
   const [perfilUrl, setPerfilUrl] = useState('')
@@ -856,6 +834,28 @@ export default function App() {
     const cod = btoa(unescape(encodeURIComponent(JSON.stringify(j)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
     return `${window.location.origin}${window.location.pathname}?perfil=${cod}`
   }
+  const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
+  const [vista, setVista] = useState(() => {
+    const h = window.location.hash.replace('#', '')
+    return ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo'].includes(h) ? h : 'crono'
+  })
+  useEffect(() => {
+    if (perfil) return
+    history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
+  }, [vista, perfil])
+  const [detalle, setDetalle] = useState(null)
+  const [tierra, setTierra] = useState(null)
+  const [mvModo, setMvModo] = useState('sistema')
+  const [planModal, setPlanModal] = useState(false)
+  const [planHoras, setPlanHoras] = useState(2)
+  const [planExpress, setPlanExpress] = useState(true)
+  const [orden, setOrden] = useState('crono')
+  const [listas, setListas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(KEY_LISTAS)) || [] } catch { return [] }
+  })
+  const [listaActiva, setListaActiva] = useState(null)
+  const [cine, setCine] = useState(false)
+  const [cineIdx, setCineIdx] = useState(0)
   const guardaListas = next => {
     setListas(next)
     try { localStorage.setItem(KEY_LISTAS, JSON.stringify(next)) } catch {}
