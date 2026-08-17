@@ -311,7 +311,14 @@ h3{
 }
 .checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:opacity .2s, transform .2s}
 .checkbox:hover{border-color:var(--done); box-shadow:0 0 0 4px color-mix(in srgb, var(--done) 15%, transparent)}
-.card.vista .checkbox{background:var(--done); border-color:var(--done)}
+.card.vista .checkbox{
+  background:var(--done); border-color:var(--done);
+  animation:anillo .5s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes anillo{
+  from{box-shadow:0 0 0 0 color-mix(in srgb, var(--done) 55%, transparent)}
+  to{box-shadow:0 0 0 14px transparent}
+}
 .card.vista .checkbox svg{opacity:1; transform:scale(1)}
 .checkbox-label{
   position:absolute; top:calc(100% + 4px); left:50%; transform:translateX(-50%);
@@ -441,7 +448,15 @@ h3{
   font-size:14px; font-weight:700; color:#fff;
   background:linear-gradient(120deg, var(--red), #C8681E);
   transition:transform .15s, filter .15s;
+  position:relative; overflow:hidden;
 }
+.accion-principal::before{
+  content:""; position:absolute; top:0; left:-80%;
+  width:50%; height:100%;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+  transform:skewX(-20deg); transition:left .5s ease;
+}
+.accion-principal:hover::before{left:130%}
 .accion-principal:hover{filter:brightness(1.1)}
 .accion-principal:active{transform:scale(.97)}
 .accion-principal.hecha{background:var(--done)}
@@ -643,7 +658,11 @@ main.multiverso{margin-top:24px}
   font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
   color:color-mix(in srgb, var(--tc, var(--violet)) 75%, var(--ink));
 }
-.mv-entrar{margin-top:auto; padding-top:6px; font-size:12px; font-weight:700; color:var(--tc, var(--violet))}
+.mv-entrar{
+  margin-top:auto; padding-top:6px; font-size:12px; font-weight:700;
+  color:var(--tc, var(--violet)); transition:letter-spacing .25s;
+}
+.mv-card:hover .mv-entrar{letter-spacing:.04em}
 
 /* Vista de una Tierra */
 .tierra{animation:portal .65s cubic-bezier(.22,1,.36,1) both}
