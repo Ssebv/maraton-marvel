@@ -5,7 +5,7 @@ Ordenado por fases según valor para el usuario y esfuerzo de desarrollo. Actual
 
 ## ✅ Ya construido
 
-Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios marcables · fichas con reparto fotografiado · estadísticas por fase · mapa de progreso · cuenta atrás de estrenos · buscador · ruta express · modo compacto · valoraciones y notas personales · compartir progreso como imagen · calendario de actividad con racha · logros/insignias · vista Galería · guía del multiverso con Tierras enterables · PWA instalable · plan de sesión · objetivo Doomsday con ritmo · orden por nota · listas propias · sistema solar del multiverso · sincronización entre dispositivos (Firebase) · código de progreso portable · actualización mensual automática de estrenos (rutina en la nube) · diseño "edición de coleccionista".
+Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios marcables · fichas con reparto fotografiado · estadísticas por fase · mapa de progreso · cuenta atrás de estrenos · buscador · ruta express · modo compacto · valoraciones y notas personales · compartir progreso como imagen · calendario de actividad con racha · logros/insignias · vista Galería · guía del multiverso con Tierras enterables · PWA instalable · plan de sesión · objetivo Doomsday con ritmo · orden por nota · listas propias · línea temporal del universo · modo cine · sistema solar del multiverso · sincronización entre dispositivos (Firebase) · código de progreso portable · actualización mensual automática de estrenos (rutina en la nube) · diseño "edición de coleccionista".
 
 ---
 
@@ -41,9 +41,9 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 
 | Vista | Qué es | Esfuerzo |
 |---|---|---|
-| **Línea temporal del universo** | Eje visual 1943→2027 con las tarjetas colocadas donde *ocurren*, mostrando saltos y solapamientos (Endgame tocando 1970, 2012, 2014…) | Alto |
-| **Mapa del multiverso** | Grafo interactivo de conexiones: qué películas comparten personajes, qué series desembocan en qué película | Alto |
-| **Modo cine (TV)** | Vista a pantalla completa para elegir "qué toca hoy" desde el sofá, con pósters gigantes y navegación por teclado/mando | Medio |
+| ~~**Línea temporal del universo**~~ ✅ | Hecho: pestaña con eje central 1845→∞, X-Men/UCM a cada lado y saltos de décadas señalados | — |
+| **Mapa del multiverso** | Grafo de conexiones entre títulos (el sistema solar ya cubre la navegación entre universos; esto añadiría conexiones título a título) | Alto |
+| ~~**Modo cine (TV)**~~ ✅ | Hecho: pantalla completa con pósters gigantes, ←/→/Enter/Esc y marcar vista sin salir | — |
 | **Perfil compartible** | Página pública de solo lectura con tu progreso y valoraciones, para enseñar sin dar acceso de edición | Alto |
 
 ## Fase 5 — Social (el salto grande)
