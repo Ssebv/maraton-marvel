@@ -209,6 +209,26 @@ function Proximos() {
   )
 }
 
+function Estrellas() {
+  const capas = useMemo(() => [90, 55, 28].map((n, capa) => {
+    const sombras = []
+    for (let i = 0; i < n; i++) {
+      const x = (Math.random() * 100).toFixed(1)
+      const y = (Math.random() * 100).toFixed(1)
+      const brillo = (0.35 + capa * 0.22 + Math.random() * 0.2).toFixed(2)
+      sombras.push(`${x}vw ${y}vh 0 ${capa === 2 ? '1px' : '0'} rgba(242,239,230,${brillo})`)
+    }
+    return sombras.join(',')
+  }), [])
+  return (
+    <div className="cielo" aria-hidden="true">
+      {capas.map((sombra, i) => (
+        <span key={i} className={`estrella-capa capa${i}`} style={{ boxShadow: sombra }} />
+      ))}
+    </div>
+  )
+}
+
 function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miNota }) {
   let epProg = null
   if (item.tipo === 'serie' && EPISODES[item.id]) {
@@ -900,6 +920,7 @@ export default function App() {
         </div>
       </header>
 
+      {vista === 'multiverso' && <Estrellas />}
       {vista === 'multiverso' ? (
         <main className="multiverso">
           {tierra ? (() => {

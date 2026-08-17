@@ -629,6 +629,24 @@ main.galeria{margin-top:24px}
 }
 .galeria-check svg{width:12px; height:12px}
 
+/* ── Cielo estrellado (elemento de uiverse adaptado) ── */
+.cielo{position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden}
+.cielo::after{
+  content:""; position:absolute; inset:0;
+  background:radial-gradient(70% 55% at 20% 100%, rgba(43,93,168,.14), transparent 70%);
+}
+.estrella-capa{
+  position:absolute; top:0; left:0; width:2px; height:2px; border-radius:50%;
+  background:transparent;
+}
+.capa0{animation:titilar 3.5s ease-in-out infinite alternate}
+.capa1{animation:titilar 5.5s ease-in-out infinite alternate-reverse}
+.capa2{width:3px; height:3px; animation:titilar 7s ease-in-out infinite alternate}
+@keyframes titilar{
+  from{opacity:.25}
+  to{opacity:1}
+}
+
 /* ── Guía del multiverso ── */
 main.multiverso{margin-top:24px}
 .mv-intro{margin-bottom:16px}
