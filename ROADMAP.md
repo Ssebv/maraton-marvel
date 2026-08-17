@@ -38,12 +38,12 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 | ~~**Sinopsis por episodio**~~ ✅ | Hecho: botón ⓘ por episodio; si no lo has visto, sale desenfocada hasta que pulses | — |
 | ~~**Dónde ver actualizado**~~ ✅ | Hecho: "Hoy en España" en cada ficha con las plataformas al día | — |
 
-## Fase 4 — Vistas nuevas
+## Fase 4 — Vistas nuevas ✅ COMPLETA
 
 | Vista | Qué es | Esfuerzo |
 |---|---|---|
 | ~~**Línea temporal del universo**~~ ✅ | Hecho: pestaña con eje central 1845→∞, X-Men/UCM a cada lado y saltos de décadas señalados | — |
-| **Mapa del multiverso** | Grafo de conexiones entre títulos (el sistema solar ya cubre la navegación entre universos; esto añadiría conexiones título a título) | Alto |
+| ~~**Mapa del multiverso**~~ ✅ | Hecho: modo 🕸️ Mapa en Multiverso — 19 títulos y 17 conexiones canónicas explicadas; pulsa un nodo para iluminar sus vínculos y saltar de ficha en ficha | — |
 | ~~**Modo cine (TV)**~~ ✅ | Hecho: pantalla completa con pósters gigantes, ←/→/Enter/Esc y marcar vista sin salir | — |
 | ~~**Perfil compartible**~~ ✅ | Hecho: botón 👤 genera un enlace corto de solo lectura (progreso, valoraciones y logros codificados en la propia URL, sin servidor) | — |
 

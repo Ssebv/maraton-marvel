@@ -354,6 +354,113 @@ function AvisosBtn() {
 
 const TITULOS = Object.fromEntries(DATA.flatMap(s => s.eras.flatMap(e => e.items)).map(i => [i.id, i.t]))
 
+// ── Mapa del multiverso: conexiones canónicas título a título ──
+const MAPA_NODOS = [
+  { id: 'dofp', x: 140, y: 200, c: '#F5B822' },
+  { id: 'logan', x: 140, y: 360, c: '#F5B822' },
+  { id: 'deadpool2', x: 140, y: 500, c: '#F5B822' },
+  { id: 'deadpool3', x: 320, y: 560, c: '#F5B822' },
+  { id: 'avengers1', x: 500, y: 70, c: '#E5484D' },
+  { id: 'endgame', x: 500, y: 170, c: '#E5484D' },
+  { id: 'wandavision', x: 300, y: 200, c: '#E5484D' },
+  { id: 'loki1', x: 500, y: 270, c: '#8B5CF6' },
+  { id: 'loki2', x: 620, y: 340, c: '#8B5CF6' },
+  { id: 'quantumania', x: 380, y: 340, c: '#E5484D' },
+  { id: 'mom', x: 300, y: 420, c: '#6FA8DC' },
+  { id: 'nwh', x: 500, y: 470, c: '#E5484D' },
+  { id: 'sony', x: 500, y: 615, c: '#7A8090' },
+  { id: 'marvels', x: 680, y: 200, c: '#E5484D' },
+  { id: 'whatif', x: 820, y: 340, c: '#9B7BD8' },
+  { id: 'zombies', x: 820, y: 470, c: '#4FB57A' },
+  { id: 'ff', x: 680, y: 470, c: '#2E8C7A' },
+  { id: 'thunderbolts', x: 680, y: 580, c: '#E5484D' },
+  { id: 'doomsday', x: 820, y: 615, c: '#2E8C7A' },
+]
+const MAPA_ARISTAS = [
+  { a: 'avengers1', b: 'endgame', t: 'El atraco temporal vuelve a la batalla de Nueva York' },
+  { a: 'endgame', b: 'loki1', t: 'El Loki de 2012 escapa con el Teseracto' },
+  { a: 'loki1', b: 'loki2', t: 'La TVA y los telares del tiempo' },
+  { a: 'loki1', b: 'whatif', t: 'El Que Permanece contenía las ramas del multiverso' },
+  { a: 'loki2', b: 'deadpool3', t: 'La TVA saca a Wade de su línea temporal' },
+  { a: 'deadpool2', b: 'deadpool3', t: 'El dispositivo temporal de Cable' },
+  { a: 'deadpool3', b: 'logan', t: 'Una variante de Logan como compañero de viaje' },
+  { a: 'dofp', b: 'logan', t: 'La línea mutante corregida tras 1973' },
+  { a: 'marvels', b: 'dofp', t: 'Su escena post-créditos abre la puerta a la Tierra mutante' },
+  { a: 'wandavision', b: 'mom', t: 'El Darkhold corrompe a Wanda' },
+  { a: 'mom', b: 'nwh', t: 'Del hechizo roto a viajar entre universos' },
+  { a: 'nwh', b: 'sony', t: 'Los Spider-Man y villanos de Raimi y Garfield cruzan' },
+  { a: 'quantumania', b: 'loki2', t: 'Las variantes de Kang y su Concilio' },
+  { a: 'whatif', b: 'zombies', t: 'La plaga nace en una rama del Vigilante' },
+  { a: 'ff', b: 'thunderbolts', t: 'La nave de los 4 Fantásticos aparece en la 616' },
+  { a: 'ff', b: 'doomsday', t: 'La primera familia, rumbo al choque con Doom' },
+  { a: 'thunderbolts', b: 'doomsday', t: 'Los Nuevos Vengadores responden a la llamada' },
+]
+function buscaItem(id) {
+  for (const sg of DATA) for (const era of sg.eras) for (const it of era.items) {
+    if (it.id === id) return { item: it, c: era.c, esComic: sg.saga === 'comics' }
+  }
+  return null
+}
+function MapaMultiverso({ onAbrir }) {
+  const [sel, setSel] = useState(null)
+  const nodos = Object.fromEntries(MAPA_NODOS.map(n => [n.id, n]))
+  const conectadas = sel ? MAPA_ARISTAS.filter(e => e.a === sel || e.b === sel) : []
+  return (
+    <div className="mapa-mv-wrap">
+      <div className="mapa-mv">
+        <svg viewBox="0 0 960 700" preserveAspectRatio="none" aria-hidden="true">
+          {MAPA_ARISTAS.map((e, i) => {
+            const A = nodos[e.a], B = nodos[e.b]
+            const mx = (A.x + B.x) / 2 + (A.y - B.y) * 0.18
+            const my = (A.y + B.y) / 2 + (B.x - A.x) * 0.18
+            const activa = sel && (e.a === sel || e.b === sel)
+            return <path key={i} d={`M${A.x},${A.y} Q${mx},${my} ${B.x},${B.y}`}
+              className={`arista${activa ? ' on' : ''}${sel && !activa ? ' off' : ''}`} />
+          })}
+        </svg>
+        {MAPA_NODOS.map(n => {
+          const d = buscaItem(n.id)
+          if (!d) return null
+          const activo = sel === n.id
+          const vecino = sel && MAPA_ARISTAS.some(e => (e.a === sel && e.b === n.id) || (e.b === sel && e.a === n.id))
+          return (
+            <button key={n.id}
+              className={`nodo${activo ? ' on' : ''}${sel && !activo && !vecino ? ' off' : ''}`}
+              style={{ left: `${n.x / 9.6}%`, top: `${n.y / 7}%`, '--nc': n.c }}
+              onClick={() => setSel(activo ? null : n.id)} title={d.item.t}>
+              {POSTERS[n.id]
+                ? <img src={POSTERS[n.id]} alt="" loading="lazy" />
+                : <span className="nodo-ini">{iniciales(d.item.t)}</span>}
+              <span className="nodo-t">{d.item.t.split(' (')[0]}</span>
+            </button>
+          )
+        })}
+      </div>
+      {sel ? (
+        <div className="mapa-leyenda">
+          <div className="mapa-leyenda-cab">
+            <b>{buscaItem(sel).item.t}</b>
+            <button className="chip-btn" onClick={() => onAbrir(buscaItem(sel))}>Ver ficha</button>
+            <button className="chip-btn" onClick={() => setSel(null)}>✕</button>
+          </div>
+          {conectadas.map((e, i) => {
+            const otro = e.a === sel ? e.b : e.a
+            const d = buscaItem(otro)
+            return (
+              <button key={i} className="mapa-conexion" onClick={() => setSel(otro)}>
+                <span className="mapa-conexion-t">↔ {d.item.t}</span>
+                <span className="mapa-conexion-d">{e.t}</span>
+              </button>
+            )
+          })}
+        </div>
+      ) : (
+        <p className="mapa-ayuda">Pulsa un título para iluminar sus conexiones con el resto del multiverso.</p>
+      )}
+    </div>
+  )
+}
+
 function Duelo({ amigo, vistas, eps, onQuitar }) {
   const datos = useMemo(() => {
     const vA = deBits(amigo.v, ORDEN_IDS)
@@ -1773,10 +1880,12 @@ export default function App() {
                 </p>
                 <div className="tabs mv-modos">
                   <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>🪐 Sistema</button>
+                  <button className="tab" aria-pressed={mvModo === 'mapa'} onClick={() => setMvModo('mapa')}>🕸️ Mapa</button>
                   <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>▤ Tarjetas</button>
                 </div>
               </div>
-              {mvModo === 'sistema' ? (
+              {mvModo === 'mapa' && <MapaMultiverso onAbrir={d => setDetalle(d)} />}
+              {mvModo === 'mapa' ? null : mvModo === 'sistema' ? (
                 <div className="sistema-wrap">
                   <div className="sistema">
                     {Object.values(ORBITAS).map(([r]) => (

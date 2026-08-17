@@ -1100,3 +1100,53 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
 .ep-sin-borroso{display:block; filter:blur(7px); user-select:none}
 .ep-sin-aviso{display:block; font-weight:600; color:var(--ink); margin-bottom:6px}
 .ep-img.real{object-fit:cover}
+/* ── Mapa del multiverso ── */
+.mapa-mv-wrap{display:flex; flex-direction:column; gap:14px; margin-top:16px}
+.mapa-mv{
+  position:relative; width:100%; max-width:920px; margin:0 auto; aspect-ratio:960/700;
+  background:
+    radial-gradient(70% 60% at 50% 30%, color-mix(in srgb, var(--violet) 7%, transparent), transparent 70%),
+    var(--panel);
+  border:1.5px solid var(--line); border-radius:14px; overflow:hidden;
+}
+.mapa-mv svg{position:absolute; inset:0; width:100%; height:100%}
+.arista{fill:none; stroke:color-mix(in srgb, var(--ink) 24%, transparent); stroke-width:1.5; transition:stroke .2s, opacity .2s}
+.arista.on{stroke:var(--red); stroke-width:2.5}
+.arista.off{opacity:.25}
+.nodo{
+  position:absolute; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  width:76px; background:none; border:none; padding:0; cursor:pointer;
+  transition:opacity .2s, transform .2s;
+}
+.nodo img, .nodo-ini{
+  width:42px; height:60px; object-fit:cover; border-radius:6px;
+  border:2px solid var(--nc); box-shadow:0 4px 14px rgba(0,0,0,.35); background:var(--panel2);
+}
+.nodo-ini{display:grid; place-items:center; font-weight:700; font-size:12px; color:var(--nc)}
+.nodo-t{font-size:9.5px; font-weight:600; color:var(--ink2); text-align:center; line-height:1.15; max-width:76px}
+.nodo:hover{transform:translate(-50%,-50%) scale(1.08)}
+.nodo.on img, .nodo.on .nodo-ini{outline:2.5px solid var(--red); outline-offset:2px}
+.nodo.on .nodo-t{color:var(--ink)}
+.nodo.off{opacity:.45}
+.mapa-leyenda{
+  max-width:920px; margin:0 auto; width:100%;
+  background:var(--panel); border:1.5px solid var(--line); border-radius:12px;
+  padding:14px 16px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--card-shadow);
+}
+.mapa-leyenda-cab{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.mapa-leyenda-cab b{flex:1; font-size:15px}
+.mapa-conexion{
+  display:flex; flex-direction:column; gap:1px; text-align:left;
+  background:var(--panel2); border:1px solid transparent; border-radius:9px;
+  padding:8px 12px; cursor:pointer; color:inherit; font:inherit;
+}
+.mapa-conexion:hover{border-color:var(--ink2)}
+.mapa-conexion-t{font-weight:700; font-size:13px}
+.mapa-conexion-d{font-size:12px; color:var(--ink2)}
+.mapa-ayuda{margin:0; font-size:13px; color:var(--ink2); text-align:center}
+@media (max-width:720px){
+  .nodo{width:56px}
+  .nodo img, .nodo-ini{width:32px; height:46px}
+  .nodo-t{font-size:8px; max-width:56px}
+}
