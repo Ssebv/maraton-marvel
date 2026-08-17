@@ -209,6 +209,15 @@ function Proximos() {
   )
 }
 
+const ORBITAS = {
+  'Tierra-10005': [1, 0], 'Tierra-828': [1, 120], 'Tierra-838': [1, 240],
+  'Tierra-96283': [2, 30], 'Tierra-120703': [2, 150], 'Universo Sony': [2, 270],
+  'Universos What If': [3, 0], 'Marvel Zombies': [3, 90],
+  'Tierra-616 (cómics)': [3, 180], 'El Vacío': [3, 270],
+}
+const RADIOS = [130, 210, 290]
+const DURACIONES = [46, 78, 112]
+
 function Estrellas() {
   const capas = useMemo(() => [90, 55, 28].map((n, capa) => {
     const sombras = []
@@ -582,6 +591,7 @@ export default function App() {
   }, [vista])
   const [detalle, setDetalle] = useState(null)
   const [tierra, setTierra] = useState(null)
+  const [mvModo, setMvModo] = useState('sistema')
   const [busca, setBusca] = useState('')
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
   const [notas, setNotas] = useState(() => {
@@ -961,9 +971,56 @@ export default function App() {
             )
           })() : (
             <>
-              <p className="saga-desc mv-intro">
-                Los universos que hay que conocer antes de Vengadores: Doomsday. Entra en cada Tierra para ver y marcar todo lo que ocurre en ella.
-              </p>
+              <div className="mv-cabecera">
+                <p className="saga-desc mv-intro">
+                  Los universos que hay que conocer antes de Vengadores: Doomsday. Entra en cada Tierra para ver y marcar todo lo que ocurre en ella.
+                </p>
+                <div className="tabs mv-modos">
+                  <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>🪐 Sistema</button>
+                  <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>▤ Tarjetas</button>
+                </div>
+              </div>
+              {mvModo === 'sistema' ? (
+                <div className="sistema-wrap">
+                  <div className="sistema">
+                    {RADIOS.map(r => (
+                      <span key={r} className="anillo"
+                        style={{ width: r * 2, height: r * 2, marginLeft: -r, marginTop: -r }} />
+                    ))}
+                    {(() => {
+                      const u616 = MULTIVERSO.find(u => u.num === 'Tierra-616')
+                      return (
+                        <button className="sol" style={{ '--tc': u616.c }}
+                          onClick={() => setTierra(u616.num)} title={u616.nombre}>
+                          <span className="planeta planeta-orbe planeta-sol" />
+                          <span className="nav-nombre">Tierra-616</span>
+                        </button>
+                      )
+                    })()}
+                    {MULTIVERSO.filter(u => ORBITAS[u.num]).map(u => {
+                      const [anillo, fase] = ORBITAS[u.num]
+                      const r = RADIOS[anillo - 1]
+                      const dur = DURACIONES[anillo - 1] + 's'
+                      return (
+                        <div className="orbita" key={u.num}
+                          style={{ width: r * 2, height: r * 2, marginLeft: -r, marginTop: -r, transform: `rotate(${fase}deg)` }}>
+                          <div className="giro" style={{ animationDuration: dur }}>
+                            <div className="nav-pos" style={{ transform: `translateX(-50%) rotate(${-fase}deg)` }}>
+                              <div className="contra" style={{ animationDuration: dur }}>
+                                <button className="planeta-nav" style={{ '--tc': u.c }}
+                                  onClick={() => setTierra(u.num)} title={u.nombre}>
+                                  <span className="planeta planeta-orbe" />
+                                  <span className="nav-nombre">{u.num.replace('Tierra-', 'T-')}</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : (
               <div className="mv-grid">
                 {MULTIVERSO.map(u => (
                   <article className="mv-card" key={u.num} style={{ '--tc': u.c }}
@@ -979,6 +1036,7 @@ export default function App() {
                   </article>
                 ))}
               </div>
+              )}
             </>
           )}
         </main>

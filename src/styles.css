@@ -681,6 +681,51 @@ main.galeria{margin-top:24px}
   .tierra-hero{padding-right:24px; padding-top:120px}
 }
 
+/* ── Sistema solar del multiverso ── */
+.mv-cabecera{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:8px}
+.mv-cabecera .mv-intro{margin-bottom:0; flex:1; min-width:260px}
+.sistema-wrap{display:flex; justify-content:center; overflow:hidden; padding:10px 0 30px}
+.sistema{position:relative; width:660px; height:660px; flex:none}
+.anillo{
+  position:absolute; left:50%; top:50%; border-radius:50%;
+  border:1px dashed color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.orbita{position:absolute; left:50%; top:50%; border-radius:50%; pointer-events:none}
+.giro{position:absolute; inset:0; animation:girarOrbita linear infinite}
+.nav-pos{position:absolute; top:-31px; left:50%}
+.contra{animation:contraOrbita linear infinite}
+@keyframes girarOrbita{from{transform:rotate(0)} to{transform:rotate(360deg)}}
+@keyframes contraOrbita{from{transform:rotate(0)} to{transform:rotate(-360deg)}}
+.sistema:hover .giro, .sistema:hover .contra{animation-play-state:paused}
+.planeta-nav, .sol{
+  pointer-events:auto; background:none; border:none; padding:0; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  transition:transform .2s cubic-bezier(.22,1,.36,1);
+}
+.planeta-nav:hover, .sol:hover{transform:scale(1.18)}
+.planeta-orbe{position:relative; width:56px; height:56px; top:auto; right:auto; display:block}
+.sol{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); z-index:2}
+.sol:hover{transform:translate(-50%, -50%) scale(1.12)}
+.planeta-sol{
+  width:92px; height:92px;
+  box-shadow:
+    0 0 55px 6px color-mix(in srgb, var(--tc, #E5484D) 55%, transparent),
+    -5px 0 10px rgba(255,220,180,.5) inset,
+    12px 2px 24px rgba(0,0,0,.85) inset,
+    -16px -2px 28px color-mix(in srgb, var(--tc, #E5484D) 50%, transparent) inset,
+    70px 0 44px rgba(0,0,0,.5) inset;
+}
+.nav-nombre{
+  font-size:10.5px; font-weight:700; letter-spacing:.05em; color:var(--ink2);
+  background:color-mix(in srgb, var(--bg) 72%, transparent); padding:2px 8px; border-radius:4px;
+  white-space:nowrap;
+}
+.planeta-nav:hover .nav-nombre, .sol:hover .nav-nombre{color:var(--ink)}
+@media (max-width:720px){
+  .sistema-wrap{padding:0}
+  .sistema{transform:scale(.52); transform-origin:center center; margin:-150px 0}
+}
+
 /* ── Guía del multiverso ── */
 main.multiverso{margin-top:24px}
 .mv-intro{margin-bottom:16px}
