@@ -140,6 +140,7 @@ export const PEOPLE = {
   "Rila Fukushima": "people/rila-fukushima.jpg",
   "Robert Downey Jr.": "people/robert-downey-jr.jpg",
   "Russo brothers": "people/russo-brothers.jpg",
+  "Hermanos Russo": "people/russo-brothers.jpg",
   "Ryan Coogler": "people/ryan-coogler.jpg",
   "Ryan Reynolds": "people/ryan-reynolds.jpg",
   "Sadie Sink": "people/sadie-sink.jpg",

@@ -67,6 +67,12 @@ function fmtDur(d) {
 }
 
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
+const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo']
+// Dúos y casos que el split por " y "/" & " rompería
+const DUOS = {
+  'Anthony y Joe Russo': ['Hermanos Russo'],
+  'Rhys Thomas y Bert & Bertie': ['Rhys Thomas', 'Bert & Bertie'],
+}
 const urlTrailer = t => `https://www.youtube.com/results?search_query=${encodeURIComponent(t + ' tráiler español')}`
 const urlImdb = t => `https://www.imdb.com/find/?q=${encodeURIComponent(t)}`
 const urlPersona = n => `https://www.imdb.com/find/?q=${encodeURIComponent(limpiaNombre(n))}&s=nm`
@@ -516,9 +522,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
     document.body.style.overflow = 'hidden'
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
   }, [onClose])
-  const directores = item.dir
-    ? limpiaNombre(item.dir).split(/ y | & /).map(s => s.trim()).filter(Boolean)
-    : []
+  const dirLimpio = item.dir ? limpiaNombre(item.dir) : ''
+  const directores = DUOS[dirLimpio]
+    || dirLimpio.split(/, | y | & /).map(s => s.trim()).filter(s => s && s !== 'otros')
   return (
     <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={item.t}>
       <div className="modal" onClick={e => e.stopPropagation()}>
@@ -840,12 +846,21 @@ export default function App() {
   const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
   const [vista, setVista] = useState(() => {
     const h = window.location.hash.replace('#', '')
-    return ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo'].includes(h) ? h : 'crono'
+    return VISTAS_VALIDAS.includes(h) ? h : 'crono'
   })
   useEffect(() => {
     if (perfil) return
     history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
   }, [vista, perfil])
+  useEffect(() => {
+    if (perfil) return
+    const onHash = () => {
+      const h = window.location.hash.replace('#', '')
+      setVista(VISTAS_VALIDAS.includes(h) ? h : 'crono')
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [perfil])
   const [detalle, setDetalle] = useState(null)
   const [tierra, setTierra] = useState(null)
   const [mvModo, setMvModo] = useState('sistema')
