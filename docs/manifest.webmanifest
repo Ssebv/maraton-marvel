@@ -1,0 +1,17 @@
+{
+  "name": "Maratón Marvel & X-Men",
+  "short_name": "Maratón Marvel",
+  "description": "Guía interactiva para ver todo Marvel y X-Men en orden cronológico",
+  "start_url": "/maraton-marvel/",
+  "scope": "/maraton-marvel/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0C14",
+  "theme_color": "#0A0C14",
+  "lang": "es",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

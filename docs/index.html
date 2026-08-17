@@ -3,8 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0B0D12" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#F4F5F8" media="(prefers-color-scheme: light)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0A0C14" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F3EDDE" media="(prefers-color-scheme: light)">
 <title>Maratón Marvel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,5 +28,12 @@ Error generating stack: `+e.message+`
 </head>
 <body>
 <div id="root"></div>
+<script>
+if ('serviceWorker' in navigator && location.hostname.endsWith('github.io')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {})
+  })
+}
+</script>
 </body>
 </html>
