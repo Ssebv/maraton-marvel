@@ -262,7 +262,7 @@ export const DATA = [
       { id: "deadpool3", t: "Deadpool y Lobezno", h: "2024*", r: 2024, s: 7.6, d: 128, plat: "Disney+", exp: true, uni: "Multiverso",
         dir: "Shawn Levy", cast: ["Ryan Reynolds", "Hugh Jackman", "Emma Corrin"],
         res: "Wade recluta a un Lobezno de otro universo para salvar el suyo.",
-        n: "El puente entre la saga X-Men y el UCM. Vela después de Loki T2, que introduce la TVA." },
+        n: "El puente entre la saga X-Men y el UCM; la Tierra-10005 colapsa al morir su «ser ancla» en Logan. Vela después de Loki T2." },
       { id: "gotg3", t: "Guardianes de la Galaxia Vol. 3", h: "2026, septiembre", r: 2023, s: 7.9, d: 150, plat: "Disney+",
         dir: "James Gunn", cast: ["Chris Pratt", "Zoe Saldaña", "Bradley Cooper (voz)"],
         res: "El pasado de Rocket y la despedida del equipo de James Gunn." },
@@ -370,6 +370,32 @@ export const ESTRENOS = [
     n: "El cierre de la Saga del Multiverso." },
   { t: "X-Men (UCM)", fecha: null, aprox: "En desarrollo", tipo: "Película",
     n: "El reinicio mutante dentro del UCM, tras Secret Wars." },
+]
+
+// Guía de universos del multiverso (rescatada del análisis en vídeo "Multiverso de Marvel antes de Doomsday")
+export const MULTIVERSO = [
+  { num: "Tierra-616", nombre: "El UCM — la Línea Sagrada", ids: ["avengers1", "endgame", "loki1"],
+    desc: "El universo principal del cine. Se llamó Tierra-199999 hasta que en 2023 Feige lo renombró 616, como el de los cómics. Es la «línea temporal sagrada» que la TVA protege: cada evento nexo que la desvía genera una rama que la TVA poda." },
+  { num: "Tierra-10005", nombre: "La saga X-Men de Fox", ids: ["logan", "deadpool3"],
+    desc: "El universo mutante de Fox. Su «ser ancla» era Lobezno: tras su muerte en Logan, el universo empezó a desvanecerse, la crisis que Deadpool y Lobezno resuelven destruyendo el Desgarrador Temporal." },
+  { num: "El Vacío", nombre: "El vertedero del tiempo", ids: ["loki1", "loki2", "deadpool3"],
+    desc: "Donde la TVA arroja todo lo podado: no es destrucción, es exilio. Custodiado por Alioth, alberga variantes de Loki (el clásico, el niño, el caimán…) y reliquias de películas canceladas — el Blade y la Antorcha Humana de otros tiempos. Deadpool y Lobezno demostraron que se puede salir." },
+  { num: "Tierra-96283", nombre: "El universo de Raimi", ids: ["sony", "nwh"],
+    desc: "La trilogía de Tobey Maguire: el Spider-Man con telarañas orgánicas que demostró que el cine de superhéroes podía ser cine serio. Converge con la Tierra-616 en No Way Home." },
+  { num: "Tierra-120703", nombre: "El universo de Garfield", ids: ["sony", "nwh"],
+    desc: "El Amazing Spider-Man: los mejores balanceos filmados y la historia con Gwen Stacy. Sony llegó a licenciar la Torre Oscorp para Los Vengadores antes de cancelar la conexión. También converge en No Way Home." },
+  { num: "Universo Sony", nombre: "El Venomverso", ids: ["sony"],
+    desc: "Venom, Morbius, Madame Web y Kraven: simbiontes de Knull y la Red de la Vida… en un universo Spider-Man sin Spider-Man. Eddie Brock visitó brevemente la Tierra-616 y dejó allí un resto de simbionte que aún no ha estallado." },
+  { num: "Tierra-828", nombre: "El mundo de los 4 Fantásticos", ids: ["ff"],
+    desc: "Retrofuturismo de los 60 con tecnología adelantada décadas: los 4 Fantásticos no son los primeros héroes, son los únicos. Un universo de exploración más que de conflicto… hasta Galactus. Conecta con Doomsday." },
+  { num: "Tierra-838", nombre: "El mundo de los Illuminati", ids: ["mom"],
+    desc: "Donde los Vengadores fueron sustituidos por los Illuminati (Captain Carter, Black Bolt, Reed Richards, el Profesor X…), que ejecutaron a su propio Strange por usar el Darkhold. La Wanda de la 616 los arrasa en el multiverso de la locura." },
+  { num: "Universos What If", nombre: "Las ramas del Vigilante", ids: ["whatif"],
+    desc: "Captain Carter (Peggy con el suero), el Star-Lord T'Challa que convence a Thanos de ser bueno, Infinity Ultron —que gana y amenaza el multiverso entero— y la guerra de Killmonger. Los Guardianes del Multiverso nacen aquí." },
+  { num: "Marvel Zombies", nombre: "El brote cuántico", ids: ["zombies"],
+    desc: "Hank Pym trae del reino cuántico a una Janet infectada y el virus arrasa: caen Iron Man, el Capi y casi todos. Visión alimenta en secreto a una Wanda zombi; la esperanza es la Gema de la Mente." },
+  { num: "Tierra-616 (cómics)", nombre: "El original de papel", ids: ["c-civilwar", "c-secretwars"],
+    desc: "El universo de los cómics desde los primeros Fantastic Four: Vengadores fundados por Thor, Iron Man, Hank Pym, la Avispa y Hulk; Ultrón creado por Pym, no por Stark; y una Civil War desatada por el incidente de Stamford." },
 ]
 
 export const JOYA_MIN = 7.5

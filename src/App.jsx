@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { DATA, ESTRENOS, JOYA_MIN, KEY } from './data.js'
+import { DATA, ESTRENOS, JOYA_MIN, KEY, MULTIVERSO } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
 import { EPISODES } from './episodes.js'
@@ -555,7 +555,7 @@ export default function App() {
   const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
   const [vista, setVista] = useState(() => {
     const h = window.location.hash.replace('#', '')
-    return ['crono', 'estreno', 'comics', 'stats', 'galeria'].includes(h) ? h : 'crono'
+    return ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso'].includes(h) ? h : 'crono'
   })
   useEffect(() => {
     history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
@@ -758,6 +758,14 @@ export default function App() {
     return { fases, totMin, vistoMin, titulosVistos, titulosTot, tipos: Object.values(tipos), epVistos, epTot, comicsTot, comicsVistos }
   }, [vistas, eps])
 
+  const indice = useMemo(() => {
+    const m = {}
+    DATA.forEach(saga => saga.eras.forEach(era => era.items.forEach(item => {
+      m[item.id] = { item, c: era.c, esComic: saga.saga === 'comics' }
+    })))
+    return m
+  }, [])
+
   const porAnio = useMemo(() => {
     const items = []
     DATA.forEach(saga => {
@@ -855,6 +863,7 @@ export default function App() {
             <button className="tab" aria-pressed={vista === 'estreno'} onClick={() => setVista('estreno')}>Por estreno</button>
             <button className="tab" aria-pressed={vista === 'comics'} onClick={() => setVista('comics')}>Cómics</button>
             <button className="tab" aria-pressed={vista === 'galeria'} onClick={() => setVista('galeria')}>Galería</button>
+            <button className="tab" aria-pressed={vista === 'multiverso'} onClick={() => setVista('multiverso')}>Multiverso</button>
             <button className="tab" aria-pressed={vista === 'stats'} onClick={() => setVista('stats')}>Estadísticas</button>
           </div>
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>⚡ Ruta express</button>
@@ -890,7 +899,31 @@ export default function App() {
         </div>
       </header>
 
-      {vista === 'galeria' ? (
+      {vista === 'multiverso' ? (
+        <main className="multiverso">
+          <p className="saga-desc mv-intro">
+            Los universos que hay que conocer antes de Vengadores: Doomsday. Pulsa un título relacionado para abrir su ficha.
+          </p>
+          <div className="mv-grid">
+            {MULTIVERSO.map(u => (
+              <article className="mv-card" key={u.num}>
+                <span className="mv-num">{u.num}</span>
+                <h2 className="mv-nombre">{u.nombre}</h2>
+                <p className="mv-desc">{u.desc}</p>
+                {u.ids.length > 0 && (
+                  <div className="mv-rel">
+                    {u.ids.map(id => indice[id] && (
+                      <button key={id} className="mv-chip" onClick={() => setDetalle(indice[id])}>
+                        {indice[id].item.t.length > 32 ? indice[id].item.t.slice(0, 30) + '…' : indice[id].item.t}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </main>
+      ) : vista === 'galeria' ? (
         <main className="galeria">
           {DATA.map(saga => {
             const esComic = saga.saga === 'comics'
