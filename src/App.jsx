@@ -303,7 +303,6 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
     expressCompleta: DATA.slice(0, 2).every(sg => sg.eras.every(era => era.items.filter(it => it.exp).every(it => vistasP[it.id]))),
     todoCompleto: DATA.every(sg => sg.eras.every(era => era.items.every(it => vistasP[it.id]))),
   }
-  if (perfil) return <PerfilView {...perfil} />
 
   return (
     <div className="wrap">
