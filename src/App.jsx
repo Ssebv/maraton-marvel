@@ -235,6 +235,18 @@ const ORBITAS = {
 const RADIOS = [130, 210, 290]
 const DURACIONES = [46, 78, 112]
 
+function MiniTl({ item, c, vista, onAbrir }) {
+  return (
+    <button className={`tl-card${vista ? ' vista' : ''}`} style={{ '--glow': c[0] }} onClick={onAbrir}>
+      <span className="tl-poster"><Portada item={item} c={c} esComic={false} /></span>
+      <span className="tl-info">
+        <span className="tl-titulo">{item.t}</span>
+        <span className="tl-h">{item.h}</span>
+      </span>
+    </button>
+  )
+}
+
 function CrearLista({ onCrear }) {
   const [nombre, setNombre] = useState('')
   const enviar = () => { const n = nombre.trim(); if (n) { onCrear(n); setNombre('') } }
@@ -663,7 +675,7 @@ export default function App() {
   const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
   const [vista, setVista] = useState(() => {
     const h = window.location.hash.replace('#', '')
-    return ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas'].includes(h) ? h : 'crono'
+    return ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo'].includes(h) ? h : 'crono'
   })
   useEffect(() => {
     history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
@@ -679,6 +691,8 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem(KEY_LISTAS)) || [] } catch { return [] }
   })
   const [listaActiva, setListaActiva] = useState(null)
+  const [cine, setCine] = useState(false)
+  const [cineIdx, setCineIdx] = useState(0)
   const guardaListas = next => {
     setListas(next)
     try { localStorage.setItem(KEY_LISTAS, JSON.stringify(next)) } catch {}
@@ -908,6 +922,28 @@ export default function App() {
     return m
   }, [])
 
+  const cineLista = useMemo(() => {
+    const pendientes = []
+    DATA.forEach(sg => { if (sg.saga === 'comics') return
+      sg.eras.forEach(era => era.items.forEach(item => {
+        if (!vistas[item.id]) pendientes.push({ item, c: era.c })
+      })) })
+    return pendientes
+  }, [vistas])
+
+  useEffect(() => {
+    if (!cine) return
+    const onKey = e => {
+      if (e.key === 'Escape') setCine(false)
+      if (e.key === 'ArrowRight') setCineIdx(i => Math.min(cineLista.length - 1, i + 1))
+      if (e.key === 'ArrowLeft') setCineIdx(i => Math.max(0, i - 1))
+      if (e.key === 'Enter' && cineLista[cineIdx]) toggle(cineLista[cineIdx].item.id)
+    }
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+  }, [cine, cineLista, cineIdx])
+
   const idOrden = useMemo(() => {
     const m = {}; let i = 0
     DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => { m[it.id] = i++ })))
@@ -1073,6 +1109,7 @@ export default function App() {
             <button className="tab" aria-pressed={vista === 'listas'} onClick={() => setVista('listas')}>Listas</button>
             <button className="tab" aria-pressed={vista === 'galeria'} onClick={() => setVista('galeria')}>Galería</button>
             <button className="tab" aria-pressed={vista === 'multiverso'} onClick={() => setVista('multiverso')}>Multiverso</button>
+            <button className="tab" aria-pressed={vista === 'tiempo'} onClick={() => setVista('tiempo')}>Línea temporal</button>
             <button className="tab" aria-pressed={vista === 'stats'} onClick={() => setVista('stats')}>Estadísticas</button>
           </div>
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>⚡ Ruta express</button>
@@ -1082,6 +1119,7 @@ export default function App() {
           <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>Joyas ★7,5+</button>
           <button className="chip-btn" aria-pressed={compacto} onClick={alternaCompacto}>Compacto</button>
           <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>🍿 Plan de sesión</button>
+          <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>🎬 Modo cine</button>
           <button className="chip-btn" onClick={() => setOrden(o => o === 'crono' ? 'imdb' : o === 'imdb' ? 'nota' : 'crono')}>
             {orden === 'crono' ? '↕ Orden: cronológico' : orden === 'imdb' ? '↕ Orden: nota IMDb' : '↕ Orden: tu nota'}
           </button>
@@ -1113,7 +1151,80 @@ export default function App() {
       </header>
 
       {vista === 'multiverso' && <Estrellas />}
-      {vista === 'listas' ? (
+      {vista === 'tiempo' ? (
+        <main className="tiempo">
+          <p className="saga-desc mv-intro">
+            Cada título colocado en el año en que <b>ocurre su historia</b>, no en el que se estrenó:
+            X-Men a la izquierda en dorado, UCM a la derecha en rojo. Pulsa cualquier tarjeta para abrir su ficha.
+          </p>
+          {(() => {
+            const años = new Map()
+            const fuera = []
+            DATA.forEach(sg => { if (sg.saga === 'comics') return
+              sg.eras.forEach(era => era.items.forEach(item => {
+                const m = (item.h || '').match(/\d{4}/g)
+                let inicio = m ? parseInt(m[0]) : null
+                if (!inicio && /años 60/i.test(item.h || '')) inicio = 1965
+                const entrada = { item, c: era.c, saga: sg.saga }
+                if (!inicio) { fuera.push(entrada); return }
+                if (!años.has(inicio)) años.set(inicio, [])
+                años.get(inicio).push(entrada)
+              })) })
+            const orden = [...años.keys()].sort((a, b) => a - b)
+            let previo = null
+            const abrir = g => setDetalle({ item: g.item, c: g.c, esComic: false })
+            return (
+              <div className="tl">
+                {orden.map(año => {
+                  const salto = previo !== null && año - previo > 1 ? año - previo : 0
+                  previo = año
+                  const grupo = años.get(año)
+                  return (
+                    <div key={año}>
+                      {salto > 0 && <div className="tl-salto">⋯ {salto} años después ⋯</div>}
+                      <section className="tl-fila">
+                        <div className="tl-lado izq">
+                          {grupo.filter(g => g.saga === 'xmen').map(g => (
+                            <MiniTl key={g.item.id} item={g.item} c={g.c}
+                              vista={!!vistas[g.item.id]} onAbrir={() => abrir(g)} />
+                          ))}
+                        </div>
+                        <div className="tl-nodo"><span>{año}</span></div>
+                        <div className="tl-lado der">
+                          {grupo.filter(g => g.saga === 'ucm').map(g => (
+                            <MiniTl key={g.item.id} item={g.item} c={g.c}
+                              vista={!!vistas[g.item.id]} onAbrir={() => abrir(g)} />
+                          ))}
+                        </div>
+                      </section>
+                    </div>
+                  )
+                })}
+                {fuera.length > 0 && (
+                  <div>
+                    <div className="tl-salto">∞ fuera del tiempo ∞</div>
+                    <section className="tl-fila">
+                      <div className="tl-lado izq">
+                        {fuera.filter(g => g.saga === 'xmen').map(g => (
+                          <MiniTl key={g.item.id} item={g.item} c={g.c}
+                            vista={!!vistas[g.item.id]} onAbrir={() => abrir(g)} />
+                        ))}
+                      </div>
+                      <div className="tl-nodo"><span>∞</span></div>
+                      <div className="tl-lado der">
+                        {fuera.filter(g => g.saga === 'ucm').map(g => (
+                          <MiniTl key={g.item.id} item={g.item} c={g.c}
+                            vista={!!vistas[g.item.id]} onAbrir={() => abrir(g)} />
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </main>
+      ) : vista === 'listas' ? (
         <main className="listas-vista">
           {(() => {
             const l = listas.find(x => x.id === listaActiva)
@@ -1482,6 +1593,39 @@ export default function App() {
           </p>
         </main>
       )}
+
+      {cine && cineLista.length > 0 && (() => {
+        const idx = Math.min(cineIdx, cineLista.length - 1)
+        const { item, c } = cineLista[idx]
+        return (
+          <div className="cine" role="dialog" aria-modal="true" aria-label="Modo cine">
+            <button className="cerrar cine-cerrar" onClick={() => setCine(false)} aria-label="Salir">✕</button>
+            <div className="cine-centro">
+              <button className="cine-flecha" onClick={() => setCineIdx(i => Math.max(0, i - 1))}
+                disabled={idx === 0} aria-label="Anterior">‹</button>
+              <div className="cine-panel" style={{ '--glow': c[0] }}>
+                <div className="cine-poster"><Portada item={item} c={c} esComic={false} /></div>
+                <div className="cine-info">
+                  <span className="cine-contador">{idx + 1} de {cineLista.length} pendientes · orden del maratón</span>
+                  <h2 className="cine-titulo">{item.t}</h2>
+                  <p className="cine-meta">
+                    {item.s != null && <span className="star">★ {item.s.toFixed(1)} · </span>}
+                    <span className="hist">{item.h}</span>{item.d ? <> · {fmtDur(item.d)}</> : null}
+                  </p>
+                  {item.res && <p className="cine-res">{item.res}</p>}
+                  <div className="modal-acciones">
+                    <button className="accion-principal" onClick={() => toggle(item.id)}>✓ La veo — marcar vista</button>
+                    <button className="ghost" onClick={() => setDetalle({ item, c, esComic: false })}>Ver ficha</button>
+                  </div>
+                </div>
+              </div>
+              <button className="cine-flecha" onClick={() => setCineIdx(i => Math.min(cineLista.length - 1, i + 1))}
+                disabled={idx === cineLista.length - 1} aria-label="Siguiente">›</button>
+            </div>
+            <p className="cine-ayuda">← → navegar · Enter marcar vista · Esc salir</p>
+          </div>
+        )
+      })()}
 
       {planModal && plan && (
         <div className="overlay" onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label="Plan de sesión">
