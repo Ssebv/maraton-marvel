@@ -1,5 +1,9 @@
 // Generado — pósters servidos localmente desde public/posters/
 export const POSTERS = {
+  "c-wolverine82": "posters/c-wolverine82.jpg",
+  "c-gotg": "posters/c-gotg.jpg",
+  "c-thoraaron": "posters/c-thoraaron.jpg",
+  "c-deadpoolkelly": "posters/c-deadpoolkelly.png",
   "inhumans": "posters/inhumans.jpg",
   "agatha": "posters/agatha.jpg",
   "agent-carter": "posters/agent-carter.png",
