@@ -812,6 +812,23 @@ main.multiverso{margin-top:24px}
 .plan-total{margin:4px 0 0; font-size:13px; color:var(--ink2)}
 .plan-total b{color:var(--ink)}
 
+/* ── Listas propias ── */
+main.listas-vista{margin-top:24px}
+.crear-lista{display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 20px}
+.crear-lista .sync-input{flex:1; min-width:240px}
+.lista-hero{
+  margin:14px 0 18px; padding:22px 24px; border-radius:16px;
+  border:1.5px solid var(--line); background:var(--panel);
+  display:flex; flex-direction:column; gap:8px;
+}
+.lista-nombre{margin:0; font-size:24px; font-weight:700; text-transform:none; letter-spacing:-.01em}
+.agregar-lista{display:flex; flex-direction:column; gap:8px; margin-top:6px}
+.agregar-lista .sync-input{max-width:420px}
+.sugerencias{display:flex; flex-wrap:wrap; gap:6px}
+.borrar-lista{margin-top:24px; display:flex; gap:8px}
+.detalle-listas{display:flex; flex-wrap:wrap; gap:6px}
+.lista-card .barra{margin-top:4px}
+
 /* ── Vista por estreno ── */
 .anio{margin-top:36px}
 .anio-head{display:flex; align-items:center; gap:14px; margin-bottom:12px}

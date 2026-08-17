@@ -8,6 +8,7 @@ const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
 const KEY_NOTAS = 'maraton-marvel-notas-v1'
 const KEY_COMPACTO = 'maraton-marvel-compacto'
+const KEY_LISTAS = 'maraton-marvel-listas-v1'
 
 function normalizaDbUrl(txt) {
   let u = txt.trim().replace(/\/+$/, '')
@@ -234,6 +235,55 @@ const ORBITAS = {
 const RADIOS = [130, 210, 290]
 const DURACIONES = [46, 78, 112]
 
+function CrearLista({ onCrear }) {
+  const [nombre, setNombre] = useState('')
+  const enviar = () => { const n = nombre.trim(); if (n) { onCrear(n); setNombre('') } }
+  return (
+    <div className="crear-lista">
+      <input className="busca sync-input" placeholder="Nombre de la lista (p. ej. Maratón con mi pareja)"
+        value={nombre} maxLength={40} onChange={e => setNombre(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') enviar() }} aria-label="Nombre de la lista" />
+      <button className="accion-principal" onClick={enviar}>Crear lista</button>
+    </div>
+  )
+}
+
+function AgregarALista({ indice, idOrden, enLista, onAgregar }) {
+  const [q, setQ] = useState('')
+  const resultados = q.trim().length < 2 ? [] :
+    Object.values(indice)
+      .filter(({ item }) => norm(item.t).includes(norm(q)))
+      .sort((a, b) => (idOrden[a.item.id] ?? 999) - (idOrden[b.item.id] ?? 999))
+      .slice(0, 6)
+  return (
+    <div className="agregar-lista">
+      <input className="busca sync-input" placeholder="Buscar título para añadir a la lista…" value={q}
+        onChange={e => setQ(e.target.value)} aria-label="Añadir título a la lista"
+        spellCheck={false} autoComplete="off" />
+      {resultados.length > 0 && (
+        <div className="sugerencias">
+          {resultados.map(({ item }) => (
+            <button key={item.id} className="chip-btn" aria-pressed={enLista.includes(item.id)}
+              onClick={() => onAgregar(item.id)}>
+              {enLista.includes(item.id) ? '✓ ' : '＋ '}{item.t}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BorrarLista({ onBorrar }) {
+  const [conf, setConf] = useState(false)
+  return (
+    <div className="borrar-lista">
+      <button className="chip-btn" onClick={() => setConf(c => !c)}>{conf ? 'Cancelar' : 'Eliminar esta lista'}</button>
+      {conf && <button className="chip-btn peligro" onClick={onBorrar}>¿Seguro? Sí, eliminar</button>}
+    </div>
+  )
+}
+
 function Estrellas() {
   const capas = useMemo(() => [90, 55, 28].map((n, capa) => {
     const sombras = []
@@ -305,7 +355,7 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miN
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista }) {
   const { item, c, esComic } = d
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -411,6 +461,19 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota }) 
               value={nota.txt || ''} maxLength={280} spellCheck={true}
               onChange={e => ponNota('txt', e.target.value)} aria-label="Tus notas" />
           </div>
+          {listas && listas.length > 0 && (
+            <div className="valoracion">
+              <span className="valoracion-label">Listas</span>
+              <span className="detalle-listas">
+                {listas.map(l => (
+                  <button key={l.id} className="chip-btn" aria-pressed={l.items.includes(item.id)}
+                    onClick={() => toggleEnLista(l.id, item.id)}>
+                    {l.items.includes(item.id) ? '✓ ' : '＋ '}{l.nombre}
+                  </button>
+                ))}
+              </span>
+            </div>
+          )}
           <div className="modal-acciones">
             <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
               {vista ? '✓ Vista — marcar pendiente' : esComic ? 'Marcar como leído' : 'Marcar como vista'}
@@ -600,7 +663,7 @@ export default function App() {
   const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
   const [vista, setVista] = useState(() => {
     const h = window.location.hash.replace('#', '')
-    return ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso'].includes(h) ? h : 'crono'
+    return ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas'].includes(h) ? h : 'crono'
   })
   useEffect(() => {
     history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
@@ -612,6 +675,29 @@ export default function App() {
   const [planHoras, setPlanHoras] = useState(2)
   const [planExpress, setPlanExpress] = useState(true)
   const [orden, setOrden] = useState('crono')
+  const [listas, setListas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(KEY_LISTAS)) || [] } catch { return [] }
+  })
+  const [listaActiva, setListaActiva] = useState(null)
+  const guardaListas = next => {
+    setListas(next)
+    try { localStorage.setItem(KEY_LISTAS, JSON.stringify(next)) } catch {}
+  }
+  const crearLista = nombre => guardaListas([...listas, { id: Math.random().toString(36).slice(2, 9), nombre, items: [], prog: {} }])
+  const borrarLista = id => { guardaListas(listas.filter(l => l.id !== id)); if (listaActiva === id) setListaActiva(null) }
+  const toggleEnLista = (lid, itemId) => guardaListas(listas.map(l => {
+    if (l.id !== lid) return l
+    const dentro = l.items.includes(itemId)
+    const prog = { ...l.prog }
+    if (dentro) delete prog[itemId]
+    return { ...l, items: dentro ? l.items.filter(x => x !== itemId) : [...l.items, itemId], prog }
+  }))
+  const toggleProgLista = (lid, itemId) => guardaListas(listas.map(l => {
+    if (l.id !== lid) return l
+    const prog = { ...l.prog }
+    if (prog[itemId]) delete prog[itemId]; else prog[itemId] = Date.now()
+    return { ...l, prog }
+  }))
   const [busca, setBusca] = useState('')
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
   const [notas, setNotas] = useState(() => {
@@ -642,13 +728,13 @@ export default function App() {
 
   const endpoint = s => `${s.url}/maraton/${s.room}.json`
 
-  const empujar = async (conf, v, e, n) => {
+  const empujar = async (conf, v, e, n, l) => {
     try {
       setSyncEstado('syncing')
       const t = Date.now()
       const r = await fetch(endpoint(conf), {
         method: 'PUT',
-        body: JSON.stringify({ v, e, n: n || notas, t }),
+        body: JSON.stringify({ v, e, n: n || notas, l: l || listas, t }),
       })
       if (!r.ok) throw new Error(r.status)
       ultimoAplicado.current = t
@@ -667,10 +753,12 @@ export default function App() {
         setVistas(datos.v || {})
         setEps(datos.e || {})
         setNotas(datos.n || {})
+        setListas(datos.l || [])
         try {
           localStorage.setItem(KEY, JSON.stringify(datos.v || {}))
           localStorage.setItem(KEY_EPS, JSON.stringify(datos.e || {}))
           localStorage.setItem(KEY_NOTAS, JSON.stringify(datos.n || {}))
+          localStorage.setItem(KEY_LISTAS, JSON.stringify(datos.l || []))
         } catch {}
       }
       setSyncEstado('ok')
@@ -689,9 +777,9 @@ export default function App() {
   useEffect(() => {
     if (!sync) return
     if (aplicandoRemoto.current) { aplicandoRemoto.current = false; return }
-    const id = setTimeout(() => empujar(sync, vistas, eps, notas), 1200)
+    const id = setTimeout(() => empujar(sync, vistas, eps, notas, listas), 1200)
     return () => clearTimeout(id)
-  }, [vistas, eps, notas])
+  }, [vistas, eps, notas, listas])
 
   const activarSync = async (url, roomExistente) => {
     const room = roomExistente || Math.random().toString(36).slice(2, 10)
@@ -704,12 +792,15 @@ export default function App() {
         const v = { ...(datos && datos.v || {}), ...vistas }
         const e = { ...(datos && datos.e || {}), ...eps }
         const n = { ...(datos && datos.n || {}), ...notas }
+        const lRemoto = (datos && datos.l) || []
+        const l = [...lRemoto, ...listas.filter(x => !lRemoto.some(r => r.id === x.id))]
         aplicandoRemoto.current = true
-        setVistas(v); setEps(e); setNotas(n)
+        setVistas(v); setEps(e); setNotas(n); setListas(l)
         localStorage.setItem(KEY, JSON.stringify(v))
         localStorage.setItem(KEY_EPS, JSON.stringify(e))
         localStorage.setItem(KEY_NOTAS, JSON.stringify(n))
-        await empujar(conf, v, e, n)
+        localStorage.setItem(KEY_LISTAS, JSON.stringify(l))
+        await empujar(conf, v, e, n, l)
       } catch { setSyncEstado('error'); return false }
     } else {
       await empujar(conf, vistas, eps)
@@ -814,6 +905,12 @@ export default function App() {
     DATA.forEach(saga => saga.eras.forEach(era => era.items.forEach(item => {
       m[item.id] = { item, c: era.c, esComic: saga.saga === 'comics' }
     })))
+    return m
+  }, [])
+
+  const idOrden = useMemo(() => {
+    const m = {}; let i = 0
+    DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => { m[it.id] = i++ })))
     return m
   }, [])
 
@@ -973,6 +1070,7 @@ export default function App() {
             <button className="tab" aria-pressed={vista === 'crono'} onClick={() => setVista('crono')}>Cronológico</button>
             <button className="tab" aria-pressed={vista === 'estreno'} onClick={() => setVista('estreno')}>Por estreno</button>
             <button className="tab" aria-pressed={vista === 'comics'} onClick={() => setVista('comics')}>Cómics</button>
+            <button className="tab" aria-pressed={vista === 'listas'} onClick={() => setVista('listas')}>Listas</button>
             <button className="tab" aria-pressed={vista === 'galeria'} onClick={() => setVista('galeria')}>Galería</button>
             <button className="tab" aria-pressed={vista === 'multiverso'} onClick={() => setVista('multiverso')}>Multiverso</button>
             <button className="tab" aria-pressed={vista === 'stats'} onClick={() => setVista('stats')}>Estadísticas</button>
@@ -1015,7 +1113,73 @@ export default function App() {
       </header>
 
       {vista === 'multiverso' && <Estrellas />}
-      {vista === 'multiverso' ? (
+      {vista === 'listas' ? (
+        <main className="listas-vista">
+          {(() => {
+            const l = listas.find(x => x.id === listaActiva)
+            if (l) {
+              const itemsOrdenados = [...l.items]
+                .sort((a, b) => (idOrden[a] ?? 999) - (idOrden[b] ?? 999))
+                .map(id => indice[id]).filter(Boolean)
+              const v = itemsOrdenados.filter(({ item }) => l.prog[item.id]).length
+              return (
+                <div>
+                  <button className="chip-btn" onClick={() => setListaActiva(null)}>← Mis listas</button>
+                  <header className="lista-hero">
+                    <h2 className="lista-nombre">📋 {l.nombre}</h2>
+                    <span className="stat-foot">{v} / {itemsOrdenados.length} vistos en esta lista · progreso independiente del maratón</span>
+                    <div className="barra"><i style={{ width: `${itemsOrdenados.length ? 100 * v / itemsOrdenados.length : 0}%` }} /></div>
+                    <AgregarALista indice={indice} idOrden={idOrden} enLista={l.items}
+                      onAgregar={id => toggleEnLista(l.id, id)} />
+                  </header>
+                  {itemsOrdenados.length === 0 && (
+                    <p className="saga-desc">La lista está vacía: busca títulos arriba o añádelos desde cualquier ficha.</p>
+                  )}
+                  <div className="grid tierra-grid">
+                    {itemsOrdenados.map(({ item, c, esComic }, i) => (
+                      <Card key={item.id} item={item} num={i + 1} c={c} esComic={esComic}
+                        vista={!!l.prog[item.id]}
+                        onToggle={() => toggleProgLista(l.id, item.id)}
+                        onAbrir={() => setDetalle({ item, c, esComic })}
+                        delay={Math.min(i * 30, 300)} eps={eps}
+                        miNota={notas[item.id] && notas[item.id].p} />
+                    ))}
+                  </div>
+                  <BorrarLista onBorrar={() => borrarLista(l.id)} />
+                </div>
+              )
+            }
+            return (
+              <>
+                <p className="saga-desc mv-intro">
+                  Rutas personalizadas con su propio progreso, independiente del maratón principal — perfectas para re-ver con alguien o armar sesiones temáticas.
+                </p>
+                <CrearLista onCrear={crearLista} />
+                {listas.length === 0 ? (
+                  <p className="saga-desc">Aún no tienes listas: crea la primera arriba.</p>
+                ) : (
+                  <div className="mv-grid">
+                    {listas.map(l => {
+                      const total = l.items.length
+                      const v = l.items.filter(id => l.prog[id]).length
+                      return (
+                        <article key={l.id} className="mv-card lista-card" role="button" tabIndex={0}
+                          onClick={() => setListaActiva(l.id)}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setListaActiva(l.id) } }}>
+                          <h2 className="mv-nombre">📋 {l.nombre}</h2>
+                          <div className="barra"><i style={{ width: `${total ? 100 * v / total : 0}%` }} /></div>
+                          <span className="stat-foot">{v} / {total} títulos vistos</span>
+                          <span className="mv-entrar">Abrir lista →</span>
+                        </article>
+                      )
+                    })}
+                  </div>
+                )}
+              </>
+            )
+          })()}
+        </main>
+      ) : vista === 'multiverso' ? (
         <main className="multiverso">
           {tierra ? (() => {
             const u = MULTIVERSO.find(x => x.num === tierra)
@@ -1374,7 +1538,8 @@ export default function App() {
           onClose={() => setDetalle(null)}
           eps={eps} toggleEp={toggleEp}
           nota={notas[detalle.item.id] || {}}
-          ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)} />
+          ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)}
+          listas={listas} toggleEnLista={toggleEnLista} />
       )}
 
       <Footer onReset={() => { setVistas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
@@ -1495,6 +1660,8 @@ function Footer({ onReset }) {
       const datos = {
         v: JSON.parse(localStorage.getItem(KEY) || '{}'),
         e: JSON.parse(localStorage.getItem(KEY_EPS) || '{}'),
+        n: JSON.parse(localStorage.getItem(KEY_NOTAS) || '{}'),
+        l: JSON.parse(localStorage.getItem(KEY_LISTAS) || '[]'),
       }
       const cod = btoa(unescape(encodeURIComponent(JSON.stringify(datos))))
       navigator.clipboard.writeText(cod).then(() => {
@@ -1507,6 +1674,8 @@ function Footer({ onReset }) {
       const datos = JSON.parse(decodeURIComponent(escape(atob(codigo.trim()))))
       if (datos.v) localStorage.setItem(KEY, JSON.stringify(datos.v))
       if (datos.e) localStorage.setItem(KEY_EPS, JSON.stringify(datos.e))
+      if (datos.n) localStorage.setItem(KEY_NOTAS, JSON.stringify(datos.n))
+      if (datos.l) localStorage.setItem(KEY_LISTAS, JSON.stringify(datos.l))
       window.location.reload()
     } catch {
       setMsgImport('Código no válido')
