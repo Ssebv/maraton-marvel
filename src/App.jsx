@@ -936,6 +936,7 @@ export default function App() {
               <div className="tierra" style={{ '--tc': u.c }}>
                 <button className="chip-btn" onClick={() => setTierra(null)}>← Volver al multiverso</button>
                 <header className="tierra-hero">
+                  <span className="planeta planeta-grande" aria-hidden="true" />
                   <span className="mv-num tierra-num">{u.num}</span>
                   <h2 className="tierra-nombre">{u.nombre}</h2>
                   <span className="tierra-estado">{u.estado}</span>
@@ -969,6 +970,7 @@ export default function App() {
                     role="button" tabIndex={0}
                     onClick={() => setTierra(u.num)}
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTierra(u.num) } }}>
+                    <span className="planeta planeta-mini" aria-hidden="true" />
                     <span className="mv-num">{u.num}</span>
                     <h2 className="mv-nombre">{u.nombre}</h2>
                     <p className="mv-desc">{u.desc}</p>
