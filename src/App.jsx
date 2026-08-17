@@ -461,6 +461,99 @@ function MapaMultiverso({ onAbrir }) {
   )
 }
 
+// ── Club de maratón: ranking de grupo y comentarios por título vía Firebase ──
+function Club({ club, vistas, eps, onSalir, onInvitar }) {
+  const [miembros, setMiembros] = useState(null)
+  useEffect(() => {
+    let vivo = true
+    const carga = async () => {
+      try {
+        const r = await fetch(`${club.url}/club/${club.sala}/m.json`)
+        const j = await r.json()
+        if (vivo && j) setMiembros(j)
+      } catch {}
+    }
+    carga()
+    const iv = setInterval(carga, 60000)
+    window.addEventListener('focus', carga)
+    return () => { vivo = false; clearInterval(iv); window.removeEventListener('focus', carga) }
+  }, [club])
+  const filas = useMemo(() => {
+    const out = [{ alias: club.alias, yo: true, ...resumenMaraton(vistas, eps) }]
+    for (const [alias, m] of Object.entries(miembros || {})) {
+      if (alias === club.alias) continue
+      out.push({ alias, yo: false, t: m.t, ...resumenMaraton(deBits(m.v, ORDEN_IDS), deBits(m.e, ORDEN_EPS)) })
+    }
+    return out.sort((a, b) => b.n - a.n || b.min - a.min)
+  }, [miembros, vistas, eps, club])
+  const total = ORDEN_IDS.length
+  const media = Math.round(filas.reduce((s, f) => s + f.n, 0) / filas.length)
+  const medallas = ['🥇', '🥈', '🥉']
+  return (
+    <section className="duelo club">
+      <div className="duelo-cab">
+        <h2>🏆 Club de maratón <span className="club-sala">· sala {club.sala}</span></h2>
+        <button className="chip-btn" onClick={onInvitar}>Invitar</button>
+        <button className="chip-btn" onClick={onSalir}>Salir</button>
+      </div>
+      {filas.map((f, i) => (
+        <div className={`duelo-fila${f.yo ? ' yo' : ''}`} key={f.alias}>
+          <span className="duelo-nombre">{medallas[i] || `${i + 1}º`} {f.alias}{f.yo ? ' (tú)' : ''}</span>
+          <div className="duelo-barra"><i style={{ width: `${Math.round(f.n / total * 100)}%` }} /></div>
+          <span className="duelo-datos">{f.n}/{total} · {fmtDur(f.min)}</span>
+        </div>
+      ))}
+      <p className="duelo-veredicto">
+        Media del club: <b>{media}/{total}</b> títulos.
+        {filas.length < 2 && ' Aún estás solo: pulsa Invitar y comparte el código.'}
+      </p>
+      <p className="duelo-fecha">Cada miembro publica su avance al marcar; el ranking se refresca solo.</p>
+    </section>
+  )
+}
+
+function ComentariosClub({ club, item, vista }) {
+  const [lista, setLista] = useState(null)
+  const [txt, setTxt] = useState('')
+  const [desvelado, setDesvelado] = useState(false)
+  const ruta = `${club.url}/club/${club.sala}/c/${item.id}.json`
+  const carga = () => fetch(ruta).then(r => r.json())
+    .then(j => setLista(j ? Object.values(j).sort((a, b) => a.f - b.f) : [])).catch(() => setLista([]))
+  useEffect(() => { setDesvelado(false); setTxt(''); setLista(null); carga() }, [item.id])
+  const envia = async () => {
+    const t = txt.trim()
+    if (!t) return
+    setTxt('')
+    try {
+      await fetch(ruta, { method: 'POST', body: JSON.stringify({ n: club.alias, t, f: Date.now() }) })
+      carga()
+    } catch {}
+  }
+  if (lista === null) return null
+  const oculto = !vista && !desvelado && lista.length > 0
+  return (
+    <div className="club-coments">
+      <span className="valoracion-label">Club · {lista.length === 1 ? '1 comentario' : `${lista.length} comentarios`}</span>
+      {oculto ? (
+        <button className="club-velo" onClick={() => setDesvelado(true)}>
+          🙈 Aún no lo has visto: pulsa para leer los comentarios del club
+        </button>
+      ) : lista.map((c, i) => (
+        <p className="club-coment" key={i}>
+          <b>{c.n}</b> {c.t}
+          <span className="club-coment-f">{new Date(c.f).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+        </p>
+      ))}
+      <div className="club-coment-envio">
+        <input className="busca" placeholder="Comenta para el club (sin spoilers gordos 😉)…"
+          value={txt} maxLength={280} onChange={e => setTxt(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') envia() }} />
+        <button className="chip-btn" onClick={envia}>Enviar</button>
+      </div>
+    </div>
+  )
+}
+
 function Duelo({ amigo, vistas, eps, onQuitar }) {
   const esLive = amigo.tipo === 'live'
   const [remoto, setRemoto] = useState(null)
@@ -832,7 +925,7 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miN
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club }) {
   const { item, c, esComic } = d
   const extra = useTmdb(item)
   const [verTrailer, setVerTrailer] = useState(false)
@@ -983,6 +1076,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               </span>
             </div>
           )}
+          {club && <ComentariosClub club={club} item={item} vista={vista} />}
           {extra && extra.prov.length > 0 && (
             <p className="modal-prov">📺 Hoy en España: <b>{extra.prov.join(' · ')}</b></p>
           )}
@@ -1292,9 +1386,32 @@ export default function App() {
     setAmigo(a)
     try { a ? localStorage.setItem('maraton-marvel-amigo-v1', JSON.stringify(a)) : localStorage.removeItem('maraton-marvel-amigo-v1') } catch {}
   }
+  const [club, setClub] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('maraton-marvel-club-v1')) } catch { return null }
+  })
+  const [clubModal, setClubModal] = useState(false)
+  const [clubCod, setClubCod] = useState('')
+  const [clubAlias, setClubAlias] = useState('')
+  const [clubError, setClubError] = useState('')
+  const [clubInvitar, setClubInvitar] = useState(false)
+  const guardaClub = c => {
+    setClub(c)
+    try { c ? localStorage.setItem('maraton-marvel-club-v1', JSON.stringify(c)) : localStorage.removeItem('maraton-marvel-club-v1') } catch {}
+  }
+  // publica tu avance en el club (con retardo para agrupar marcas)
+  useEffect(() => {
+    if (!club || perfil) return
+    const t = setTimeout(() => {
+      fetch(`${club.url}/club/${club.sala}/m/${encodeURIComponent(club.alias)}.json`, {
+        method: 'PUT',
+        body: JSON.stringify({ v: aBits(vistas, ORDEN_IDS), e: aBits(eps, ORDEN_EPS), t: Date.now() }),
+      }).catch(() => {})
+    }, 2500)
+    return () => clearTimeout(t)
+  }, [club, vistas, eps, perfil])
   useEffect(() => {
     const onKey = e => {
-      if (e.key === 'Escape') { setPlanModal(false); setPerfilModal(false); setSyncModal(false); setDueloModal(false) }
+      if (e.key === 'Escape') { setPlanModal(false); setPerfilModal(false); setSyncModal(false); setDueloModal(false); setClubModal(false); setClubInvitar(false) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -2028,9 +2145,16 @@ export default function App() {
                 ⚔️ Modo duelo
               </button>
             )}
+            {!club && (
+              <button className="chip-btn" onClick={() => { setClubCod(''); setClubAlias(''); setClubError(''); setClubModal(true) }}>
+                🏆 Club de maratón
+              </button>
+            )}
           </div>
 
           {amigo && <Duelo amigo={amigo} vistas={vistas} eps={eps} onQuitar={() => guardaAmigo(null)} />}
+          {club && <Club club={club} vistas={vistas} eps={eps}
+            onSalir={() => guardaClub(null)} onInvitar={() => setClubInvitar(true)} />}
 
           <Actividad vistas={vistas} eps={eps} />
 
@@ -2234,6 +2358,54 @@ export default function App() {
           </div>
         </div>
       )}
+      {clubModal && (
+        <div className="overlay" onClick={() => setClubModal(false)} role="dialog" aria-modal="true" aria-label="Club de maratón">
+          <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+            <button className="cerrar" onClick={() => setClubModal(false)} aria-label="Cerrar">✕</button>
+            <div className="modal-info">
+              <h2 className="modal-titulo">🏆 Club de maratón</h2>
+              <p className="modal-res">
+                Un ranking en vivo para 2 o más personas, con comentarios por título.
+                {sync ? ' Puedes crear un club con tu Firebase o unirte con un código.' : ' Para crear un club necesitas configurar antes ☁️ Sincronizar; para unirte basta un código.'}
+              </p>
+              <input className="busca duelo-input" placeholder="Código del club (déjalo vacío para crear uno)"
+                value={clubCod} onChange={e => { setClubCod(e.target.value); setClubError('') }} />
+              <input className="busca duelo-input" placeholder="Tu nombre en el club"
+                value={clubAlias} onChange={e => { setClubAlias(e.target.value); setClubError('') }} maxLength={20} />
+              {clubError && <p className="duelo-error">{clubError}</p>}
+              <button className="accion-principal" onClick={() => {
+                const alias = clubAlias.trim()
+                if (!alias) { setClubError('Ponte un nombre para el ranking.'); return }
+                if (clubCod.trim()) {
+                  const sc = decodificaSync(clubCod)
+                  if (!sc) { setClubError('Ese código no parece válido: revisa que esté completo.'); return }
+                  guardaClub({ url: sc.url, sala: sc.room, alias }); setClubModal(false); setClubInvitar(true); return
+                }
+                if (!sync) { setClubError('Para crear un club, configura primero ☁️ Sincronizar (arriba) o pide un código.'); return }
+                const sala = 'club-' + Math.random().toString(36).slice(2, 8)
+                guardaClub({ url: sync.url, sala, alias }); setClubModal(false); setClubInvitar(true)
+              }}>
+                {clubCod.trim() ? 'Unirme al club' : 'Crear club'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {clubInvitar && club && (
+        <div className="overlay" onClick={() => setClubInvitar(false)} role="dialog" aria-modal="true" aria-label="Invitar al club">
+          <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+            <button className="cerrar" onClick={() => setClubInvitar(false)} aria-label="Cerrar">✕</button>
+            <div className="modal-info">
+              <h2 className="modal-titulo">Invita a tu club</h2>
+              <p className="modal-res">Comparte este código: quien lo pegue en 🏆 Club de maratón entrará en tu sala.</p>
+              <code className="club-codigo">{codigoSync(club.url, club.sala)}</code>
+              <button className="accion-principal" onClick={() => {
+                try { navigator.clipboard.writeText(codigoSync(club.url, club.sala)) } catch {}
+              }}>Copiar código</button>
+            </div>
+          </div>
+        </div>
+      )}
       {perfilModal && (
         <div className="overlay" onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label="Perfil compartible">
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
@@ -2326,7 +2498,7 @@ export default function App() {
           eps={eps} toggleEp={toggleEp}
           nota={notas[detalle.item.id] || {}}
           ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)}
-          listas={listas} toggleEnLista={toggleEnLista} />
+          listas={listas} toggleEnLista={toggleEnLista} club={club} />
       )}
 
       <Footer onReset={() => { setVistas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
