@@ -3,6 +3,7 @@ import { DATA, ESTRENOS, JOYA_MIN, KEY, MULTIVERSO } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
 import { EPISODES } from './episodes.js'
+import { TMDB, TMDB_KEY } from './tmdb.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
@@ -49,6 +50,83 @@ const deBits = (b64, orden) => {
     orden.forEach((clave, i) => { if (bin.charCodeAt(i >> 3) & (1 << (i & 7))) set[clave] = 1 })
   } catch {}
   return set
+}
+
+// Acepta un enlace de perfil compartible (o solo su código) y devuelve el snapshot
+const parsePerfilCod = entrada => {
+  try {
+    let cod = (entrada || '').trim()
+    if (cod.includes('perfil=')) cod = new URL(cod).searchParams.get('perfil') || ''
+    const j = JSON.parse(decodeURIComponent(escape(atob(cod.replace(/-/g, '+').replace(/_/g, '/')))))
+    if (!j.v) return null
+    return { n: j.n || 'Alguien', v: j.v, e: j.e || '', t: j.t || null }
+  } catch { return null }
+}
+const resumenMaraton = (vistasSet, epsSet) => {
+  let n = 0, min = 0
+  DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
+    if (vistasSet[it.id]) { n++; min += it.d || 0 }
+    else if (it.tipo === 'serie' && EPISODES[it.id]) {
+      const tot = EPISODES[it.id].length
+      const vistos = EPISODES[it.id].filter(ep => epsSet[`${it.id}:${ep.s}:${ep.n}`]).length
+      if (vistos) min += Math.round((it.d || 0) * vistos / tot)
+    }
+  })))
+  return { n, min }
+}
+
+// ── TMDB: tráilers, fotogramas y dónde ver (caché de 7 días en el navegador) ──
+const TMDB_IMG = 'https://image.tmdb.org/t/p/'
+const tmdbMem = {}
+async function tmdbJson(ruta) {
+  const r = await fetch(`https://api.themoviedb.org/3${ruta}${ruta.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=es-ES`)
+  if (!r.ok) throw new Error('tmdb ' + r.status)
+  return r.json()
+}
+async function cargaTmdb(itemId) {
+  if (tmdbMem[itemId]) return tmdbMem[itemId]
+  const m = TMDB[itemId]
+  if (!m) return null
+  const claveLS = 'maraton-marvel-tmdb-v1:' + itemId
+  try {
+    const g = JSON.parse(localStorage.getItem(claveLS))
+    if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
+  } catch {}
+  const [tid, tipo] = m
+  const base = await tmdbJson(`/${tipo}/${tid}?append_to_response=videos,watch/providers`)
+  const vids = (base.videos && base.videos.results) || []
+  const tr = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official)
+    || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer')
+    || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser')
+  const es = base['watch/providers'] && base['watch/providers'].results && base['watch/providers'].results.ES
+  const d = {
+    trailer: tr ? tr.key : null,
+    prov: ((es && es.flatrate) || []).map(p => p.provider_name).slice(0, 4),
+    eps: {},
+  }
+  if (tipo === 'tv' && EPISODES[itemId]) {
+    const temporadas = [...new Set(EPISODES[itemId].map(e => e.s))]
+    for (const t of temporadas) {
+      try {
+        const sd = await tmdbJson(`/tv/${tid}/season/${t}`)
+        ;(sd.episodes || []).forEach(ep => {
+          d.eps[`${t}:${ep.episode_number}`] = { im: ep.still_path || null, o: ep.overview || null }
+        })
+      } catch {}
+    }
+  }
+  tmdbMem[itemId] = d
+  try { localStorage.setItem(claveLS, JSON.stringify({ t: Date.now(), d })) } catch {}
+  return d
+}
+function useTmdb(item) {
+  const [extra, setExtra] = useState(() => tmdbMem[item.id] || null)
+  useEffect(() => {
+    let vivo = true
+    cargaTmdb(item.id).then(d => { if (vivo && d) setExtra(d) }).catch(() => {})
+    return () => { vivo = false }
+  }, [item.id])
+  return extra
 }
 
 const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
@@ -275,6 +353,50 @@ function AvisosBtn() {
 }
 
 const TITULOS = Object.fromEntries(DATA.flatMap(s => s.eras.flatMap(e => e.items)).map(i => [i.id, i.t]))
+
+function Duelo({ amigo, vistas, eps, onQuitar }) {
+  const datos = useMemo(() => {
+    const vA = deBits(amigo.v, ORDEN_IDS)
+    const eA = deBits(amigo.e, ORDEN_EPS)
+    const yo = resumenMaraton(vistas, eps)
+    const el = resumenMaraton(vA, eA)
+    const comunes = ORDEN_IDS.filter(id => vistas[id] && vA[id]).length
+    const soloEl = ORDEN_IDS.filter(id => !vistas[id] && vA[id])
+    return { yo, el, comunes, soloYo: yo.n - comunes, soloEl }
+  }, [amigo, vistas, eps])
+  const total = ORDEN_IDS.length
+  const dif = datos.yo.n - datos.el.n
+  return (
+    <section className="duelo">
+      <div className="duelo-cab">
+        <h2>⚔️ Duelo de maratones</h2>
+        <button className="chip-btn" onClick={onQuitar}>Quitar rival</button>
+      </div>
+      {[['Tú', datos.yo], [amigo.n, datos.el]].map(([quien, r]) => (
+        <div className="duelo-fila" key={quien}>
+          <span className="duelo-nombre">{quien}</span>
+          <div className="duelo-barra"><i style={{ width: `${Math.round(r.n / total * 100)}%` }} /></div>
+          <span className="duelo-datos">{r.n}/{total} · {fmtDur(r.min)}</span>
+        </div>
+      ))}
+      <p className="duelo-veredicto">
+        {dif === 0
+          ? 'Empate técnico: vais exactamente igual.'
+          : dif > 0
+            ? <>Vas <b>{dif} título{dif > 1 ? 's' : ''}</b> por delante. 🏆</>
+            : <>{amigo.n} te saca <b>{-dif} título{dif < -1 ? 's' : ''}</b>: toca acelerar.</>}
+        {' '}Habéis visto <b>{datos.comunes}</b> en común.
+      </p>
+      {datos.soloEl.length > 0 && (
+        <p className="duelo-pista">
+          {amigo.n} ya vio y tú no: {datos.soloEl.slice(0, 3).map(id => TITULOS[id]).join(' · ')}
+          {datos.soloEl.length > 3 ? ` y ${datos.soloEl.length - 3} más` : ''}
+        </p>
+      )}
+      {amigo.t && <p className="duelo-fecha">Su maratón a fecha de {fmtFecha(new Date(amigo.t).toISOString().slice(0, 10))} — pídele un enlace nuevo para actualizarlo.</p>}
+    </section>
+  )
+}
 
 function Novedades({ eps }) {
   const [lista, setLista] = useState([])
@@ -584,6 +706,10 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miN
 
 function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista }) {
   const { item, c, esComic } = d
+  const extra = useTmdb(item)
+  const [verTrailer, setVerTrailer] = useState(false)
+  const [sinAbierta, setSinAbierta] = useState(null)
+  const [desveladas, setDesveladas] = useState({})
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -661,20 +787,41 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                       {lista.filter(e => e.s === t).map(e => {
                         const clave = `${item.id}:${e.s}:${e.n}`
                         const hecho = !!eps[clave]
+                        const tm = extra && extra.eps[`${e.s}:${e.n}`]
+                        const sinopsis = tm && tm.o
+                        const abierta = sinAbierta === clave
                         return (
-                          <button key={clave} className={`ep${hecho ? ' hecho' : ''}`}
-                            onClick={() => toggleEp(clave)}
-                            title={hecho ? 'Marcar pendiente' : 'Marcar visto'}>
-                            <span className="ep-thumb" style={{ background: `linear-gradient(135deg, ${c[0]}, ${c[1]})` }}>
-                              {POSTERS[item.id] && <img className="ep-img" src={POSTERS[item.id]} alt="" loading="lazy" />}
-                              <span className={`ep-velo${hecho ? ' hecho' : ''}`} />
-                              {hecho ? <CheckIcon /> : <span className="ep-num">{e.n}</span>}
-                            </span>
-                            <span className="ep-info">
-                              <span className="ep-titulo">{e.t}</span>
-                              {e.f && <span className="ep-fecha">{new Date(e.f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
-                            </span>
-                          </button>
+                          <div key={clave} className={`ep${hecho ? ' hecho' : ''}`}>
+                            <button className="ep-toggle"
+                              onClick={() => toggleEp(clave)}
+                              title={hecho ? 'Marcar pendiente' : 'Marcar visto'}>
+                              <span className="ep-thumb" style={{ background: `linear-gradient(135deg, ${c[0]}, ${c[1]})` }}>
+                                {tm && tm.im
+                                  ? <img className="ep-img real" src={TMDB_IMG + 'w300' + tm.im} alt="" loading="lazy" />
+                                  : POSTERS[item.id] && <img className="ep-img" src={POSTERS[item.id]} alt="" loading="lazy" />}
+                                <span className={`ep-velo${hecho ? ' hecho' : ''}`} />
+                                {hecho ? <CheckIcon /> : <span className="ep-num">{e.n}</span>}
+                              </span>
+                              <span className="ep-info">
+                                <span className="ep-titulo">{e.t}</span>
+                                {e.f && <span className="ep-fecha">{new Date(e.f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                              </span>
+                            </button>
+                            {sinopsis && (
+                              <button className={`ep-sin-btn${abierta ? ' on' : ''}`} aria-label="Sinopsis del episodio"
+                                onClick={() => setSinAbierta(abierta ? null : clave)}>ⓘ</button>
+                            )}
+                            {abierta && sinopsis && (
+                              (hecho || desveladas[clave])
+                                ? <p className="ep-sinopsis">{sinopsis}</p>
+                                : <p className="ep-sinopsis velada" role="button" tabIndex={0}
+                                    onClick={() => setDesveladas(v => ({ ...v, [clave]: true }))}
+                                    onKeyDown={ev => { if (ev.key === 'Enter') setDesveladas(v => ({ ...v, [clave]: true })) }}>
+                                    <span className="ep-sin-aviso">🙈 Aún no lo has visto: pulsa para desvelar la sinopsis</span>
+                                    <span className="ep-sin-borroso" aria-hidden="true">{sinopsis}</span>
+                                  </p>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
@@ -708,13 +855,26 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               </span>
             </div>
           )}
+          {extra && extra.prov.length > 0 && (
+            <p className="modal-prov">📺 Hoy en España: <b>{extra.prov.join(' · ')}</b></p>
+          )}
+          {verTrailer && extra && extra.trailer && (
+            <div className="trailer-caja">
+              <iframe src={`https://www.youtube-nocookie.com/embed/${extra.trailer}?autoplay=1`}
+                title={`Tráiler de ${item.t}`} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+            </div>
+          )}
           <div className="modal-acciones">
             <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
               {vista ? '✓ Vista — marcar pendiente' : esComic ? 'Marcar como leído' : 'Marcar como vista'}
             </button>
             {!esComic && (
               <>
-                <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer">▶ Tráiler</a>
+                {extra && extra.trailer
+                  ? <button className="ghost" aria-pressed={verTrailer} onClick={() => setVerTrailer(v => !v)}>
+                      {verTrailer ? '✕ Cerrar tráiler' : '▶ Tráiler'}
+                    </button>
+                  : <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer">▶ Tráiler</a>}
                 <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb</a>
                 {!item.tipo && (
                   <a className="ghost" href={`https://letterboxd.com/search/films/${encodeURIComponent(item.t)}/`}
@@ -993,9 +1153,19 @@ export default function App() {
   })
   const [syncEstado, setSyncEstado] = useState('off')
   const [syncModal, setSyncModal] = useState(false)
+  const [amigo, setAmigo] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('maraton-marvel-amigo-v1')) } catch { return null }
+  })
+  const [dueloModal, setDueloModal] = useState(false)
+  const [dueloInput, setDueloInput] = useState('')
+  const [dueloError, setDueloError] = useState('')
+  const guardaAmigo = a => {
+    setAmigo(a)
+    try { a ? localStorage.setItem('maraton-marvel-amigo-v1', JSON.stringify(a)) : localStorage.removeItem('maraton-marvel-amigo-v1') } catch {}
+  }
   useEffect(() => {
     const onKey = e => {
-      if (e.key === 'Escape') { setPlanModal(false); setPerfilModal(false); setSyncModal(false) }
+      if (e.key === 'Escape') { setPlanModal(false); setPerfilModal(false); setSyncModal(false); setDueloModal(false) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -1722,7 +1892,14 @@ export default function App() {
             <button className="chip-btn" onClick={() => { setPerfilUrl(''); setPerfilCopiado(false); setPerfilModal(true) }}>
               🔗 Perfil compartible
             </button>
+            {!amigo && (
+              <button className="chip-btn" onClick={() => { setDueloInput(''); setDueloError(''); setDueloModal(true) }}>
+                ⚔️ Modo duelo
+              </button>
+            )}
           </div>
+
+          {amigo && <Duelo amigo={amigo} vistas={vistas} eps={eps} onQuitar={() => guardaAmigo(null)} />}
 
           <Actividad vistas={vistas} eps={eps} />
 
@@ -1897,6 +2074,29 @@ export default function App() {
         )
       })()}
 
+      {dueloModal && (
+        <div className="overlay" onClick={() => setDueloModal(false)} role="dialog" aria-modal="true" aria-label="Modo duelo">
+          <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+            <button className="cerrar" onClick={() => setDueloModal(false)} aria-label="Cerrar">✕</button>
+            <div className="modal-info">
+              <h2 className="modal-titulo">⚔️ Modo duelo</h2>
+              <p className="modal-res">
+                Pídele a la otra persona su enlace de <b>Perfil compartible</b> (botón 🔗 en sus Estadísticas)
+                y pégalo aquí: compararé vuestros maratones. Todo queda en este navegador.
+              </p>
+              <input className="busca duelo-input" placeholder="https://…?perfil=… o el código"
+                value={dueloInput} onChange={e => { setDueloInput(e.target.value); setDueloError('') }} />
+              {dueloError && <p className="duelo-error">{dueloError}</p>}
+              <button className="accion-principal" onClick={() => {
+                const p = parsePerfilCod(dueloInput)
+                if (!p) { setDueloError('Ese enlace no parece un perfil válido: revisa que esté completo.'); return }
+                guardaAmigo(p); setDueloModal(false); }}>
+                Empezar el duelo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {perfilModal && (
         <div className="overlay" onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label="Perfil compartible">
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>

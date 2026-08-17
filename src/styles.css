@@ -509,6 +509,7 @@ h3{
 }
 .ep-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 25%}
 .ep-velo{position:absolute; inset:0; background:rgba(8,9,14,.45); transition:background .2s}
+.ep-img.real ~ .ep-velo{background:linear-gradient(180deg, transparent 40%, rgba(8,9,14,.55))}
 .ep:hover .ep-velo{background:rgba(8,9,14,.25)}
 .ep-velo.hecho{background:color-mix(in srgb, var(--done) 55%, rgba(8,9,14,.5))}
 .ep-thumb svg, .ep-num{position:relative; z-index:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
@@ -1058,3 +1059,44 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
 .novedades .cerrar{position:static; flex:none}
 .aviso-btn{align-self:flex-start; font-size:12px}
 .aviso-on{font-size:12px; color:var(--doom); font-weight:600}
+/* ── Duelo de maratones ── */
+.duelo{
+  margin-top:20px; padding:18px 20px;
+  background:var(--panel); border:1.5px solid var(--line); border-radius:12px;
+  display:flex; flex-direction:column; gap:10px; box-shadow:var(--card-shadow);
+}
+.duelo-cab{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.duelo-cab h2{margin:0}
+.duelo-fila{display:grid; grid-template-columns:minmax(60px,140px) 1fr auto; align-items:center; gap:12px}
+.duelo-nombre{font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.duelo-barra{height:10px; background:var(--panel2); border-radius:5px; overflow:hidden}
+.duelo-barra i{display:block; height:100%; background:linear-gradient(90deg, var(--red), #E8A93C); border-radius:5px}
+.duelo-datos{font-size:12.5px; color:var(--ink2); font-variant-numeric:tabular-nums; white-space:nowrap}
+.duelo-veredicto{margin:2px 0 0; font-size:14px}
+.duelo-pista{margin:0; font-size:12.5px; color:var(--ink2)}
+.duelo-fecha{margin:0; font-size:11.5px; color:var(--ink3)}
+.duelo-input{width:100%; min-height:38px}
+.duelo-error{margin:0; font-size:12.5px; color:var(--red); font-weight:600}
+/* ── TMDB: tráiler, dónde ver y sinopsis de episodios ── */
+.modal-prov{margin:2px 0 0; font-size:12.5px; color:var(--ink2)}
+.trailer-caja{position:relative; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden; border:1.5px solid var(--line); background:#000}
+.trailer-caja iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+.ep{position:relative; flex-wrap:wrap}
+.ep-toggle{
+  flex:1; min-width:0; display:flex; align-items:center; gap:10px; text-align:left;
+  background:none; border:none; padding:0; cursor:pointer; color:inherit; font:inherit;
+}
+.ep-sin-btn{
+  flex:none; align-self:center; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--line); background:transparent; color:var(--ink2);
+  font-size:13px; cursor:pointer;
+}
+.ep-sin-btn.on, .ep-sin-btn:hover{color:var(--ink); border-color:var(--ink2)}
+.ep-sinopsis{
+  flex-basis:100%; margin:6px 0 2px; font-size:12.5px; line-height:1.5; color:var(--ink2);
+  background:var(--panel); border-radius:8px; padding:9px 12px;
+}
+.ep-sinopsis.velada{cursor:pointer; position:relative}
+.ep-sin-borroso{display:block; filter:blur(7px); user-select:none}
+.ep-sin-aviso{display:block; font-weight:600; color:var(--ink); margin-bottom:6px}
+.ep-img.real{object-fit:cover}

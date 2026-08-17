@@ -29,14 +29,14 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 | ~~**Escenas post-créditos**~~ ✅ | Hecho: cada ficha de película dice cuántas escenas hay en los créditos y avisa de las imprescindibles | — |
 | ~~**Listas propias**~~ ✅ | Hecho: pestaña Listas con progreso independiente, buscador para añadir y chips en cada ficha; sincronizadas | — |
 
-## Fase 3 — Contenido enriquecido (requiere clave gratuita de TMDB)
+## Fase 3 — Contenido enriquecido (TMDB) ✅ COMPLETA
 
 | Funcionalidad | Qué aporta | Esfuerzo |
 |---|---|---|
-| **Fotogramas por episodio** | Imagen real de cada capítulo en las fichas (lo que Wikipedia no ofrece) | Medio |
-| **Tráilers integrados** | Reproductor de YouTube dentro de la ficha en vez de enlace externo | Bajo |
-| **Sinopsis por episodio** | Resumen de cada capítulo con aviso anti-spoiler (desenfocado hasta pulsar) | Medio |
-| **Dónde ver actualizado** | Plataformas de streaming al día por país vía TMDB providers | Medio |
+| ~~**Fotogramas por episodio**~~ ✅ | Hecho: imagen real de cada capítulo en las fichas, desde TMDB con caché de 7 días | — |
+| ~~**Tráilers integrados**~~ ✅ | Hecho: reproductor de YouTube dentro de la ficha (con enlace externo de respaldo) | — |
+| ~~**Sinopsis por episodio**~~ ✅ | Hecho: botón ⓘ por episodio; si no lo has visto, sale desenfocada hasta que pulses | — |
+| ~~**Dónde ver actualizado**~~ ✅ | Hecho: "Hoy en España" en cada ficha con las plataformas al día | — |
 
 ## Fase 4 — Vistas nuevas
 
@@ -49,7 +49,8 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 
 ## Fase 5 — Social (el salto grande)
 
-- **Multi-perfil**: varios usuarios sobre la misma base de Firebase (cada uno su progreso, vista comparada "yo vs. mi pareja").
+- ~~**Modo duelo**~~ ✅ (primer paso del multi-perfil): pega el enlace de perfil de otra persona y compara maratones — barras, quién va delante, títulos en común y los que te faltan.
+- **Multi-perfil completo**: progreso en vivo de varios usuarios sobre la misma base de Firebase.
 - **Club de maratón**: progreso medio del grupo, quién va más adelantado, comentarios por episodio con anti-spoilers.
 
 ---
