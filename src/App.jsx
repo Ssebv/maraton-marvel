@@ -244,8 +244,66 @@ function CuentaAtras({ meta }) {
                 : `Acelera · llevas ${meta.ritmo} min/día en las últimas 2 semanas`}
             </span>
           )}
+          <AvisosBtn />
         </div>
       )}
+    </div>
+  )
+}
+
+function AvisosBtn() {
+  const sop = typeof Notification !== 'undefined' && 'serviceWorker' in navigator
+  const [estado, setEstado] = useState(() => {
+    if (!sop) return 'no-sop'
+    if (Notification.permission === 'granted') return 'on'
+    if (Notification.permission === 'denied') return 'denegado'
+    return 'off'
+  })
+  if (estado === 'no-sop' || estado === 'denegado') return null
+  const activar = async () => {
+    const p = await Notification.requestPermission()
+    if (p !== 'granted') { setEstado(p === 'denied' ? 'denegado' : 'off'); return }
+    setEstado('on')
+    try {
+      const reg = await navigator.serviceWorker.ready
+      if ('periodicSync' in reg) await reg.periodicSync.register('estrenos', { minInterval: 12 * 3600 * 1000 })
+    } catch {}
+  }
+  return estado === 'on'
+    ? <span className="aviso-on">🔔 Te avisaré cuando algo se estrene</span>
+    : <button className="chip-btn aviso-btn" onClick={activar}>🔔 Avisarme de estrenos</button>
+}
+
+const TITULOS = Object.fromEntries(DATA.flatMap(s => s.eras.flatMap(e => e.items)).map(i => [i.id, i.t]))
+
+function Novedades({ eps }) {
+  const [lista, setLista] = useState([])
+  const [cerrado, setCerrado] = useState(false)
+  useEffect(() => {
+    try {
+      const KEY_V = 'maraton-marvel-visita-v1'
+      const antes = localStorage.getItem(KEY_V)
+      const hoy = new Date().toISOString().slice(0, 10)
+      localStorage.setItem(KEY_V, hoy)
+      if (!antes || antes >= hoy) return
+      const seguidas = new Set(Object.keys(eps).map(k => k.split(':')[0]))
+      const out = []
+      for (const e of ESTRENOS) {
+        if (e.fecha && e.fecha > antes && e.fecha <= hoy) out.push(`${e.t} ya se estrenó`)
+      }
+      for (const [id, caps] of Object.entries(EPISODES)) {
+        if (!seguidas.has(id)) continue
+        const nuevos = caps.filter(ep => ep.f && ep.f > antes && ep.f <= hoy).length
+        if (nuevos) out.push(`${TITULOS[id] || id}: ${nuevos} episodio${nuevos > 1 ? 's' : ''} nuevo${nuevos > 1 ? 's' : ''}`)
+      }
+      setLista(out.slice(0, 4))
+    } catch {}
+  }, [])
+  if (!lista.length || cerrado) return null
+  return (
+    <div className="novedades" role="status">
+      <span>🔔 <b>Desde tu última visita:</b> {lista.join(' · ')}</span>
+      <button className="cerrar" onClick={() => setCerrado(true)} aria-label="Cerrar aviso">✕</button>
     </div>
   )
 }
@@ -1280,6 +1338,7 @@ export default function App() {
         </div>
       </section>
 
+      <Novedades eps={eps} />
       <div className="panel-superior">
         <div className="panel-izq">
         <div className="mapa" aria-label="Mapa de progreso">
