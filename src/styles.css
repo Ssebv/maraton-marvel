@@ -632,12 +632,45 @@ main.multiverso{margin-top:24px}
 .mv-nombre{margin:0; font-size:17px; font-weight:700; text-transform:none; letter-spacing:0}
 .mv-desc{margin:0; font-size:13.5px; color:var(--ink2); line-height:1.5}
 .mv-rel{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
-.mv-chip{
-  font-size:11.5px; font-weight:600; color:var(--ink2); cursor:pointer;
-  background:var(--panel2); border:1px solid var(--line); border-radius:999px; padding:3px 10px;
-  transition:color .15s, border-color .15s;
+.mv-card{cursor:pointer; transition:transform .25s cubic-bezier(.22,1,.36,1), border-color .2s, box-shadow .25s}
+.mv-card:hover{
+  transform:translate(-2px, -3px);
+  border-color:color-mix(in srgb, var(--tc, var(--violet)) 55%, var(--line));
+  box-shadow:5px 6px 0 color-mix(in srgb, var(--tc, var(--violet)) 40%, transparent);
 }
-.mv-chip:hover{color:var(--ink); border-color:var(--ink2)}
+.mv-card .mv-num{color:var(--tc, var(--violet)); background:color-mix(in srgb, var(--tc, var(--violet)) 15%, transparent)}
+.mv-estado{
+  font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:color-mix(in srgb, var(--tc, var(--violet)) 75%, var(--ink));
+}
+.mv-entrar{margin-top:auto; padding-top:6px; font-size:12px; font-weight:700; color:var(--tc, var(--violet))}
+
+/* Vista de una Tierra */
+.tierra{animation:portal .65s cubic-bezier(.22,1,.36,1) both}
+@keyframes portal{
+  from{clip-path:circle(0% at 50% 140px); opacity:.4}
+  to{clip-path:circle(150% at 50% 140px); opacity:1}
+}
+.tierra-hero{
+  margin:14px 0 18px; padding:26px 28px; border-radius:16px;
+  border:1.5px solid color-mix(in srgb, var(--tc) 45%, var(--line));
+  background:linear-gradient(160deg, color-mix(in srgb, var(--tc) 13%, transparent), transparent 60%), var(--panel);
+  box-shadow:0 0 70px -28px var(--tc);
+  display:flex; flex-direction:column; gap:6px;
+}
+.tierra-num{align-self:flex-start; color:var(--tc); background:color-mix(in srgb, var(--tc) 16%, transparent)}
+.tierra-nombre{margin:0; font-size:27px; font-weight:700; text-transform:none; letter-spacing:-.01em}
+.tierra-estado{
+  font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:color-mix(in srgb, var(--tc) 75%, var(--ink));
+}
+.tierra-desc{margin:4px 0 0; font-size:14.5px; color:var(--ink2); max-width:72ch; line-height:1.55}
+.tierra-barra{margin-top:10px}
+.tierra-barra > i{background:var(--tc)}
+.tierra-count{font-size:12px; color:var(--ink2); font-variant-numeric:tabular-nums}
+@media (min-width:1240px){
+  .tierra-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+}
 
 /* ── Vista por estreno ── */
 .anio{margin-top:36px}

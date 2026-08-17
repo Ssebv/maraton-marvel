@@ -561,6 +561,7 @@ export default function App() {
     history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
   }, [vista])
   const [detalle, setDetalle] = useState(null)
+  const [tierra, setTierra] = useState(null)
   const [busca, setBusca] = useState('')
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
   const [notas, setNotas] = useState(() => {
@@ -901,27 +902,62 @@ export default function App() {
 
       {vista === 'multiverso' ? (
         <main className="multiverso">
-          <p className="saga-desc mv-intro">
-            Los universos que hay que conocer antes de Vengadores: Doomsday. Pulsa un título relacionado para abrir su ficha.
-          </p>
-          <div className="mv-grid">
-            {MULTIVERSO.map(u => (
-              <article className="mv-card" key={u.num}>
-                <span className="mv-num">{u.num}</span>
-                <h2 className="mv-nombre">{u.nombre}</h2>
-                <p className="mv-desc">{u.desc}</p>
-                {u.ids.length > 0 && (
-                  <div className="mv-rel">
-                    {u.ids.map(id => indice[id] && (
-                      <button key={id} className="mv-chip" onClick={() => setDetalle(indice[id])}>
-                        {indice[id].item.t.length > 32 ? indice[id].item.t.slice(0, 30) + '…' : indice[id].item.t}
-                      </button>
-                    ))}
+          {tierra ? (() => {
+            const u = MULTIVERSO.find(x => x.num === tierra)
+            if (!u) { setTierra(null); return null }
+            const items = u.grupo
+              ? DATA.find(sg => sg.saga === u.grupo).eras.flatMap(era => era.items
+                  .filter(it => u.grupo !== 'ucm' || !it.uni)
+                  .map(item => ({ item, c: era.c })))
+              : u.ids.map(id => indice[id]).filter(Boolean)
+            const v = items.filter(({ item }) => vistas[item.id]).length
+            return (
+              <div className="tierra" style={{ '--tc': u.c }}>
+                <button className="chip-btn" onClick={() => setTierra(null)}>← Volver al multiverso</button>
+                <header className="tierra-hero">
+                  <span className="mv-num tierra-num">{u.num}</span>
+                  <h2 className="tierra-nombre">{u.nombre}</h2>
+                  <span className="tierra-estado">{u.estado}</span>
+                  <p className="tierra-desc">{u.desc}</p>
+                  <div className="barra tierra-barra">
+                    <i style={{ width: `${items.length ? 100 * v / items.length : 0}%` }} />
                   </div>
-                )}
-              </article>
-            ))}
-          </div>
+                  <span className="tierra-count">{v} / {items.length} completados en este universo</span>
+                </header>
+                <div className="grid tierra-grid">
+                  {items.map(({ item, c }, i) => (
+                    <Card key={item.id} item={item} num={i + 1} c={c}
+                      esComic={item.id.startsWith('c-')}
+                      vista={!!vistas[item.id]}
+                      onToggle={() => toggle(item.id)}
+                      onAbrir={() => setDetalle({ item, c, esComic: item.id.startsWith('c-') })}
+                      delay={Math.min(i * 30, 300)} eps={eps}
+                      miNota={notas[item.id] && notas[item.id].p} />
+                  ))}
+                </div>
+              </div>
+            )
+          })() : (
+            <>
+              <p className="saga-desc mv-intro">
+                Los universos que hay que conocer antes de Vengadores: Doomsday. Entra en cada Tierra para ver y marcar todo lo que ocurre en ella.
+              </p>
+              <div className="mv-grid">
+                {MULTIVERSO.map(u => (
+                  <article className="mv-card" key={u.num} style={{ '--tc': u.c }}
+                    role="button" tabIndex={0}
+                    onClick={() => setTierra(u.num)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTierra(u.num) } }}>
+                    <span className="mv-num">{u.num}</span>
+                    <h2 className="mv-nombre">{u.nombre}</h2>
+                    <p className="mv-desc">{u.desc}</p>
+                    <span className="mv-estado">{u.estado}</span>
+                    <span className="mv-entrar">Entrar en esta Tierra →</span>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
         </main>
       ) : vista === 'galeria' ? (
         <main className="galeria">
