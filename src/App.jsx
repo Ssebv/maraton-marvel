@@ -918,6 +918,13 @@ export default function App() {
   })
   const [syncEstado, setSyncEstado] = useState('off')
   const [syncModal, setSyncModal] = useState(false)
+  useEffect(() => {
+    const onKey = e => {
+      if (e.key === 'Escape') { setPlanModal(false); setPerfilModal(false); setSyncModal(false) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   const aplicandoRemoto = React.useRef(false)
   const ultimoAplicado = React.useRef(0)
 
