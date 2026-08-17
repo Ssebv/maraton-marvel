@@ -438,6 +438,13 @@ h3{
 .modal-meta .star{color:var(--gold); font-weight:700}
 .modal-meta .hist{color:var(--blue); font-weight:600}
 .modal-res{margin:0; font-size:15px; line-height:1.55}
+.modal-pc{
+  margin:2px 0 0; font-size:12.5px; font-weight:600;
+  color:var(--gold); background:var(--gold-soft);
+  border:1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  border-radius:8px; padding:7px 12px; align-self:flex-start;
+}
+.modal-pc.sin{color:var(--ink2); background:var(--panel2); border-color:var(--line)}
 .modal-nota{margin:0; font-size:13px; color:var(--ink3); font-style:italic}
 .personas{display:flex; flex-wrap:wrap; gap:14px 10px; margin-top:6px}
 .persona{

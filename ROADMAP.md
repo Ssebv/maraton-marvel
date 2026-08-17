@@ -26,7 +26,7 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 | ~~**Plan de sesión**~~ ✅ | Hecho: modal 🍿 con horas disponibles y propuesta en orden (películas completas + capítulos sueltos) | — |
 | ~~**Objetivo Doomsday**~~ ✅ | Hecho: ritmo necesario vs. tu ritmo real de 2 semanas, con semáforo en la cuenta atrás | — |
 | **Recordatorios de estreno** | Notificación (PWA) cuando salga un episodio nuevo de una serie en emisión que sigues | Medio |
-| **Escenas post-créditos** | Cuántas escenas tiene cada película y si merecen la espera — lo más pedido en foros de maratones | Bajo |
+| ~~**Escenas post-créditos**~~ ✅ | Hecho: cada ficha de película dice cuántas escenas hay en los créditos y avisa de las imprescindibles | — |
 | ~~**Listas propias**~~ ✅ | Hecho: pestaña Listas con progreso independiente, buscador para añadir y chips en cada ficha; sincronizadas | — |
 
 ## Fase 3 — Contenido enriquecido (requiere clave gratuita de TMDB)

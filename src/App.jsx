@@ -559,6 +559,13 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
           </p>
           {item.res && <p className="modal-res">{item.res}</p>}
           {item.n && <p className="modal-nota">{item.n}</p>}
+          {item.pc != null && (
+            <p className={`modal-pc${item.pc === '0' ? ' sin' : ''}`}>
+              {item.pc === '0'
+                ? <>🍿 Sin escenas post-créditos{item.pcn ? ` — ${item.pcn}` : ' — puedes saltarte los créditos'}</>
+                : <>🍿 Escenas en los créditos: <b>{item.pc}</b>{item.pcn ? ` · ${item.pcn}` : ''}</>}
+            </p>
+          )}
           {(directores.length > 0 || item.cast) && (
             <div className="personas">
               {directores.map(p => (
