@@ -5,7 +5,7 @@ Ordenado por fases según valor para el usuario y esfuerzo de desarrollo. Actual
 
 ## ✅ Ya construido
 
-Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios marcables · fichas con reparto fotografiado · estadísticas por fase · mapa de progreso · cuenta atrás de estrenos · buscador · ruta express · modo compacto · valoraciones y notas personales · compartir progreso como imagen · calendario de actividad con racha · logros/insignias · vista Galería · sincronización entre dispositivos (Firebase) · código de progreso portable · actualización mensual automática de estrenos (rutina en la nube) · diseño "edición de coleccionista".
+Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios marcables · fichas con reparto fotografiado · estadísticas por fase · mapa de progreso · cuenta atrás de estrenos · buscador · ruta express · modo compacto · valoraciones y notas personales · compartir progreso como imagen · calendario de actividad con racha · logros/insignias · vista Galería · guía del multiverso con Tierras enterables · PWA instalable · sincronización entre dispositivos (Firebase) · código de progreso portable · actualización mensual automática de estrenos (rutina en la nube) · diseño "edición de coleccionista".
 
 ---
 
@@ -17,7 +17,7 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 | ~~**Historial con fechas**~~ ✅ | Hecho: cada marca guarda fecha; calendario de 20 semanas con racha en Estadísticas | — |
 | **Ordenar por nota** | En cada era, alternar orden cronológico ↔ por nota IMDb ↔ por tu nota personal | Bajo |
 | ~~**Vista galería**~~ ✅ | Hecho: pestaña Galería con la pared de pósters | — |
-| **PWA instalable** | Manifest + service worker: icono en el móvil, apertura a pantalla completa y funcionamiento offline (los pósters ya son locales) | Medio |
+| ~~**PWA instalable**~~ ✅ | Hecho: manifest, icono propio y service worker con caché offline | — |
 
 ## Fase 2 — Planificación del maratón
 
