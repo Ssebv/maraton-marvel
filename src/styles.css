@@ -192,18 +192,19 @@ h1 .rojo{
 
 /* ── Barra de herramientas fija ── */
 .toolbar{
-  position:sticky; top:env(safe-area-inset-top, 0px); z-index:10;
-  margin:8px -20px 0; padding:12px 20px;
-  background:color-mix(in srgb, var(--bg) 82%, transparent);
-  -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
-  border-bottom:1px solid var(--line);
+  position:sticky; top:calc(env(safe-area-inset-top, 0px) + 10px); z-index:10;
+  margin:14px 0 4px; padding:10px 14px;
+  background:color-mix(in srgb, var(--panel) 74%, transparent);
+  -webkit-backdrop-filter:blur(26px) saturate(180%); backdrop-filter:blur(26px) saturate(180%);
+  border:1px solid color-mix(in srgb, var(--line) 75%, transparent);
+  border-radius:22px;
+  box-shadow:0 14px 34px -18px rgba(0,0,0,.55);
 }
 @supports not (background:color-mix(in srgb, red 50%, blue)){
   .toolbar{background:var(--bg)}
 }
 .controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-.tabs{display:flex; background:color-mix(in srgb, var(--panel2) 78%, transparent);
-  -webkit-backdrop-filter:blur(20px) saturate(160%); backdrop-filter:blur(20px) saturate(160%);
+.tabs{display:flex; background:var(--panel2);
   border:1px solid color-mix(in srgb, var(--line) 60%, transparent);
   border-radius:999px; padding:3px; gap:2px}
 .tab-ico, .tab-corto{display:none}
