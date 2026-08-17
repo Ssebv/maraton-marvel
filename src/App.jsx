@@ -68,6 +68,16 @@ function fmtDur(d) {
 
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
 const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo']
+const PESTANAS = [
+  { id: 'crono', ico: '📖', label: 'Cronológico', corto: 'Crono' },
+  { id: 'estreno', ico: '🗓️', label: 'Por estreno', corto: 'Estreno' },
+  { id: 'comics', ico: '💥', label: 'Cómics', corto: 'Cómics' },
+  { id: 'listas', ico: '📋', label: 'Listas', corto: 'Listas' },
+  { id: 'galeria', ico: '🖼️', label: 'Galería', corto: 'Galería' },
+  { id: 'multiverso', ico: '🪐', label: 'Multiverso', corto: 'Multi' },
+  { id: 'tiempo', ico: '⏳', label: 'Línea temporal', corto: 'Tiempo' },
+  { id: 'stats', ico: '📊', label: 'Estadísticas', corto: 'Stats' },
+]
 // Dúos y casos que el split por " y "/" & " rompería
 const DUOS = {
   'Anthony y Joe Russo': ['Hermanos Russo'],
@@ -1294,14 +1304,14 @@ export default function App() {
       <header className="toolbar">
         <div className="controles" role="group" aria-label="Vista y filtros">
           <div className="tabs">
-            <button className="tab" aria-pressed={vista === 'crono'} onClick={() => setVista('crono')}>Cronológico</button>
-            <button className="tab" aria-pressed={vista === 'estreno'} onClick={() => setVista('estreno')}>Por estreno</button>
-            <button className="tab" aria-pressed={vista === 'comics'} onClick={() => setVista('comics')}>Cómics</button>
-            <button className="tab" aria-pressed={vista === 'listas'} onClick={() => setVista('listas')}>Listas</button>
-            <button className="tab" aria-pressed={vista === 'galeria'} onClick={() => setVista('galeria')}>Galería</button>
-            <button className="tab" aria-pressed={vista === 'multiverso'} onClick={() => setVista('multiverso')}>Multiverso</button>
-            <button className="tab" aria-pressed={vista === 'tiempo'} onClick={() => setVista('tiempo')}>Línea temporal</button>
-            <button className="tab" aria-pressed={vista === 'stats'} onClick={() => setVista('stats')}>Estadísticas</button>
+            {PESTANAS.map(p => (
+              <button className="tab" key={p.id} aria-pressed={vista === p.id} aria-label={p.label}
+                onClick={() => setVista(p.id)}>
+                <span className="tab-ico" aria-hidden="true">{p.ico}</span>
+                <span className="tab-txt">{p.label}</span>
+                <span className="tab-corto" aria-hidden="true">{p.corto}</span>
+              </button>
+            ))}
           </div>
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>⚡ Ruta express</button>
           <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>Sin series</button>

@@ -202,7 +202,11 @@ h1 .rojo{
   .toolbar{background:var(--bg)}
 }
 .controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-.tabs{display:flex; background:var(--panel2); border-radius:999px; padding:3px; gap:2px}
+.tabs{display:flex; background:color-mix(in srgb, var(--panel2) 78%, transparent);
+  -webkit-backdrop-filter:blur(20px) saturate(160%); backdrop-filter:blur(20px) saturate(160%);
+  border:1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  border-radius:999px; padding:3px; gap:2px}
+.tab-ico, .tab-corto{display:none}
 .tab{
   border:none; background:none; color:var(--ink2); cursor:pointer;
   border-radius:999px; padding:5px 14px; font-size:13px; font-weight:600;
@@ -995,4 +999,43 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
   .lado .tipo.plat, .lado .tipo.uni{display:none}
   .enlaces{flex-direction:column; align-items:flex-end}
   .card{gap:12px; padding:12px}
+}
+
+/* ── Liquid Glass móvil: dock inferior + fichas como sheet ── */
+@keyframes sheetUp{from{transform:translateY(46%); opacity:.6}}
+@media (max-width:720px){
+  /* el backdrop-filter del toolbar crearía un containing block y atraparía al dock fijo */
+  .toolbar{-webkit-backdrop-filter:none; backdrop-filter:none; background:var(--bg)}
+  .tabs{
+    position:fixed; left:10px; right:10px;
+    bottom:calc(10px + env(safe-area-inset-bottom));
+    z-index:40; justify-content:space-between; gap:0; padding:5px;
+    background:color-mix(in srgb, var(--panel) 68%, transparent);
+    -webkit-backdrop-filter:blur(26px) saturate(180%); backdrop-filter:blur(26px) saturate(180%);
+    border:1px solid color-mix(in srgb, var(--line) 65%, transparent);
+    border-radius:26px;
+    box-shadow:0 14px 34px -12px rgba(0,0,0,.5);
+  }
+  .tab{
+    flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px;
+    padding:6px 2px 5px; border-radius:18px; background:transparent;
+  }
+  .tab-ico{display:block; font-size:17px; line-height:1.15}
+  .tab-txt{display:none}
+  .tab-corto{display:block; font-size:9.5px; font-weight:600; letter-spacing:.02em}
+  .tab[aria-pressed="true"]{background:transparent; color:var(--red); box-shadow:none}
+  .tab[aria-pressed="true"] .tab-ico{transform:translateY(-1px)}
+
+  .overlay{place-items:end center; padding:0}
+  .modal{
+    max-width:none; width:100%; border-radius:22px 22px 0 0; border-bottom:none;
+    max-height:92dvh; padding-top:26px;
+    padding-bottom:calc(20px + env(safe-area-inset-bottom));
+    animation:sheetUp .38s cubic-bezier(.32,.72,0,1) both;
+  }
+  .modal::before{
+    content:""; position:sticky; top:-18px; display:block; margin:-10px auto 8px;
+    width:38px; height:5px; border-radius:3px; flex:none;
+    background:color-mix(in srgb, var(--ink) 28%, transparent);
+  }
 }
