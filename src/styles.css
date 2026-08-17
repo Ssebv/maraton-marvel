@@ -695,15 +695,17 @@ main.galeria{margin-top:24px}
 .mv-cabecera{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:8px}
 .mv-cabecera .mv-intro{margin-bottom:0; flex:1; min-width:260px}
 .sistema-wrap{display:flex; justify-content:center; overflow:hidden; padding:10px 0 30px}
-.sistema{position:relative; width:660px; height:660px; flex:none}
+.sistema{position:relative; width:720px; height:720px; flex:none}
 .anillo{
   position:absolute; left:50%; top:50%; border-radius:50%;
-  border:1px dashed color-mix(in srgb, var(--ink) 14%, transparent);
+  border:1px dashed color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .orbita{position:absolute; left:50%; top:50%; border-radius:50%; pointer-events:none}
 .giro{position:absolute; inset:0; animation:girarOrbita linear infinite}
 .nav-pos{position:absolute; top:-31px; left:50%}
 .contra{animation:contraOrbita linear infinite}
+.orbita.inversa .giro{animation-direction:reverse}
+.orbita.inversa .contra{animation-direction:reverse}
 @keyframes girarOrbita{from{transform:rotate(0)} to{transform:rotate(360deg)}}
 @keyframes contraOrbita{from{transform:rotate(0)} to{transform:rotate(-360deg)}}
 .sistema:hover .giro, .sistema:hover .contra{animation-play-state:paused}
@@ -733,7 +735,7 @@ main.galeria{margin-top:24px}
 .planeta-nav:hover .nav-nombre, .sol:hover .nav-nombre{color:var(--ink)}
 @media (max-width:720px){
   .sistema-wrap{padding:0}
-  .sistema{transform:scale(.52); transform-origin:center center; margin:-150px 0}
+  .sistema{transform:scale(.48); transform-origin:center center; margin:-180px 0}
 }
 
 /* ── Guía del multiverso ── */

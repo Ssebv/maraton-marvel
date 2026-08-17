@@ -251,13 +251,17 @@ function Proximos() {
 }
 
 const ORBITAS = {
-  'Tierra-10005': [1, 0], 'Tierra-828': [1, 120], 'Tierra-838': [1, 240],
-  'Tierra-96283': [2, 30], 'Tierra-120703': [2, 150], 'Universo Sony': [2, 270],
-  'Universos What If': [3, 0], 'Marvel Zombies': [3, 90],
-  'Tierra-616 (cómics)': [3, 180], 'El Vacío': [3, 270],
+  'Tierra-10005':       [118, 20,  48,  1, 60],
+  'Tierra-828':         [148, 150, 63, -1, 52],
+  'Tierra-838':         [176, 260, 55,  1, 50],
+  'Tierra-96283':       [204, 60,  86, -1, 56],
+  'Tierra-120703':      [228, 190, 74,  1, 50],
+  'Universo Sony':      [252, 300, 105, -1, 54],
+  'Universos What If':  [276, 100, 92,  1, 58],
+  'Marvel Zombies':     [298, 230, 132, -1, 48],
+  'Tierra-616 (cómics)':[318, 330, 118,  1, 54],
+  'El Vacío':           [336, 40,  150, -1, 62],
 }
-const RADIOS = [130, 210, 290]
-const DURACIONES = [46, 78, 112]
 
 function PerfilView({ nombre, vistasP, epsP, notasP }) {
   const est = useMemo(() => {
@@ -1507,7 +1511,7 @@ export default function App() {
               {mvModo === 'sistema' ? (
                 <div className="sistema-wrap">
                   <div className="sistema">
-                    {RADIOS.map(r => (
+                    {Object.values(ORBITAS).map(([r]) => (
                       <span key={r} className="anillo"
                         style={{ width: r * 2, height: r * 2, marginLeft: -r, marginTop: -r }} />
                     ))}
@@ -1522,18 +1526,16 @@ export default function App() {
                       )
                     })()}
                     {MULTIVERSO.filter(u => ORBITAS[u.num]).map(u => {
-                      const [anillo, fase] = ORBITAS[u.num]
-                      const r = RADIOS[anillo - 1]
-                      const dur = DURACIONES[anillo - 1] + 's'
+                      const [r, fase, dur, dir, tam] = ORBITAS[u.num]
                       return (
-                        <div className="orbita" key={u.num}
+                        <div className={`orbita${dir < 0 ? ' inversa' : ''}`} key={u.num}
                           style={{ width: r * 2, height: r * 2, marginLeft: -r, marginTop: -r, transform: `rotate(${fase}deg)` }}>
-                          <div className="giro" style={{ animationDuration: dur }}>
+                          <div className="giro" style={{ animationDuration: dur + 's' }}>
                             <div className="nav-pos" style={{ transform: `translateX(-50%) rotate(${-fase}deg)` }}>
-                              <div className="contra" style={{ animationDuration: dur }}>
+                              <div className="contra" style={{ animationDuration: dur + 's' }}>
                                 <button className="planeta-nav" style={{ '--tc': u.c }}
                                   onClick={() => setTierra(u.num)} title={u.nombre}>
-                                  <span className="planeta planeta-orbe" />
+                                  <span className="planeta planeta-orbe" style={{ width: tam, height: tam }} />
                                   <span className="nav-nombre">{u.num.replace('Tierra-', 'T-')}</span>
                                 </button>
                               </div>
