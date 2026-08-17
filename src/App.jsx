@@ -156,7 +156,7 @@ const fmtFecha = f => f
   ? new Date(f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
   : null
 
-function CuentaAtras() {
+function CuentaAtras({ meta }) {
   const [ahora, setAhora] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setAhora(Date.now()), 1000)
@@ -189,6 +189,22 @@ function CuentaAtras() {
         <span className="cr-sep">:</span>
         <span className="cr-bloque"><b>{cuenta.ss}</b><small>seg</small></span>
       </div>
+      {meta && (
+        <div className="objetivo">
+          <span className="objetivo-linea">
+            🎯 Ruta express: {meta.restante > 0
+              ? <>quedan <b>{fmtDur(meta.restante)}</b> · necesitas <b>{meta.necesario} min/día</b></>
+              : <b>¡completada! Llegas de sobra al estreno</b>}
+          </span>
+          {meta.restante > 0 && (
+            <span className={`objetivo-chip ${meta.alDia ? 'ok' : 'tarde'}`}>
+              {meta.alDia
+                ? `Vas al día · ${meta.ritmo} min/día en las últimas 2 semanas`
+                : `Acelera · llevas ${meta.ritmo} min/día en las últimas 2 semanas`}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -592,6 +608,10 @@ export default function App() {
   const [detalle, setDetalle] = useState(null)
   const [tierra, setTierra] = useState(null)
   const [mvModo, setMvModo] = useState('sistema')
+  const [planModal, setPlanModal] = useState(false)
+  const [planHoras, setPlanHoras] = useState(2)
+  const [planExpress, setPlanExpress] = useState(true)
+  const [orden, setOrden] = useState('crono')
   const [busca, setBusca] = useState('')
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
   const [notas, setNotas] = useState(() => {
@@ -797,6 +817,66 @@ export default function App() {
     return m
   }, [])
 
+  const objetivo = useMemo(() => {
+    const meta = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
+    if (!meta) return null
+    const dias = Math.max(1, Math.ceil((new Date(meta.fecha + 'T00:00:00') - Date.now()) / 86400000))
+    let restante = 0
+    DATA.forEach(sg => { if (sg.saga === 'comics') return
+      sg.eras.forEach(era => era.items.forEach(it => {
+        if (it.exp && !vistas[it.id] && it.d) restante += it.d
+      })) })
+    const hace14 = Date.now() - 14 * 86400000
+    let visto14 = 0
+    DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
+      const t = vistas[it.id]
+      if (typeof t === 'number' && t > hace14 && it.d) visto14 += it.d
+    })))
+    Object.entries(eps).forEach(([clave, t]) => {
+      if (typeof t === 'number' && t > hace14) {
+        const sid = clave.split(':')[0]
+        const info = indice[sid]
+        if (info && info.item.d && EPISODES[sid]) visto14 += info.item.d / EPISODES[sid].length
+      }
+    })
+    const necesario = Math.ceil(restante / dias)
+    const ritmo = Math.round(visto14 / 14)
+    return { dias, restante, necesario, ritmo, alDia: restante === 0 || ritmo >= necesario }
+  }, [vistas, eps, indice])
+
+  const plan = useMemo(() => {
+    if (!planModal) return null
+    let restante = planHoras * 60
+    const items = []
+    let corta = false
+    for (const sg of DATA) {
+      if (sg.saga === 'comics' || corta) continue
+      for (const era of sg.eras) {
+        if (corta) break
+        for (const it of era.items) {
+          if (vistas[it.id] || !it.d) continue
+          if (planExpress && !it.exp) continue
+          if (it.tipo === 'serie' && EPISODES[it.id]) {
+            const lista = EPISODES[it.id]
+            const pendientes = lista.filter(e => !eps[`${it.id}:${e.s}:${e.n}`])
+            if (!pendientes.length) continue
+            const porEp = it.d / lista.length
+            const n = Math.min(pendientes.length, Math.floor(restante / porEp))
+            if (n < 1) continue
+            items.push({ item: it, c: era.c, nEps: n, min: Math.round(n * porEp), desde: pendientes[0] })
+            restante -= n * porEp
+          } else {
+            if (it.d > restante) continue
+            items.push({ item: it, c: era.c, min: it.d })
+            restante -= it.d
+          }
+          if (restante < 20 || items.length >= 8) { corta = true; break }
+        }
+      }
+    }
+    return { items, total: Math.round(planHoras * 60 - restante) }
+  }, [planModal, planHoras, planExpress, vistas, eps])
+
   const porAnio = useMemo(() => {
     const items = []
     DATA.forEach(saga => {
@@ -884,7 +964,7 @@ export default function App() {
         </div>
         <Proximos />
         </div>
-        <CuentaAtras />
+        <CuentaAtras meta={objetivo} />
       </div>
 
       <header className="toolbar">
@@ -903,6 +983,10 @@ export default function App() {
           <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>Solo pendientes</button>
           <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>Joyas ★7,5+</button>
           <button className="chip-btn" aria-pressed={compacto} onClick={alternaCompacto}>Compacto</button>
+          <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>🍿 Plan de sesión</button>
+          <button className="chip-btn" onClick={() => setOrden(o => o === 'crono' ? 'imdb' : o === 'imdb' ? 'nota' : 'crono')}>
+            {orden === 'crono' ? '↕ Orden: cronológico' : orden === 'imdb' ? '↕ Orden: nota IMDb' : '↕ Orden: tu nota'}
+          </button>
           <button className="chip-btn" onClick={() => {
             const pendientes = []
             DATA.forEach(saga => { if (saga.saga === 'comics') return
@@ -1163,8 +1247,13 @@ export default function App() {
                 <p className="saga-desc">{saga.desc}</p>
                 <div className="barra"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
                 {saga.eras.map(era => {
-                  const visibles = era.items.filter(it => pasaFiltro(it, esComic) && !oculto(it, esComic))
-                  const numerados = era.items.filter(it => pasaFiltro(it, esComic))
+                  const filtrados = era.items.filter(it => pasaFiltro(it, esComic))
+                  const numerados = orden === 'crono' ? filtrados : [...filtrados].sort((a, b) => {
+                    const va = orden === 'imdb' ? (a.s ?? -1) : ((notas[a.id] && notas[a.id].p) ?? -1)
+                    const vb = orden === 'imdb' ? (b.s ?? -1) : ((notas[b.id] && notas[b.id].p) ?? -1)
+                    return vb - va
+                  })
+                  const visibles = numerados.filter(it => !oculto(it, esComic))
                   if (!numerados.length) return null
                   const base = num
                   num += numerados.length
@@ -1228,6 +1317,49 @@ export default function App() {
             La vista por estreno ordena películas y series por su año de salida (los cómics solo aparecen en su pestaña).
           </p>
         </main>
+      )}
+
+      {planModal && plan && (
+        <div className="overlay" onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label="Plan de sesión">
+          <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+            <button className="cerrar" onClick={() => setPlanModal(false)} aria-label="Cerrar">✕</button>
+            <div className="modal-info">
+              <h2 className="modal-titulo">🍿 Plan de sesión</h2>
+              <p className="modal-res">¿Cuánto tiempo tienes hoy? Te propongo qué ver siguiendo el orden del maratón.</p>
+              <div className="plan-controles">
+                {[1, 2, 3, 4].map(h => (
+                  <button key={h} className="chip-btn" aria-pressed={planHoras === h}
+                    onClick={() => setPlanHoras(h)}>{h} h</button>
+                ))}
+                <button className="chip-btn destacado" aria-pressed={planExpress}
+                  onClick={() => setPlanExpress(x => !x)}>⚡ Solo ruta express</button>
+              </div>
+              {plan.items.length === 0 ? (
+                <p className="modal-res">Nada pendiente encaja en ese tiempo{planExpress ? ' dentro de la ruta express' : ''}. Prueba con más horas o quita el filtro.</p>
+              ) : (
+                <div className="plan-lista">
+                  {plan.items.map(({ item, c, nEps, min, desde }) => (
+                    <button key={item.id} className="ep plan-fila"
+                      onClick={() => { setPlanModal(false); setDetalle({ item, c, esComic: false }) }}>
+                      <span className="plan-cover"><Portada item={item} c={c} esComic={false} /></span>
+                      <span className="ep-info">
+                        <span className="ep-titulo">{item.t}</span>
+                        <span className="ep-fecha">
+                          {nEps
+                            ? `${nEps} capítulo${nEps > 1 ? 's' : ''} desde T${desde.s}·E${desde.n} · ~${fmtDur(min)}`
+                            : `Completa · ${fmtDur(min)}`}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {plan.items.length > 0 && (
+                <p className="plan-total">Total del plan: <b>{fmtDur(plan.total)}</b> de {planHoras} h disponibles</p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {syncModal && (
