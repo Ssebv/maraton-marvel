@@ -5,7 +5,7 @@ Ordenado por fases según valor para el usuario y esfuerzo de desarrollo. Actual
 
 ## ✅ Ya construido
 
-Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios marcables · fichas con reparto fotografiado · estadísticas por fase · mapa de progreso · cuenta atrás de estrenos · buscador · ruta express · modo compacto · valoraciones y notas personales · compartir progreso como imagen · calendario de actividad con racha · logros/insignias · vista Galería · guía del multiverso con Tierras enterables · PWA instalable · sincronización entre dispositivos (Firebase) · código de progreso portable · actualización mensual automática de estrenos (rutina en la nube) · diseño "edición de coleccionista".
+Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios marcables · fichas con reparto fotografiado · estadísticas por fase · mapa de progreso · cuenta atrás de estrenos · buscador · ruta express · modo compacto · valoraciones y notas personales · compartir progreso como imagen · calendario de actividad con racha · logros/insignias · vista Galería · guía del multiverso con Tierras enterables · PWA instalable · plan de sesión · objetivo Doomsday con ritmo · orden por nota · sistema solar del multiverso · sincronización entre dispositivos (Firebase) · código de progreso portable · actualización mensual automática de estrenos (rutina en la nube) · diseño "edición de coleccionista".
 
 ---
 
@@ -15,7 +15,7 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 |---|---|---|
 | ~~**Insignias y logros**~~ ✅ | Hecho: vitrina de 10 logros en Estadísticas | — |
 | ~~**Historial con fechas**~~ ✅ | Hecho: cada marca guarda fecha; calendario de 20 semanas con racha en Estadísticas | — |
-| **Ordenar por nota** | En cada era, alternar orden cronológico ↔ por nota IMDb ↔ por tu nota personal | Bajo |
+| ~~**Ordenar por nota**~~ ✅ | Hecho: chip que alterna cronológico ↔ IMDb ↔ tu nota | — |
 | ~~**Vista galería**~~ ✅ | Hecho: pestaña Galería con la pared de pósters | — |
 | ~~**PWA instalable**~~ ✅ | Hecho: manifest, icono propio y service worker con caché offline | — |
 
@@ -23,8 +23,8 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 
 | Funcionalidad | Qué aporta | Esfuerzo |
 |---|---|---|
-| **Plan de sesión** | "Tengo 3 horas esta noche" → propone qué ver hoy respetando el orden (p. ej. *Iron Man 2* + 2 capítulos de *Loki*) | Medio |
-| **Objetivo Doomsday** | Calcula el ritmo necesario ("2,1 h/día") para terminar la ruta express antes del estreno, con indicador de si vas al día | Medio |
+| ~~**Plan de sesión**~~ ✅ | Hecho: modal 🍿 con horas disponibles y propuesta en orden (películas completas + capítulos sueltos) | — |
+| ~~**Objetivo Doomsday**~~ ✅ | Hecho: ritmo necesario vs. tu ritmo real de 2 semanas, con semáforo en la cuenta atrás | — |
 | **Recordatorios de estreno** | Notificación (PWA) cuando salga un episodio nuevo de una serie en emisión que sigues | Medio |
 | **Listas propias** | Crear rutas personalizadas ("maratón con mi pareja", "solo lo cósmico") con su propio progreso | Medio |
 
