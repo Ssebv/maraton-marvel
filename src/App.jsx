@@ -88,13 +88,26 @@ function Portada({ item, c, esComic }) {
   const src = POSTERS[item.id]
   if (!src || err) return <Cover item={item} c={c} esComic={esComic} />
   if (ancha) {
+    const esLogo = /\.png$/i.test(src)
+    if (esLogo) {
+      return (
+        <div className="cover logo-cover" role="img" aria-label={`Carátula de ${item.t}`}
+          style={{ background: `linear-gradient(160deg, ${c[0]}, ${c[1]})` }}>
+          <img src={src} alt="" onError={() => setErr(true)} />
+          <span className="lc-year">{item.r}</span>
+          <span className="lc-tipo">
+            {esComic ? 'CÓMIC' : item.tipo === 'serie' ? 'SERIE' : item.tipo === 'esp' ? 'ESPECIAL' : 'PELÍCULA'}
+          </span>
+        </div>
+      )
+    }
     return (
-      <div className="cover logo-cover" role="img" aria-label={`Carátula de ${item.t}`}
-        style={{ background: `linear-gradient(160deg, ${c[0]}, ${c[1]})` }}>
+      <div className="cover keyart" role="img" aria-label={`Carátula de ${item.t}`}>
         <img src={src} alt="" onError={() => setErr(true)} />
+        <span className="ka-sombra" style={{ '--ka': c[0] }} />
         <span className="lc-year">{item.r}</span>
         <span className="lc-tipo">
-          {esComic ? 'CÓMIC' : item.tipo === 'serie' ? 'SERIE' : item.tipo === 'esp' ? 'ESPECIAL' : 'PELÍCULA'}
+          {item.tipo === 'serie' ? 'SERIE' : item.tipo === 'esp' ? 'ESPECIAL' : 'PELÍCULA'}
         </span>
       </div>
     )
@@ -309,6 +322,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota }) 
                             onClick={() => toggleEp(clave)}
                             title={hecho ? 'Marcar pendiente' : 'Marcar visto'}>
                             <span className="ep-thumb" style={{ background: `linear-gradient(135deg, ${c[0]}, ${c[1]})` }}>
+                              {POSTERS[item.id] && <img className="ep-img" src={POSTERS[item.id]} alt="" loading="lazy" />}
+                              <span className={`ep-velo${hecho ? ' hecho' : ''}`} />
                               {hecho ? <CheckIcon /> : <span className="ep-num">{e.n}</span>}
                             </span>
                             <span className="ep-info">
@@ -344,6 +359,10 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota }) 
               <>
                 <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer">▶ Tráiler</a>
                 <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb</a>
+                {!item.tipo && (
+                  <a className="ghost" href={`https://letterboxd.com/search/films/${encodeURIComponent(item.t)}/`}
+                    target="_blank" rel="noopener noreferrer">Letterboxd</a>
+                )}
               </>
             )}
           </div>
@@ -351,6 +370,95 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota }) 
       </div>
     </div>
   )
+}
+
+async function compartirImagen(est, comicsVistos, comicsTot) {
+  try { await document.fonts.ready } catch {}
+  const W = 1080, H = 1350
+  const cv = document.createElement('canvas')
+  cv.width = W; cv.height = H
+  const x = cv.getContext('2d')
+
+  // Fondo de tinta nocturna con semitono
+  x.fillStyle = '#0A0C14'; x.fillRect(0, 0, W, H)
+  x.fillStyle = 'rgba(242,239,230,0.045)'
+  for (let i = 20; i < W; i += 26) for (let j = 20; j < H; j += 26) {
+    x.beginPath(); x.arc(i, j, 1.3, 0, 7); x.fill()
+  }
+
+  // Rótulo rojo inclinado
+  x.save(); x.translate(80, 84); x.transform(1, 0, -0.14, 1, 0, 0)
+  x.fillStyle = '#E5484D'; x.fillRect(0, 0, 470, 46); x.restore()
+  x.fillStyle = '#fff'; x.font = '700 21px Archivo, sans-serif'
+  x.fillText('GUÍA DE MARATÓN · MI PROGRESO', 100, 115)
+
+  // Título
+  const g1 = x.createLinearGradient(80, 0, 980, 0)
+  g1.addColorStop(0, '#F2EFE6'); g1.addColorStop(.45, '#E5484D'); g1.addColorStop(1, '#F5B822')
+  x.fillStyle = g1
+  x.font = '400 88px "Archivo Black", Archivo, sans-serif'
+  x.fillText('MARATÓN', 80, 246)
+  x.fillText('MARVEL & X-MEN', 80, 340)
+
+  // Porcentaje gigante
+  const pct = est.totMin ? Math.round(100 * est.vistoMin / est.totMin) : 0
+  const g2 = x.createLinearGradient(80, 420, 80, 660)
+  g2.addColorStop(0, '#E5484D'); g2.addColorStop(1, '#F5B822')
+  x.fillStyle = g2
+  x.font = '400 230px "Archivo Black", Archivo, sans-serif'
+  x.fillText(pct + '%', 74, 650)
+  x.fillStyle = '#A39F92'; x.font = '500 34px Archivo, sans-serif'
+  x.fillText(`${est.titulosVistos} de ${est.titulosTot} títulos · ${Math.round(est.vistoMin / 60)} de ${Math.round(est.totMin / 60)} horas vistas`, 80, 716)
+
+  // Barras por saga
+  const filas = []
+  const fx = est.fases.filter(f => f.saga === 'xmen')
+  const fu = est.fases.filter(f => f.saga === 'ucm')
+  const suma = fs => fs.reduce((a, f) => [a[0] + f.visto, a[1] + f.tot, a[2] + f.vistos, a[3] + f.items], [0, 0, 0, 0])
+  const [xv, xt, xvi, xit] = suma(fx)
+  const [uv, ut, uvi, uit] = suma(fu)
+  filas.push(['SAGA X-MEN', xvi, xit, xt ? xv / xt : 0, '#F5B822'])
+  filas.push(['UCM', uvi, uit, ut ? uv / ut : 0, '#E5484D'])
+  filas.push(['CÓMICS', comicsVistos, comicsTot, comicsTot ? comicsVistos / comicsTot : 0, '#9B7BD8'])
+  let y = 800
+  filas.forEach(([nombre, v, n, frac, color]) => {
+    x.fillStyle = '#F2EFE6'; x.font = '700 26px Archivo, sans-serif'
+    x.fillText(nombre, 80, y + 26)
+    x.fillStyle = '#A39F92'; x.font = '500 26px Archivo, sans-serif'
+    x.textAlign = 'right'; x.fillText(`${v} / ${n}`, 1000, y + 26); x.textAlign = 'left'
+    x.fillStyle = '#1C2133'
+    x.beginPath(); x.roundRect(80, y + 44, 920, 22, 6); x.fill()
+    if (frac > 0) {
+      x.fillStyle = color
+      x.beginPath(); x.roundRect(80, y + 44, Math.max(14, 920 * frac), 22, 6); x.fill()
+    }
+    y += 116
+  })
+
+  // Cuenta atrás para el próximo estreno
+  const objetivo = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
+  if (objetivo) {
+    const dias = Math.ceil((new Date(objetivo.fecha + 'T00:00:00') - Date.now()) / 86400000)
+    x.strokeStyle = '#2E7D32'; x.lineWidth = 3
+    x.beginPath(); x.roundRect(80, y + 10, 920, 110, 14); x.stroke()
+    x.fillStyle = '#5FD068'; x.font = '700 24px Archivo, sans-serif'
+    x.fillText('⏳ PRÓXIMO GRAN ESTRENO', 116, y + 56)
+    x.fillStyle = '#F2EFE6'; x.font = '400 34px "Archivo Black", Archivo, sans-serif'
+    x.fillText(`${objetivo.t.toUpperCase()} · FALTAN ${dias} DÍAS`, 116, y + 100)
+  }
+
+  // Pie
+  x.fillStyle = '#6B6878'; x.font = '600 24px Archivo, sans-serif'
+  x.fillText('ssebv.github.io/maraton-marvel', 80, H - 60)
+
+  const blob = await new Promise(res => cv.toBlob(res, 'image/png'))
+  const archivo = new File([blob], 'maraton-marvel.png', { type: 'image/png' })
+  if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+    try { await navigator.share({ files: [archivo], title: 'Mi maratón Marvel' }); return } catch {}
+  }
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob); a.download = 'maraton-marvel.png'
+  a.click(); URL.revokeObjectURL(a.href)
 }
 
 export default function App() {
@@ -719,6 +827,11 @@ export default function App() {
               <span className="stat-foot">lecturas esenciales</span>
             </div>
           </div>
+
+          <button className="accion-principal compartir"
+            onClick={() => compartirImagen(estadisticas, estadisticas.comicsVistos, estadisticas.comicsTot)}>
+            📸 Compartir mi progreso como imagen
+          </button>
 
           <section className="grafica">
             <h3 className="grafica-titulo">Horas por fase y era</h3>
