@@ -27,6 +27,30 @@ const decodificaSync = cod => {
 }
 const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
+const ORDEN_IDS = (() => {
+  const a = []
+  DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => a.push(it.id))))
+  return a
+})()
+const ORDEN_EPS = (() => {
+  const a = []
+  ORDEN_IDS.forEach(id => (EPISODES[id] || []).forEach(e => a.push(`${id}:${e.s}:${e.n}`)))
+  return a
+})()
+const aBits = (marcas, orden) => {
+  const bytes = new Uint8Array(Math.ceil(orden.length / 8))
+  orden.forEach((clave, i) => { if (marcas[clave]) bytes[i >> 3] |= 1 << (i & 7) })
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+const deBits = (b64, orden) => {
+  const set = {}
+  try {
+    const bin = atob((b64 || '').replace(/-/g, '+').replace(/_/g, '/'))
+    orden.forEach((clave, i) => { if (bin.charCodeAt(i >> 3) & (1 << (i & 7))) set[clave] = 1 })
+  } catch {}
+  return set
+}
+
 const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
 
 function iniciales(t) {
@@ -234,6 +258,120 @@ const ORBITAS = {
 }
 const RADIOS = [130, 210, 290]
 const DURACIONES = [46, 78, 112]
+
+function PerfilView({ nombre, vistasP, epsP, notasP }) {
+  const est = useMemo(() => {
+    let totMin = 0, vistoMin = 0, titulosVistos = 0, titulosTot = 0
+    let comicsVistos = 0, comicsTot = 0
+    const sagas = []
+    DATA.forEach(sg => {
+      const esComic = sg.saga === 'comics'
+      const items = sg.eras.flatMap(era => era.items.map(item => ({ item, c: era.c })))
+      let v = 0
+      items.forEach(({ item }) => {
+        if (esComic) { comicsTot++; if (vistasP[item.id]) { comicsVistos++; v++ }; return }
+        titulosTot++
+        totMin += item.d || 0
+        if (vistasP[item.id]) { titulosVistos++; v++; vistoMin += item.d || 0 }
+        else if (item.tipo === 'serie' && EPISODES[item.id] && item.d) {
+          const hechos = EPISODES[item.id].filter(e => epsP[`${item.id}:${e.s}:${e.n}`]).length
+          vistoMin += item.d * hechos / EPISODES[item.id].length
+        }
+      })
+      sagas.push({ saga: sg.saga, titulo: sg.titulo, items, v })
+    })
+    const valoradas = Object.entries(notasP)
+      .map(([id, punt]) => {
+        for (const sg of DATA) for (const era of sg.eras) for (const item of era.items) {
+          if (item.id === id) return { item, c: era.c, punt, esComic: sg.saga === 'comics' }
+        }
+        return null
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.punt - a.punt)
+      .slice(0, 8)
+    return { totMin, vistoMin, titulosVistos, titulosTot, comicsVistos, comicsTot, sagas, valoradas }
+  }, [vistasP, epsP, notasP])
+
+  const pct = est.totMin ? Math.round(100 * est.vistoMin / est.totMin) : 0
+  const ctx = {
+    vistas: vistasP,
+    horasVistas: est.vistoMin / 60,
+    titulosVistos: est.titulosVistos,
+    titulosTot: est.titulosTot,
+    xmenCompleto: DATA[0].eras.every(era => era.items.every(it => vistasP[it.id])),
+    expressCompleta: DATA.slice(0, 2).every(sg => sg.eras.every(era => era.items.filter(it => it.exp).every(it => vistasP[it.id]))),
+    todoCompleto: DATA.every(sg => sg.eras.every(era => era.items.every(it => vistasP[it.id]))),
+  }
+  if (perfil) return <PerfilView {...perfil} />
+
+  return (
+    <div className="wrap">
+      <section className="hero">
+        <div className="hero-titulo">
+          <p className="hero-eyebrow">Perfil compartido · solo lectura</p>
+          <h1>El maratón de <span className="rojo">{nombre}</span></h1>
+        </div>
+        <div className="stats">
+          <div className="stat">
+            <span className="stat-label">Horas vistas</span>
+            <span className="stat-num">{Math.round(est.vistoMin / 60)}<small> / {Math.round(est.totMin / 60)} h</small></span>
+            <div className="barra"><i style={{ width: `${pct}%` }} /></div>
+            <span className="stat-foot">{pct}% del maratón</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Títulos vistos</span>
+            <span className="stat-num">{est.titulosVistos}<small> / {est.titulosTot}</small></span>
+            <span className="stat-foot">películas, series y especiales</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Cómics leídos</span>
+            <span className="stat-num">{est.comicsVistos}<small> / {est.comicsTot}</small></span>
+            <span className="stat-foot">lecturas esenciales</span>
+          </div>
+        </div>
+        <div className="mapa" aria-label="Mapa de progreso">
+          {est.sagas.map(sg => (
+            <div className="mapa-fila" key={sg.saga}>
+              <span className="mapa-label">
+                {sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? 'UCM' : 'Cómics'}
+              </span>
+              <div className="mapa-dots">
+                {sg.items.map(({ item, c }) => (
+                  <span key={item.id} className={`dot${vistasP[item.id] ? ' on' : ''}`}
+                    style={{ '--dc': c[0] }} title={item.t} />
+                ))}
+              </div>
+              <span className="mapa-count">{sg.v}/{sg.items.length}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+      <main className="stats-vista">
+        <Logros ctx={ctx} />
+        {est.valoradas.length > 0 && (
+          <section className="grafica">
+            <h3 className="grafica-titulo">Sus valoraciones</h3>
+            <div className="galeria-grid perfil-valoradas">
+              {est.valoradas.map(({ item, c, punt, esComic }) => (
+                <div key={item.id} className="galeria-item perfil-item" title={item.t}>
+                  <Portada item={item} c={c} esComic={esComic} />
+                  <span className="perfil-estrellas">{'★'.repeat(punt)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+      <footer>
+        <p className="nota-pie">Esta página es una instantánea de solo lectura del progreso de {nombre}.</p>
+        <div className="reset">
+          <a className="accion-principal" href={window.location.pathname}>Crea tu propio maratón →</a>
+        </div>
+      </footer>
+    </div>
+  )
+}
 
 function MiniTl({ item, c, vista, onAbrir }) {
   return (
@@ -678,8 +816,9 @@ export default function App() {
     return ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo'].includes(h) ? h : 'crono'
   })
   useEffect(() => {
+    if (perfil) return
     history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
-  }, [vista])
+  }, [vista, perfil])
   const [detalle, setDetalle] = useState(null)
   const [tierra, setTierra] = useState(null)
   const [mvModo, setMvModo] = useState('sistema')
@@ -693,6 +832,30 @@ export default function App() {
   const [listaActiva, setListaActiva] = useState(null)
   const [cine, setCine] = useState(false)
   const [cineIdx, setCineIdx] = useState(0)
+  const [perfilModal, setPerfilModal] = useState(false)
+  const [perfilNombre, setPerfilNombre] = useState('')
+  const [perfilUrl, setPerfilUrl] = useState('')
+  const [perfilCopiado, setPerfilCopiado] = useState(false)
+  const perfil = useMemo(() => {
+    const cod = new URLSearchParams(window.location.search).get('perfil')
+    if (!cod) return null
+    try {
+      const j = JSON.parse(decodeURIComponent(escape(atob(cod.replace(/-/g, '+').replace(/_/g, '/')))))
+      return {
+        nombre: j.n || 'Alguien',
+        vistasP: deBits(j.v, ORDEN_IDS),
+        epsP: deBits(j.e, ORDEN_EPS),
+        notasP: Object.fromEntries((j.r || []).map(([i, p]) => [ORDEN_IDS[i], p])),
+      }
+    } catch { return null }
+  }, [])
+  const generarPerfil = nombre => {
+    const r = []
+    ORDEN_IDS.forEach((id, i) => { const p = notas[id] && notas[id].p; if (p) r.push([i, p]) })
+    const j = { n: nombre, v: aBits(vistas, ORDEN_IDS), e: aBits(eps, ORDEN_EPS), r, t: Date.now() }
+    const cod = btoa(unescape(encodeURIComponent(JSON.stringify(j)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    return `${window.location.origin}${window.location.pathname}?perfil=${cod}`
+  }
   const guardaListas = next => {
     setListas(next)
     try { localStorage.setItem(KEY_LISTAS, JSON.stringify(next)) } catch {}
@@ -780,6 +943,7 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (perfil) return
     if (!sync) { setSyncEstado('off'); return }
     tirar(sync)
     const id = setInterval(() => tirar(sync), 25000)
@@ -789,7 +953,7 @@ export default function App() {
   }, [sync])
 
   useEffect(() => {
-    if (!sync) return
+    if (perfil || !sync) return
     if (aplicandoRemoto.current) { aplicandoRemoto.current = false; return }
     const id = setTimeout(() => empujar(sync, vistas, eps, notas, listas), 1200)
     return () => clearTimeout(id)
@@ -1032,6 +1196,8 @@ export default function App() {
   let delayIdx = 0
   const nextDelay = () => Math.min((delayIdx++) * 30, 360)
   const pct = stats.totN ? Math.round(100 * stats.totV / stats.totN) : 0
+
+  if (perfil) return <PerfilView {...perfil} />
 
   return (
     <div className="wrap">
@@ -1449,10 +1615,15 @@ export default function App() {
             </div>
           </div>
 
-          <button className="accion-principal compartir"
-            onClick={() => compartirImagen(estadisticas, estadisticas.comicsVistos, estadisticas.comicsTot)}>
-            📸 Compartir mi progreso como imagen
-          </button>
+          <div className="stats-acciones">
+            <button className="accion-principal compartir"
+              onClick={() => compartirImagen(estadisticas, estadisticas.comicsVistos, estadisticas.comicsTot)}>
+              📸 Compartir como imagen
+            </button>
+            <button className="chip-btn" onClick={() => { setPerfilUrl(''); setPerfilCopiado(false); setPerfilModal(true) }}>
+              🔗 Perfil compartible
+            </button>
+          </div>
 
           <Actividad vistas={vistas} eps={eps} />
 
@@ -1626,6 +1797,42 @@ export default function App() {
           </div>
         )
       })()}
+
+      {perfilModal && (
+        <div className="overlay" onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label="Perfil compartible">
+          <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+            <button className="cerrar" onClick={() => setPerfilModal(false)} aria-label="Cerrar">✕</button>
+            <div className="modal-info">
+              <h2 className="modal-titulo">🔗 Perfil compartible</h2>
+              <p className="modal-res">
+                Genera una página de <b>solo lectura</b> con tu progreso, logros y valoraciones.
+                Todo va dentro del propio enlace: quien lo reciba no puede tocar tu maratón (tus notas de texto no se incluyen).
+              </p>
+              <input className="busca sync-input" placeholder="Tu nombre para el perfil" value={perfilNombre}
+                maxLength={30} onChange={e => setPerfilNombre(e.target.value)} aria-label="Tu nombre" />
+              <div className="modal-acciones">
+                <button className="accion-principal" onClick={() => {
+                  const n = perfilNombre.trim() || 'Alguien'
+                  setPerfilUrl(generarPerfil(n))
+                  setPerfilCopiado(false)
+                }}>Generar enlace</button>
+                {perfilUrl && (
+                  <button className="chip-btn" onClick={() => {
+                    navigator.clipboard.writeText(perfilUrl).then(() => {
+                      setPerfilCopiado(true); setTimeout(() => setPerfilCopiado(false), 2500)
+                    })
+                  }}>{perfilCopiado ? '¡Copiado!' : 'Copiar enlace'}</button>
+                )}
+              </div>
+              {perfilUrl && (
+                <div className="sync-codigo">
+                  <code>{perfilUrl}</code>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {planModal && plan && (
         <div className="overlay" onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label="Plan de sesión">
