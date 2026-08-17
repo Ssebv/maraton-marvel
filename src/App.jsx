@@ -84,12 +84,11 @@ function Cover({ item, c, esComic }) {
 
 function Portada({ item, c, esComic }) {
   const [err, setErr] = useState(false)
-  const [ancha, setAncha] = useState(false)
+  const [ancha, setAncha] = useState(null) // null | 'logo' | 'keyart'
   const src = POSTERS[item.id]
   if (!src || err) return <Cover item={item} c={c} esComic={esComic} />
   if (ancha) {
-    const esLogo = /\.png$/i.test(src)
-    if (esLogo) {
+    if (ancha === 'logo') {
       return (
         <div className="cover logo-cover" role="img" aria-label={`Carátula de ${item.t}`}
           style={{ background: `linear-gradient(160deg, ${c[0]}, ${c[1]})` }}>
@@ -115,7 +114,23 @@ function Portada({ item, c, esComic }) {
   return (
     <img className="cover foto" src={src} alt={`Póster de ${item.t}`}
       loading="lazy"
-      onLoad={e => { if (e.target.naturalWidth > e.target.naturalHeight * 1.05) setAncha(true) }}
+      onLoad={e => {
+        const img = e.target
+        if (img.naturalWidth <= img.naturalHeight * 1.05) return
+        // logo si la imagen tiene transparencia; keyart si es fotográfica opaca
+        let transparente = false
+        try {
+          const cv = document.createElement('canvas')
+          cv.width = 24; cv.height = 24
+          const ctx = cv.getContext('2d')
+          ctx.drawImage(img, 0, 0, 24, 24)
+          const px = ctx.getImageData(0, 0, 24, 24).data
+          for (let i = 3; i < px.length; i += 4) {
+            if (px[i] < 250) { transparente = true; break }
+          }
+        } catch {}
+        setAncha(transparente ? 'logo' : 'keyart')
+      }}
       onError={() => setErr(true)} />
   )
 }
