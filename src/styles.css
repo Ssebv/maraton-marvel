@@ -68,7 +68,7 @@ button{font:inherit}
 .hero{padding:44px 0 8px; animation:riseIn .6s cubic-bezier(.22,1,.36,1) both}
 .hero-eyebrow{
   margin:0 0 10px; display:inline-block;
-  font-size:11px; font-weight:800; letter-spacing:.14em;
+  font-size:11px; font-weight:700; letter-spacing:.14em;
   text-transform:uppercase; color:#fff;
   background:var(--red); padding:4px 12px;
   transform:skew(-8deg); border-radius:2px;
@@ -92,17 +92,17 @@ h1 .rojo{
   box-shadow:var(--card-shadow);
 }
 .stat-label{
-  font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
   color:var(--ink3);
 }
 .siguiente-stat .stat-label{color:var(--red)}
 .stat-num{
-  font-family:"Archivo Black","Archivo",sans-serif; font-weight:400;
-  font-size:30px; letter-spacing:0; line-height:1.1;
+  font-family:"Archivo",sans-serif; font-weight:700;
+  font-size:30px; letter-spacing:-.01em; line-height:1.1;
   font-variant-numeric:tabular-nums;
 }
 .stat-num small{font-size:16px; font-weight:600; color:var(--ink2)}
-.stat-sig{font-size:15px; font-weight:700; line-height:1.3; text-wrap:balance}
+.stat-sig{font-size:15px; font-weight:600; line-height:1.3; text-wrap:balance}
 .stat-foot{font-size:12px; color:var(--ink2)}
 .barra{height:6px; background:var(--panel2); border-radius:2px; margin:6px 0 2px; overflow:hidden}
 .barra > i{
@@ -127,7 +127,7 @@ h1 .rojo{
 }
 .mapa-fila{display:flex; align-items:center; gap:12px}
 .mapa-label{
-  width:52px; flex:none; font-size:10.5px; font-weight:700;
+  width:52px; flex:none; font-size:10.5px; font-weight:600;
   letter-spacing:.08em; text-transform:uppercase; color:var(--ink3);
 }
 .mapa-dots{display:flex; flex-wrap:wrap; gap:4px; flex:1}
@@ -152,15 +152,15 @@ h1 .rojo{
 }
 .cuenta-info{display:flex; flex-direction:column; gap:2px; min-width:0}
 .cuenta-label{
-  font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
   color:var(--doom);
 }
-.cuenta-titulo{font-family:"Archivo Black","Archivo",sans-serif; font-weight:400; font-size:20px; text-transform:uppercase}
+.cuenta-titulo{font-family:"Archivo",sans-serif; font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:.01em}
 .cuenta-fecha{font-size:13px; color:var(--ink2)}
 .cuenta-reloj{display:flex; align-items:baseline; gap:8px}
 .cr-bloque{display:flex; flex-direction:column; align-items:center; min-width:52px}
 .cr-bloque b{
-  font-family:"Archivo Black","Archivo",sans-serif; font-weight:400;
+  font-family:"Archivo",sans-serif; font-weight:700;
   font-size:28px; font-variant-numeric:tabular-nums;
   letter-spacing:-.01em; color:var(--doom); line-height:1.1;
 }
@@ -173,10 +173,10 @@ h1 .rojo{
   box-shadow:var(--card-shadow);
 }
 .proximo-fecha{
-  font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
   color:var(--red);
 }
-.proximo-titulo{font-size:15px; font-weight:700}
+.proximo-titulo{font-size:15px; font-weight:600}
 .proximo-tipo{font-size:11.5px; color:var(--ink3)}
 .proximo-nota{font-size:12.5px; color:var(--ink2); margin-top:2px}
 @media (max-width:640px){
@@ -220,14 +220,14 @@ h1 .rojo{
 .saga{margin-top:56px; scroll-margin-top:80px}
 .saga-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
 h2{
-  margin:0; font-family:"Archivo Black","Archivo",sans-serif; font-weight:400;
-  font-size:21px; text-transform:uppercase; letter-spacing:.005em;
+  margin:0; font-family:"Archivo",sans-serif; font-weight:700;
+  font-size:21px; text-transform:uppercase; letter-spacing:.01em;
 }
 .saga[data-saga="xmen"] h2{color:var(--gold)}
 .saga[data-saga="ucm"] h2{color:var(--red)}
 .saga[data-saga="comics"] h2{color:var(--violet)}
 .uni-chip{
-  font-size:10.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
   padding:3px 9px; border-radius:4px; background:var(--panel2); color:var(--ink2);
 }
 .saga-count{margin-left:auto; font-size:13px; color:var(--ink2); font-variant-numeric:tabular-nums}
@@ -245,7 +245,7 @@ h2{
   border-left:3px solid var(--era, var(--ink2));
 }
 h3{
-  margin:0; font-size:12.5px; font-weight:800;
+  margin:0; font-size:12.5px; font-weight:700;
   text-transform:uppercase; letter-spacing:.1em; color:var(--ink2);
 }
 .era-rango{
@@ -298,7 +298,7 @@ h3{
 .rating-badge{
   position:absolute; top:6px; left:6px; z-index:1;
   background:rgba(12,10,8,.82); color:#F5C63C;
-  font-size:11px; font-weight:800; font-variant-numeric:tabular-nums;
+  font-size:11px; font-weight:700; font-variant-numeric:tabular-nums;
   padding:3px 7px; border-radius:4px; letter-spacing:.02em;
   -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
 }
@@ -339,12 +339,12 @@ h3{
 }
 .fila-titulo{display:flex; align-items:baseline; gap:10px}
 .num{
-  flex:none; font-size:11.5px; font-weight:800; color:var(--ink3);
+  flex:none; font-size:11.5px; font-weight:600; color:var(--ink3);
   font-variant-numeric:tabular-nums;
 }
 .num::before{content:"#"}
 .info{min-width:0; flex:1; display:flex; flex-direction:column; gap:3px; padding:4px 0}
-.titulo{font-weight:700; font-size:16px; line-height:1.25; letter-spacing:-.01em}
+.titulo{font-weight:600; font-size:16px; line-height:1.25; letter-spacing:-.01em}
 .card.vista .titulo{color:var(--ink2); text-decoration:line-through; text-decoration-thickness:1.5px}
 .meta{font-size:12.5px; color:var(--ink2); font-variant-numeric:tabular-nums}
 .meta .hist{color:var(--blue); font-weight:600}
@@ -358,7 +358,7 @@ h3{
 }
 .chips{display:flex; flex-direction:column; align-items:flex-end; gap:5px}
 .tipo{
-  font-size:10px; font-weight:800; letter-spacing:.07em;
+  font-size:10px; font-weight:700; letter-spacing:.07em;
   padding:3px 8px; border-radius:4px; text-transform:uppercase; white-space:nowrap;
 }
 .tipo.serie{background:var(--blue-soft); color:var(--blue)}
@@ -404,7 +404,7 @@ h3{
 .modal-cover .cover{width:190px; height:285px; border-radius:16px}
 .modal-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:10px}
 .modal-chips{display:flex; flex-wrap:wrap; gap:6px}
-.modal-titulo{font-family:"Archivo Black","Archivo",sans-serif; font-weight:400; font-size:24px; margin:0; text-transform:none; letter-spacing:0}
+.modal-titulo{font-family:"Archivo",sans-serif; font-weight:700; font-size:24px; margin:0; text-transform:none; letter-spacing:-.01em}
 .modal-meta{margin:0; font-size:13.5px; color:var(--ink2); font-variant-numeric:tabular-nums}
 .modal-meta .star{color:var(--gold); font-weight:700}
 .modal-meta .hist{color:var(--blue); font-weight:600}
@@ -468,7 +468,7 @@ h3{
   background:linear-gradient(200deg, rgba(255,255,255,.14), transparent 50%, rgba(0,0,0,.25));
 }
 .ep-thumb svg{width:14px; height:14px; position:relative; z-index:1}
-.ep-num{font-size:13px; font-weight:800; position:relative; z-index:1}
+.ep-num{font-size:13px; font-weight:700; position:relative; z-index:1}
 .ep-info{min-width:0; display:flex; flex-direction:column}
 .ep-titulo{font-size:12px; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .ep-fecha{font-size:10.5px; color:var(--ink3); font-variant-numeric:tabular-nums}
@@ -541,7 +541,7 @@ h3{
 .anio{margin-top:36px}
 .anio-head{display:flex; align-items:center; gap:14px; margin-bottom:12px}
 .anio-num{
-  font-family:"Archivo Black","Archivo",sans-serif; font-weight:400;
+  font-family:"Archivo",sans-serif; font-weight:700;
   font-size:24px; font-variant-numeric:tabular-nums;
 }
 .anio-head .linea{flex:1; height:1px; background:var(--line)}
