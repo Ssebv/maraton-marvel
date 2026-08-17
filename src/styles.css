@@ -1150,3 +1150,9 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
   .nodo img, .nodo-ini{width:32px; height:46px}
   .nodo-t{font-size:8px; max-width:56px}
 }
+.duelo-live{
+  margin-left:10px; font-size:10px; font-weight:700; letter-spacing:.08em;
+  color:var(--bg); background:var(--done); border-radius:4px; padding:2px 7px;
+  vertical-align:middle; animation:pulso 2s ease-in-out infinite;
+}
+@keyframes pulso{50%{opacity:.65}}

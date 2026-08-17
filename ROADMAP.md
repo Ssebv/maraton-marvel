@@ -49,8 +49,8 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 
 ## Fase 5 — Social (el salto grande)
 
-- ~~**Modo duelo**~~ ✅ (primer paso del multi-perfil): pega el enlace de perfil de otra persona y compara maratones — barras, quién va delante, títulos en común y los que te faltan.
-- **Multi-perfil completo**: progreso en vivo de varios usuarios sobre la misma base de Firebase.
+- ~~**Modo duelo**~~ ✅: pega el enlace de perfil de otra persona y compara maratones — barras, quién va delante, títulos en común y los que te faltan.
+- ~~**Multi-perfil en vivo**~~ ✅: el duelo también acepta el código de sincronización ☁️ del rival y se actualiza solo desde su Firebase (insignia EN VIVO, refresco cada minuto y al volver a la pestaña).
 - **Club de maratón**: progreso medio del grupo, quién va más adelantado, comentarios por episodio con anti-spoilers.
 
 ---

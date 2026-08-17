@@ -462,21 +462,38 @@ function MapaMultiverso({ onAbrir }) {
 }
 
 function Duelo({ amigo, vistas, eps, onQuitar }) {
+  const esLive = amigo.tipo === 'live'
+  const [remoto, setRemoto] = useState(null)
+  useEffect(() => {
+    if (!esLive) return
+    let vivo = true
+    const carga = async () => {
+      try {
+        const r = await fetch(`${amigo.url}/maraton/${amigo.room}.json`)
+        const j = await r.json()
+        if (vivo && j) setRemoto(j)
+      } catch {}
+    }
+    carga()
+    const iv = setInterval(carga, 60000)
+    window.addEventListener('focus', carga)
+    return () => { vivo = false; clearInterval(iv); window.removeEventListener('focus', carga) }
+  }, [amigo, esLive])
   const datos = useMemo(() => {
-    const vA = deBits(amigo.v, ORDEN_IDS)
-    const eA = deBits(amigo.e, ORDEN_EPS)
+    const vA = esLive ? ((remoto && remoto.v) || {}) : deBits(amigo.v, ORDEN_IDS)
+    const eA = esLive ? ((remoto && remoto.e) || {}) : deBits(amigo.e, ORDEN_EPS)
     const yo = resumenMaraton(vistas, eps)
     const el = resumenMaraton(vA, eA)
     const comunes = ORDEN_IDS.filter(id => vistas[id] && vA[id]).length
     const soloEl = ORDEN_IDS.filter(id => !vistas[id] && vA[id])
     return { yo, el, comunes, soloYo: yo.n - comunes, soloEl }
-  }, [amigo, vistas, eps])
+  }, [amigo, vistas, eps, remoto, esLive])
   const total = ORDEN_IDS.length
   const dif = datos.yo.n - datos.el.n
   return (
     <section className="duelo">
       <div className="duelo-cab">
-        <h2>⚔️ Duelo de maratones</h2>
+        <h2>⚔️ Duelo de maratones{esLive && <span className="duelo-live">EN VIVO</span>}</h2>
         <button className="chip-btn" onClick={onQuitar}>Quitar rival</button>
       </div>
       {[['Tú', datos.yo], [amigo.n, datos.el]].map(([quien, r]) => (
@@ -500,7 +517,11 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
           {datos.soloEl.length > 3 ? ` y ${datos.soloEl.length - 3} más` : ''}
         </p>
       )}
-      {amigo.t && <p className="duelo-fecha">Su maratón a fecha de {fmtFecha(new Date(amigo.t).toISOString().slice(0, 10))} — pídele un enlace nuevo para actualizarlo.</p>}
+      {esLive
+        ? <p className="duelo-fecha">{remoto
+            ? `Conectado a su sincronización — actualizado ${remoto.t ? 'el ' + new Date(remoto.t).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'ahora'}. Se refresca solo.`
+            : 'Conectando con su sincronización…'}</p>
+        : amigo.t && <p className="duelo-fecha">Su maratón a fecha de {fmtFecha(new Date(amigo.t).toISOString().slice(0, 10))} — pídele un enlace nuevo para actualizarlo.</p>}
     </section>
   )
 }
@@ -1265,6 +1286,7 @@ export default function App() {
   })
   const [dueloModal, setDueloModal] = useState(false)
   const [dueloInput, setDueloInput] = useState('')
+  const [dueloNombre, setDueloNombre] = useState('')
   const [dueloError, setDueloError] = useState('')
   const guardaAmigo = a => {
     setAmigo(a)
@@ -2002,7 +2024,7 @@ export default function App() {
               🔗 Perfil compartible
             </button>
             {!amigo && (
-              <button className="chip-btn" onClick={() => { setDueloInput(''); setDueloError(''); setDueloModal(true) }}>
+              <button className="chip-btn" onClick={() => { setDueloInput(''); setDueloNombre(''); setDueloError(''); setDueloModal(true) }}>
                 ⚔️ Modo duelo
               </button>
             )}
@@ -2190,16 +2212,22 @@ export default function App() {
             <div className="modal-info">
               <h2 className="modal-titulo">⚔️ Modo duelo</h2>
               <p className="modal-res">
-                Pídele a la otra persona su enlace de <b>Perfil compartible</b> (botón 🔗 en sus Estadísticas)
-                y pégalo aquí: compararé vuestros maratones. Todo queda en este navegador.
+                Pega el enlace de <b>Perfil compartible</b> de la otra persona (botón 🔗 en sus Estadísticas)
+                para una foto fija, o su <b>código de sincronización</b> (botón ☁️) para un duelo
+                <b> en vivo</b> que se actualiza solo. Todo queda en este navegador.
               </p>
-              <input className="busca duelo-input" placeholder="https://…?perfil=… o el código"
+              <input className="busca duelo-input" placeholder="Enlace de perfil o código de sincronización"
                 value={dueloInput} onChange={e => { setDueloInput(e.target.value); setDueloError('') }} />
+              <input className="busca duelo-input" placeholder="Nombre de tu rival (opcional)"
+                value={dueloNombre} onChange={e => setDueloNombre(e.target.value)} maxLength={24} />
               {dueloError && <p className="duelo-error">{dueloError}</p>}
               <button className="accion-principal" onClick={() => {
                 const p = parsePerfilCod(dueloInput)
-                if (!p) { setDueloError('Ese enlace no parece un perfil válido: revisa que esté completo.'); return }
-                guardaAmigo(p); setDueloModal(false); }}>
+                if (p) { guardaAmigo(dueloNombre.trim() ? { ...p, n: dueloNombre.trim() } : p); setDueloModal(false); return }
+                const sc = decodificaSync(dueloInput)
+                if (sc) { guardaAmigo({ tipo: 'live', n: dueloNombre.trim() || 'Tu rival', url: sc.url, room: sc.room }); setDueloModal(false); return }
+                setDueloError('Eso no parece ni un enlace de perfil ni un código de sincronización: revisa que esté completo.')
+              }}>
                 Empezar el duelo
               </button>
             </div>
