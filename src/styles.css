@@ -49,7 +49,11 @@ html{scroll-behavior:smooth}
 body{
   background:var(--bg); color:var(--ink);
   font:15px/1.55 "Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  margin:0; padding-bottom:96px;
+  margin:0;
+  padding-top:env(safe-area-inset-top);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+  padding-bottom:calc(96px + env(safe-area-inset-bottom));
   position:relative;
 }
 body::before{
@@ -134,8 +138,10 @@ h1 .rojo{
 .dot{
   width:12px; height:12px; border-radius:3.5px; padding:0; cursor:pointer;
   border:1px solid var(--line); background:var(--panel2);
-  transition:transform .15s, background .2s, border-color .2s;
+  position:relative;
+  transition:transform .15s, background .2s;
 }
+.dot::after{content:""; position:absolute; inset:-6px}
 .dot:hover{transform:scale(1.4); border-color:var(--ink2)}
 .dot.on{background:var(--dc); border-color:var(--dc)}
 .mapa-count{flex:none; font-size:11px; color:var(--ink2); font-variant-numeric:tabular-nums}
@@ -164,7 +170,7 @@ h1 .rojo{
   font-size:28px; font-variant-numeric:tabular-nums;
   letter-spacing:-.01em; color:var(--doom); line-height:1.1;
 }
-.cr-bloque small{font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3)}
+.cr-bloque small{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink2)}
 .cr-sep{font-size:24px; font-weight:700; color:var(--ink3); align-self:flex-start; padding-top:2px}
 .proximos{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:10px}
 .proximo{
@@ -186,7 +192,7 @@ h1 .rojo{
 
 /* ── Barra de herramientas fija ── */
 .toolbar{
-  position:sticky; top:0; z-index:10;
+  position:sticky; top:env(safe-area-inset-top, 0px); z-index:10;
   margin:8px -20px 0; padding:12px 20px;
   background:color-mix(in srgb, var(--bg) 82%, transparent);
   -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
@@ -200,20 +206,20 @@ h1 .rojo{
 .tab{
   border:none; background:none; color:var(--ink2); cursor:pointer;
   border-radius:999px; padding:5px 14px; font-size:13px; font-weight:600;
-  transition:background .2s, color .2s, box-shadow .2s;
+  transition:background .2s, box-shadow .2s;
 }
 .tab[aria-pressed="true"]{background:var(--panel); color:var(--ink); box-shadow:var(--card-shadow)}
 .chip-btn{
   border:1px solid var(--line); background:transparent; color:var(--ink2);
   border-radius:999px; padding:5px 13px; font-size:13px; font-weight:500; cursor:pointer;
-  transition:background .15s, color .15s, border-color .15s, transform .15s;
+  transition:background .15s, transform .15s;
 }
 .chip-btn:hover{border-color:var(--ink2); color:var(--ink)}
 .chip-btn:active{transform:scale(.96)}
 .chip-btn[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
 .chip-btn.destacado[aria-pressed="true"]{background:var(--red); border-color:var(--red); color:#fff}
 .atajos{margin-left:auto; display:flex; gap:14px; font-size:13px; font-weight:600}
-.atajos a{color:var(--ink2); text-decoration:none; transition:color .15s}
+.atajos a{color:var(--ink2); text-decoration:none; padding:8px 2px; display:inline-block}
 .atajos a:hover{color:var(--ink)}
 
 /* ── Sagas y eras ── */
@@ -304,6 +310,7 @@ h3{
 }
 .checkbox{
   flex:none; align-self:center;
+  /* zona táctil ampliada (HIG 44pt) sin cambiar el tamaño visual */
   width:30px; height:30px; border-radius:50%;
   border:2px solid var(--line); background:transparent; cursor:pointer;
   display:grid; place-items:center; position:relative; padding:0;
@@ -311,6 +318,7 @@ h3{
 }
 .checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:opacity .2s, transform .2s}
 .checkbox:hover{border-color:var(--done); box-shadow:0 0 0 4px color-mix(in srgb, var(--done) 15%, transparent)}
+.checkbox::after{content:""; position:absolute; inset:-8px; border-radius:50%}
 .card.vista .checkbox{
   background:var(--done); border-color:var(--done);
   animation:anillo .5s cubic-bezier(.22,1,.36,1) both;
@@ -346,7 +354,7 @@ h3{
 }
 .keyart .lc-year, .keyart .lc-tipo{position:relative; z-index:1}
 .lc-year{color:#fff; opacity:.9; font-weight:600; font-size:12px; font-variant-numeric:tabular-nums; position:relative; z-index:1}
-.lc-tipo{color:#fff; opacity:.55; font-size:7px; font-weight:700; letter-spacing:2px; position:relative; z-index:1}
+.lc-tipo{color:#fff; opacity:.8; font-size:9px; font-weight:700; letter-spacing:2px; position:relative; z-index:1}
 
 .abrir{
   display:flex; align-items:center; gap:18px; flex:1; min-width:0;
@@ -386,7 +394,7 @@ h3{
 .ghost{
   font-size:12px; font-weight:600; color:var(--ink2); text-decoration:none;
   border:1px solid var(--line); border-radius:999px; padding:4px 11px;
-  white-space:nowrap; transition:color .15s, border-color .15s, background .15s;
+  white-space:nowrap; transition:background .15s;
 }
 .ghost:hover{color:var(--ink); border-color:var(--ink2); background:var(--panel2)}
 
@@ -413,7 +421,7 @@ h3{
   width:34px; height:34px; border-radius:50%;
   border:1px solid var(--line); background:var(--panel2); color:var(--ink2);
   cursor:pointer; font-size:14px; display:grid; place-items:center;
-  transition:color .15s, border-color .15s;
+  transition:border-color .15s;
 }
 .cerrar:hover{color:var(--ink); border-color:var(--ink2)}
 .modal-cover{flex:none; align-self:flex-start}
@@ -507,7 +515,7 @@ h3{
 .busca{
   border:1px solid var(--line); background:var(--panel); color:var(--ink);
   border-radius:999px; padding:5px 14px; font-size:13px; font-family:inherit;
-  width:150px; transition:width .2s, border-color .15s;
+  width:150px; min-height:32px; transition:width .2s, border-color .15s;
 }
 .busca:focus{width:210px; border-color:var(--blue); outline:none}
 .busca:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
@@ -813,8 +821,8 @@ main.multiverso{margin-top:24px}
   align-self:flex-start; font-size:11px; font-weight:700; letter-spacing:.05em;
   text-transform:uppercase; padding:3px 10px; border-radius:4px;
 }
-.objetivo-chip.ok{background:color-mix(in srgb, var(--done) 18%, transparent); color:var(--done)}
-.objetivo-chip.tarde{background:color-mix(in srgb, var(--red) 16%, transparent); color:var(--red)}
+.objetivo-chip.ok{background:var(--done); color:var(--bg)}
+.objetivo-chip.tarde{background:var(--red); color:var(--bg)}
 .plan-controles{display:flex; gap:8px; flex-wrap:wrap}
 .plan-lista{display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow:auto}
 .plan-fila{width:100%}
