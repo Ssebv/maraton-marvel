@@ -120,8 +120,11 @@ h1 .rojo{
 @media (min-width:1240px){
   .panel-superior{grid-template-columns:1fr 380px}
   .cuenta{flex-direction:column; align-items:flex-start; justify-content:center; gap:12px; padding:20px 22px; height:100%}
-  .proximo-nota{display:none}
   .proximo{padding:10px 14px}
+  /* Las dos columnas del panel deben cerrar a la misma altura: sin esto el
+     bloque de estrenos acaba 48 px por encima de la cuenta atrás. La altura
+     que sobra se llena con la nota de cada estreno, no con aire. */
+  .proximos{flex:1}
 }
 .mapa{
   width:100%;
@@ -219,6 +222,12 @@ h1 .rojo{
   .toolbar{background:var(--bg)}
 }
 .controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+/* Separa navegación · filtros de contenido · herramientas de vista: sin esto los
+   20 controles se leen como una sola lista y el corte de fila lo decide el wrap. */
+.ctrl-sep{
+  flex:none; width:1px; align-self:stretch; margin:1px 3px;
+  background:color-mix(in srgb, var(--line) 80%, transparent);
+}
 .tabs{display:flex; background:var(--panel2);
   border:1px solid color-mix(in srgb, var(--line) 60%, transparent);
   border-radius:999px; padding:3px; gap:2px}
