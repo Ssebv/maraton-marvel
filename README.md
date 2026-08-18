@@ -27,6 +27,16 @@ Guía interactiva para ver **todo Marvel y X-Men en orden cronológico de la his
 | `public/sw.js` | Service worker: offline + notificaciones periódicas de estreno |
 | `scripts/` | Utilidades de datos (episodios y `gen-novedades.mjs`, que alimenta los avisos) |
 
+## Criterios de diseño
+
+La hoja de estilos tiene reglas fijas. Se revisaron en agosto de 2026 para que la interfaz no arrastrase los tics que delatan una plantilla generada:
+
+- **Radios**: solo cuatro tokens — `--r-s: 4px`, `--r-m: 10px`, `--r-l: 16px`, `--r-pill: 999px`. No se escriben valores sueltos en `border-radius` (antes había 17 distintos).
+- **Emoji**: nunca en controles (botones, pestañas, chips) ni en los textos que los nombran; un control debe explicarse con palabras. Sí donde son contenido: logros y medallas, estrellas de nota (★), marcas de verificación (✓) y cierres (✕).
+- **Prohibidos**: resplandores (`box-shadow: 0 0 Npx <acento>`), cristal esmerilado (`backdrop-filter` como superficie — solo se admite en el velo del modal), degradado sobre texto (`background-clip: text`), halos radiales o tramas de puntos de fondo, y barras de acento a la izquierda de una tarjeta.
+- **Identidad, no se toca**: Archivo Black como tipografía de titular, la paleta pergamino/tinta del modo claro, el sello VISTA, los degradados rojo→dorado de las barras de progreso y la sombra sólida desplazada (`5px 6px 0`) del hover de tarjeta.
+- **Responsive**: se verifica inyectando un `<iframe>` de 390 px en la propia página — redimensionar la ventana del navegador no dispara bien las media queries si hay zoom de página. Todo elemento con `overflow-x` necesita `min-width: 0` en sus contenedores, y con `scroll-snap`, `scroll-padding-inline` para que el carril no arranque desplazado.
+
 ## Desarrollo
 
 ```bash
