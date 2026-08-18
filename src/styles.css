@@ -1237,3 +1237,18 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
   .nav-ficha.izq{left:14px}
   .nav-ficha.der{right:14px}
 }
+/* ── Temas de acento por universo (alias sobre tokens ya adaptados a claro/oscuro) ── */
+:root[data-acento="xmen"]{--red:var(--gold); --red-soft:var(--gold-soft)}
+:root[data-acento="tva"]{--red:var(--violet); --red-soft:var(--violet-soft)}
+:root[data-acento="zombi"]{--red:var(--doom); --red-soft:var(--doom-soft)}
+:root[data-acento="828"]{--red:var(--teal); --red-soft:var(--teal-soft)}
+@media (prefers-color-scheme: dark){
+  :root[data-acento="xmen"]:not([data-theme="light"]){--halo:var(--gold)}
+  :root[data-acento="tva"]:not([data-theme="light"]){--halo:var(--violet)}
+  :root[data-acento="zombi"]:not([data-theme="light"]){--halo:var(--doom)}
+  :root[data-acento="828"]:not([data-theme="light"]){--halo:var(--teal)}
+}
+:root[data-theme="dark"][data-acento="xmen"]{--halo:var(--gold)}
+:root[data-theme="dark"][data-acento="tva"]{--halo:var(--violet)}
+:root[data-theme="dark"][data-acento="zombi"]{--halo:var(--doom)}
+:root[data-theme="dark"][data-acento="828"]{--halo:var(--teal)}

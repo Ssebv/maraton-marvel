@@ -129,6 +129,36 @@ function useTmdb(item) {
   return extra
 }
 
+// «Thwip» sutil al marcar (solo si el usuario lo activa en el pie)
+function suenaPop() {
+  try {
+    if (localStorage.getItem('maraton-marvel-sonido-v1') !== '1') return
+    const Ctx = window.AudioContext || window.webkitAudioContext
+    if (!Ctx) return
+    const ctx = suenaPop.ctx || (suenaPop.ctx = new Ctx())
+    if (ctx.state === 'suspended') ctx.resume()
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.type = 'sine'
+    o.frequency.setValueAtTime(620, ctx.currentTime)
+    o.frequency.exponentialRampToValueAtTime(980, ctx.currentTime + 0.09)
+    g.gain.setValueAtTime(0.1, ctx.currentTime)
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2)
+    o.connect(g).connect(ctx.destination)
+    o.start()
+    o.stop(ctx.currentTime + 0.22)
+  } catch {}
+}
+
+// Temas de acento por universo (alias sobre los tokens existentes, ya adaptados a claro/oscuro)
+const ACENTOS = [
+  { id: '616', nombre: 'Tierra-616' },
+  { id: 'xmen', nombre: 'X-Men' },
+  { id: 'tva', nombre: 'La TVA' },
+  { id: 'zombi', nombre: 'Zombi' },
+  { id: '828', nombre: '4 Fantásticos' },
+]
+
 const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
 
 function iniciales(t) {
@@ -1606,18 +1636,30 @@ export default function App() {
 
   const toggleEp = clave => setEps(prev => {
     const next = { ...prev }
-    if (next[clave]) delete next[clave]; else next[clave] = Date.now()
+    if (next[clave]) delete next[clave]; else { next[clave] = Date.now(); suenaPop() }
     try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
     return next
   })
 
   const toggle = id => setVistas(prev => {
     const next = { ...prev }
-    if (next[id]) delete next[id]; else next[id] = Date.now()
+    if (next[id]) delete next[id]; else { next[id] = Date.now(); suenaPop() }
     try { localStorage.setItem(KEY, JSON.stringify(next)) } catch {}
     return next
   })
   const setF = k => setFiltros(f => ({ ...f, [k]: !f[k] }))
+  const [acento, setAcento] = useState(() => {
+    try { return localStorage.getItem('maraton-marvel-acento-v1') || '616' } catch { return '616' }
+  })
+  useEffect(() => {
+    if (acento === '616') document.documentElement.removeAttribute('data-acento')
+    else document.documentElement.setAttribute('data-acento', acento)
+    try { localStorage.setItem('maraton-marvel-acento-v1', acento) } catch {}
+  }, [acento])
+  const cicloAcento = () => setAcento(a => {
+    const i = ACENTOS.findIndex(x => x.id === a)
+    return ACENTOS[(i + 1) % ACENTOS.length].id
+  })
   const [bienvenida, setBienvenida] = useState(() => {
     try {
       if (localStorage.getItem('maraton-marvel-bienvenida-v1')) return false
@@ -1928,6 +1970,9 @@ export default function App() {
           }}>🎲 Sorpréndeme</button>
           <input className="busca" type="search" name="busqueda" placeholder="Buscar… ( / )" title="Busca por título, actor, director o año — atajo: /" value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
+          <button className="chip-btn" onClick={cicloAcento} title="Cambia el color de acento de la app">
+            🎨 {ACENTOS.find(a => a.id === acento).nombre}
+          </button>
           <button className={`chip-btn sync-btn ${syncEstado}`} aria-live="polite" onClick={() => setSyncModal(true)}
             title={sync ? 'Sincronización activa' : 'Sincronizar entre dispositivos'}>
             {syncEstado === 'ok' ? '☁️ Sincronizado' : syncEstado === 'syncing' ? '☁️ Guardando…'
@@ -2731,6 +2776,9 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose }) {
 
 function Footer({ onReset }) {
   const [confirmando, setConfirmando] = useState(false)
+  const [sonido, setSonido] = useState(() => {
+    try { return localStorage.getItem('maraton-marvel-sonido-v1') === '1' } catch { return false }
+  })
   const [copiado, setCopiado] = useState(false)
   const [importando, setImportando] = useState(false)
   const [codigo, setCodigo] = useState('')
@@ -2817,6 +2865,14 @@ function Footer({ onReset }) {
             {msgImport && <span className="import-error">{msgImport}</span>}
           </span>
         )}
+        <button className="chip-btn" aria-pressed={sonido} onClick={() => {
+          const v = !sonido
+          setSonido(v)
+          try { localStorage.setItem('maraton-marvel-sonido-v1', v ? '1' : '0') } catch {}
+          if (v) suenaPop.ctx = null
+        }}>
+          {sonido ? '🔊 Sonido al marcar' : '🔇 Sonido al marcar'}
+        </button>
         <button className="chip-btn" onClick={descargaCopia}>💾 Descargar copia</button>
         <label className="chip-btn restaurar">
           📁 Restaurar copia
