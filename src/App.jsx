@@ -354,6 +354,30 @@ function AvisosBtn() {
 
 const TITULOS = Object.fromEntries(DATA.flatMap(s => s.eras.flatMap(e => e.items)).map(i => [i.id, i.t]))
 
+function Bienvenida({ onCerrar, onExpress }) {
+  return (
+    <div className="overlay" onClick={onCerrar} role="dialog" aria-modal="true" aria-label="Bienvenida">
+      <div className="modal modal-sync bienvenida" onClick={e => e.stopPropagation()}>
+        <button className="cerrar" onClick={onCerrar} aria-label="Cerrar">✕</button>
+        <div className="modal-info">
+          <span className="hero-eyebrow">Guía de maratón</span>
+          <h2 className="modal-titulo">Todo Marvel y X-Men, en orden</h2>
+          <ol className="bienvenida-pasos">
+            <li><b>117 títulos en orden cronológico</b> de la historia: la saga X-Men a un lado, el UCM al otro y los cómics en su pestaña.</li>
+            <li><b>Marca lo visto</b> con la casilla redonda de cada tarjeta — o entra en la ficha para episodios, tráiler, sinopsis y escenas post-créditos.</li>
+            <li><b>La cuenta atrás de Doomsday</b> te dice el ritmo que necesitas; el 🍿 Plan de sesión te propone qué ver hoy.</li>
+          </ol>
+          <div className="bienvenida-acciones">
+            <button className="accion-principal" onClick={onCerrar}>Empezar por el principio</button>
+            <button className="chip-btn" onClick={onExpress}>⚡ Solo lo esencial para Doomsday</button>
+          </div>
+          <p className="bienvenida-nota">Consejo: desde el móvil puedes instalarla como app (menú del navegador → «Añadir a pantalla de inicio»).</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Mapa del multiverso: conexiones canónicas título a título ──
 const MAPA_NODOS = [
   { id: 'dofp', x: 140, y: 200, c: '#F5B822' },
@@ -893,6 +917,7 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miN
         <span className="cover-wrap">
           <Portada item={item} c={c} esComic={esComic} />
           {item.s != null && !esComic && <span className="rating-badge">★ {item.s.toFixed(1)}</span>}
+          {vista && <span className="sello sello-mini" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
         </span>
         <span className="info">
           <span className="fila-titulo"><span className="num">{num}</span><span className="titulo">{item.t}</span></span>
@@ -946,6 +971,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
         <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
         <div className="modal-cover">
           <Portada item={item} c={c} esComic={esComic} />
+          {vista && <span className="sello" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
         </div>
         <div className="modal-info">
           <div className="modal-chips">
@@ -1522,6 +1548,16 @@ export default function App() {
     return next
   })
   const setF = k => setFiltros(f => ({ ...f, [k]: !f[k] }))
+  const [bienvenida, setBienvenida] = useState(() => {
+    try {
+      if (localStorage.getItem('maraton-marvel-bienvenida-v1')) return false
+      return Object.keys(JSON.parse(localStorage.getItem(KEY) || '{}')).length === 0
+    } catch { return false }
+  })
+  const cierraBienvenida = () => {
+    setBienvenida(false)
+    try { localStorage.setItem('maraton-marvel-bienvenida-v1', '1') } catch {}
+  }
 
   const pasaFiltro = (item, esComic) => {
     if (busca && !norm(item.t).includes(norm(busca))) return false
@@ -2132,6 +2168,12 @@ export default function App() {
             </div>
           </div>
 
+          {estadisticas.titulosVistos === 0 && (
+            <p className="stats-vacio">
+              Aún está todo por estrenar: en cuanto marques tu primera película, aquí aparecerán
+              tus horas, tu racha, tus logros y el mapa de calor. 🍿
+            </p>
+          )}
           <div className="stats-acciones">
             <button className="accion-principal compartir"
               onClick={() => compartirImagen(estadisticas, estadisticas.comicsVistos, estadisticas.comicsTot)}>
@@ -2357,6 +2399,10 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+      {bienvenida && !perfil && (
+        <Bienvenida onCerrar={cierraBienvenida}
+          onExpress={() => { if (!filtros.express) setF('express'); cierraBienvenida() }} />
       )}
       {clubModal && (
         <div className="overlay" onClick={() => setClubModal(false)} role="dialog" aria-modal="true" aria-label="Club de maratón">
