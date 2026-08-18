@@ -116,7 +116,7 @@ h1 .rojo{
 }
 
 .panel-superior{display:grid; gap:12px; margin-top:16px; align-items:stretch}
-.panel-izq{display:flex; flex-direction:column; gap:12px}
+.panel-izq{display:flex; flex-direction:column; gap:12px; min-width:0}
 @media (min-width:1240px){
   .panel-superior{grid-template-columns:1fr 380px}
   .cuenta{flex-direction:column; align-items:flex-start; justify-content:center; gap:12px; padding:20px 22px; height:100%}
@@ -188,6 +188,21 @@ h1 .rojo{
 @media (max-width:640px){
   .cuenta{justify-content:center; text-align:center}
   .cuenta-info{align-items:center}
+  /* Los próximos estrenos pasan a carril horizontal: apilados se comían
+     media pantalla de scroll antes del primer título del maratón. */
+  .proximos{
+    display:flex; gap:10px; min-width:0;
+    overflow-x:auto; overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity; scroll-padding-inline:20px;
+    margin-inline:-20px; padding-inline:20px; padding-bottom:2px;
+    scrollbar-width:none;
+  }
+  .proximos::-webkit-scrollbar{display:none}
+  .proximo{flex:0 0 76%; scroll-snap-align:start}
+  /* Mapa de progreso más compacto: más puntos por fila, menos filas. */
+  .mapa{padding:12px 14px; gap:8px}
+  .mapa-dots{gap:3px}
+  .dot{width:10px; height:10px; border-radius:3px}
 }
 
 /* ── Barra de herramientas fija ── */
@@ -836,6 +851,12 @@ main.multiverso{margin-top:24px}
 }
 .objetivo-chip.ok{background:var(--done); color:var(--bg)}
 .objetivo-chip.tarde{background:var(--red); color:var(--bg)}
+/* Aún sin datos: informa sin alarmar — el rojo se reserva para ir tarde de verdad. */
+.objetivo-chip.neutro{
+  background:transparent; color:var(--ink2);
+  box-shadow:inset 0 0 0 1px var(--line); text-transform:none;
+  font-weight:600; letter-spacing:0;
+}
 .plan-controles{display:flex; gap:8px; flex-wrap:wrap}
 .plan-lista{display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow:auto}
 .plan-fila{width:100%}
@@ -971,7 +992,7 @@ main.tiempo{margin-top:24px}
 footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
   display:flex; align-items:center; gap:16px; flex-wrap:wrap}
 .nota-pie{font-size:13px; color:var(--ink2); max-width:58ch; margin:0}
-.reset{margin-left:auto; display:flex; gap:8px}
+.reset{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
 .reset .chip-btn.peligro{color:var(--red); border-color:var(--red)}
 
 @media (prefers-reduced-motion: reduce){

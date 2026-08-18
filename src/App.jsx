@@ -347,10 +347,12 @@ function CuentaAtras({ meta }) {
               : <b>¡completada! Llegas de sobra al estreno</b>}
           </span>
           {meta.restante > 0 && (
-            <span className={`objetivo-chip ${meta.alDia ? 'ok' : 'tarde'}`}>
-              {meta.alDia
-                ? `Vas al día · ${meta.ritmo} min/día en las últimas 2 semanas`
-                : `Acelera · llevas ${meta.ritmo} min/día en las últimas 2 semanas`}
+            <span className={`objetivo-chip ${meta.ritmo === 0 ? 'neutro' : meta.alDia ? 'ok' : 'tarde'}`}>
+              {meta.ritmo === 0
+                ? 'Sin ritmo todavía · marca algo y aquí verás si llegas'
+                : meta.alDia
+                  ? `Vas al día · ${meta.ritmo} min/día en las últimas 2 semanas`
+                  : `Acelera · llevas ${meta.ritmo} min/día en las últimas 2 semanas`}
             </span>
           )}
           {meta.restante > 0 && meta.ritmo > 0 && (() => {
