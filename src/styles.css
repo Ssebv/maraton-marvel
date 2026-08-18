@@ -1206,3 +1206,8 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
   border-radius:12px;
 }
 .ep-img.real, .modal-prov, .trailer-caja{animation:fadeIn .45s ease both}
+/* ── Mejoras: rendimiento de scroll, restaurar copia, pista del buscador ── */
+.card{content-visibility:auto; contain-intrinsic-size:auto 168px}
+.galeria-item{content-visibility:auto; contain-intrinsic-size:auto 220px}
+.chip-btn.restaurar{position:relative; overflow:hidden; display:inline-flex; align-items:center}
+.chip-btn.restaurar input{position:absolute; inset:0; opacity:0; cursor:pointer}

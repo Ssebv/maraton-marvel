@@ -1438,6 +1438,10 @@ export default function App() {
   useEffect(() => {
     const onKey = e => {
       if (e.key === 'Escape') { setPlanModal(false); setPerfilModal(false); setSyncModal(false); setDueloModal(false); setClubModal(false); setClubInvitar(false) }
+      if (e.key === '/' && !/INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) {
+        const campo = document.querySelector('input[name="busqueda"]')
+        if (campo) { e.preventDefault(); campo.focus() }
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -1560,7 +1564,10 @@ export default function App() {
   }
 
   const pasaFiltro = (item, esComic) => {
-    if (busca && !norm(item.t).includes(norm(busca))) return false
+    if (busca) {
+      const pajar = norm([item.t, item.dir || '', ...(item.cast || []), String(item.r)].join(' '))
+      if (!pajar.includes(norm(busca))) return false
+    }
     if (filtros.series && item.tipo === 'serie') return false
     if (filtros.opc && item.opt) return false
     if (filtros.joyas && !esComic && (item.s == null || item.s < JOYA_MIN)) return false
@@ -1853,7 +1860,7 @@ export default function App() {
               setDetalle({ item: e.item, c: e.c, esComic: false })
             }
           }}>🎲 Sorpréndeme</button>
-          <input className="busca" type="search" name="busqueda" placeholder="Buscar…" value={busca} spellCheck={false}
+          <input className="busca" type="search" name="busqueda" placeholder="Buscar… ( / )" title="Busca por título, actor, director o año — atajo: /" value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
           <button className={`chip-btn sync-btn ${syncEstado}`} aria-live="polite" onClick={() => setSyncModal(true)}
             title={sync ? 'Sincronización activa' : 'Sincronizar entre dispositivos'}>
@@ -2686,6 +2693,40 @@ function Footer({ onReset }) {
       setMsgImport('Código no válido')
     }
   }
+  const descargaCopia = () => {
+    try {
+      const datos = {}
+      for (const k of [KEY, KEY_EPS, KEY_NOTAS, KEY_LISTAS, 'maraton-marvel-sync-v1', 'maraton-marvel-amigo-v1', 'maraton-marvel-club-v1']) {
+        const v = localStorage.getItem(k)
+        if (v) datos[k] = v
+      }
+      const blob = new Blob([JSON.stringify({ app: 'maraton-marvel', fecha: new Date().toISOString(), datos }, null, 1)], { type: 'application/json' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `maraton-marvel-copia-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } catch {}
+  }
+  const restauraCopia = ev => {
+    const archivo = ev.target.files && ev.target.files[0]
+    if (!archivo) return
+    const lector = new FileReader()
+    lector.onload = () => {
+      try {
+        const j = JSON.parse(lector.result)
+        if (j.app !== 'maraton-marvel' || !j.datos) throw new Error('formato')
+        Object.entries(j.datos).forEach(([k, v]) => {
+          if (k.startsWith('maraton-marvel-') || k === KEY) localStorage.setItem(k, v)
+        })
+        window.location.reload()
+      } catch {
+        setMsgImport('Ese archivo no parece una copia de la app')
+        setImportando(true)
+      }
+    }
+    lector.readAsText(archivo)
+  }
   return (
     <footer>
       <p className="nota-pie">
@@ -2708,6 +2749,11 @@ function Footer({ onReset }) {
             {msgImport && <span className="import-error">{msgImport}</span>}
           </span>
         )}
+        <button className="chip-btn" onClick={descargaCopia}>💾 Descargar copia</button>
+        <label className="chip-btn restaurar">
+          📁 Restaurar copia
+          <input type="file" accept="application/json,.json" onChange={restauraCopia} aria-label="Restaurar copia de seguridad" />
+        </label>
         <button className="chip-btn" onClick={() => setConfirmando(c => !c)}>
           {confirmando ? 'Cancelar' : 'Reiniciar progreso'}
         </button>
