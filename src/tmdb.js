@@ -1,6 +1,23 @@
 // Generado con scripts (mapeo id -> [id de TMDB, tipo]). Clave v3 de TMDB (lectura, gratuita).
 export const TMDB_KEY = "3ce32a08a4ded7e74901c447d1447868"
 export const TMDB = {
+  "sm-amigos81": [1269, "tv"],
+  "ironman94": [3097, "tv"],
+  "f4-94": [2901, "tv"],
+  "spiderman94": [888, "tv"],
+  "hulk96": [6332, "tv"],
+  "silversurfer98": [1130, "tv"],
+  "sm-unlimited99": [10079, "tv"],
+  "emh": [33623, "tv"],
+  "ultimate-sm": [34391, "tv"],
+  "avengers-assemble": [59427, "tv"],
+  "hulk-smash": [40044, "tv"],
+  "gotg-2015": [63181, "tv"],
+  "sm-2017": [72705, "tv"],
+  "modok": [111312, "tv"],
+  "hitmonkey": [133903, "tv"],
+  "spidey-equipo": [127635, "tv"],
+  "moongirl": [92788, "tv"],
   "holiday": [774752, "movie"],
   "first-class": [49538, "movie"],
   "origins-wolverine": [2080, "movie"],

@@ -175,11 +175,12 @@ function fmtDur(d) {
 }
 
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
-const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo']
+const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo']
 const PESTANAS = [
   { id: 'crono', ico: '📖', label: 'Cronológico', corto: 'Crono' },
   { id: 'estreno', ico: '🗓️', label: 'Por estreno', corto: 'Estreno' },
   { id: 'comics', ico: '💥', label: 'Cómics', corto: 'Cómics' },
+  { id: 'animacion', ico: '📺', label: 'Animación', corto: 'Anima' },
   { id: 'listas', ico: '📋', label: 'Listas', corto: 'Listas' },
   { id: 'galeria', ico: '🖼️', label: 'Galería', corto: 'Galería' },
   { id: 'multiverso', ico: '🪐', label: 'Multiverso', corto: 'Multi' },
@@ -843,7 +844,7 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
           {est.sagas.map(sg => (
             <div className="mapa-fila" key={sg.saga}>
               <span className="mapa-label">
-                {sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? 'UCM' : 'Cómics'}
+                {sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? 'UCM' : sg.saga === 'animacion' ? 'Anim.' : 'Cómics'}
               </span>
               <div className="mapa-dots">
                 {sg.items.map(({ item, c }) => (
@@ -1688,6 +1689,7 @@ export default function App() {
     const porSaga = {}
     DATA.forEach(saga => {
       const esComic = saga.saga === 'comics'
+      const extra = esComic || saga.saga === 'animacion'
       let v = 0, n = 0, m = 0
       saga.eras.forEach(era => era.items.forEach(item => {
         if (!pasaFiltro(item, esComic)) return
@@ -1695,12 +1697,12 @@ export default function App() {
         if (vistas[item.id]) v++
         else {
           if (item.d) m += item.d
-          if (!esComic && !siguiente) siguiente = item
+          if (!extra && !siguiente) siguiente = item
         }
       }))
-      porSaga[saga.saga] = { v, n, m: esComic ? 0 : m }
+      porSaga[saga.saga] = { v, n, m: extra ? 0 : m }
       totV += v; totN += n
-      if (!esComic) mins += m
+      if (!extra) mins += m
     })
     return { totV, totN, mins, siguiente, porSaga }
   }, [vistas, filtros])
@@ -1719,7 +1721,7 @@ export default function App() {
     let totMin = 0, vistoMin = 0, titulosVistos = 0, titulosTot = 0
     const tipos = { peli: { t: 'Películas', tot: 0, visto: 0 }, serie: { t: 'Series', tot: 0, visto: 0 }, esp: { t: 'Especiales', tot: 0, visto: 0 } }
     DATA.forEach(saga => {
-      if (saga.saga === 'comics') return
+      if (saga.saga === 'comics' || saga.saga === 'animacion') return
       saga.eras.forEach(era => {
         const f = { era: era.era, rango: era.rango, saga: saga.saga, c: era.c, tot: 0, visto: 0, items: era.items.length, vistos: 0 }
         era.items.forEach(item => {
@@ -1755,7 +1757,7 @@ export default function App() {
 
   const cineLista = useMemo(() => {
     const pendientes = []
-    DATA.forEach(sg => { if (sg.saga === 'comics') return
+    DATA.forEach(sg => { if (sg.saga === 'comics' || sg.saga === 'animacion') return
       sg.eras.forEach(era => era.items.forEach(item => {
         if (!vistas[item.id]) pendientes.push({ item, c: era.c })
       })) })
@@ -1786,7 +1788,7 @@ export default function App() {
     if (!meta) return null
     const dias = Math.max(1, Math.ceil((new Date(meta.fecha + 'T00:00:00') - Date.now()) / 86400000))
     let restante = 0
-    DATA.forEach(sg => { if (sg.saga === 'comics') return
+    DATA.forEach(sg => { if (sg.saga === 'comics' || sg.saga === 'animacion') return
       sg.eras.forEach(era => era.items.forEach(it => {
         if (it.exp && !vistas[it.id] && it.d) restante += it.d
       })) })
@@ -1814,7 +1816,7 @@ export default function App() {
     const items = []
     let corta = false
     for (const sg of DATA) {
-      if (sg.saga === 'comics' || corta) continue
+      if (sg.saga === 'comics' || sg.saga === 'animacion' || corta) continue
       for (const era of sg.eras) {
         if (corta) break
         for (const it of era.items) {
@@ -1844,7 +1846,7 @@ export default function App() {
   const porAnio = useMemo(() => {
     const items = []
     DATA.forEach(saga => {
-      if (saga.saga === 'comics') return
+      if (saga.saga === 'comics' || saga.saga === 'animacion') return
       saga.eras.forEach(era => era.items.forEach(item => {
         if (pasaFiltro(item, false)) items.push({ ...item, uni: item.uni || saga.uni, c: era.c })
       }))
@@ -1915,7 +1917,7 @@ export default function App() {
             return (
               <div className="mapa-fila" key={saga.saga}>
                 <span className="mapa-label">
-                  {saga.saga === 'xmen' ? 'X-Men' : saga.saga === 'ucm' ? 'UCM' : 'Cómics'}
+                  {saga.saga === 'xmen' ? 'X-Men' : saga.saga === 'ucm' ? 'UCM' : saga.saga === 'animacion' ? 'Anim.' : 'Cómics'}
                 </span>
                 <div className="mapa-dots">
                   {items.map(({ item, c }) => (
@@ -1959,7 +1961,7 @@ export default function App() {
           </button>
           <button className="chip-btn" onClick={() => {
             const pendientes = []
-            DATA.forEach(saga => { if (saga.saga === 'comics') return
+            DATA.forEach(saga => { if (saga.saga === 'comics' || saga.saga === 'animacion') return
               saga.eras.forEach(era => era.items.forEach(item => {
                 if (pasaFiltro(item, false) && !vistas[item.id]) pendientes.push({ item, c: era.c })
               })) })
@@ -1997,7 +1999,7 @@ export default function App() {
           {(() => {
             const años = new Map()
             const fuera = []
-            DATA.forEach(sg => { if (sg.saga === 'comics') return
+            DATA.forEach(sg => { if (sg.saga === 'comics' || sg.saga === 'animacion') return
               sg.eras.forEach(era => era.items.forEach(item => {
                 const m = (item.h || '').match(/\d{4}/g)
                 let inicio = m ? parseInt(m[0]) : null
@@ -2368,8 +2370,8 @@ export default function App() {
           </section>
         </main>
       ) : vista !== 'estreno' ? (
-        <main className={(vista === 'comics' ? 'comics' : 'crono') + (compacto ? ' compacto' : '')}>
-          {DATA.filter(saga => (vista === 'comics') === (saga.saga === 'comics')).map(saga => {
+        <main className={((vista === 'comics' || vista === 'animacion') ? 'comics' : 'crono') + (compacto ? ' compacto' : '')}>
+          {DATA.filter(saga => vista === 'comics' ? saga.saga === 'comics' : vista === 'animacion' ? saga.saga === 'animacion' : (saga.saga !== 'comics' && saga.saga !== 'animacion')).map(saga => {
             const esComic = saga.saga === 'comics'
             const s = stats.porSaga[saga.saga]
             if (!s.n) return null

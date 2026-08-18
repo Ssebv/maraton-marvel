@@ -6,7 +6,7 @@ Guía interactiva para ver **todo Marvel y X-Men en orden cronológico de la his
 
 ## Qué hace
 
-- **117 títulos** (14 saga X-Men de Fox, 77 UCM y adyacentes, 26 cómics esenciales) en orden cronológico validado con la comunidad, con notas IMDb, duración, plataforma, reparto con foto y escenas post-créditos.
+- **134 títulos**: el maratón (17 saga X-Men de Fox, 74 UCM y adyacentes, 26 cómics esenciales) más **La bóveda de animación** — 17 series animadas de Marvel verificadas en el catálogo de Disney+ España vía TMDB — en orden cronológico validado con la comunidad, con notas IMDb, duración, plataforma, reparto con foto y escenas post-créditos.
 - **+700 episodios marcables** con fotograma real, fecha y sinopsis anti-spoiler (desenfocada hasta que la pides).
 - **Tráilers embebidos y "dónde verla hoy en España"** vía TMDB, con caché de 7 días.
 - **Planificación**: cuenta atrás de Doomsday con tu ritmo real, ruta express, plan de sesión según tus horas libres, recordatorios de estreno (aviso al abrir + notificaciones con la PWA instalada).
