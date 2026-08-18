@@ -322,10 +322,45 @@ function CuentaAtras({ meta }) {
                 : `Acelera · llevas ${meta.ritmo} min/día en las últimas 2 semanas`}
             </span>
           )}
+          {meta.restante > 0 && meta.ritmo > 0 && (() => {
+            const fin = new Date(Date.now() + Math.ceil(meta.restante / meta.ritmo) * 86400000)
+            const llega = fin <= new Date(objetivo.fecha + 'T00:00:00')
+            return (
+              <span className="proyeccion">
+                A tu ritmo acabarías la ruta express el <b>{fin.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</b>
+                {llega ? ' — llegas al estreno 🎬' : ' — después del estreno, aprieta un poco'}
+              </span>
+            )
+          })()}
           <AvisosBtn />
         </div>
       )}
     </div>
+  )
+}
+
+function Diario({ vistas, notas }) {
+  const marcas = useMemo(() => (
+    Object.entries(vistas)
+      .filter(([id, ts]) => typeof ts === 'number' && ts > 1e12 && TITULOS[id])
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 30)
+  ), [vistas])
+  if (!marcas.length) return null
+  return (
+    <section className="grafica diario">
+      <h3 className="grafica-titulo">📖 Diario del maratón</h3>
+      <div className="diario-lista">
+        {marcas.map(([id, ts]) => (
+          <div className="diario-fila" key={id}>
+            <span className="diario-fecha">{new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+            <span className="diario-titulo">{TITULOS[id]}</span>
+            {notas[id] && notas[id].p ? <span className="diario-estrellas">{'★'.repeat(notas[id].p)}</span> : null}
+          </div>
+        ))}
+      </div>
+      {Object.keys(vistas).length > 30 && <p className="diario-mas">Se muestran tus últimas 30 marcas.</p>}
+    </section>
   )
 }
 
@@ -950,14 +985,21 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miN
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav }) {
   const { item, c, esComic } = d
   const extra = useTmdb(item)
   const [verTrailer, setVerTrailer] = useState(false)
   const [sinAbierta, setSinAbierta] = useState(null)
   const [desveladas, setDesveladas] = useState({})
+  const [enlaceCopiado, setEnlaceCopiado] = useState(false)
+  useEffect(() => { setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false) }, [item.id])
   useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape') onClose() }
+    const onKey = e => {
+      if (e.key === 'Escape') { onClose(); return }
+      if (!onNav || /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) return
+      if (e.key === 'ArrowLeft') onNav(-1)
+      if (e.key === 'ArrowRight') onNav(1)
+    }
     window.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
@@ -969,6 +1011,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
     <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={item.t}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
+        {onNav && (
+          <>
+            <button className="nav-ficha izq" onClick={() => onNav(-1)} aria-label="Título anterior" title="Anterior (←)">‹</button>
+            <button className="nav-ficha der" onClick={() => onNav(1)} aria-label="Título siguiente" title="Siguiente (→)">›</button>
+          </>
+        )}
         <div className="modal-cover">
           <Portada item={item} c={c} esComic={esComic} />
           {vista && <span className="sello" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
@@ -1130,6 +1178,13 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                 )}
               </>
             )}
+            <button className="ghost" onClick={() => {
+              try {
+                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?t=${item.id}`)
+                setEnlaceCopiado(true)
+                setTimeout(() => setEnlaceCopiado(false), 2000)
+              } catch {}
+            }}>{enlaceCopiado ? '✓ Copiado' : '🔗 Enlace'}</button>
           </div>
         </div>
       </div>
@@ -1344,7 +1399,18 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [perfil])
-  const [detalle, setDetalle] = useState(null)
+  const [detalle, setDetalle] = useState(() => {
+    try {
+      const t = new URLSearchParams(window.location.search).get('t')
+      return t ? buscaItem(t) : null
+    } catch { return null }
+  })
+  const navegaDetalle = dir => setDetalle(d => {
+    if (!d) return d
+    const i = ORDEN_IDS.indexOf(d.item.id)
+    const nid = ORDEN_IDS[i + dir]
+    return nid ? buscaItem(nid) : d
+  })
   const [tierra, setTierra] = useState(null)
   const [mvModo, setMvModo] = useState('sistema')
   const [planModal, setPlanModal] = useState(false)
@@ -2207,6 +2273,8 @@ export default function App() {
 
           <Actividad vistas={vistas} eps={eps} />
 
+          <Diario vistas={vistas} notas={notas} />
+
           <Logros ctx={{
             vistas,
             horasVistas: estadisticas.vistoMin / 60,
@@ -2551,7 +2619,7 @@ export default function App() {
           eps={eps} toggleEp={toggleEp}
           nota={notas[detalle.item.id] || {}}
           ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)}
-          listas={listas} toggleEnLista={toggleEnLista} club={club} />
+          listas={listas} toggleEnLista={toggleEnLista} club={club} onNav={navegaDetalle} />
       )}
 
       <Footer onReset={() => { setVistas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
