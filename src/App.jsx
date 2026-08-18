@@ -177,15 +177,15 @@ function fmtDur(d) {
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
 const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo']
 const PESTANAS = [
-  { id: 'crono', ico: '📖', label: 'Cronológico', corto: 'Crono' },
-  { id: 'estreno', ico: '🗓️', label: 'Por estreno', corto: 'Estreno' },
-  { id: 'comics', ico: '💥', label: 'Cómics', corto: 'Cómics' },
-  { id: 'animacion', ico: '📺', label: 'Animación', corto: 'Anima' },
-  { id: 'listas', ico: '📋', label: 'Listas', corto: 'Listas' },
-  { id: 'galeria', ico: '🖼️', label: 'Galería', corto: 'Galería' },
-  { id: 'multiverso', ico: '🪐', label: 'Multiverso', corto: 'Multi' },
-  { id: 'tiempo', ico: '⏳', label: 'Línea temporal', corto: 'Tiempo' },
-  { id: 'stats', ico: '📊', label: 'Estadísticas', corto: 'Stats' },
+  { id: 'crono', label: 'Cronológico', corto: 'Crono' },
+  { id: 'estreno', label: 'Por estreno', corto: 'Estreno' },
+  { id: 'comics', label: 'Cómics', corto: 'Cómics' },
+  { id: 'animacion', label: 'Animación', corto: 'Anim.' },
+  { id: 'listas', label: 'Listas', corto: 'Listas' },
+  { id: 'galeria', label: 'Galería', corto: 'Galería' },
+  { id: 'multiverso', label: 'Multiverso', corto: 'Multi' },
+  { id: 'tiempo', label: 'Línea temporal', corto: 'Tiempo' },
+  { id: 'stats', label: 'Estadísticas', corto: 'Stats' },
 ]
 // Dúos y casos que el split por " y "/" & " rompería
 const DUOS = {
@@ -326,7 +326,7 @@ function CuentaAtras({ meta }) {
   return (
     <div className="cuenta">
           <div className="cuenta-info">
-            <span className="cuenta-label">⏳ Próximo gran estreno</span>
+            <span className="cuenta-label">Próximo gran estreno</span>
             <span className="cuenta-titulo">{objetivo.t}</span>
             <span className="cuenta-fecha">{fmtFecha(objetivo.fecha)} · {objetivo.tipo}</span>
           </div>
@@ -342,7 +342,7 @@ function CuentaAtras({ meta }) {
       {meta && (
         <div className="objetivo">
           <span className="objetivo-linea">
-            🎯 Ruta express: {meta.restante > 0
+            Ruta express: {meta.restante > 0
               ? <>quedan <b>{fmtDur(meta.restante)}</b> · necesitas <b>{meta.necesario} min/día</b></>
               : <b>¡completada! Llegas de sobra al estreno</b>}
           </span>
@@ -361,7 +361,7 @@ function CuentaAtras({ meta }) {
             return (
               <span className="proyeccion">
                 A tu ritmo acabarías la ruta express el <b>{fin.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</b>
-                {llega ? ' — llegas al estreno 🎬' : ' — después del estreno, aprieta un poco'}
+                {llega ? ' — llegas al estreno' : ' — después del estreno, aprieta un poco'}
               </span>
             )
           })()}
@@ -416,8 +416,8 @@ function AvisosBtn() {
     } catch {}
   }
   return estado === 'on'
-    ? <span className="aviso-on">🔔 Te avisaré cuando algo se estrene</span>
-    : <button className="chip-btn aviso-btn" onClick={activar}>🔔 Avisarme de estrenos</button>
+    ? <span className="aviso-on">Te avisaré cuando algo se estrene</span>
+    : <button className="chip-btn aviso-btn" onClick={activar}>Avisarme de estrenos</button>
 }
 
 const TITULOS = Object.fromEntries(DATA.flatMap(s => s.eras.flatMap(e => e.items)).map(i => [i.id, i.t]))
@@ -433,11 +433,11 @@ function Bienvenida({ onCerrar, onExpress }) {
           <ol className="bienvenida-pasos">
             <li><b>117 títulos en orden cronológico</b> de la historia: la saga X-Men a un lado, el UCM al otro, los cómics en su pestaña — y una bóveda de animación aparte.</li>
             <li><b>Marca lo visto</b> con la casilla redonda de cada tarjeta — o entra en la ficha para episodios, tráiler, sinopsis y escenas post-créditos.</li>
-            <li><b>La cuenta atrás de Doomsday</b> te dice el ritmo que necesitas; el 🍿 Plan de sesión te propone qué ver hoy.</li>
+            <li><b>La cuenta atrás de Doomsday</b> te dice el ritmo que necesitas; el Plan de sesión te propone qué ver hoy.</li>
           </ol>
           <div className="bienvenida-acciones">
             <button className="accion-principal" onClick={onCerrar}>Empezar por el principio</button>
-            <button className="chip-btn" onClick={onExpress}>⚡ Solo lo esencial para Doomsday</button>
+            <button className="chip-btn" onClick={onExpress}>Solo lo esencial para Doomsday</button>
           </div>
           <p className="bienvenida-nota">Consejo: desde el móvil puedes instalarla como app (menú del navegador → «Añadir a pantalla de inicio»).</p>
         </div>
@@ -628,7 +628,7 @@ function ComentariosClub({ club, item, vista }) {
       <span className="valoracion-label">Club · {lista.length === 1 ? '1 comentario' : `${lista.length} comentarios`}</span>
       {oculto ? (
         <button className="club-velo" onClick={() => setDesvelado(true)}>
-          🙈 Aún no lo has visto: pulsa para leer los comentarios del club
+          Aún no lo has visto: pulsa para leer los comentarios del club
         </button>
       ) : lista.map((c, i) => (
         <p className="club-coment" key={i}>
@@ -737,7 +737,7 @@ function Novedades({ eps }) {
   if (!lista.length || cerrado) return null
   return (
     <div className="novedades" role="status">
-      <span>🔔 <b>Desde tu última visita:</b> {lista.join(' · ')}</span>
+      <span><b>Desde tu última visita:</b> {lista.join(' · ')}</span>
       <button className="cerrar" onClick={() => setCerrado(true)} aria-label="Cerrar aviso">✕</button>
     </div>
   )
@@ -1074,8 +1074,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
           {item.pc != null && (
             <p className={`modal-pc${item.pc === '0' ? ' sin' : ''}`}>
               {item.pc === '0'
-                ? <>🍿 Sin escenas post-créditos{item.pcn ? ` — ${item.pcn}` : ' — puedes saltarte los créditos'}</>
-                : <>🍿 Escenas en los créditos: <b>{item.pc}</b>{item.pcn ? ` · ${item.pcn}` : ''}</>}
+                ? <>Sin escenas post-créditos{item.pcn ? ` — ${item.pcn}` : ' — puedes saltarte los créditos'}</>
+                : <>Escenas en los créditos: <b>{item.pc}</b>{item.pcn ? ` · ${item.pcn}` : ''}</>}
             </p>
           )}
           {(directores.length > 0 || item.cast) && (
@@ -1145,7 +1145,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                                 : <p className="ep-sinopsis velada" role="button" tabIndex={0}
                                     onClick={() => setDesveladas(v => ({ ...v, [clave]: true }))}
                                     onKeyDown={ev => { if (ev.key === 'Enter') setDesveladas(v => ({ ...v, [clave]: true })) }}>
-                                    <span className="ep-sin-aviso">🙈 Aún no lo has visto: pulsa para desvelar la sinopsis</span>
+                                    <span className="ep-sin-aviso">Aún no lo has visto: pulsa para desvelar la sinopsis</span>
                                     <span className="ep-sin-borroso" aria-hidden="true">{sinopsis}</span>
                                   </p>
                             )}
@@ -1185,7 +1185,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
           )}
           {club && <ComentariosClub club={club} item={item} vista={vista} />}
           {extra && extra.prov.length > 0 && (
-            <p className="modal-prov">📺 Hoy en España: <b>{extra.prov.join(' · ')}</b></p>
+            <p className="modal-prov">Hoy en España: <b>{extra.prov.join(' · ')}</b></p>
           )}
           {verTrailer && extra && extra.trailer && (
             <div className="trailer-caja">
@@ -1217,7 +1217,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                 setEnlaceCopiado(true)
                 setTimeout(() => setEnlaceCopiado(false), 2000)
               } catch {}
-            }}>{enlaceCopiado ? '✓ Copiado' : '🔗 Enlace'}</button>
+            }}>{enlaceCopiado ? '✓ Copiado' : 'Enlace'}</button>
           </div>
         </div>
       </div>
@@ -1367,7 +1367,7 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
     x.strokeStyle = '#2E7D32'; x.lineWidth = 3
     x.beginPath(); x.roundRect(80, y + 10, 920, 110, 14); x.stroke()
     x.fillStyle = '#5FD068'; x.font = '700 24px Archivo, sans-serif'
-    x.fillText('⏳ PRÓXIMO GRAN ESTRENO', 116, y + 56)
+    x.fillText('PRÓXIMO GRAN ESTRENO', 116, y + 56)
     x.fillStyle = '#F2EFE6'; x.font = '400 34px "Archivo Black", Archivo, sans-serif'
     x.fillText(`${objetivo.t.toUpperCase()} · FALTAN ${dias} DÍAS`, 116, y + 100)
   }
@@ -1944,7 +1944,6 @@ export default function App() {
             {PESTANAS.map(p => (
               <button className="tab" key={p.id} aria-pressed={vista === p.id} aria-label={p.label}
                 onClick={() => setVista(p.id)}>
-                <span className="tab-ico" aria-hidden="true">{p.ico}</span>
                 <span className="tab-txt">{p.label}</span>
                 <span className="tab-corto" aria-hidden="true">{p.corto}</span>
               </button>
@@ -1952,7 +1951,7 @@ export default function App() {
           </div>
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
-          <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>⚡ Ruta express</button>
+          <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>Ruta express</button>
           <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>Sin series</button>
           <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>Sin opcionales</button>
           <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>Solo pendientes</button>
@@ -1960,9 +1959,9 @@ export default function App() {
           </div>
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
-          <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>🍿 Plan de sesión</button>
+          <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>Plan de sesión</button>
           <button className="chip-btn" aria-pressed={compacto} onClick={alternaCompacto}>Compacto</button>
-          <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>🎬 Modo cine</button>
+          <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>Modo cine</button>
           <button className="chip-btn" onClick={() => setOrden(o => o === 'crono' ? 'imdb' : o === 'imdb' ? 'nota' : 'crono')}>
             {orden === 'crono' ? '↕ Orden: cronológico' : orden === 'imdb' ? '↕ Orden: nota IMDb' : '↕ Orden: tu nota'}
           </button>
@@ -1976,16 +1975,16 @@ export default function App() {
               const e = pendientes[Math.floor(Math.random() * pendientes.length)]
               setDetalle({ item: e.item, c: e.c, esComic: false })
             }
-          }}>🎲 Sorpréndeme</button>
+          }}>Sorpréndeme</button>
           <input className="busca" type="search" name="busqueda" placeholder="Buscar… ( / )" title="Busca por título, actor, director o año — atajo: /" value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
           <button className="chip-btn" onClick={cicloAcento} title="Cambia el color de acento de la app">
-            🎨 {ACENTOS.find(a => a.id === acento).nombre}
+            {ACENTOS.find(a => a.id === acento).nombre}
           </button>
           <button className={`chip-btn sync-btn ${syncEstado}`} aria-live="polite" onClick={() => setSyncModal(true)}
             title={sync ? 'Sincronización activa' : 'Sincronizar entre dispositivos'}>
-            {syncEstado === 'ok' ? '☁️ Sincronizado' : syncEstado === 'syncing' ? '☁️ Guardando…'
-              : syncEstado === 'error' ? '☁️ Sin conexión' : '☁️ Sincronizar'}
+            {syncEstado === 'ok' ? 'Sincronizado' : syncEstado === 'syncing' ? 'Guardando…'
+              : syncEstado === 'error' ? 'Sin conexión' : 'Sincronizar'}
           </button>
           </div>
           {vista === 'crono' && (
@@ -2084,7 +2083,7 @@ export default function App() {
                 <div>
                   <button className="chip-btn" onClick={() => setListaActiva(null)}>← Mis listas</button>
                   <header className="lista-hero">
-                    <h2 className="lista-nombre">📋 {l.nombre}</h2>
+                    <h2 className="lista-nombre">{l.nombre}</h2>
                     <span className="stat-foot">{v} / {itemsOrdenados.length} vistos en esta lista · progreso independiente del maratón</span>
                     <div className="barra"><i style={{ width: `${itemsOrdenados.length ? 100 * v / itemsOrdenados.length : 0}%` }} /></div>
                     <AgregarALista indice={indice} idOrden={idOrden} enLista={l.items}
@@ -2124,7 +2123,7 @@ export default function App() {
                         <article key={l.id} className="mv-card lista-card" role="button" tabIndex={0}
                           onClick={() => setListaActiva(l.id)}
                           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setListaActiva(l.id) } }}>
-                          <h2 className="mv-nombre">📋 {l.nombre}</h2>
+                          <h2 className="mv-nombre">{l.nombre}</h2>
                           <div className="barra"><i style={{ width: `${total ? 100 * v / total : 0}%` }} /></div>
                           <span className="stat-foot">{v} / {total} títulos vistos</span>
                           <span className="mv-entrar">Abrir lista →</span>
@@ -2182,8 +2181,8 @@ export default function App() {
                   Los universos que hay que conocer antes de Vengadores: Doomsday. Entra en cada Tierra para ver y marcar todo lo que ocurre en ella.
                 </p>
                 <div className="tabs mv-modos">
-                  <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>🪐 Sistema</button>
-                  <button className="tab" aria-pressed={mvModo === 'mapa'} onClick={() => setMvModo('mapa')}>🕸️ Mapa</button>
+                  <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>Sistema</button>
+                  <button className="tab" aria-pressed={mvModo === 'mapa'} onClick={() => setMvModo('mapa')}>Mapa</button>
                   <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>▤ Tarjetas</button>
                 </div>
               </div>
@@ -2305,10 +2304,10 @@ export default function App() {
           <div className="stats-acciones">
             <button className="accion-principal compartir"
               onClick={() => compartirImagen(estadisticas, estadisticas.comicsVistos, estadisticas.comicsTot)}>
-              📸 Compartir como imagen
+              Compartir como imagen
             </button>
             <button className="chip-btn" onClick={() => { setPerfilUrl(''); setPerfilCopiado(false); setPerfilModal(true) }}>
-              🔗 Perfil compartible
+              Perfil compartible
             </button>
             {!amigo && (
               <button className="chip-btn" onClick={() => { setDueloInput(''); setDueloNombre(''); setDueloError(''); setDueloModal(true) }}>
@@ -2508,8 +2507,8 @@ export default function App() {
             <div className="modal-info">
               <h2 className="modal-titulo">⚔️ Modo duelo</h2>
               <p className="modal-res">
-                Pega el enlace de <b>Perfil compartible</b> de la otra persona (botón 🔗 en sus Estadísticas)
-                para una foto fija, o su <b>código de sincronización</b> (botón ☁️) para un duelo
+                Pega el enlace de <b>Perfil compartible</b> de la otra persona (botón «Perfil compartible» en sus Estadísticas)
+                para una foto fija, o su <b>código de sincronización</b> (botón «Sincronizar») para un duelo
                 <b> en vivo</b> que se actualiza solo. Todo queda en este navegador.
               </p>
               <input className="busca duelo-input" placeholder="Enlace de perfil o código de sincronización"
@@ -2542,7 +2541,7 @@ export default function App() {
               <h2 className="modal-titulo">🏆 Club de maratón</h2>
               <p className="modal-res">
                 Un ranking en vivo para 2 o más personas, con comentarios por título.
-                {sync ? ' Puedes crear un club con tu Firebase o unirte con un código.' : ' Para crear un club necesitas configurar antes ☁️ Sincronizar; para unirte basta un código.'}
+                {sync ? ' Puedes crear un club con tu Firebase o unirte con un código.' : ' Para crear un club necesitas configurar antes Sincronizar; para unirte basta un código.'}
               </p>
               <input className="busca duelo-input" placeholder="Código del club (déjalo vacío para crear uno)"
                 value={clubCod} onChange={e => { setClubCod(e.target.value); setClubError('') }} />
@@ -2557,7 +2556,7 @@ export default function App() {
                   if (!sc) { setClubError('Ese código no parece válido: revisa que esté completo.'); return }
                   guardaClub({ url: sc.url, sala: sc.room, alias }); setClubModal(false); setClubInvitar(true); return
                 }
-                if (!sync) { setClubError('Para crear un club, configura primero ☁️ Sincronizar (arriba) o pide un código.'); return }
+                if (!sync) { setClubError('Para crear un club, configura primero Sincronizar (arriba) o pide un código.'); return }
                 const sala = 'club-' + Math.random().toString(36).slice(2, 8)
                 guardaClub({ url: sync.url, sala, alias }); setClubModal(false); setClubInvitar(true)
               }}>
@@ -2587,7 +2586,7 @@ export default function App() {
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setPerfilModal(false)} aria-label="Cerrar">✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">🔗 Perfil compartible</h2>
+              <h2 className="modal-titulo">Perfil compartible</h2>
               <p className="modal-res">
                 Genera una página de <b>solo lectura</b> con tu progreso, logros y valoraciones.
                 Todo va dentro del propio enlace: quien lo reciba no puede tocar tu maratón (tus notas de texto no se incluyen).
@@ -2623,7 +2622,7 @@ export default function App() {
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setPlanModal(false)} aria-label="Cerrar">✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">🍿 Plan de sesión</h2>
+              <h2 className="modal-titulo">Plan de sesión</h2>
               <p className="modal-res">¿Cuánto tiempo tienes hoy? Te propongo qué ver siguiendo el orden del maratón.</p>
               <div className="plan-controles">
                 {[1, 2, 3, 4].map(h => (
@@ -2631,7 +2630,7 @@ export default function App() {
                     onClick={() => setPlanHoras(h)}>{h} h</button>
                 ))}
                 <button className="chip-btn destacado" aria-pressed={planExpress}
-                  onClick={() => setPlanExpress(x => !x)}>⚡ Solo ruta express</button>
+                  onClick={() => setPlanExpress(x => !x)}>Solo ruta express</button>
               </div>
               {plan.items.length === 0 ? (
                 <p className="modal-res">Nada pendiente encaja en ese tiempo{planExpress ? ' dentro de la ruta express' : ''}. Prueba con más horas o quita el filtro.</p>
@@ -2720,7 +2719,7 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose }) {
       <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
         <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
         <div className="modal-info">
-          <h2 className="modal-titulo">☁️ Sincronización entre dispositivos</h2>
+          <h2 className="modal-titulo">Sincronización entre dispositivos</h2>
           {modo === 'activo' && sync ? (
             <>
               <p className="modal-res">
@@ -2729,7 +2728,7 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose }) {
                 Estado: <b>{estado === 'ok' ? 'conectado' : estado === 'error' ? 'sin conexión' : 'guardando…'}</b>
               </p>
               <p className="modal-res">Para conectar otro dispositivo (el móvil, por ejemplo), abre allí la web,
-                pulsa ☁️ Sincronizar → «Conectar con un código» y pega este código:</p>
+                pulsa Sincronizar → «Conectar con un código» y pega este código:</p>
               <div className="sync-codigo">
                 <code>{codigoSync(sync.url, sync.room)}</code>
                 <button className="chip-btn" onClick={copiarCodigo}>{copiado ? '¡Copiado!' : 'Copiar'}</button>
@@ -2858,7 +2857,7 @@ function Footer({ onReset }) {
       <p className="nota-pie">
         Pulsa una tarjeta para ver su ficha completa; la casilla redonda marca vista o pendiente y se guarda en este navegador.
         Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas.
-        La ⚡ Ruta express deja solo lo imprescindible para llegar a Vengadores: Doomsday.
+        La Ruta express deja solo lo imprescindible para llegar a Vengadores: Doomsday.
       </p>
       <div className="reset">
         <button className="chip-btn" onClick={exportar}>
@@ -2881,11 +2880,11 @@ function Footer({ onReset }) {
           try { localStorage.setItem('maraton-marvel-sonido-v1', v ? '1' : '0') } catch {}
           if (v) suenaPop.ctx = null
         }}>
-          {sonido ? '🔊 Sonido al marcar' : '🔇 Sonido al marcar'}
+          {sonido ? 'Sonido al marcar' : 'Sonido al marcar'}
         </button>
-        <button className="chip-btn" onClick={descargaCopia}>💾 Descargar copia</button>
+        <button className="chip-btn" onClick={descargaCopia}>Descargar copia</button>
         <label className="chip-btn restaurar">
-          📁 Restaurar copia
+          Restaurar copia
           <input type="file" accept="application/json,.json" onChange={restauraCopia} aria-label="Restaurar copia de seguridad" />
         </label>
         <button className="chip-btn" onClick={() => setConfirmando(c => !c)}>
