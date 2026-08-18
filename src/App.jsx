@@ -1979,7 +1979,7 @@ export default function App() {
           <input className="busca" type="search" name="busqueda" placeholder="Buscar… ( / )" title="Busca por título, actor, director o año — atajo: /" value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
           <button className="chip-btn" onClick={cicloAcento} title="Cambia el color de acento de la app">
-            {ACENTOS.find(a => a.id === acento).nombre}
+            Tema: {ACENTOS.find(a => a.id === acento).nombre}
           </button>
           <button className={`chip-btn sync-btn ${syncEstado}`} aria-live="polite" onClick={() => setSyncModal(true)}
             title={sync ? 'Sincronización activa' : 'Sincronizar entre dispositivos'}>
@@ -2880,7 +2880,7 @@ function Footer({ onReset }) {
           try { localStorage.setItem('maraton-marvel-sonido-v1', v ? '1' : '0') } catch {}
           if (v) suenaPop.ctx = null
         }}>
-          {sonido ? 'Sonido al marcar' : 'Sonido al marcar'}
+          {sonido ? 'Sonido al marcar: sí' : 'Sonido al marcar: no'}
         </button>
         <button className="chip-btn" onClick={descargaCopia}>Descargar copia</button>
         <label className="chip-btn restaurar">
