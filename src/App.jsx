@@ -1951,12 +1951,15 @@ export default function App() {
             ))}
           </div>
           <span className="ctrl-sep" aria-hidden="true" />
+          <div className="ctrl-grupo">
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>⚡ Ruta express</button>
           <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>Sin series</button>
           <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>Sin opcionales</button>
           <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>Solo pendientes</button>
           <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>Joyas ★7,5+</button>
+          </div>
           <span className="ctrl-sep" aria-hidden="true" />
+          <div className="ctrl-grupo">
           <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>🍿 Plan de sesión</button>
           <button className="chip-btn" aria-pressed={compacto} onClick={alternaCompacto}>Compacto</button>
           <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>🎬 Modo cine</button>
@@ -1984,6 +1987,7 @@ export default function App() {
             {syncEstado === 'ok' ? '☁️ Sincronizado' : syncEstado === 'syncing' ? '☁️ Guardando…'
               : syncEstado === 'error' ? '☁️ Sin conexión' : '☁️ Sincronizar'}
           </button>
+          </div>
           {vista === 'crono' && (
             <nav className="atajos">
               <a href="#saga-xmen">X-Men</a>

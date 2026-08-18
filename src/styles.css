@@ -125,6 +125,7 @@ h1 .rojo{
      bloque de estrenos acaba 48 px por encima de la cuenta atrás. La altura
      que sobra se llena con la nota de cada estreno, no con aire. */
   .proximos{flex:1}
+  .proximo{justify-content:center}
 }
 .mapa{
   width:100%;
@@ -228,6 +229,9 @@ h1 .rojo{
   flex:none; width:1px; align-self:stretch; margin:1px 3px;
   background:color-mix(in srgb, var(--line) 80%, transparent);
 }
+/* Cada grupo salta de línea entero: con los chips sueltos, el wrap partía las
+   herramientas por la mitad y "Plan de sesión" se quedaba con los filtros. */
+.ctrl-grupo{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
 .tabs{display:flex; background:var(--panel2);
   border:1px solid color-mix(in srgb, var(--line) 60%, transparent);
   border-radius:999px; padding:3px; gap:2px}
