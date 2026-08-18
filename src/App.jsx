@@ -429,7 +429,7 @@ function Bienvenida({ onCerrar, onExpress }) {
           <span className="hero-eyebrow">Guía de maratón</span>
           <h2 className="modal-titulo">Todo Marvel y X-Men, en orden</h2>
           <ol className="bienvenida-pasos">
-            <li><b>117 títulos en orden cronológico</b> de la historia: la saga X-Men a un lado, el UCM al otro y los cómics en su pestaña.</li>
+            <li><b>117 títulos en orden cronológico</b> de la historia: la saga X-Men a un lado, el UCM al otro, los cómics en su pestaña — y una bóveda de animación aparte.</li>
             <li><b>Marca lo visto</b> con la casilla redonda de cada tarjeta — o entra en la ficha para episodios, tráiler, sinopsis y escenas post-créditos.</li>
             <li><b>La cuenta atrás de Doomsday</b> te dice el ritmo que necesitas; el 🍿 Plan de sesión te propone qué ver hoy.</li>
           </ol>
