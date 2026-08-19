@@ -966,7 +966,8 @@ main.galeria{margin-top:24px}
 }
 .nav-nombre{
   font-size:10.5px; font-weight:700; letter-spacing:.05em; color:var(--ink2);
-  background:color-mix(in srgb, var(--bg) 72%, transparent); padding:2px 8px; border-radius:var(--r-s);
+  /* al cruzarse dos órbitas las etiquetas se solapan: la de delante debe ganar */
+  background:color-mix(in srgb, var(--bg) 92%, transparent); padding:2px 8px; border-radius:var(--r-s);
   white-space:nowrap;
 }
 .planeta-nav:hover .nav-nombre, .sol:hover .nav-nombre{color:var(--ink)}

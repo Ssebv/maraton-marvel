@@ -502,7 +502,7 @@ function Diario({ vistas, notas }) {
   if (!marcas.length) return null
   return (
     <section className="grafica diario">
-      <h3 className="grafica-titulo">📖 Diario del maratón</h3>
+      <h3 className="grafica-titulo">Diario del maratón</h3>
       <div className="diario-lista">
         {marcas.map(([id, ts]) => (
           <div className="diario-fila" key={id}>
@@ -740,7 +740,7 @@ function Club({ club, vistas, eps, onSalir, onInvitar }) {
   return (
     <section className="duelo club">
       <div className="duelo-cab">
-        <h2>🏆 Club de maratón <span className="club-sala">· sala {club.sala}</span></h2>
+        <h2>Club de maratón <span className="club-sala">· sala {club.sala}</span></h2>
         <button className="chip-btn" onClick={onInvitar}>Invitar</button>
         <button className="chip-btn" onClick={onSalir}>Salir</button>
       </div>
@@ -2597,12 +2597,12 @@ export default function App() {
             </button>
             {!amigo && (
               <button className="chip-btn" onClick={() => { setDueloInput(''); setDueloNombre(''); setDueloError(''); setDueloModal(true) }}>
-                ⚔️ Modo duelo
+                Modo duelo
               </button>
             )}
             {!club && (
               <button className="chip-btn" onClick={() => { setClubCod(''); setClubAlias(''); setClubError(''); setClubModal(true) }}>
-                🏆 Club de maratón
+                Club de maratón
               </button>
             )}
           </div>
@@ -2814,7 +2814,7 @@ export default function App() {
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setDueloModal(false)} aria-label="Cerrar">✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">⚔️ Modo duelo</h2>
+              <h2 className="modal-titulo">Modo duelo</h2>
               <p className="modal-res">
                 Pega el enlace de <b>Perfil compartible</b> de la otra persona (botón «Perfil compartible» en sus Estadísticas)
                 para una foto fija, o su <b>código de sincronización</b> (botón «Sincronizar») para un duelo
@@ -2847,7 +2847,7 @@ export default function App() {
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setClubModal(false)} aria-label="Cerrar">✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">🏆 Club de maratón</h2>
+              <h2 className="modal-titulo">Club de maratón</h2>
               <p className="modal-res">
                 Un ranking en vivo para 2 o más personas, con comentarios por título.
                 {sync ? ' Puedes crear un club con tu Firebase o unirte con un código.' : ' Para crear un club necesitas configurar antes Sincronizar; para unirte basta un código.'}
@@ -2881,7 +2881,7 @@ export default function App() {
             <button className="cerrar" onClick={() => setClubInvitar(false)} aria-label="Cerrar">✕</button>
             <div className="modal-info">
               <h2 className="modal-titulo">Invita a tu club</h2>
-              <p className="modal-res">Comparte este código: quien lo pegue en 🏆 Club de maratón entrará en tu sala.</p>
+              <p className="modal-res">Comparte este código: quien lo pegue en Club de maratón entrará en tu sala.</p>
               <code className="club-codigo">{codigoSync(club.url, club.sala)}</code>
               <button className="accion-principal" onClick={() => {
                 try { navigator.clipboard.writeText(codigoSync(club.url, club.sala)) } catch {}
