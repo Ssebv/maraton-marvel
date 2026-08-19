@@ -1,6 +1,6 @@
 // Service worker de Maratón Marvel:
 // - navegación: red primero (para no servir versiones viejas), caché como respaldo sin conexión
-// - pósters, fotos y fuentes: caché primero (no cambian)
+// - pósters, fotos, fondos y fuentes: caché primero (no cambian)
 const CACHE = 'maraton-marvel-v1'
 
 self.addEventListener('install', e => self.skipWaiting())
@@ -21,7 +21,8 @@ self.addEventListener('fetch', e => {
     return
   }
   const esEstatico =
-    (url.origin === location.origin && (url.pathname.includes('/posters/') || url.pathname.includes('/people/'))) ||
+    (url.origin === location.origin && (url.pathname.includes('/posters/') || url.pathname.includes('/people/') ||
+      url.pathname.includes('/mini/') || url.pathname.includes('/fondo/'))) ||
     url.hostname === 'fonts.gstatic.com' || url.hostname === 'fonts.googleapis.com'
   if (esEstatico) {
     e.respondWith(
