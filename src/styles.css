@@ -10,8 +10,13 @@
   --done:#2E7D4F;
   --r-s:4px; --r-m:10px; --r-l:16px; --r-pill:999px;
   --fondo-op:.45; --velo-a:62%; --velo-b:84%; --material:#F6F1E3;
-  --card-shadow:0 1px 2px rgba(20,24,32,.05);
-  --card-shadow-up:0 12px 32px rgba(20,24,32,.14);
+  /* Movimiento: una curva y tres duraciones para toda la app */
+  --curva:cubic-bezier(.22, 1, .36, 1);
+  --dur-corta:.16s; --dur-media:.24s; --dur-larga:.36s;
+  --dur-barra:.5s;  /* recorridos largos: barras de progreso */
+  /* Sombras en dos capas: contacto corto + difusa amplia, como en macOS */
+  --card-shadow:0 1px 1px rgba(20,24,32,.05), 0 3px 8px rgba(20,24,32,.05);
+  --card-shadow-up:0 2px 6px rgba(20,24,32,.09), 0 18px 44px rgba(20,24,32,.13);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -25,8 +30,8 @@
     --teal:#56C2A7; --teal-soft:#56C2A71C;
     --done:#4FB57A;
     --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
-  --card-shadow:0 1px 2px rgba(0,0,0,.35);
-    --card-shadow-up:0 16px 40px rgba(0,0,0,.55);
+  --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
+    --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
   }
 }
 :root[data-theme="dark"]{
@@ -40,8 +45,8 @@
   --teal:#56C2A7; --teal-soft:#56C2A71C;
   --done:#4FB57A;
   --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
-  --card-shadow:0 1px 2px rgba(0,0,0,.35);
-  --card-shadow-up:0 16px 40px rgba(0,0,0,.55);
+  --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
+  --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
 }
 
 *{box-sizing:border-box}
@@ -123,7 +128,7 @@ button{font:inherit}
 .saga-head > *:not(.saga-franja){position:relative; z-index:1}
 
 /* ── Hero ── */
-.hero{padding:44px 0 8px; animation:riseIn .6s cubic-bezier(.22,1,.36,1) both}
+.hero{padding:44px 0 8px; animation:riseIn .6s var(--curva) both}
 .hero-eyebrow{
   margin:0 0 10px; display:inline-block;
   font-size:11px; font-weight:700; letter-spacing:.14em;
@@ -161,7 +166,7 @@ h1 .rojo{color:var(--red)}
 .barra > i{
   display:block; height:100%; width:0%;
   background:linear-gradient(90deg, var(--red), #E8A93C);
-  border-radius:0 var(--r-s) var(--r-s) 0; transition:width .5s cubic-bezier(.22,1,.36,1);
+  border-radius:0 var(--r-s) var(--r-s) 0; transition:width var(--dur-barra) var(--curva);
 }
 
 .panel-superior{display:grid; gap:12px; margin-top:16px; align-items:stretch}
@@ -194,7 +199,7 @@ h1 .rojo{color:var(--red)}
   width:12px; height:12px; border-radius:var(--r-s); padding:0; cursor:pointer;
   border:1px solid var(--line); background:var(--panel2);
   position:relative;
-  transition:transform .15s, background .2s;
+  transition:transform var(--dur-corta), background var(--dur-media);
 }
 .dot::after{content:""; position:absolute; inset:-6px}
 .dot:hover{transform:scale(1.4); border-color:var(--ink2)}
@@ -208,7 +213,7 @@ h1 .rojo{color:var(--red)}
   background:var(--panel);
   border:1.5px solid color-mix(in srgb, var(--doom) 55%, var(--line));
   border-radius:var(--r-m); padding:18px 22px;
-  animation:riseIn .5s cubic-bezier(.22,1,.36,1) both;
+  animation:riseIn .5s var(--curva) both;
 }
 .cuenta-info{display:flex; flex-direction:column; gap:2px; min-width:0}
 .cuenta-label{
@@ -317,13 +322,13 @@ h1 .rojo{color:var(--red)}
 .tab{
   border:none; background:none; color:var(--ink2); cursor:pointer;
   border-radius:var(--r-pill); padding:5px 14px; font-size:13px; font-weight:600;
-  transition:background .2s, box-shadow .2s;
+  transition:background var(--dur-media), box-shadow var(--dur-media);
 }
 .tab[aria-pressed="true"]{background:var(--panel); color:var(--ink); box-shadow:var(--card-shadow)}
 .chip-btn{
   border:1px solid var(--line); background:transparent; color:var(--ink2);
   border-radius:var(--r-pill); padding:5px 13px; font-size:13px; font-weight:500; cursor:pointer;
-  transition:background .15s, transform .15s;
+  transition:background var(--dur-corta), transform var(--dur-corta);
 }
 .chip-btn:hover{border-color:var(--ink2); color:var(--ink)}
 .chip-btn:active{transform:scale(.96)}
@@ -372,7 +377,7 @@ h3{
   margin-left:auto; width:72px; height:4px; border-radius:var(--r-s);
   background:var(--panel2); overflow:hidden;
 }
-.era-prog i{display:block; height:100%; background:var(--era, var(--ink2)); border-radius:var(--r-s); transition:width .4s}
+.era-prog i{display:block; height:100%; background:var(--era, var(--ink2)); border-radius:var(--r-s); transition:width var(--dur-barra) var(--curva)}
 .era-count{font-size:11px; color:var(--ink2); font-variant-numeric:tabular-nums}
 .era-borde{position:relative}
 
@@ -384,8 +389,8 @@ h3{
   border:1.5px solid var(--line);
   border-radius:var(--r-m); padding:14px;
   box-shadow:var(--card-shadow);
-  transition:transform .25s cubic-bezier(.22, 1, .36, 1), box-shadow .25s, opacity .3s;
-  animation:riseIn .5s cubic-bezier(.22,1,.36,1) both;
+  transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-larga);
+  animation:riseIn .5s var(--curva) both;
   position:relative;
   content-visibility:auto; contain-intrinsic-size:auto 165px;
 }
@@ -406,7 +411,7 @@ h3{
 .cover{
   display:block; width:88px; height:132px; border-radius:var(--r-m);
   box-shadow:0 4px 14px rgba(0,0,0,.35);
-  transition:transform .3s cubic-bezier(.22,1,.36,1), filter .3s;
+  transition:transform var(--dur-larga) var(--curva), filter var(--dur-larga);
 }
 .cover.foto{object-fit:cover; background:var(--panel2)}
 .card:hover .cover{transform:scale(1.045) rotate(-1.5deg)}
@@ -423,14 +428,17 @@ h3{
   width:30px; height:30px; border-radius:50%;
   border:2px solid var(--line); background:transparent; cursor:pointer;
   display:grid; place-items:center; position:relative; padding:0;
-  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+  /* nunca 'all': arrastraría border-color, que se congela al cambiar de tema */
+  transition:background var(--dur-media) cubic-bezier(.34,1.56,.64,1),
+             transform var(--dur-media) cubic-bezier(.34,1.56,.64,1),
+             box-shadow var(--dur-media) cubic-bezier(.34,1.56,.64,1);
 }
-.checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:opacity .2s, transform .2s}
+.checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:opacity var(--dur-media), transform var(--dur-media)}
 .checkbox:hover{border-color:var(--done); box-shadow:0 0 0 4px color-mix(in srgb, var(--done) 15%, transparent)}
 .checkbox::after{content:""; position:absolute; inset:-8px; border-radius:50%}
 .card.vista .checkbox{
   background:var(--done); border-color:var(--done);
-  animation:anillo .5s cubic-bezier(.22,1,.36,1) both;
+  animation:anillo .5s var(--curva) both;
 }
 @keyframes anillo{
   from{box-shadow:0 0 0 0 color-mix(in srgb, var(--done) 55%, transparent)}
@@ -503,7 +511,7 @@ h3{
 .ghost{
   font-size:12px; font-weight:600; color:var(--ink2); text-decoration:none;
   border:1px solid var(--line); border-radius:var(--r-pill); padding:4px 11px;
-  white-space:nowrap; transition:background .15s;
+  white-space:nowrap; transition:background var(--dur-corta);
 }
 .ghost:hover{color:var(--ink); border-color:var(--ink2); background:var(--panel2)}
 
@@ -524,7 +532,7 @@ h3{
   overscroll-behavior:contain;
   padding:30px; display:flex; gap:32px;
   box-shadow:var(--card-shadow-up);
-  animation:riseIn .3s cubic-bezier(.22,1,.36,1) both;
+  animation:riseIn .3s var(--curva) both;
 }
 .cerrar{
   position:absolute; top:14px; right:14px; z-index:1;
@@ -560,7 +568,7 @@ h3{
 .avatar{
   width:52px; height:52px; border-radius:50%; object-fit:cover;
   background:var(--panel2); border:2px solid var(--line);
-  transition:transform .2s;
+  transition:transform var(--dur-media);
 }
 .persona:hover .avatar{transform:scale(1.08); border-color:var(--blue)}
 .avatar-ini{
@@ -573,14 +581,14 @@ h3{
   border:none; border-radius:var(--r-pill); padding:10px 20px; cursor:pointer;
   font-size:14px; font-weight:700; color:#fff;
   background:linear-gradient(120deg, var(--red), #C8681E);
-  transition:transform .15s, filter .15s;
+  transition:transform var(--dur-corta), filter var(--dur-corta);
   position:relative; overflow:hidden;
 }
 .accion-principal::before{
   content:""; position:absolute; top:0; left:-80%;
   width:50%; height:100%;
   background:linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
-  transform:skewX(-20deg); transition:left .5s ease;
+  transform:skewX(-20deg); transition:left var(--dur-barra) ease;
 }
 .accion-principal:hover::before{left:130%}
 .accion-principal:hover{filter:brightness(1.1)}
@@ -604,7 +612,7 @@ h3{
 .ep{
   display:flex; align-items:center; gap:10px; text-align:left;
   background:var(--panel2); border:1px solid transparent; border-radius:var(--r-m);
-  padding:6px 8px; cursor:pointer; color:inherit; transition:opacity .15s;
+  padding:6px 8px; cursor:pointer; color:inherit; transition:opacity var(--dur-corta);
 }
 .ep:hover{border-color:var(--ink2)}
 .ep.hecho{opacity:.65}
@@ -614,7 +622,7 @@ h3{
   display:grid; place-items:center; color:#fff; position:relative; overflow:hidden;
 }
 .ep-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 25%}
-.ep-velo{position:absolute; inset:0; background:rgba(8,9,14,.45); transition:background .2s}
+.ep-velo{position:absolute; inset:0; background:rgba(8,9,14,.45); transition:background var(--dur-media)}
 .ep-img.real ~ .ep-velo{background:linear-gradient(180deg, transparent 40%, rgba(8,9,14,.55))}
 .ep:hover .ep-velo{background:rgba(8,9,14,.25)}
 .ep-velo.hecho{background:color-mix(in srgb, var(--done) 55%, rgba(8,9,14,.5))}
@@ -634,7 +642,7 @@ h3{
 .busca{
   border:1px solid var(--line); background:var(--panel); color:var(--ink);
   border-radius:var(--r-pill); padding:5px 14px; font-size:13px; font-family:inherit;
-  width:150px; min-height:32px; transition:width .2s;
+  width:150px; min-height:32px; transition:width var(--dur-media);
 }
 .busca:focus{width:210px; border-color:var(--blue); outline:none}
 .busca:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
@@ -665,7 +673,7 @@ h3{
 .gbar-pista{
   flex:1; height:14px; background:var(--panel2); border-radius:var(--r-s); overflow:hidden;
 }
-.gbar-pista i{display:block; height:100%; border-radius:0 var(--r-s) var(--r-s) 0; min-width:0; transition:width .5s cubic-bezier(.22,1,.36,1)}
+.gbar-pista i{display:block; height:100%; border-radius:0 var(--r-s) var(--r-s) 0; min-width:0; transition:width var(--dur-barra) var(--curva)}
 .gbar-valor{
   flex:none; width:86px; text-align:right; font-size:12px; color:var(--ink2);
   font-variant-numeric:tabular-nums;
@@ -701,7 +709,7 @@ h3{
 .estrella{
   background:none; border:none; cursor:pointer; padding:2px;
   font-size:20px; line-height:1; color:var(--line);
-  transition:transform .15s;
+  transition:transform var(--dur-corta);
 }
 .estrella:hover{transform:scale(1.2)}
 .estrella.on{color:var(--gold)}
@@ -739,7 +747,7 @@ a.accion-principal{text-decoration:none; display:inline-block}
 .logro{
   display:flex; flex-direction:column; align-items:center; text-align:center; gap:3px;
   border:1.5px solid var(--line); border-radius:var(--r-m); padding:14px 10px;
-  opacity:.45; filter:grayscale(1); transition:opacity .3s, filter .3s;
+  opacity:.45; filter:grayscale(1); transition:opacity var(--dur-larga), filter var(--dur-larga);
 }
 .logro.ok{opacity:1; filter:none; border-color:color-mix(in srgb, var(--gold) 55%, var(--line))}
 .logro-emoji{font-size:26px}
@@ -754,7 +762,7 @@ main.galeria{margin-top:24px}
 .galeria-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:10px}
 .galeria-item{
   position:relative; background:none; border:none; padding:0; cursor:pointer;
-  transition:transform .2s cubic-bezier(.22,1,.36,1);
+  transition:transform var(--dur-media) var(--curva);
 }
 .galeria-item:hover{transform:translateY(-3px) scale(1.03)}
 .galeria-item .cover{width:100%; height:auto; aspect-ratio:2/3}
@@ -844,7 +852,7 @@ main.galeria{margin-top:24px}
 .planeta-nav, .sol{
   pointer-events:auto; background:none; border:none; padding:0; cursor:pointer;
   display:flex; flex-direction:column; align-items:center; gap:5px;
-  transition:transform .2s cubic-bezier(.22,1,.36,1);
+  transition:transform var(--dur-media) var(--curva);
 }
 .planeta-nav:hover, .sol:hover{transform:scale(1.18)}
 .planeta-orbe{position:relative; width:56px; height:56px; top:auto; right:auto; display:block}
@@ -878,7 +886,7 @@ main.multiverso{margin-top:24px}
   background:linear-gradient(180deg, var(--panel3), var(--panel));
   border:1.5px solid var(--line); border-radius:var(--r-m); padding:18px 20px;
   display:flex; flex-direction:column; gap:8px;
-  animation:riseIn .45s cubic-bezier(.22,1,.36,1) both;
+  animation:riseIn .45s var(--curva) both;
 }
 .mv-num{
   align-self:flex-start; font-size:10.5px; font-weight:700; letter-spacing:.08em;
@@ -888,7 +896,7 @@ main.multiverso{margin-top:24px}
 .mv-nombre{margin:0; font-size:17px; font-weight:700; text-transform:none; letter-spacing:0}
 .mv-desc{margin:0; font-size:13.5px; color:var(--ink2); line-height:1.5}
 .mv-rel{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
-.mv-card{cursor:pointer; transition:transform .25s cubic-bezier(.22, 1, .36, 1), box-shadow .25s}
+.mv-card{cursor:pointer; transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media)}
 .mv-card:hover{
   transform:translate(-2px, -3px);
   border-color:color-mix(in srgb, var(--tc, var(--violet)) 55%, var(--line));
@@ -901,12 +909,12 @@ main.multiverso{margin-top:24px}
 }
 .mv-entrar{
   margin-top:auto; padding-top:6px; font-size:12px; font-weight:700;
-  color:var(--tc, var(--violet)); transition:letter-spacing .25s;
+  color:var(--tc, var(--violet)); transition:letter-spacing var(--dur-media);
 }
 .mv-card:hover .mv-entrar{letter-spacing:.04em}
 
 /* Vista de una Tierra */
-.tierra{animation:portal .65s cubic-bezier(.22,1,.36,1) both}
+.tierra{animation:portal .65s var(--curva) both}
 @keyframes portal{
   from{clip-path:circle(0% at 50% 140px); opacity:.4}
   to{clip-path:circle(150% at 50% 140px); opacity:1}
@@ -1005,7 +1013,7 @@ main.tiempo{margin-top:24px}
   display:flex; align-items:center; gap:10px; text-align:left;
   background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
   padding:8px 12px; max-width:340px; cursor:pointer; color:inherit;
-  transition:transform .2s cubic-bezier(.22, 1, .36, 1), box-shadow .2s, opacity .2s;
+  transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-media);
 }
 .tl-card:hover{
   transform:translate(-1px, -2px);
@@ -1043,13 +1051,13 @@ main.tiempo{margin-top:24px}
   flex:none; width:58px; height:58px; border-radius:50%;
   border:1.5px solid var(--line); background:var(--panel); color:var(--ink);
   font-size:30px; line-height:1; cursor:pointer;
-  transition:transform .15s;
+  transition:transform var(--dur-corta);
 }
 .cine-flecha:hover:not(:disabled){border-color:var(--ink2); transform:scale(1.08)}
 .cine-flecha:disabled{opacity:.25; cursor:default}
 .cine-panel{
   display:flex; align-items:center; gap:36px; min-width:0;
-  animation:riseIn .35s cubic-bezier(.22,1,.36,1) both;
+  animation:riseIn .35s var(--curva) both;
 }
 .cine-poster .cover{
   width:min(300px, 34vw); height:auto; aspect-ratio:2/3; border-radius:var(--r-m);
@@ -1092,7 +1100,7 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
 
 /* ── Movimiento con propósito (HIG: nada de animar por animar) ── */
 /* Cambiar de pestaña es un cambio de contexto: se anuncia con un fundido corto. */
-main{animation:entraVista .28s cubic-bezier(.22,1,.36,1) both}
+main{animation:entraVista .28s var(--curva) both}
 @keyframes entraVista{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
 
 /* El escalonado de las tarjetas ya lo pone el JSX (animationDelay en línea). */
@@ -1181,7 +1189,7 @@ main{animation:entraVista .28s cubic-bezier(.22,1,.36,1) both}
   margin-top:14px; padding:12px 16px;
   background:var(--gold-soft); border:1.5px solid color-mix(in srgb, var(--gold) 40%, transparent);
   border-radius:var(--r-m); font-size:13.5px;
-  animation:riseIn .4s cubic-bezier(.22,1,.36,1) both;
+  animation:riseIn .4s var(--curva) both;
 }
 .novedades .cerrar{position:static; flex:none}
 .aviso-btn{align-self:flex-start; font-size:12px}
@@ -1237,14 +1245,14 @@ main{animation:entraVista .28s cubic-bezier(.22,1,.36,1) both}
   border:1.5px solid var(--line); border-radius:var(--r-m); overflow:hidden;
 }
 .mapa-mv svg{position:absolute; inset:0; width:100%; height:100%}
-.arista{fill:none; stroke:color-mix(in srgb, var(--ink) 24%, transparent); stroke-width:1.5; transition:stroke .2s, opacity .2s}
+.arista{fill:none; stroke:color-mix(in srgb, var(--ink) 24%, transparent); stroke-width:1.5; transition:stroke var(--dur-media), opacity var(--dur-media)}
 .arista.on{stroke:var(--red); stroke-width:2.5}
 .arista.off{opacity:.25}
 .nodo{
   position:absolute; transform:translate(-50%,-50%);
   display:flex; flex-direction:column; align-items:center; gap:3px;
   width:76px; background:none; border:none; padding:0; cursor:pointer;
-  transition:opacity .2s, transform .2s;
+  transition:opacity var(--dur-media), transform var(--dur-media);
 }
 .nodo img, .nodo-ini{
   width:42px; height:60px; object-fit:cover; border-radius:var(--r-s);
@@ -1318,7 +1326,7 @@ main{animation:entraVista .28s cubic-bezier(.22,1,.36,1) both}
   font-family:"Archivo Black","Archivo",sans-serif; font-size:22px; letter-spacing:.12em;
   color:var(--done); border:3px solid var(--done); border-radius:var(--r-s); padding:3px 12px;
   background:color-mix(in srgb, var(--bg) 55%, transparent);
-  animation:sellazo .45s cubic-bezier(.22,1,.36,1) both;
+  animation:sellazo .45s var(--curva) both;
   pointer-events:none;
 }
 .sello-mini{font-size:10px; border-width:2px; padding:1px 6px; letter-spacing:.09em}
