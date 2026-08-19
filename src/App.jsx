@@ -729,9 +729,16 @@ function Club({ club, vistas, eps, onSalir, onInvitar }) {
   }, [club])
   const filas = useMemo(() => {
     const out = [{ alias: club.alias, yo: true, ...resumenMaraton(vistas, eps) }]
-    for (const [alias, m] of Object.entries(miembros || {})) {
-      if (alias === club.alias) continue
-      out.push({ alias, yo: false, t: m.t, ...resumenMaraton(deBits(m.v, ORDEN_IDS), deBits(m.e, ORDEN_EPS)) })
+    // los datos vienen de una base compartida: un miembro puede llegar a null
+    // (borrado, escritura fallida) y no debe tumbar la app entera
+    const entradas = miembros && typeof miembros === 'object' && !Array.isArray(miembros)
+      ? Object.entries(miembros) : []
+    for (const [alias, m] of entradas) {
+      if (alias === club.alias || !alias || !m || typeof m !== 'object') continue
+      const v = typeof m.v === 'string' ? m.v : ''
+      const e = typeof m.e === 'string' ? m.e : ''
+      out.push({ alias, yo: false, t: typeof m.t === 'number' ? m.t : null,
+        ...resumenMaraton(deBits(v, ORDEN_IDS), deBits(e, ORDEN_EPS)) })
     }
     return out.sort((a, b) => b.n - a.n || b.min - a.min)
   }, [miembros, vistas, eps, club])
@@ -835,7 +842,7 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
   return (
     <section className="duelo">
       <div className="duelo-cab">
-        <h2>⚔️ Duelo de maratones{esLive && <span className="duelo-live">EN VIVO</span>}</h2>
+        <h2>Duelo de maratones{esLive && <span className="duelo-live">EN VIVO</span>}</h2>
         <button className="chip-btn" onClick={onQuitar}>Quitar rival</button>
       </div>
       {[['Tú', datos.yo], [amigo.n, datos.el]].map(([quien, r]) => (
