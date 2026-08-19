@@ -516,7 +516,8 @@ h3{
 }
 .checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:opacity var(--dur-media), transform var(--dur-media)}
 .checkbox:hover{border-color:var(--done); box-shadow:0 0 0 4px color-mix(in srgb, var(--done) 15%, transparent)}
-.checkbox::after{content:""; position:absolute; inset:-8px; border-radius:50%}
+/* área táctil de 44 px: el círculo visible mide 26 y el mínimo táctil es 44 */
+.checkbox::after{content:""; position:absolute; inset:-9px; border-radius:50%}
 .card.vista .checkbox{
   background:var(--done); border-color:var(--done);
   animation:anillo .5s var(--curva) both;
@@ -1250,6 +1251,21 @@ main{animation:entraVista .28s var(--curva) both}
     display:block; font-size:10px; font-weight:700; letter-spacing:-.01em;
     white-space:nowrap;
   }
+  .tab{position:relative}
+  .tab::after{content:""; position:absolute; inset:-3px 0}
+
+  /* La barra ocupaba 399 px (5 filas de chips) al crecer el número de filtros.
+     En móvil pasa a ser un carril de una sola fila que se desliza. */
+  .controles{
+    flex-wrap:nowrap; overflow-x:auto; overscroll-behavior-x:contain;
+    scrollbar-width:none; margin-inline:-14px; padding-inline:14px;
+  }
+  .controles::-webkit-scrollbar{display:none}
+  .ctrl-grupo{flex-wrap:nowrap; flex:none}
+  .chip-btn{flex:none; padding:9px 13px}
+  .busca{flex:none; min-height:39px}
+  .ctrl-sep{align-self:center; height:22px}
+  .atajos{display:none}
   .tab[aria-pressed="true"]{background:transparent; color:var(--red); box-shadow:none}
 
   .overlay{place-items:end center; padding:0}
