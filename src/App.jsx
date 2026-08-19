@@ -961,7 +961,7 @@ function BorrarLista({ onBorrar }) {
 }
 
 function Estrellas() {
-  const capas = useMemo(() => [90, 55, 28].map((n, capa) => {
+  const capas = useMemo(() => [150, 90, 44].map((n, capa) => {
     const sombras = []
     for (let i = 0; i < n; i++) {
       const x = (Math.random() * 100).toFixed(1)
@@ -1056,14 +1056,15 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
     || dirLimpio.split(/, | y | & /).map(s => s.trim()).filter(s => s && s !== 'otros')
   return (
     <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={item.t}>
+      {/* fuera de .modal: dentro quedaban recortadas por su overflow y le añadían scroll */}
+      {onNav && (
+        <>
+          <button className="nav-ficha izq" onClick={e => { e.stopPropagation(); onNav(-1) }} aria-label="Título anterior" title="Anterior (←)">‹</button>
+          <button className="nav-ficha der" onClick={e => { e.stopPropagation(); onNav(1) }} aria-label="Título siguiente" title="Siguiente (→)">›</button>
+        </>
+      )}
       <div className="modal" onClick={e => e.stopPropagation()}>
         <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
-        {onNav && (
-          <>
-            <button className="nav-ficha izq" onClick={() => onNav(-1)} aria-label="Título anterior" title="Anterior (←)">‹</button>
-            <button className="nav-ficha der" onClick={() => onNav(1)} aria-label="Título siguiente" title="Siguiente (→)">›</button>
-          </>
-        )}
         <div className="modal-cover">
           <Portada item={item} c={c} esComic={esComic} />
           {vista && <span className="sello" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
@@ -2068,7 +2069,7 @@ export default function App() {
         </div>
       </header>
 
-      {vista === 'multiverso' && <Estrellas />}
+      <Estrellas />
       {vista === 'tiempo' ? (
         <main className="tiempo">
           <p className="saga-desc mv-intro">

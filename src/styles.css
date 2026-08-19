@@ -519,9 +519,10 @@ h3{
 @keyframes fadeIn{from{opacity:0} to{opacity:1}}
 .modal{
   position:relative; background:var(--panel); border:1px solid var(--line);
-  border-radius:var(--r-l); max-width:760px; width:100%; max-height:90vh; overflow:auto;
+  border-radius:var(--r-l); max-width:900px; width:100%; max-height:88vh;
+  overflow-y:auto; overflow-x:clip;
   overscroll-behavior:contain;
-  padding:28px; display:flex; gap:28px;
+  padding:30px; display:flex; gap:32px;
   box-shadow:var(--card-shadow-up);
   animation:riseIn .3s cubic-bezier(.22,1,.36,1) both;
 }
@@ -534,7 +535,8 @@ h3{
 }
 .cerrar:hover{color:var(--ink); border-color:var(--ink2)}
 .modal-cover{flex:none; align-self:flex-start}
-.modal-cover .cover{width:190px; height:285px; border-radius:var(--r-l)}
+.modal-cover .cover{width:230px; height:345px; border-radius:var(--r-l)}
+@media (max-width:900px){ .modal-cover .cover{width:190px; height:285px} }
 .modal-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:10px}
 .modal-chips{display:flex; flex-wrap:wrap; gap:6px}
 .modal-titulo{font-family:"Archivo",sans-serif; font-weight:700; font-size:24px; margin:0; text-transform:none; letter-spacing:-.01em}
@@ -766,6 +768,11 @@ main.galeria{margin-top:24px}
 
 /* ── Cielo estrellado (elemento de uiverse adaptado) ── */
 .cielo{position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden}
+/* Un cielo estrellado sobre papel no significa nada: en claro se apaga. */
+:root:not([data-theme="dark"]) .cielo{display:none}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .cielo{display:block}
+}
 .cielo::after{
   content:""; position:absolute; inset:0;
   background:radial-gradient(70% 55% at 20% 100%, rgba(43,93,168,.14), transparent 70%);
@@ -1334,14 +1341,19 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
 .diario-estrellas{color:var(--gold); font-size:12px; letter-spacing:.1em}
 .diario-mas{margin:6px 0 0; font-size:11.5px; color:var(--ink3)}
 .nav-ficha{
-  position:absolute; top:50%; transform:translateY(-50%); z-index:3;
+  position:fixed; top:50%; transform:translateY(-50%); z-index:60;
   width:36px; height:56px; border-radius:var(--r-m); border:1px solid var(--line);
   background:color-mix(in srgb, var(--panel) 85%, transparent);
   color:var(--ink2); font-size:26px; line-height:1; cursor:pointer;
 }
 .nav-ficha:hover{color:var(--ink); border-color:var(--ink2)}
-.nav-ficha.izq{left:-16px}
-.nav-ficha.der{right:-16px}
+.nav-ficha.izq{left:calc(50% - min(450px, 50vw - 20px) - 52px)}
+.nav-ficha.der{right:calc(50% - min(450px, 50vw - 20px) - 52px)}
+@media (max-width:1040px){
+  /* sin sitio a los lados: se apoyan en el borde de la ventana */
+  .nav-ficha.izq{left:8px}
+  .nav-ficha.der{right:8px}
+}
 @media (max-width:720px){
   .nav-ficha{top:auto; bottom:14px; transform:none; height:40px}
   .nav-ficha.izq{left:14px}
