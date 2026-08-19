@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { DATA, ESTRENOS, JOYA_MIN, KEY, MULTIVERSO } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
@@ -1146,6 +1146,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
   const [desveladas, setDesveladas] = useState({})
   const [enlaceCopiado, setEnlaceCopiado] = useState(false)
   const [persona, setPersona] = useState(null)
+  const refOverlay = useRef(null)
+  const focoPrevio = useRef(null)
   useEffect(() => { setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null) }, [item.id])
   useEffect(() => {
     const onKey = e => {
@@ -1156,19 +1158,44 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
       if (e.key === 'ArrowLeft') onNav(-1)
       if (e.key === 'ArrowRight') onNav(1)
     }
+    const onTab = e => {
+      if (e.key !== 'Tab' || !refOverlay.current) return
+      const foco = [...refOverlay.current.querySelectorAll(
+        'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])')]
+        .filter(el => el.offsetParent !== null)
+      if (!foco.length) return
+      const primero = foco[0], ultimo = foco[foco.length - 1]
+      if (e.shiftKey && (document.activeElement === primero || document.activeElement === refOverlay.current)) {
+        e.preventDefault(); ultimo.focus()
+      } else if (!e.shiftKey && document.activeElement === ultimo) {
+        e.preventDefault(); primero.focus()
+      }
+    }
+    window.addEventListener('keydown', onTab)
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keydown', onTab)
+    }
   }, [onClose, onNav, persona])
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+    // el foco entra en la ficha y vuelve al abrirla donde estaba
+    focoPrevio.current = document.activeElement
+    const t = setTimeout(() => refOverlay.current && refOverlay.current.focus(), 0)
+    return () => {
+      clearTimeout(t)
+      document.body.style.overflow = ''
+      try { focoPrevio.current && focoPrevio.current.focus() } catch {}
+    }
   }, [])
   const dirLimpio = item.dir ? limpiaNombre(item.dir) : ''
   const directores = DUOS[dirLimpio]
     || dirLimpio.split(/, | y | & /).map(s => s.trim()).filter(s => s && s !== 'otros')
   return (
-    <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={item.t}>
+    <div className="overlay" ref={refOverlay} tabIndex={-1} onClick={onClose}
+      role="dialog" aria-modal="true" aria-label={item.t}>
       {/* fuera de .modal: dentro quedaban recortadas por su overflow y le añadían scroll */}
       {onNav && (
         <>
