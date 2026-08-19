@@ -92,6 +92,28 @@ const resumenMaraton = (vistasSet, epsSet) => {
 // ── TMDB: tráilers, fotogramas y dónde ver (caché de 7 días en el navegador) ──
 const TMDB_IMG = 'https://image.tmdb.org/t/p/'
 const tmdbMem = {}
+const clave = n => (n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+
+const personaMem = {}
+async function cargaPersona(tmdbId) {
+  if (personaMem[tmdbId]) return personaMem[tmdbId]
+  const ls = 'maraton-marvel-persona-v2:' + tmdbId
+  try {
+    const g = JSON.parse(localStorage.getItem(ls))
+    if (g && Date.now() - g.t < 30 * 864e5) { personaMem[tmdbId] = g.d; return g.d }
+  } catch {}
+  const j = await tmdbJson(`/person/${tmdbId}`)
+  const d = {
+    bio: (j.biography || '').trim(),
+    nacimiento: j.birthday || null,
+    lugar: (j.place_of_birth || '').replace(/\s*\[[^\]]*\]/g, '').trim() || null,
+    foto: j.profile_path || null,
+  }
+  personaMem[tmdbId] = d
+  try { localStorage.setItem(ls, JSON.stringify({ t: Date.now(), d })) } catch {}
+  return d
+}
+
 async function tmdbJson(ruta) {
   const r = await fetch(`https://api.themoviedb.org/3${ruta}${ruta.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=es-ES`)
   if (!r.ok) throw new Error('tmdb ' + r.status)
@@ -101,21 +123,33 @@ async function cargaTmdb(itemId) {
   if (tmdbMem[itemId]) return tmdbMem[itemId]
   const m = TMDB[itemId]
   if (!m) return null
-  const claveLS = 'maraton-marvel-tmdb-v2:' + itemId
+  const claveLS = 'maraton-marvel-tmdb-v5:' + itemId
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
   } catch {}
   const [tid, tipo] = m
-  const base = await tmdbJson(`/${tipo}/${tid}?append_to_response=videos,watch/providers`)
+  const base = await tmdbJson(`/${tipo}/${tid}?append_to_response=videos,watch/providers,${tipo === 'tv' ? 'aggregate_credits' : 'credits'}`)
   const vids = (base.videos && base.videos.results) || []
   const tr = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official)
     || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer')
     || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser')
   const es = base['watch/providers'] && base['watch/providers'].results && base['watch/providers'].results.ES
+  const cred = base.credits || base.aggregate_credits
+  const reparto = {}
+  ;((cred && cred.crew) || []).filter(c => /Director/i.test(c.job || (c.jobs && c.jobs[0] && c.jobs[0].job) || ''))
+    .slice(0, 4).forEach(c => { reparto[clave(c.name)] = { id: c.id, papel: '', foto: c.profile_path || null } })
+  ;((cred && cred.cast) || []).slice(0, 24).forEach(c => {
+    // TMDB cuela apostillas en inglés: "(24 Years)", "(voice)", "(uncredited)"
+    const papel = (c.character || (c.roles && c.roles[0] && c.roles[0].character) || '')
+      .replace(/\s*\((?:[^)]*\b(?:years?|voice|uncredited|young|older|archive|footage)\b[^)]*)\)/gi, '')
+      .trim()
+    reparto[clave(c.name)] = { id: c.id, papel, foto: c.profile_path || null }
+  })
   const d = {
     trailer: tr ? tr.key : null,
     fondo: base.backdrop_path || null,
+    reparto,
     prov: ((es && es.flatrate) || []).map(p => p.provider_name).slice(0, 4),
     eps: {},
   }
@@ -307,19 +341,90 @@ const CheckIcon = () => (
   </svg>
 )
 
-function Avatar({ nombre }) {
+function Avatar({ nombre, grande }) {
   const [err, setErr] = useState(false)
   const limpio = limpiaNombre(nombre)
   const src = PEOPLE[limpio]
+  const cls = 'avatar' + (grande ? ' avatar-grande' : '')
   if (!src || err) {
-    return <span className="avatar avatar-ini" aria-hidden="true">{iniciales(limpio)}</span>
+    return <span className={cls + ' avatar-ini'} aria-hidden="true">{iniciales(limpio)}</span>
   }
-  return <img className="avatar" src={src} alt="" loading="lazy" onError={() => setErr(true)} />
+  return <img className={cls} src={src} alt="" loading="lazy" onError={() => setErr(true)} />
 }
 
 const fmtFecha = f => f
   ? new Date(f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
   : null
+
+function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, itemActualId }) {
+  const [datos, setDatos] = useState(() => (tmdbId && personaMem[tmdbId]) || null)
+  const [masBio, setMasBio] = useState(false)
+  useEffect(() => {
+    let vivo = true
+    if (tmdbId) cargaPersona(tmdbId).then(d => { if (vivo) setDatos(d) }).catch(() => {})
+    return () => { vivo = false }
+  }, [tmdbId])
+
+  // Lo que ninguna web tiene: dónde más sale dentro de TU maratón
+  const tambienEn = useMemo(() => {
+    const k = clave(nombre), fuera = []
+    DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
+      if (it.id === itemActualId) return
+      const gente = [...(it.cast || []), ...(it.dir ? it.dir.split(/, | y | & /) : [])]
+      if (gente.some(g => clave(limpiaNombre(g)) === k)) fuera.push({ item: it, c: era.c, esComic: sg.saga === 'comics' })
+    })))
+    return fuera
+  }, [nombre, itemActualId])
+
+  const bio = datos && datos.bio
+  const bioCorta = bio && bio.length > 420 && !masBio ? bio.slice(0, 420).replace(/\s+\S*$/, '') + '…' : bio
+
+  return (
+    <div className="persona-ficha">
+      <button className="volver-ficha" onClick={onVolver}>‹ Volver a la ficha</button>
+      <div className="pf-cabecera">
+        <Avatar nombre={nombre} grande />
+        <div className="pf-titulos">
+          <h3 className="pf-nombre">{nombre}</h3>
+          {papel
+            ? <p className="pf-papel">Interpreta a <b>{papel}</b></p>
+            : <p className="pf-papel pf-papel-rol">{rol}</p>}
+          {datos && (datos.nacimiento || datos.lugar) && (
+            <p className="pf-datos">
+              {datos.nacimiento ? new Date(datos.nacimiento + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+              {datos.nacimiento && datos.lugar ? ' · ' : ''}{datos.lugar || ''}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {bioCorta
+        ? <p className="pf-bio">{bioCorta}{bio.length > 420 && (
+            <button className="pf-mas" onClick={() => setMasBio(v => !v)}>{masBio ? 'Menos' : 'Leer más'}</button>
+          )}</p>
+        : <p className="pf-bio pf-vacia">
+            {!tmdbId ? 'No hay ficha de esta persona en TMDB.'
+              : datos ? 'TMDB no tiene biografía en español de esta persona.'
+              : 'Cargando su biografía…'}
+          </p>}
+
+      {tambienEn.length > 0 && (
+        <div className="pf-tambien">
+          <h4 className="pf-sub">También en tu maratón ({tambienEn.length})</h4>
+          <div className="pf-lista">
+            {tambienEn.map(({ item, c, esComic }) => (
+              <button className="pf-item" key={item.id} onClick={() => onAbrirTitulo({ item, c, esComic })}>
+                <Portada item={item} c={c} esComic={esComic} />
+                <span className="pf-item-t">{item.t}</span>
+                <span className="pf-item-h">{item.h}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function CuentaAtras({ meta }) {
   const [ahora, setAhora] = useState(() => Date.now())
@@ -1033,14 +1138,15 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miN
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA }) {
   const { item, c, esComic } = d
   const extra = useTmdb(item)
   const [verTrailer, setVerTrailer] = useState(false)
   const [sinAbierta, setSinAbierta] = useState(null)
   const [desveladas, setDesveladas] = useState({})
   const [enlaceCopiado, setEnlaceCopiado] = useState(false)
-  useEffect(() => { setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false) }, [item.id])
+  const [persona, setPersona] = useState(null)
+  useEffect(() => { setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null) }, [item.id])
   useEffect(() => {
     const onKey = e => {
       if (e.key === 'Escape') { onClose(); return }
@@ -1072,6 +1178,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
           </div>
         )}
         <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
+        {persona ? (
+          <FichaPersona {...persona} itemActualId={item.id}
+            onVolver={() => setPersona(null)}
+            onAbrirTitulo={d => { setPersona(null); onIrA && onIrA(d) }} />
+        ) : (<>
         <div className="modal-cover">
           <Portada item={item} c={c} esComic={esComic} />
           {vista && <span className="sello" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
@@ -1103,21 +1214,28 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
           {(directores.length > 0 || item.cast) && (
             <div className="personas">
               {directores.map(p => (
-                <a className="persona" key={p} href={urlPersona(p)} target="_blank" rel="noopener noreferrer"
-                  title={`Ver filmografía de ${p}`}>
+                <button className="persona" key={p}
+                  onClick={() => setPersona({ nombre: p, rol: 'Dirección',
+                    tmdbId: extra && extra.reparto && extra.reparto[clave(p)] && extra.reparto[clave(p)].id })}
+                  title={`Ver a ${p} en tu maratón`}>
                   <Avatar nombre={p} />
                   <span className="persona-nombre">{p}</span>
                   <span className="persona-rol">Dirección</span>
-                </a>
+                </button>
               ))}
-              {(item.cast || []).map(p => (
-                <a className="persona" key={p} href={urlPersona(p)} target="_blank" rel="noopener noreferrer"
-                  title={`Ver filmografía de ${limpiaNombre(p)}`}>
-                  <Avatar nombre={p} />
-                  <span className="persona-nombre">{limpiaNombre(p)}</span>
-                  <span className="persona-rol">Reparto</span>
-                </a>
-              ))}
+              {(item.cast || []).map(p => {
+                const limpio = limpiaNombre(p)
+                const cr = extra && extra.reparto && extra.reparto[clave(limpio)]
+                return (
+                  <button className="persona" key={p}
+                    onClick={() => setPersona({ nombre: limpio, rol: 'Reparto', papel: cr && cr.papel, tmdbId: cr && cr.id })}
+                    title={cr && cr.papel ? `${limpio} — ${cr.papel}` : `Ver a ${limpio} en tu maratón`}>
+                    <Avatar nombre={p} />
+                    <span className="persona-nombre">{limpio}</span>
+                    <span className="persona-rol">{cr && cr.papel ? cr.papel : 'Reparto'}</span>
+                  </button>
+                )
+              })}
             </div>
           )}
           {item.tipo === 'serie' && EPISODES[item.id] && (() => {
@@ -1242,6 +1360,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             }}>{enlaceCopiado ? '✓ Copiado' : 'Enlace'}</button>
           </div>
         </div>
+        </>)}
       </div>
     </div>
   )
@@ -2759,7 +2878,8 @@ export default function App() {
           eps={eps} toggleEp={toggleEp}
           nota={notas[detalle.item.id] || {}}
           ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)}
-          listas={listas} toggleEnLista={toggleEnLista} club={club} onNav={navegaDetalle} />
+          listas={listas} toggleEnLista={toggleEnLista} club={club} onNav={navegaDetalle}
+          onIrA={d => setDetalle(d)} />
       )}
 
       <Footer onReset={() => { setVistas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />

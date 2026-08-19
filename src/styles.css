@@ -324,6 +324,56 @@ h1 .rojo{color:var(--red)}
   .modal-cover{margin-top:64px}
 }
 
+/* ── Ficha de una persona, dentro de la propia ficha del título ── */
+.persona-ficha{
+  flex:1; min-width:0; display:flex; flex-direction:column; gap:16px;
+  animation:entraVista var(--dur-media) var(--curva) both;
+}
+.volver-ficha{
+  align-self:flex-start; background:none; border:1px solid var(--line);
+  border-radius:var(--r-pill); padding:5px 14px; cursor:pointer;
+  font:inherit; font-size:12.5px; font-weight:600; color:var(--ink2);
+}
+.volver-ficha:hover{color:var(--ink); border-color:var(--ink2)}
+.pf-cabecera{display:flex; align-items:center; gap:18px}
+/* .avatar se define más abajo en la hoja: hace falta ganarle en especificidad */
+.pf-cabecera .avatar.avatar-grande{width:104px; height:104px; border-width:3px}
+.pf-cabecera .avatar-ini.avatar-grande{font-size:30px}
+.pf-titulos{display:flex; flex-direction:column; gap:4px; min-width:0}
+.pf-nombre{
+  margin:0; font-family:"Archivo",sans-serif; font-weight:700; font-size:24px;
+  letter-spacing:-.01em; text-transform:none; color:var(--ink);
+}
+.pf-papel{margin:0; font-size:15px; color:var(--ink2)}
+.pf-papel b{color:var(--red); font-weight:700}
+.pf-papel-rol{
+  font-size:11px; font-weight:600; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink3);
+}
+.pf-datos{margin:0; font-size:12.5px; color:var(--ink3)}
+.pf-bio{margin:0; font-size:14.5px; line-height:1.6; color:var(--ink2); text-wrap:pretty}
+.pf-vacia{color:var(--ink3); font-style:italic}
+.pf-mas{
+  background:none; border:none; padding:0 0 0 6px; cursor:pointer;
+  font:inherit; font-size:13.5px; font-weight:700; color:var(--red);
+}
+.pf-sub{
+  margin:0 0 10px; font-size:11px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink3);
+}
+.pf-lista{display:grid; grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:12px}
+.pf-item{
+  background:none; border:none; padding:0; cursor:pointer; color:inherit;
+  display:flex; flex-direction:column; gap:5px; text-align:left;
+  transition:transform var(--dur-corta) var(--curva);
+}
+.pf-item:hover{transform:translateY(-3px)}
+.pf-item .cover{width:100%; height:auto; aspect-ratio:2/3}
+.pf-item-t{font-size:12px; font-weight:600; line-height:1.25}
+.pf-item-h{font-size:11px; color:var(--ink3); font-variant-numeric:tabular-nums}
+/* las personas son botones: sin estilos nativos */
+.persona{background:none; border:none; padding:0; cursor:pointer; font:inherit}
+
 /* ── Barra de herramientas fija ── */
 .toolbar{
   position:sticky; top:calc(env(safe-area-inset-top, 0px) + 10px); z-index:10;
