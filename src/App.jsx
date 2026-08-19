@@ -10,6 +10,7 @@ const KEY_SYNC = 'maraton-marvel-sync-v1'
 const KEY_NOTAS = 'maraton-marvel-notas-v1'
 const KEY_COMPACTO = 'maraton-marvel-compacto'
 const KEY_LISTAS = 'maraton-marvel-listas-v1'
+const KEY_PANEL = 'maraton-marvel-panel-v1'
 
 function normalizaDbUrl(txt) {
   let u = txt.trim().replace(/\/+$/, '')
@@ -1477,6 +1478,18 @@ export default function App() {
   }))
   const [busca, setBusca] = useState('')
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
+  const [panelAbierto, setPanelAbierto] = useState(() => {
+    try {
+      const guardado = localStorage.getItem(KEY_PANEL)
+      if (guardado !== null) return guardado === '1'
+    } catch {}
+    return window.innerWidth > 640
+  })
+  const alternaPanel = () => setPanelAbierto(v => {
+    const n = !v
+    try { localStorage.setItem(KEY_PANEL, n ? '1' : '0') } catch {}
+    return n
+  })
   const [notas, setNotas] = useState(() => {
     try { return JSON.parse(localStorage.getItem(KEY_NOTAS)) || {} } catch { return {} }
   })
@@ -1785,6 +1798,10 @@ export default function App() {
     return m
   }, [])
 
+  const proxEstreno = useMemo(
+    () => ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now()),
+    [])
+
   const objetivo = useMemo(() => {
     const meta = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
     if (!meta) return null
@@ -1910,7 +1927,20 @@ export default function App() {
       </section>
 
       <Novedades eps={eps} />
-      <div className="panel-superior">
+      {!panelAbierto && (
+        <button className="panel-resumen" aria-expanded="false" onClick={alternaPanel}>
+          <span className="pr-datos">
+            {proxEstreno && objetivo
+              ? <>
+                  <b>{proxEstreno.t.replace(/^Vengadores: /, '')}</b> en <b className="pr-dias">{objetivo.dias} días</b>
+                  {objetivo.restante > 0 && <span className="pr-extra"> · ruta express: {objetivo.necesario} min/día</span>}
+                </>
+              : <>Mapa de progreso, próximos estrenos y cuenta atrás</>}
+          </span>
+          <span className="pr-abrir">Panel completo</span>
+        </button>
+      )}
+      <div className="panel-superior" hidden={!panelAbierto}>
         <div className="panel-izq">
         <div className="mapa" aria-label="Mapa de progreso">
           {DATA.map(saga => {
@@ -1937,6 +1967,9 @@ export default function App() {
         </div>
         <CuentaAtras meta={objetivo} />
       </div>
+      {panelAbierto && (
+        <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>Ocultar panel</button>
+      )}
 
       <header className="toolbar">
         <div className="controles" role="group" aria-label="Vista y filtros">

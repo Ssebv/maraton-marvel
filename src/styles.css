@@ -103,6 +103,8 @@ h1 .rojo{color:var(--red)}
 }
 
 .panel-superior{display:grid; gap:12px; margin-top:16px; align-items:stretch}
+/* el display de autor gana al atributo hidden: hay que apagarlo explícitamente */
+.panel-superior[hidden]{display:none}
 .panel-izq{display:flex; flex-direction:column; gap:12px; min-width:0}
 @media (min-width:1240px){
   .panel-superior{grid-template-columns:1fr 380px}
@@ -194,6 +196,37 @@ h1 .rojo{color:var(--red)}
   .mapa-dots{gap:3px}
   .dot{width:10px; height:10px; border-radius:var(--r-s)}
 }
+
+/* ── Panel superior plegado: el estado en una línea ── */
+.panel-resumen{
+  width:100%; margin-top:16px; padding:11px 16px;
+  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
+  box-shadow:var(--card-shadow); color:var(--ink2); cursor:pointer;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  font-size:13.5px; text-align:left;
+  transition:border-color .15s;
+}
+.panel-resumen:hover{border-color:var(--ink3); color:var(--ink)}
+.pr-datos{flex:1; min-width:0}
+.pr-datos b{color:var(--ink); font-weight:700}
+.pr-datos b.pr-dias{color:var(--doom); font-variant-numeric:tabular-nums}
+.pr-abrir{
+  flex:none; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ink2); border:1px solid var(--line); border-radius:var(--r-pill); padding:4px 12px;
+}
+.panel-resumen:hover .pr-abrir{border-color:var(--ink3); color:var(--ink)}
+@media (max-width:640px){
+  /* en móvil la barra debe caber en una línea: el ritmo ya está dentro del panel */
+  .pr-extra{display:none}
+  .panel-resumen{gap:10px; padding:10px 14px}
+}
+.panel-plegar{
+  display:block; margin:8px 0 0 auto; padding:4px 12px;
+  background:none; border:1px solid var(--line); border-radius:var(--r-pill);
+  color:var(--ink3); font-size:12px; font-weight:600; cursor:pointer;
+  transition:border-color .15s, color .15s;
+}
+.panel-plegar:hover{border-color:var(--ink2); color:var(--ink2)}
 
 /* ── Barra de herramientas fija ── */
 .toolbar{
