@@ -893,7 +893,7 @@ function Novedades({ eps }) {
   }, [])
   if (!lista.length || cerrado) return null
   return (
-    <div className="novedades" role="status">
+    <div className="aviso info novedades" role="status">
       <span><b>Desde tu última visita:</b> {lista.join(' · ')}</span>
       <button className="cerrar" onClick={() => setCerrado(true)} aria-label="Cerrar aviso">✕</button>
     </div>
