@@ -12,6 +12,7 @@ const KEY_COMPACTO = 'maraton-marvel-compacto'
 const KEY_LISTAS = 'maraton-marvel-listas-v1'
 const KEY_PANEL = 'maraton-marvel-panel-v1'
 const KEY_FONDO = 'maraton-marvel-fondo-v1'
+const KEY_RESCATE = 'maraton-marvel-rescate-v1'
 
 // Pósters propios (public/mini, 200 px) para el fondo del encabezado y las franjas de saga
 const MURO = ['avengers1', 'endgame', 'logan', 'deadpool1', 'cap1', 'blackpanther',
@@ -1803,18 +1804,22 @@ export default function App() {
       if (!r.ok) throw new Error(r.status)
       const datos = await r.json()
       if (datos && datos.t && datos.t > ultimoAplicado.current) {
+        // Un campo AUSENTE no es lo mismo que uno vacío: si el remoto llega
+        // incompleto (escritura a medias, base manipulada) no debe borrar lo local.
+        const tengo = Object.keys(vistas).length
+        const traen = datos.v && typeof datos.v === 'object' ? Object.keys(datos.v).length : null
+        if (tengo > 0 && traen === 0) {
+          // red de seguridad: el remoto vacía el progreso; se guarda el anterior
+          try {
+            localStorage.setItem(KEY_RESCATE, JSON.stringify({ t: Date.now(), v: vistas, e: eps, n: notas, l: listas }))
+          } catch {}
+        }
         ultimoAplicado.current = datos.t
         aplicandoRemoto.current = true
-        setVistas(datos.v || {})
-        setEps(datos.e || {})
-        setNotas(datos.n || {})
-        setListas(datos.l || [])
-        try {
-          localStorage.setItem(KEY, JSON.stringify(datos.v || {}))
-          localStorage.setItem(KEY_EPS, JSON.stringify(datos.e || {}))
-          localStorage.setItem(KEY_NOTAS, JSON.stringify(datos.n || {}))
-          localStorage.setItem(KEY_LISTAS, JSON.stringify(datos.l || []))
-        } catch {}
+        if (datos.v) { setVistas(datos.v); try { localStorage.setItem(KEY, JSON.stringify(datos.v)) } catch {} }
+        if (datos.e) { setEps(datos.e); try { localStorage.setItem(KEY_EPS, JSON.stringify(datos.e)) } catch {} }
+        if (datos.n) { setNotas(datos.n); try { localStorage.setItem(KEY_NOTAS, JSON.stringify(datos.n)) } catch {} }
+        if (datos.l) { setListas(datos.l); try { localStorage.setItem(KEY_LISTAS, JSON.stringify(datos.l)) } catch {} }
       }
       setSyncEstado('ok')
     } catch { setSyncEstado('error') }
@@ -3118,6 +3123,12 @@ function Footer({ onReset }) {
   const [codigo, setCodigo] = useState('')
   const [msgImport, setMsgImport] = useState('')
   const [confirmaImport, setConfirmaImport] = useState(null)
+  const [rescate, setRescate] = useState(() => {
+    try {
+      const g = JSON.parse(localStorage.getItem(KEY_RESCATE))
+      return g && Date.now() - g.t < 7 * 864e5 ? g : null
+    } catch { return null }
+  })
   const exportar = () => {
     try {
       const datos = {
@@ -3209,6 +3220,31 @@ function Footer({ onReset }) {
             <button className="chip-btn" onClick={importar}>Cargar</button>
             {msgImport && <span className="import-error">{msgImport}</span>}
           </span>
+        )}
+        {rescate && Object.keys(rescate.v || {}).length > 0 && (
+          <div className="confirma-import" role="status">
+            <p className="ci-texto">
+              La sincronización dejó tu progreso a cero y antes tenías{' '}
+              <b>{Object.keys(rescate.v).length} título{Object.keys(rescate.v).length === 1 ? '' : 's'}</b>.
+              Se guardó una copia por si fue un accidente.
+            </p>
+            <div className="ci-acciones">
+              <button className="chip-btn destacado" aria-pressed="false" onClick={() => {
+                try {
+                  localStorage.setItem(KEY, JSON.stringify(rescate.v || {}))
+                  localStorage.setItem(KEY_EPS, JSON.stringify(rescate.e || {}))
+                  localStorage.setItem(KEY_NOTAS, JSON.stringify(rescate.n || {}))
+                  localStorage.setItem(KEY_LISTAS, JSON.stringify(rescate.l || []))
+                  localStorage.removeItem(KEY_RESCATE)
+                } catch {}
+                window.location.reload()
+              }}>Recuperar ese progreso</button>
+              <button className="chip-btn" onClick={() => {
+                try { localStorage.removeItem(KEY_RESCATE) } catch {}
+                setRescate(null)
+              }}>Descartar</button>
+            </div>
+          </div>
         )}
         {confirmaImport && (
           <div className="confirma-import" role="alertdialog" aria-label="Confirmar carga de progreso">
