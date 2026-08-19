@@ -204,7 +204,6 @@ h1 .rojo{color:var(--red)}
   box-shadow:var(--card-shadow); color:var(--ink2); cursor:pointer;
   display:flex; align-items:center; gap:14px; flex-wrap:wrap;
   font-size:13.5px; text-align:left;
-  transition:border-color .15s;
 }
 .panel-resumen:hover{border-color:var(--ink3); color:var(--ink)}
 .pr-datos{flex:1; min-width:0}
@@ -224,7 +223,6 @@ h1 .rojo{color:var(--red)}
   display:block; margin:8px 0 0 auto; padding:4px 12px;
   background:none; border:1px solid var(--line); border-radius:var(--r-pill);
   color:var(--ink3); font-size:12px; font-weight:600; cursor:pointer;
-  transition:border-color .15s, color .15s;
 }
 .panel-plegar:hover{border-color:var(--ink2); color:var(--ink2)}
 
@@ -324,7 +322,7 @@ h3{
   border:1.5px solid var(--line);
   border-radius:var(--r-m); padding:14px;
   box-shadow:var(--card-shadow);
-  transition:transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .2s, opacity .3s;
+  transition:transform .25s cubic-bezier(.22, 1, .36, 1), box-shadow .25s, opacity .3s;
   animation:riseIn .5s cubic-bezier(.22,1,.36,1) both;
   position:relative;
   content-visibility:auto; contain-intrinsic-size:auto 165px;
@@ -470,7 +468,7 @@ h3{
   width:34px; height:34px; border-radius:50%;
   border:1px solid var(--line); background:var(--panel2); color:var(--ink2);
   cursor:pointer; font-size:14px; display:grid; place-items:center;
-  transition:border-color .15s;
+  transition:none;
 }
 .cerrar:hover{color:var(--ink); border-color:var(--ink2)}
 .modal-cover{flex:none; align-self:flex-start}
@@ -498,7 +496,7 @@ h3{
 .avatar{
   width:52px; height:52px; border-radius:50%; object-fit:cover;
   background:var(--panel2); border:2px solid var(--line);
-  transition:transform .2s, border-color .2s;
+  transition:transform .2s;
 }
 .persona:hover .avatar{transform:scale(1.08); border-color:var(--blue)}
 .avatar-ini{
@@ -542,7 +540,7 @@ h3{
 .ep{
   display:flex; align-items:center; gap:10px; text-align:left;
   background:var(--panel2); border:1px solid transparent; border-radius:var(--r-m);
-  padding:6px 8px; cursor:pointer; color:inherit; transition:border-color .15s, opacity .15s;
+  padding:6px 8px; cursor:pointer; color:inherit; transition:opacity .15s;
 }
 .ep:hover{border-color:var(--ink2)}
 .ep.hecho{opacity:.65}
@@ -572,7 +570,7 @@ h3{
 .busca{
   border:1px solid var(--line); background:var(--panel); color:var(--ink);
   border-radius:var(--r-pill); padding:5px 14px; font-size:13px; font-family:inherit;
-  width:150px; min-height:32px; transition:width .2s, border-color .15s;
+  width:150px; min-height:32px; transition:width .2s;
 }
 .busca:focus{width:210px; border-color:var(--blue); outline:none}
 .busca:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
@@ -639,7 +637,7 @@ h3{
 .estrella{
   background:none; border:none; cursor:pointer; padding:2px;
   font-size:20px; line-height:1; color:var(--line);
-  transition:color .15s, transform .15s;
+  transition:transform .15s;
 }
 .estrella:hover{transform:scale(1.2)}
 .estrella.on{color:var(--gold)}
@@ -677,7 +675,7 @@ a.accion-principal{text-decoration:none; display:inline-block}
 .logro{
   display:flex; flex-direction:column; align-items:center; text-align:center; gap:3px;
   border:1.5px solid var(--line); border-radius:var(--r-m); padding:14px 10px;
-  opacity:.45; filter:grayscale(1); transition:opacity .3s, filter .3s, border-color .3s;
+  opacity:.45; filter:grayscale(1); transition:opacity .3s, filter .3s;
 }
 .logro.ok{opacity:1; filter:none; border-color:color-mix(in srgb, var(--gold) 55%, var(--line))}
 .logro-emoji{font-size:26px}
@@ -821,7 +819,7 @@ main.multiverso{margin-top:24px}
 .mv-nombre{margin:0; font-size:17px; font-weight:700; text-transform:none; letter-spacing:0}
 .mv-desc{margin:0; font-size:13.5px; color:var(--ink2); line-height:1.5}
 .mv-rel{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
-.mv-card{cursor:pointer; transition:transform .25s cubic-bezier(.22,1,.36,1), border-color .2s, box-shadow .25s}
+.mv-card{cursor:pointer; transition:transform .25s cubic-bezier(.22, 1, .36, 1), box-shadow .25s}
 .mv-card:hover{
   transform:translate(-2px, -3px);
   border-color:color-mix(in srgb, var(--tc, var(--violet)) 55%, var(--line));
@@ -938,7 +936,7 @@ main.tiempo{margin-top:24px}
   display:flex; align-items:center; gap:10px; text-align:left;
   background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
   padding:8px 12px; max-width:340px; cursor:pointer; color:inherit;
-  transition:transform .2s cubic-bezier(.22,1,.36,1), border-color .2s, box-shadow .2s, opacity .2s;
+  transition:transform .2s cubic-bezier(.22, 1, .36, 1), box-shadow .2s, opacity .2s;
 }
 .tl-card:hover{
   transform:translate(-1px, -2px);
@@ -976,7 +974,7 @@ main.tiempo{margin-top:24px}
   flex:none; width:58px; height:58px; border-radius:50%;
   border:1.5px solid var(--line); background:var(--panel); color:var(--ink);
   font-size:30px; line-height:1; cursor:pointer;
-  transition:border-color .15s, transform .15s;
+  transition:transform .15s;
 }
 .cine-flecha:hover:not(:disabled){border-color:var(--ink2); transform:scale(1.08)}
 .cine-flecha:disabled{opacity:.25; cursor:default}
