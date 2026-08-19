@@ -11,6 +11,22 @@ const KEY_NOTAS = 'maraton-marvel-notas-v1'
 const KEY_COMPACTO = 'maraton-marvel-compacto'
 const KEY_LISTAS = 'maraton-marvel-listas-v1'
 const KEY_PANEL = 'maraton-marvel-panel-v1'
+const KEY_FONDO = 'maraton-marvel-fondo-v1'
+
+// Pósters propios (public/mini, 200 px) para el fondo del encabezado y las franjas de saga
+const MURO = ['avengers1', 'endgame', 'logan', 'deadpool1', 'cap1', 'blackpanther',
+  'dofp', 'first-class', 'drstrange', 'infinitywar', 'thor1', 'capmarvel']
+const FRANJA = {
+  xmen: ['first-class', 'dofp', 'logan', 'deadpool1'],
+  ucm: ['cap1', 'avengers1', 'blackpanther', 'endgame'],
+  comics: ['c-giantsize', 'c-darkphoenix', 'c-civilwar', 'c-bornagain'],
+  animacion: ['xmen-tas', 'emh', 'avengers-assemble', 'spidey-equipo'],
+}
+const FONDOS = [
+  { id: 'banner', nombre: 'Banner' },
+  { id: 'muro', nombre: 'Muro' },
+  { id: 'no', nombre: 'Sin fondo' },
+]
 
 function normalizaDbUrl(txt) {
   let u = txt.trim().replace(/\/+$/, '')
@@ -1485,6 +1501,15 @@ export default function App() {
     } catch {}
     return window.innerWidth > 640
   })
+  const [fondo, setFondo] = useState(() => {
+    try { return localStorage.getItem(KEY_FONDO) || 'banner' } catch { return 'banner' }
+  })
+  const cicloFondo = () => setFondo(f => {
+    const i = FONDOS.findIndex(x => x.id === f)
+    const n = FONDOS[(i + 1) % FONDOS.length].id
+    try { localStorage.setItem(KEY_FONDO, n) } catch {}
+    return n
+  })
   const alternaPanel = () => setPanelAbierto(v => {
     const n = !v
     try { localStorage.setItem(KEY_PANEL, n ? '1' : '0') } catch {}
@@ -1889,6 +1914,20 @@ export default function App() {
 
   return (
     <div className="wrap">
+      {fondo === 'banner' && proxEstreno?.img && (
+        <div className="fondo-hero fh-banner" aria-hidden="true">
+          <img src={proxEstreno.img} alt="" />
+          <span className="fh-velo" />
+        </div>
+      )}
+      {fondo === 'muro' && (
+        <div className="fondo-hero fh-muro" aria-hidden="true">
+          <div className="fh-tira">
+            {MURO.map(id => <img key={id} src={`mini/${id}.jpg`} alt="" loading="lazy" />)}
+          </div>
+          <span className="fh-velo" />
+        </div>
+      )}
       <section className="hero">
         <div className="hero-titulo">
           <p className="hero-eyebrow">Guía de maratón · cronología completa</p>
@@ -2011,6 +2050,9 @@ export default function App() {
           }}>Sorpréndeme</button>
           <input className="busca" type="search" name="busqueda" placeholder="Buscar… ( / )" title="Busca por título, actor, director o año — atajo: /" value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
+          <button className="chip-btn" onClick={cicloFondo} title="Cambia la imagen de fondo del encabezado">
+            Fondo: {FONDOS.find(f => f.id === fondo).nombre}
+          </button>
           <button className="chip-btn" onClick={cicloAcento} title="Cambia el color de acento de la app">
             Tema: {ACENTOS.find(a => a.id === acento).nombre}
           </button>
@@ -2419,6 +2461,12 @@ export default function App() {
             return (
               <section className="saga" data-saga={saga.saga} id={`saga-${saga.saga}`} key={saga.saga}>
                 <div className="saga-head">
+                  {FRANJA[saga.saga] && (
+                    <div className="saga-franja" aria-hidden="true">
+                      {FRANJA[saga.saga].map(id => <img key={id} src={`mini/${id}.jpg`} alt="" loading="lazy" />)}
+                      <span className="sf-velo" />
+                    </div>
+                  )}
                   <h2>{saga.titulo}</h2>
                   <span className="uni-chip">{saga.uni}</span>
                   <span className="saga-count">
