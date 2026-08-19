@@ -9,7 +9,7 @@
   --teal:#20735F; --teal-soft:#20735F14;
   --done:#2E7D4F;
   --r-s:4px; --r-m:10px; --r-l:16px; --r-pill:999px;
-  --fondo-op:.45; --velo-a:62%; --velo-b:84%;
+  --fondo-op:.45; --velo-a:62%; --velo-b:84%; --material:#F6F1E3;
   --card-shadow:0 1px 2px rgba(20,24,32,.05);
   --card-shadow-up:0 12px 32px rgba(20,24,32,.14);
 }
@@ -24,7 +24,7 @@
     --violet:#A98BE0; --violet-soft:#A98BE01C;
     --teal:#56C2A7; --teal-soft:#56C2A71C;
     --done:#4FB57A;
-    --fondo-op:1; --velo-a:34%; --velo-b:66%;
+    --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
   --card-shadow:0 1px 2px rgba(0,0,0,.35);
     --card-shadow-up:0 16px 40px rgba(0,0,0,.55);
   }
@@ -39,7 +39,7 @@
   --violet:#A98BE0; --violet-soft:#A98BE01C;
   --teal:#56C2A7; --teal-soft:#56C2A71C;
   --done:#4FB57A;
-  --fondo-op:1; --velo-a:34%; --velo-b:66%;
+  --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
   --card-shadow:0 1px 2px rgba(0,0,0,.35);
   --card-shadow-up:0 16px 40px rgba(0,0,0,.55);
 }
@@ -71,10 +71,10 @@ button{font:inherit}
 .fondo-hero .fh-velo{
   position:absolute; inset:0;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg) 55%, transparent) 0%,
-      color-mix(in srgb, var(--bg) 78%, transparent) 52%, var(--bg) 97%),
-    linear-gradient(90deg, color-mix(in srgb, var(--bg) 55%, transparent) 0%,
-      transparent 45%, color-mix(in srgb, var(--bg) 35%, transparent) 100%);
+    linear-gradient(180deg, color-mix(in srgb, var(--material) var(--velo-a), transparent) 0%,
+      color-mix(in srgb, var(--material) var(--velo-b), transparent) 52%, var(--bg) 97%),
+    linear-gradient(90deg, color-mix(in srgb, var(--material) 50%, transparent) 0%,
+      transparent 45%, color-mix(in srgb, var(--material) 32%, transparent) 100%);
 }
 .fh-banner{height:340px}
 .fh-banner img{width:100%; height:100%; object-fit:cover; object-position:center 32%; display:block; opacity:var(--fondo-op)}
@@ -86,8 +86,8 @@ button{font:inherit}
 }
 .fh-muro .fh-tira img{width:150px; height:225px; object-fit:cover; border-radius:var(--r-s); flex:none}
 .fh-muro .fh-velo{
-  background:linear-gradient(180deg, color-mix(in srgb, var(--bg) var(--velo-a), transparent) 0%,
-    color-mix(in srgb, var(--bg) var(--velo-b), transparent) 48%, var(--bg) 97%);
+  background:linear-gradient(180deg, color-mix(in srgb, var(--material) var(--velo-a), transparent) 0%,
+    color-mix(in srgb, var(--material) var(--velo-b), transparent) 48%, var(--bg) 97%);
 }
 @media (prefers-reduced-motion: no-preference){
   .fondo-hero{animation:fundido .8s ease both}
@@ -96,8 +96,8 @@ button{font:inherit}
   /* el degradado lateral protege el texto en escritorio; en móvil, donde el
      texto ocupa todo el ancho, solo servía para borrar la imagen */
   .fondo-hero .fh-velo{
-    background:linear-gradient(180deg, color-mix(in srgb, var(--bg) 42%, transparent) 0%,
-      color-mix(in srgb, var(--bg) 72%, transparent) 55%, var(--bg) 97%);
+    background:linear-gradient(180deg, color-mix(in srgb, var(--material) 42%, transparent) 0%,
+      color-mix(in srgb, var(--material) 72%, transparent) 55%, var(--bg) 97%);
   }
   .fh-banner{height:240px}
   .fh-banner img{object-position:center 18%}
@@ -116,8 +116,8 @@ button{font:inherit}
 .saga-franja .sf-velo{
   position:absolute; inset:0;
   background:
-    linear-gradient(90deg, var(--bg) 8%, color-mix(in srgb, var(--bg) 55%, transparent) 52%,
-      color-mix(in srgb, var(--bg) 78%, transparent) 100%),
+    linear-gradient(90deg, var(--bg) 8%, color-mix(in srgb, var(--material) 58%, transparent) 52%,
+      color-mix(in srgb, var(--material) 80%, transparent) 100%),
     linear-gradient(180deg, transparent 55%, var(--bg) 100%);
 }
 .saga-head > *:not(.saga-franja){position:relative; z-index:1}
@@ -1089,6 +1089,16 @@ footer{margin-top:64px; border-top:1px solid var(--line); padding-top:24px;
 .nota-pie{font-size:13px; color:var(--ink2); max-width:58ch; margin:0}
 .reset{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
 .reset .chip-btn.peligro{color:var(--red); border-color:var(--red)}
+
+/* ── Movimiento con propósito (HIG: nada de animar por animar) ── */
+/* Cambiar de pestaña es un cambio de contexto: se anuncia con un fundido corto. */
+main{animation:entraVista .28s cubic-bezier(.22,1,.36,1) both}
+@keyframes entraVista{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+
+/* El escalonado de las tarjetas ya lo pone el JSX (animationDelay en línea). */
+
+/* La casilla responde al dedo antes de que llegue la confirmación. */
+.checkbox:active{transform:scale(.88)}
 
 @media (prefers-reduced-motion: reduce){
   *{animation:none !important; transition:none !important}
