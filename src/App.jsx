@@ -2105,6 +2105,20 @@ export default function App() {
   const nextDelay = () => Math.min((delayIdx++) * 30, 360)
   const pct = stats.totN ? Math.round(100 * stats.totV / stats.totN) : 0
 
+  // ¿queda algo tras filtrar y buscar? (134 títulos: barato de calcular en cada render)
+  const hayResultados = DATA.some(sg => {
+    const fuera = vista === 'comics' ? sg.saga !== 'comics'
+      : vista === 'animacion' ? sg.saga !== 'animacion'
+      : (sg.saga === 'comics' || sg.saga === 'animacion')
+    if (fuera) return false
+    return sg.eras.some(era => era.items.some(it => pasaFiltro(it, sg.saga === 'comics')))
+  })
+  const filtrosActivos = Object.values(filtros).filter(Boolean).length
+  const limpiaTodo = () => {
+    setBusca('')
+    setFiltros({ series: false, opc: false, vistas: false, joyas: false, express: false })
+  }
+
   if (perfil) return <PerfilView {...perfil} />
 
   return (
@@ -2650,10 +2664,25 @@ export default function App() {
         </main>
       ) : vista !== 'estreno' ? (
         <main className={((vista === 'comics' || vista === 'animacion') ? 'comics' : 'crono') + (compacto ? ' compacto' : '')}>
+          {!hayResultados && (
+            <div className="sin-resultados">
+              <p className="sr-titulo">Nada coincide con lo que buscas</p>
+              <p className="sr-detalle">
+                {busca.trim()
+                  ? <>No hay ningún título con «<b>{busca.trim()}</b>»{filtrosActivos > 0 ? ' entre los filtros que tienes puestos' : ''}.</>
+                  : <>Los filtros que tienes puestos no dejan ningún título.</>}
+              </p>
+              <button className="chip-btn destacado" aria-pressed="false" onClick={limpiaTodo}>
+                Quitar filtros y búsqueda
+              </button>
+            </div>
+          )}
           {DATA.filter(saga => vista === 'comics' ? saga.saga === 'comics' : vista === 'animacion' ? saga.saga === 'animacion' : (saga.saga !== 'comics' && saga.saga !== 'animacion')).map(saga => {
             const esComic = saga.saga === 'comics'
             const s = stats.porSaga[saga.saga]
-            if (!s.n) return null
+            // s.n es el total de la saga; hay que contar los que pasan el filtro
+            const visibles = saga.eras.reduce((acc, era) => acc + era.items.filter(it => pasaFiltro(it, esComic)).length, 0)
+            if (!s.n || !visibles) return null
             let num = 0
             return (
               <section className="saga" data-saga={saga.saga} id={`saga-${saga.saga}`} key={saga.saga}>

@@ -374,6 +374,20 @@ h1 .rojo{color:var(--red)}
 /* las personas son botones: sin estilos nativos */
 .persona{background:none; border:none; padding:0; cursor:pointer; font:inherit}
 
+/* ── Cuando el filtro o la búsqueda no dejan nada ── */
+.sin-resultados{
+  margin-top:56px; padding:34px 28px; text-align:center;
+  background:var(--panel); border:1.5px dashed var(--line); border-radius:var(--r-m);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  animation:entraVista var(--dur-media) var(--curva) both;
+}
+.sr-titulo{
+  margin:0; font-family:"Archivo",sans-serif; font-weight:700; font-size:19px;
+  text-transform:uppercase; letter-spacing:.01em;
+}
+.sr-detalle{margin:0 0 6px; font-size:14px; color:var(--ink2); max-width:52ch; text-wrap:pretty}
+.sr-detalle b{color:var(--ink)}
+
 /* ── Barra de herramientas fija ── */
 .toolbar{
   position:sticky; top:calc(env(safe-area-inset-top, 0px) + 10px); z-index:10;
