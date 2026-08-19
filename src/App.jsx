@@ -113,10 +113,11 @@ async function cargaPersona(tmdbId) {
   } catch {}
   const j = await tmdbJson(`/person/${tmdbId}`)
   const d = {
-    bio: (j.biography || '').trim(),
-    nacimiento: j.birthday || null,
-    lugar: (j.place_of_birth || '').replace(/\s*\[[^\]]*\]/g, '').trim() || null,
-    foto: j.profile_path || null,
+    bio: typeof j.biography === 'string' ? j.biography.trim() : '',
+    nacimiento: typeof j.birthday === 'string' ? j.birthday : null,
+    lugar: typeof j.place_of_birth === 'string'
+      ? (j.place_of_birth.replace(/\s*\[[^\]]*\]/g, '').trim() || null) : null,
+    foto: typeof j.profile_path === 'string' ? j.profile_path : null,
   }
   personaMem[tmdbId] = d
   try { localStorage.setItem(ls, JSON.stringify({ t: Date.now(), d })) } catch {}
@@ -367,10 +368,14 @@ const fmtFecha = f => f
 
 function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, itemActualId }) {
   const [datos, setDatos] = useState(() => (tmdbId && personaMem[tmdbId]) || null)
+  const [fallo, setFallo] = useState(false)
   const [masBio, setMasBio] = useState(false)
   useEffect(() => {
     let vivo = true
-    if (tmdbId) cargaPersona(tmdbId).then(d => { if (vivo) setDatos(d) }).catch(() => {})
+    setFallo(false)
+    if (tmdbId) cargaPersona(tmdbId)
+      .then(d => { if (vivo) setDatos(d) })
+      .catch(() => { if (vivo) setFallo(true) })
     return () => { vivo = false }
   }, [tmdbId])
 
@@ -413,6 +418,7 @@ function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, ite
           )}</p>
         : <p className="pf-bio pf-vacia">
             {!tmdbId ? 'No hay ficha de esta persona en TMDB.'
+              : fallo ? 'No se pudo cargar su biografía. Comprueba tu conexión.'
               : datos ? 'TMDB no tiene biografía en español de esta persona.'
               : 'Cargando su biografía…'}
           </p>}
