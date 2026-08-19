@@ -428,7 +428,7 @@ export const DATA = [
 export const ESTRENOS = [
   { t: "Your Friendly Neighborhood Spider-Man (T2)", fecha: null, aprox: "Otoño de 2026", tipo: "Serie · Disney+",
     n: "Llegan el simbionte Venom, Gwen Stacy y el Daredevil de Charlie Cox." },
-  { t: "Vengadores: Doomsday", fecha: "2026-12-18", tipo: "Película · Cine", img: "posters/doomsday.jpg",
+  { t: "Vengadores: Doomsday", fecha: "2026-12-18", tipo: "Película · Cine", img: "fondo/doomsday.jpg",
     n: "El Doctor Doom de Robert Downey Jr. contra Vengadores, 4 Fantásticos y X-Men." },
   { t: "Vision Quest", fecha: null, aprox: "Finales de 2026", tipo: "Serie · Disney+",
     n: "Visión busca recuperar su memoria; con Paul Bettany y James Spader (Ultrón)." },

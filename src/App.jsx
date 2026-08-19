@@ -16,12 +16,9 @@ const KEY_FONDO = 'maraton-marvel-fondo-v1'
 // Pósters propios (public/mini, 200 px) para el fondo del encabezado y las franjas de saga
 const MURO = ['avengers1', 'endgame', 'logan', 'deadpool1', 'cap1', 'blackpanther',
   'dofp', 'first-class', 'drstrange', 'infinitywar', 'thor1', 'capmarvel']
-const FRANJA = {
-  xmen: ['first-class', 'dofp', 'logan', 'deadpool1'],
-  ucm: ['cap1', 'avengers1', 'blackpanther', 'endgame'],
-  comics: ['c-giantsize', 'c-darkphoenix', 'c-civilwar', 'c-bornagain'],
-  animacion: ['xmen-tas', 'emh', 'avengers-assemble', 'spidey-equipo'],
-}
+// Un fotograma apaisado por saga (TMDB): recortar pósters verticales en una
+// banda daba fragmentos sueltos que parecían un error de maquetación.
+const FRANJA = ['xmen', 'ucm', 'comics', 'animacion']
 const FONDOS = [
   { id: 'banner', nombre: 'Banner' },
   { id: 'muro', nombre: 'Muro' },
@@ -2461,9 +2458,9 @@ export default function App() {
             return (
               <section className="saga" data-saga={saga.saga} id={`saga-${saga.saga}`} key={saga.saga}>
                 <div className="saga-head">
-                  {FRANJA[saga.saga] && (
+                  {FRANJA.includes(saga.saga) && (
                     <div className="saga-franja" aria-hidden="true">
-                      {FRANJA[saga.saga].map(id => <img key={id} src={`mini/${id}.jpg`} alt="" loading="lazy" />)}
+                      <img src={`fondo/${saga.saga}.jpg`} alt="" loading="lazy" />
                       <span className="sf-velo" />
                     </div>
                   )}
