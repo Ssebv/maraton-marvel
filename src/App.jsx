@@ -2413,7 +2413,7 @@ export default function App() {
                 </p>
                 <CrearLista onCrear={crearLista} />
                 {listas.length === 0 ? (
-                  <div className="sin-resultados">
+                  <div className="aviso centrado">
                     <p className="sr-titulo">Todavía no tienes listas</p>
                     <p className="sr-detalle">
                       Ponle nombre arriba y créala: podrás añadirle títulos desde su ficha,
@@ -2602,7 +2602,7 @@ export default function App() {
           </div>
 
           {estadisticas.titulosVistos === 0 && (
-            <p className="stats-vacio">
+            <p className="aviso info stats-vacio">
               Aún está todo por estrenar: en cuanto marques tu primera película, aquí aparecerán
               tus horas, tu racha, tus logros y el mapa de calor. 🍿
             </p>
@@ -2685,7 +2685,7 @@ export default function App() {
       ) : vista !== 'estreno' ? (
         <main className={((vista === 'comics' || vista === 'animacion') ? 'comics' : 'crono') + (compacto ? ' compacto' : '')}>
           {!hayResultados && (
-            <div className="sin-resultados">
+            <div className="aviso centrado">
               <p className="sr-titulo">Nada coincide con lo que buscas</p>
               <p className="sr-detalle">
                 {busca.trim()
@@ -3222,13 +3222,13 @@ function Footer({ onReset }) {
           </span>
         )}
         {rescate && Object.keys(rescate.v || {}).length > 0 && (
-          <div className="confirma-import" role="status">
-            <p className="ci-texto">
+          <div className="aviso info en-pie" role="status">
+            <p className="aviso-texto">
               La sincronización dejó tu progreso a cero y antes tenías{' '}
               <b>{Object.keys(rescate.v).length} título{Object.keys(rescate.v).length === 1 ? '' : 's'}</b>.
               Se guardó una copia por si fue un accidente.
             </p>
-            <div className="ci-acciones">
+            <div className="aviso-acciones">
               <button className="chip-btn destacado" aria-pressed="false" onClick={() => {
                 try {
                   localStorage.setItem(KEY, JSON.stringify(rescate.v || {}))
@@ -3247,14 +3247,14 @@ function Footer({ onReset }) {
           </div>
         )}
         {confirmaImport && (
-          <div className="confirma-import" role="alertdialog" aria-label="Confirmar carga de progreso">
-            <p className="ci-texto">
+          <div className="aviso peligro en-pie" role="alertdialog" aria-label="Confirmar carga de progreso">
+            <p className="aviso-texto">
               Cargar este código <b>sustituye</b> tu progreso: pasarías de{' '}
               <b>{confirmaImport.tengo} título{confirmaImport.tengo === 1 ? '' : 's'}</b> a{' '}
               <b>{confirmaImport.traen} título{confirmaImport.traen === 1 ? '' : 's'}</b>.
               {confirmaImport.traen < confirmaImport.tengo && ' Esto no se puede deshacer: descarga antes una copia si quieres conservarlo.'}
             </p>
-            <div className="ci-acciones">
+            <div className="aviso-acciones">
               <button className="chip-btn peligro" onClick={() => aplicaImport(confirmaImport.datos)}>
                 Sí, sustituir mi progreso
               </button>
