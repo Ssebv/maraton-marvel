@@ -540,11 +540,47 @@ function AvisosBtn() {
     : <button className="chip-btn aviso-btn" onClick={activar}>Avisarme de estrenos</button>
 }
 
+// Lo que aria-modal promete: el foco entra, no se escapa con el tabulador
+// y vuelve a su sitio al cerrar. Escrito una vez para todos los diálogos.
+const FOCABLES = 'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])'
+function useDialogo(ref, onEscape, activo = true) {
+  const salir = useRef(onEscape)
+  salir.current = onEscape
+  useEffect(() => {
+    if (!activo) return undefined
+    const previo = document.activeElement
+    const t = setTimeout(() => ref.current && ref.current.focus(), 0)
+    document.body.style.overflow = 'hidden'
+    const onKey = e => {
+      if (e.key === 'Escape') { salir.current && salir.current(); return }
+      if (e.key !== 'Tab' || !ref.current) return
+      const foco = [...ref.current.querySelectorAll(FOCABLES)].filter(el => el.offsetParent !== null)
+      if (!foco.length) return
+      const primero = foco[0], ultimo = foco[foco.length - 1]
+      if (e.shiftKey && (document.activeElement === primero || document.activeElement === ref.current)) {
+        e.preventDefault(); ultimo.focus()
+      } else if (!e.shiftKey && document.activeElement === ultimo) {
+        e.preventDefault(); primero.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+      try { previo && previo.focus() } catch {}
+    }
+  }, [ref, activo])
+}
+
 const TITULOS = Object.fromEntries(DATA.flatMap(s => s.eras.flatMap(e => e.items)).map(i => [i.id, i.t]))
 
 function Bienvenida({ onCerrar, onExpress }) {
+  const ref = useRef(null)
+  useDialogo(ref, onCerrar)
   return (
-    <div className="overlay" onClick={onCerrar} role="dialog" aria-modal="true" aria-label="Bienvenida">
+    <div className="overlay" ref={ref} tabIndex={-1} onClick={onCerrar}
+      role="dialog" aria-modal="true" aria-label="Bienvenida">
       <div className="modal modal-sync bienvenida" onClick={e => e.stopPropagation()}>
         <button className="cerrar" onClick={onCerrar} aria-label="Cerrar">✕</button>
         <div className="modal-info">
@@ -1629,6 +1665,8 @@ export default function App() {
   })
   const [listaActiva, setListaActiva] = useState(null)
   const [cine, setCine] = useState(false)
+  const refCine = useRef(null)
+  useDialogo(refCine, () => setCine(false), cine)
   const [cineIdx, setCineIdx] = useState(0)
   const guardaListas = next => {
     setListas(next)
@@ -2713,7 +2751,7 @@ export default function App() {
         const idx = Math.min(cineIdx, cineLista.length - 1)
         const { item, c } = cineLista[idx]
         return (
-          <div className="cine" role="dialog" aria-modal="true" aria-label="Modo cine">
+          <div className="cine" ref={refCine} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Modo cine">
             <button className="cerrar cine-cerrar" onClick={() => setCine(false)} aria-label="Salir">✕</button>
             <div className="cine-centro">
               <button className="cine-flecha" onClick={() => setCineIdx(i => Math.max(0, i - 1))}
