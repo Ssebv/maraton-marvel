@@ -3117,6 +3117,7 @@ function Footer({ onReset }) {
   const [importando, setImportando] = useState(false)
   const [codigo, setCodigo] = useState('')
   const [msgImport, setMsgImport] = useState('')
+  const [confirmaImport, setConfirmaImport] = useState(null)
   const exportar = () => {
     try {
       const datos = {
@@ -3131,17 +3132,27 @@ function Footer({ onReset }) {
       })
     } catch {}
   }
+  const aplicaImport = datos => {
+    if (datos.v) localStorage.setItem(KEY, JSON.stringify(datos.v))
+    if (datos.e) localStorage.setItem(KEY_EPS, JSON.stringify(datos.e))
+    if (datos.n) localStorage.setItem(KEY_NOTAS, JSON.stringify(datos.n))
+    if (datos.l) localStorage.setItem(KEY_LISTAS, JSON.stringify(datos.l))
+    window.location.reload()
+  }
   const importar = () => {
+    let datos
     try {
-      const datos = JSON.parse(decodeURIComponent(escape(atob(codigo.trim()))))
-      if (datos.v) localStorage.setItem(KEY, JSON.stringify(datos.v))
-      if (datos.e) localStorage.setItem(KEY_EPS, JSON.stringify(datos.e))
-      if (datos.n) localStorage.setItem(KEY_NOTAS, JSON.stringify(datos.n))
-      if (datos.l) localStorage.setItem(KEY_LISTAS, JSON.stringify(datos.l))
-      window.location.reload()
-    } catch {
-      setMsgImport('Código no válido')
+      datos = JSON.parse(decodeURIComponent(escape(atob(codigo.trim()))))
+    } catch { setMsgImport('Código no válido'); return }
+    if (!datos || typeof datos !== 'object' || (!datos.v && !datos.e && !datos.n && !datos.l)) {
+      setMsgImport('Código no válido'); return
     }
+    // cargar un código REEMPLAZA el progreso: si hay algo que perder, se avisa
+    let tengo = 0
+    try { tengo = Object.keys(JSON.parse(localStorage.getItem(KEY) || '{}')).length } catch {}
+    const traen = Object.keys(datos.v || {}).length
+    if (tengo > 0) { setMsgImport(''); setConfirmaImport({ datos, tengo, traen }); return }
+    aplicaImport(datos)
   }
   const descargaCopia = () => {
     try {
@@ -3198,6 +3209,22 @@ function Footer({ onReset }) {
             <button className="chip-btn" onClick={importar}>Cargar</button>
             {msgImport && <span className="import-error">{msgImport}</span>}
           </span>
+        )}
+        {confirmaImport && (
+          <div className="confirma-import" role="alertdialog" aria-label="Confirmar carga de progreso">
+            <p className="ci-texto">
+              Cargar este código <b>sustituye</b> tu progreso: pasarías de{' '}
+              <b>{confirmaImport.tengo} título{confirmaImport.tengo === 1 ? '' : 's'}</b> a{' '}
+              <b>{confirmaImport.traen} título{confirmaImport.traen === 1 ? '' : 's'}</b>.
+              {confirmaImport.traen < confirmaImport.tengo && ' Esto no se puede deshacer: descarga antes una copia si quieres conservarlo.'}
+            </p>
+            <div className="ci-acciones">
+              <button className="chip-btn peligro" onClick={() => aplicaImport(confirmaImport.datos)}>
+                Sí, sustituir mi progreso
+              </button>
+              <button className="chip-btn" onClick={() => setConfirmaImport(null)}>Cancelar</button>
+            </div>
+          </div>
         )}
         <button className="chip-btn" aria-pressed={sonido} onClick={() => {
           const v = !sonido
