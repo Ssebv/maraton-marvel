@@ -1061,7 +1061,7 @@ function CrearLista({ onCrear }) {
       <input className="busca sync-input" placeholder="Nombre de la lista (p. ej. Maratón con mi pareja)"
         value={nombre} maxLength={40} onChange={e => setNombre(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') enviar() }} aria-label="Nombre de la lista" />
-      <button className="accion-principal" onClick={enviar}>Crear lista</button>
+      <button className="accion-principal" onClick={enviar} disabled={!nombre.trim()}>Crear lista</button>
     </div>
   )
 }
@@ -2399,7 +2399,13 @@ export default function App() {
                 </p>
                 <CrearLista onCrear={crearLista} />
                 {listas.length === 0 ? (
-                  <p className="saga-desc">Aún no tienes listas: crea la primera arriba.</p>
+                  <div className="sin-resultados">
+                    <p className="sr-titulo">Todavía no tienes listas</p>
+                    <p className="sr-detalle">
+                      Ponle nombre arriba y créala: podrás añadirle títulos desde su ficha,
+                      y llevará su propio progreso al margen del maratón.
+                    </p>
+                  </div>
                 ) : (
                   <div className="mv-grid">
                     {listas.map(l => {

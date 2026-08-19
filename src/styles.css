@@ -387,6 +387,10 @@ h1 .rojo{color:var(--red)}
 }
 .sr-detalle{margin:0 0 6px; font-size:14px; color:var(--ink2); max-width:52ch; text-wrap:pretty}
 .sr-detalle b{color:var(--ink)}
+/* un botón que no puede hacer nada debe parecerlo */
+.accion-principal:disabled{opacity:.45; cursor:not-allowed; filter:grayscale(.6)}
+.accion-principal:disabled:hover{filter:grayscale(.6)}
+.accion-principal:disabled::before{content:none}
 
 /* ── Barra de herramientas fija ── */
 .toolbar{
