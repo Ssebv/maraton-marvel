@@ -2119,6 +2119,15 @@ export default function App() {
     setFiltros({ series: false, opc: false, vistas: false, joyas: false, express: false })
   }
 
+  // el título de la pestaña sigue a lo que estás mirando: historial y
+  // enlaces compartidos dejan de llamarse todos igual
+  useEffect(() => {
+    const base = 'Maratón Marvel & X-Men'
+    if (detalle) { document.title = `${detalle.item.t} · ${base}`; return }
+    const p = PESTANAS.find(x => x.id === vista)
+    document.title = (!p || vista === 'crono') ? base : `${p.label} · ${base}`
+  }, [vista, detalle])
+
   if (perfil) return <PerfilView {...perfil} />
 
   return (
