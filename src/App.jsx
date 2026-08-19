@@ -73,8 +73,16 @@ const parsePerfilCod = entrada => {
     let cod = (entrada || '').trim()
     if (cod.includes('perfil=')) cod = new URL(cod).searchParams.get('perfil') || ''
     const j = JSON.parse(decodeURIComponent(escape(atob(cod.replace(/-/g, '+').replace(/_/g, '/')))))
-    if (!j.v) return null
-    return { n: j.n || 'Alguien', v: j.v, e: j.e || '', t: j.t || null }
+    // el código llega por URL: puede venir de cualquiera y con cualquier forma.
+    // Sin comprobar tipos, un nombre que no sea texto deja la app en blanco.
+    if (!j || typeof j !== 'object' || typeof j.v !== 'string' || !j.v) return null
+    const nombre = typeof j.n === 'string' && j.n.trim() ? j.n.trim().slice(0, 40) : 'Alguien'
+    return {
+      n: nombre,
+      v: j.v,
+      e: typeof j.e === 'string' ? j.e : '',
+      t: typeof j.t === 'number' && isFinite(j.t) ? j.t : null,
+    }
   } catch { return null }
 }
 const resumenMaraton = (vistasSet, epsSet) => {
@@ -1617,11 +1625,16 @@ export default function App() {
     if (!cod) return null
     try {
       const j = JSON.parse(decodeURIComponent(escape(atob(cod.replace(/-/g, '+').replace(/_/g, '/')))))
+      // mismo criterio que parsePerfilCod: el código lo escribe quien quiera
+      if (!j || typeof j !== 'object') return null
+      const notas = Array.isArray(j.r) ? j.r : []
       return {
-        nombre: j.n || 'Alguien',
-        vistasP: deBits(j.v, ORDEN_IDS),
-        epsP: deBits(j.e, ORDEN_EPS),
-        notasP: Object.fromEntries((j.r || []).map(([i, p]) => [ORDEN_IDS[i], p])),
+        nombre: typeof j.n === 'string' && j.n.trim() ? j.n.trim().slice(0, 40) : 'Alguien',
+        vistasP: deBits(typeof j.v === 'string' ? j.v : '', ORDEN_IDS),
+        epsP: deBits(typeof j.e === 'string' ? j.e : '', ORDEN_EPS),
+        notasP: Object.fromEntries(notas
+          .filter(x => Array.isArray(x) && ORDEN_IDS[x[0]] && typeof x[1] === 'number')
+          .map(([i, p]) => [ORDEN_IDS[i], p])),
       }
     } catch { return null }
   }, [])
