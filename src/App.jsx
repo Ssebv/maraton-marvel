@@ -1149,15 +1149,21 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
   useEffect(() => { setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null) }, [item.id])
   useEffect(() => {
     const onKey = e => {
-      if (e.key === 'Escape') { onClose(); return }
-      if (!onNav || /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) return
+      // con una persona abierta, Escape vuelve a la ficha en vez de cerrarlo todo
+      if (e.key === 'Escape') { persona ? setPersona(null) : onClose(); return }
+      // y las flechas no deben saltar de título mientras se lee su biografía
+      if (persona || !onNav || /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) return
       if (e.key === 'ArrowLeft') onNav(-1)
       if (e.key === 'ArrowRight') onNav(1)
     }
     window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose, onNav, persona])
+
+  useEffect(() => {
     document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
-  }, [onClose])
+    return () => { document.body.style.overflow = '' }
+  }, [])
   const dirLimpio = item.dir ? limpiaNombre(item.dir) : ''
   const directores = DUOS[dirLimpio]
     || dirLimpio.split(/, | y | & /).map(s => s.trim()).filter(s => s && s !== 'otros')
@@ -2040,7 +2046,9 @@ export default function App() {
     <div className="wrap">
       {fondo === 'banner' && proxEstreno?.img && (
         <div className="fondo-hero fh-banner" aria-hidden="true">
-          <img src={proxEstreno.img} alt="" />
+          <img src={proxEstreno.img} alt=""
+            srcSet={`${proxEstreno.img.replace(/\.jpg$/, '-780.jpg')} 780w, ${proxEstreno.img} 1280w`}
+            sizes="100vw" />
           <span className="fh-velo" />
         </div>
       )}
@@ -2587,7 +2595,9 @@ export default function App() {
                 <div className="saga-head">
                   {FRANJA.includes(saga.saga) && (
                     <div className="saga-franja" aria-hidden="true">
-                      <img src={`fondo/${saga.saga}.jpg`} alt="" loading="lazy" />
+                      <img src={`fondo/${saga.saga}.jpg`} alt="" loading="lazy"
+                        srcSet={`fondo/${saga.saga}-560.jpg 560w, fondo/${saga.saga}.jpg 900w`}
+                        sizes="(max-width: 640px) 100vw, 50vw" />
                       <span className="sf-velo" />
                     </div>
                   )}
