@@ -101,7 +101,7 @@ async function cargaTmdb(itemId) {
   if (tmdbMem[itemId]) return tmdbMem[itemId]
   const m = TMDB[itemId]
   if (!m) return null
-  const claveLS = 'maraton-marvel-tmdb-v1:' + itemId
+  const claveLS = 'maraton-marvel-tmdb-v2:' + itemId
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
@@ -115,6 +115,7 @@ async function cargaTmdb(itemId) {
   const es = base['watch/providers'] && base['watch/providers'].results && base['watch/providers'].results.ES
   const d = {
     trailer: tr ? tr.key : null,
+    fondo: base.backdrop_path || null,
     prov: ((es && es.flatrate) || []).map(p => p.provider_name).slice(0, 4),
     eps: {},
   }
@@ -1064,6 +1065,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
         </>
       )}
       <div className="modal" onClick={e => e.stopPropagation()}>
+        {extra?.fondo && (
+          <div className="modal-fondo" aria-hidden="true">
+            <img src={`https://image.tmdb.org/t/p/w780${extra.fondo}`} alt="" />
+            <span className="mf-velo" />
+          </div>
+        )}
         <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
         <div className="modal-cover">
           <Portada item={item} c={c} esComic={esComic} />

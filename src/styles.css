@@ -293,6 +293,37 @@ h1 .rojo{color:var(--red)}
 }
 .panel-plegar:hover{border-color:var(--ink2); color:var(--ink2)}
 
+/* ── Cabecera de la ficha: el fotograma del propio título ── */
+.modal-fondo{
+  position:absolute; top:0; left:0; right:0; height:250px;
+  overflow:hidden; border-radius:var(--r-l) var(--r-l) 0 0;
+  pointer-events:none; z-index:0;
+  animation:fadeIn var(--dur-larga) ease both;
+}
+.modal-fondo img{
+  width:100%; height:100%; object-fit:cover; object-position:center 28%;
+  display:block; opacity:var(--fondo-op);
+  -webkit-mask-image:linear-gradient(180deg, #000 62%, transparent 100%);
+  mask-image:linear-gradient(180deg, #000 62%, transparent 100%);
+}
+.mf-velo{
+  position:absolute; inset:0;
+  background:linear-gradient(180deg,
+    color-mix(in srgb, var(--material) 48%, transparent) 0%,
+    color-mix(in srgb, var(--material) 78%, transparent) 52%,
+    var(--panel) 88%);
+}
+/* el contenido por encima del fotograma, sin tocar a los ya posicionados */
+.modal-cover, .modal-info{position:relative; z-index:1}
+.modal .cerrar{z-index:2}
+@media (max-width:900px){ .modal-fondo{height:190px} }
+@media (max-width:720px){
+  /* en la hoja móvil el póster iba centrado y tapaba el fotograma entero:
+     baja para apoyarse sobre él y dejar la banda a la vista */
+  .modal-fondo{height:210px}
+  .modal-cover{margin-top:64px}
+}
+
 /* ── Barra de herramientas fija ── */
 .toolbar{
   position:sticky; top:calc(env(safe-area-inset-top, 0px) + 10px); z-index:10;
