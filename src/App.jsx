@@ -1429,6 +1429,52 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               </div>
             </section>
           )}
+          {extra && Array.isArray(extra.prov) && extra.prov.length > 0 && (
+            <div className="prov">
+              <span className="prov-label">Hoy en España</span>
+              <div className="prov-lista">
+                {extra.prov.map((pv, i) => {
+                  // la caché vieja guardaba texto suelto: se acepta la forma antigua
+                  const nombre = typeof pv === 'string' ? pv
+                    : (pv && typeof pv.n === 'string' ? pv.n : null)
+                  if (!nombre) return null
+                  const logo = pv && typeof pv.l === 'string' ? pv.l : null
+                  return (
+                    <span className="prov-chip" key={nombre + i}>
+                      {logo && <img className="prov-logo" src={`${TMDB_IMG}w92${logo}`}
+                        alt="" width="26" height="26" loading="lazy" />}
+                      {nombre}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          <div className="valoracion">
+            <span className="valoracion-label">Tu valoración</span>
+            <span className="estrellas" role="radiogroup" aria-label="Tu valoración">
+              {[1, 2, 3, 4, 5].map(p => (
+                <button key={p} className={`estrella${nota.p >= p ? ' on' : ''}`}
+                  aria-label={`${p} estrellas`} onClick={() => ponNota('p', p)}>★</button>
+              ))}
+            </span>
+            <input className="busca nota-input" placeholder="Tus notas (solo tuyas)…"
+              value={nota.txt || ''} maxLength={280} spellCheck={true}
+              onChange={e => ponNota('txt', e.target.value)} aria-label="Tus notas" />
+          </div>
+          {listas && listas.length > 0 && (
+            <div className="valoracion">
+              <span className="valoracion-label">Listas</span>
+              <span className="detalle-listas">
+                {listas.map(l => (
+                  <button key={l.id} className="chip-btn" aria-pressed={l.items.includes(item.id)}
+                    onClick={() => toggleEnLista(l.id, item.id)}>
+                    {l.nombre}
+                  </button>
+                ))}
+              </span>
+            </div>
+          )}
           {item.tipo === 'serie' && EPISODES[item.id] && (() => {
             const lista = EPISODES[item.id]
             const temporadas = [...new Set(lista.map(e => e.s))]
@@ -1489,53 +1535,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               </div>
             )
           })()}
-          <div className="valoracion">
-            <span className="valoracion-label">Tu valoración</span>
-            <span className="estrellas" role="radiogroup" aria-label="Tu valoración">
-              {[1, 2, 3, 4, 5].map(p => (
-                <button key={p} className={`estrella${nota.p >= p ? ' on' : ''}`}
-                  aria-label={`${p} estrellas`} onClick={() => ponNota('p', p)}>★</button>
-              ))}
-            </span>
-            <input className="busca nota-input" placeholder="Tus notas (solo tuyas)…"
-              value={nota.txt || ''} maxLength={280} spellCheck={true}
-              onChange={e => ponNota('txt', e.target.value)} aria-label="Tus notas" />
-          </div>
-          {listas && listas.length > 0 && (
-            <div className="valoracion">
-              <span className="valoracion-label">Listas</span>
-              <span className="detalle-listas">
-                {listas.map(l => (
-                  <button key={l.id} className="chip-btn" aria-pressed={l.items.includes(item.id)}
-                    onClick={() => toggleEnLista(l.id, item.id)}>
-                    {l.nombre}
-                  </button>
-                ))}
-              </span>
-            </div>
-          )}
           {club && <ComentariosClub club={club} item={item} vista={vista} />}
-          {extra && Array.isArray(extra.prov) && extra.prov.length > 0 && (
-            <div className="prov">
-              <span className="prov-label">Hoy en España</span>
-              <div className="prov-lista">
-                {extra.prov.map((pv, i) => {
-                  // la caché vieja guardaba texto suelto: se acepta la forma antigua
-                  const nombre = typeof pv === 'string' ? pv
-                    : (pv && typeof pv.n === 'string' ? pv.n : null)
-                  if (!nombre) return null
-                  const logo = pv && typeof pv.l === 'string' ? pv.l : null
-                  return (
-                    <span className="prov-chip" key={nombre + i}>
-                      {logo && <img className="prov-logo" src={`${TMDB_IMG}w92${logo}`}
-                        alt="" width="26" height="26" loading="lazy" />}
-                      {nombre}
-                    </span>
-                  )
-                })}
-              </div>
-            </div>
-          )}
           {verTrailer && extra && extra.trailer && (
             <div className="trailer-caja">
               <iframe src={`https://www.youtube-nocookie.com/embed/${extra.trailer}?autoplay=1`}
