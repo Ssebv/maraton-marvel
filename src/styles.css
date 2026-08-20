@@ -597,22 +597,27 @@ h3{
 .lc-tipo{color:#fff; opacity:.8; font-size: var(--t-xs); font-weight:700; letter-spacing:2px; position:relative; z-index:1}
 
 .abrir{
-  display:flex; align-items:center; gap: var(--e-5); flex:1; min-width:0;
+  display:flex; align-items:flex-start; gap: var(--e-5); flex:1; min-width:0;
   background:none; border:none; padding: 0; margin: 0; cursor:pointer;
   text-align:left; color:inherit;
 }
-.fila-titulo{display:flex; align-items:baseline; gap: var(--e-4)}
+.fila-titulo{display:flex; align-items:baseline; gap: var(--e-4); margin-bottom: var(--e-1)}
 .num{
-  flex:none; font-size: var(--t-xs); font-weight:600; color:var(--ink3);
+  flex:none; font-size: var(--t-s); font-weight:700; color:var(--ink3);
   font-variant-numeric:tabular-nums;
 }
 .num::before{content:"#"}
-.info{min-width:0; flex:1; display:flex; flex-direction:column; gap: var(--e-2); padding: var(--e-2) 0}
-.titulo{font-weight:600; font-size: var(--t-b); line-height:1.25; letter-spacing:-.01em}
+.info{min-width:0; flex:1; display:flex; flex-direction:column; gap: var(--e-2); padding: 0}
+/* El titular de la tarjeta usa la Archivo Black del hero: es lo que da
+   carácter a la lista y lo que equilibra una carátula de 198 px. */
+.titulo{
+  font-family:"Archivo Black","Archivo",sans-serif; font-weight:400;
+  font-size: var(--t-l); line-height:1.1; letter-spacing:-.02em;
+}
 .card.vista .titulo{color:var(--ink2); text-decoration:line-through; text-decoration-thickness:1.5px}
 .meta{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
 .meta .hist{color:var(--blue); font-weight:600}
-.res{font-size: var(--t-m); color:var(--ink2); max-width:60ch; line-height:1.45}
+.res{font-size: var(--t-b); color:var(--ink2); max-width:60ch; line-height:1.5}
 .nota{font-size: var(--t-s); color:var(--ink3); font-style:italic}
 .credits{font-size: var(--t-s); color:var(--ink3)}
 
@@ -1252,6 +1257,12 @@ main{animation:entraVista .28s var(--curva) both}
     gap: 0 var(--e-8); align-items:start;
   }
   main.crono .saga{margin-top: var(--e-8)}
+  /* Las dos sagas de la fila de arriba deben abrir su primera era a la
+     misma altura. Como son dos items de rejilla independientes, no se
+     alinean solos: lo que las descuadraba eran las líneas de descripción
+     (X-Men ocupa 3, el UCM 2). Con el tope de 68ch las cuatro sagas caben
+     en 3 líneas, así que reservarlas iguala el arranque. */
+  main.crono .saga-desc{min-height:3lh}
   main.crono .saga[data-saga="xmen"]{grid-column:1; grid-row:1}
   main.crono .saga[data-saga="ucm"]{grid-column:2; grid-row:1 / span 2}
   main.crono .saga[data-saga="comics"]{grid-column:1; grid-row:2}
