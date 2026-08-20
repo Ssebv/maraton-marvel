@@ -1241,11 +1241,11 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miN
       </button>
       <div className="lado">
         <div className="chips">
-          {item.uni && <span className="tipo uni">{item.uni}</span>}
-          {item.tipo === 'serie' && <span className="tipo serie">Serie</span>}
-          {item.tipo === 'esp' && <span className="tipo esp">Especial</span>}
-          {item.opt && <span className="tipo opc">Opcional</span>}
-          {item.plat && <span className="tipo plat">{item.plat}</span>}
+          {item.opt
+            ? <span className="tipo opc">Opcional</span>
+            : item.tipo === 'esp' ? <span className="tipo esp">Especial</span>
+            : item.tipo === 'serie' ? <span className="tipo serie">Serie</span>
+            : null}
         </div>
       </div>
     </article>

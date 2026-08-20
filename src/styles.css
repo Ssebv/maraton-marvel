@@ -158,7 +158,7 @@ h1 .rojo{color:var(--red)}
   box-shadow:var(--card-shadow);
 }
 .stat-label{
-  font-size: var(--t-xs); font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+  font-size: var(--t-xs); font-weight:600; letter-spacing:.02em;
   color:var(--ink3);
 }
 .siguiente-stat .stat-label{color:var(--red)}
@@ -225,7 +225,7 @@ h1 .rojo{color:var(--red)}
 }
 .cuenta-info{display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
 .cuenta-label{
-  font-size: var(--t-xs); font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+  font-size: var(--t-xs); font-weight:700; letter-spacing:.02em;
   color:var(--doom);
 }
 .cuenta-titulo{font-family:"Archivo",sans-serif; font-weight:700; font-size: var(--t-l); text-transform:uppercase; letter-spacing:.01em}
@@ -246,7 +246,7 @@ h1 .rojo{color:var(--red)}
   box-shadow:var(--card-shadow);
 }
 .proximo-fecha{
-  font-size: var(--t-xs); font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  font-size: var(--t-xs); font-weight:700; letter-spacing:.02em;
   color:var(--red);
 }
 .proximo-titulo{font-size: var(--t-b); font-weight:600}
@@ -525,10 +525,14 @@ h3{
 .grid{display:flex; flex-direction:column; gap: var(--e-4)}
 .card{
   display:flex; align-items:stretch; gap: var(--e-5); width:100%;
-  background:linear-gradient(180deg, var(--panel3), var(--panel));
-  border:1.5px solid var(--line);
+  /* Plana: sin degradado, sin borde y sin sombra en reposo. Ciento treinta
+     y cuatro cajas flotando no destacan nada y el ojo lo paga igual.
+     La sombra sólida desplazada se queda, pero solo al pasar por encima:
+     ahí sí significa algo, y es identidad de la casa. */
+  background:var(--panel);
+  border:none;
   border-radius:var(--r-m); padding: var(--e-5);
-  box-shadow:var(--card-shadow);
+  box-shadow:none;
   transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-larga);
   animation:riseIn .5s var(--curva) both;
   position:relative;
@@ -542,7 +546,7 @@ h3{
   box-shadow:5px 6px 0 color-mix(in srgb, var(--glow, var(--red)) 40%, transparent);
 }
 .card:active{transform:translateY(-1px) scale(.997)}
-.card.vista{opacity:.68; box-shadow:var(--card-shadow)}
+.card.vista{opacity:.62}
 .card.vista:hover{opacity:.85}
 @keyframes riseIn{
   from{opacity:0; transform:translateY(14px)}
@@ -646,8 +650,8 @@ h3{
 }
 .chips{display:flex; flex-direction:column; align-items:flex-end; gap: var(--e-2)}
 .tipo{
-  font-size: var(--t-xs); font-weight:700; letter-spacing:.07em;
-  padding: var(--e-2) var(--e-3); border-radius:var(--r-s); text-transform:uppercase; white-space:nowrap;
+  font-size: var(--t-xs); font-weight:700; letter-spacing:.01em;
+  padding: var(--e-2) var(--e-3); border-radius:var(--r-s); white-space:nowrap;
 }
 .tipo.serie{background:var(--blue-soft); color:var(--blue)}
 .tipo.esp{background:var(--gold-soft); color:var(--gold-texto)}
@@ -716,10 +720,7 @@ h3{
 /* Dirección y reparto en carril: apilados en rejilla se comían media
    ficha, y con 24 nombres el bloque era más alto que la sinopsis. */
 .reparto{display:flex; flex-direction:column; gap: var(--e-3); min-width:0; margin-top: var(--e-2)}
-.reparto-titulo{
-  margin:0; font-size: var(--t-xs); font-weight:700; letter-spacing:.1em;
-  text-transform:uppercase; color:var(--ink3);
-}
+.reparto-titulo{margin:0; font-size: var(--t-xs); font-weight:700; letter-spacing:0; color:var(--ink3)}
 .carril-personas{
   display:flex; gap: var(--e-4); min-width:0;
   overflow-x:auto; overscroll-behavior-x:contain;
@@ -751,7 +752,7 @@ h3{
   display:grid; place-items:center; font-size: var(--t-l); font-weight:700; color:var(--ink2);
 }
 .persona-nombre{font-size: var(--t-s); font-weight:600; line-height:1.25; min-height:2lh}
-.persona-rol{font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
+.persona-rol{font-size: var(--t-xs); font-weight:600; letter-spacing:0; color:var(--ink3)}
 .modal-acciones{display:flex; gap: var(--e-3); flex-wrap:wrap; margin-top: var(--e-3); align-items:center}
 .accion-principal{
   border:none; border-radius:var(--r-pill); padding: var(--e-4) var(--e-6); cursor:pointer;
@@ -1358,6 +1359,9 @@ main{animation:entraVista .28s var(--curva) both}
   .stats{grid-template-columns:1fr 1fr}
   .siguiente-stat{grid-column:1 / -1}
   .cover{width:88px; height:132px}
+  /* Archivo Black a 19px parte los títulos en tres líneas dentro de los
+     143px que quedan al lado de la carátula. Un paso menos, mismo carácter. */
+  .titulo{font-size: var(--t-b)}
   .cast{display:none}
   .lado .tipo.plat, .lado .tipo.uni{display:none}
   .enlaces{flex-direction:column; align-items:flex-end}
@@ -1448,10 +1452,7 @@ main{animation:entraVista .28s var(--curva) both}
 /* Dónde verla. Los logos son los oficiales que sirve TMDB para cada
    plataforma: ni se dibujan a mano ni se guardan en el repo. */
 .prov{display:flex; flex-direction:column; gap: var(--e-3); margin-top: var(--e-2)}
-.prov-label{
-  font-size: var(--t-xs); font-weight:700; letter-spacing:.1em;
-  text-transform:uppercase; color:var(--ink3);
-}
+.prov-label{font-size: var(--t-xs); font-weight:700; letter-spacing:0; color:var(--ink3)}
 .prov-lista{display:flex; flex-wrap:wrap; gap: var(--e-3)}
 .prov-chip{
   display:inline-flex; align-items:center; gap: var(--e-3);
