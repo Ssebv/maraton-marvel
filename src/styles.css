@@ -1391,7 +1391,6 @@ main{animation:entraVista .28s var(--curva) both}
      143px que quedan al lado de la carátula. Un paso menos, mismo carácter. */
   .titulo{font-size: var(--t-b)}
   .cast{display:none}
-  .lado .tipo.plat, .lado .tipo.uni{display:none}
   .enlaces{flex-direction:column; align-items:flex-end}
   .card{gap: var(--e-4); padding: var(--e-4)}
 }
