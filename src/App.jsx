@@ -438,7 +438,7 @@ const fmtFecha = f => f
   ? new Date(f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
   : null
 
-function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, itemActualId }) {
+function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, itemActualId, tituloActual }) {
   const [datos, setDatos] = useState(() => (tmdbId && personaMem[tmdbId]) || null)
   const [fallo, setFallo] = useState(false)
   const [masBio, setMasBio] = useState(false)
@@ -473,7 +473,9 @@ function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, ite
 
   return (
     <div className="persona-ficha">
-      <button className="volver-ficha" onClick={onVolver}><IcoAtras />Volver a la ficha</button>
+      <button className="volver-ficha" onClick={onVolver}>
+        <IcoAtras />{tituloActual ? `Volver a ${tituloActual}` : 'Volver a la ficha'}
+      </button>
       <div className="pf-cabecera">
         <Avatar nombre={nombre} grande />
         <div className="pf-titulos">
@@ -1348,11 +1350,6 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
           </div>
         )}
         <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
-        {persona ? (
-          <FichaPersona {...persona} itemActualId={item.id}
-            onVolver={() => setPersona(null)}
-            onAbrirTitulo={d => { setPersona(null); onIrA && onIrA(d) }} />
-        ) : (<>
         <div className="modal-cover">
           <div className="modal-portada">
             <Portada item={item} c={c} esComic={esComic} />
@@ -1362,6 +1359,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             {vista ? '✓ Vista — marcar pendiente' : esComic ? 'Marcar como leído' : 'Marcar como vista'}
           </button>
         </div>
+        {persona ? (
+          <FichaPersona {...persona} itemActualId={item.id} tituloActual={item.t}
+            onVolver={() => setPersona(null)}
+            onAbrirTitulo={d => { setPersona(null); onIrA && onIrA(d) }} />
+        ) : (
         <div className="modal-info">
           <div className="modal-chips">
             {item.uni && <span className="tipo uni">{item.uni}</span>}
@@ -1564,7 +1566,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             }}>{enlaceCopiado ? '✓ Copiado' : <><IcoEnlace />Enlace</>}</button>
           </div>
         </div>
-        </>)}
+        )}
       </div>
     </div>
   )
