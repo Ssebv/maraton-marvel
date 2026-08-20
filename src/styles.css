@@ -731,7 +731,15 @@ h3{
 /* 34 px visibles, 44 táctiles: el mínimo de la HIG sin engordar el aspa */
 .cerrar::after{content:""; position:absolute; inset:-5px; border-radius:50%}
 .cerrar:hover{color:var(--ink); border-color:var(--ink2)}
-.modal-cover{flex:none; align-self:flex-start}
+.modal-cover{
+  flex:none; align-self:flex-start;
+  display:flex; flex-direction:column; gap: var(--e-4);
+  /* Acompaña al scroll: en una serie de 18 episodios, marcar como vista
+     quedaba a un scroll largo del título al que pertenece. */
+  position:sticky; top:0;
+}
+.modal-portada{position:relative}
+.modal-cover .accion-principal{width:100%; justify-content:center; text-align:center}
 .modal-cover .cover{width:230px; height:345px; border-radius:var(--r-l)}
 @media (max-width:900px){ .modal-cover .cover{width:190px; height:285px} }
 .modal-info{flex:1; min-width:0; display:flex; flex-direction:column; gap: var(--e-4)}
@@ -798,7 +806,8 @@ h3{
 .accion-principal.hecha{background:var(--done)}
 @media (max-width:640px){
   .modal{--pad: var(--e-6); flex-direction:column; padding: var(--pad); gap: var(--e-5)}
-  .modal-cover{align-self:center}
+  /* apilado no hay columna que seguir: el sticky estorbaría */
+  .modal-cover{align-self:stretch; align-items:center; position:static}
 }
 
 /* ── Episodios ── */
@@ -1610,7 +1619,6 @@ main{animation:entraVista .28s var(--curva) both}
   pointer-events:none;
 }
 .sello-mini{font-size: var(--t-xs); border-width:2px; padding: var(--e-1) var(--e-3); letter-spacing:.09em}
-.modal-cover{position:relative}
 .cover-wrap{position:relative}
 .bienvenida-pasos{margin: var(--e-2) 0 0; padding-left: var(--e-6); display:flex; flex-direction:column; gap: var(--e-4); font-size: var(--t-b); line-height:1.55}
 .bienvenida-acciones{display:flex; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-3)}

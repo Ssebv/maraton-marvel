@@ -285,6 +285,11 @@ const PESTANAS = [
 const DUOS = {
   'Anthony y Joe Russo': ['Hermanos Russo'],
   'Rhys Thomas y Bert & Bertie': ['Rhys Thomas', 'Bert & Bertie'],
+  // Parejas acreditadas por apellido: partirlas por la "y" inventaba dos
+  // personas llamadas "Markus" y "McFeely", cada una con su avatar.
+  'Markus y McFeely': ['Markus y McFeely'],
+  'Tancharoen y Whedon': ['Tancharoen y Whedon'],
+  'Schwartz y Savage': ['Schwartz y Savage'],
 }
 const urlTrailer = t => `https://www.youtube.com/results?search_query=${encodeURIComponent(t + ' tráiler español')}`
 const urlImdb = t => `https://www.imdb.com/find/?q=${encodeURIComponent(t)}`
@@ -1349,8 +1354,13 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             onAbrirTitulo={d => { setPersona(null); onIrA && onIrA(d) }} />
         ) : (<>
         <div className="modal-cover">
-          <Portada item={item} c={c} esComic={esComic} />
-          {vista && <span className="sello" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
+          <div className="modal-portada">
+            <Portada item={item} c={c} esComic={esComic} />
+            {vista && <span className="sello" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
+          </div>
+          <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
+            {vista ? '✓ Vista — marcar pendiente' : esComic ? 'Marcar como leído' : 'Marcar como vista'}
+          </button>
         </div>
         <div className="modal-info">
           <div className="modal-chips">
@@ -1531,9 +1541,6 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             </div>
           )}
           <div className="modal-acciones">
-            <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
-              {vista ? '✓ Vista — marcar pendiente' : esComic ? 'Marcar como leído' : 'Marcar como vista'}
-            </button>
             {!esComic && (
               <>
                 {extra && extra.trailer
