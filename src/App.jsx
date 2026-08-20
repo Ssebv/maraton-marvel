@@ -2215,6 +2215,24 @@ export default function App() {
 
   const oculto = (item, esComic) => filtros.vistas && vistas[item.id] && pasaFiltro(item, esComic)
 
+  // Cuántos títulos deja ver lo que hay puesto. Ojo: "Solo pendientes" no
+  // vive en pasaFiltro, se aplica aparte, así que hay que mirar los dos.
+  const resumenFiltros = useMemo(() => {
+    const activos = Object.values(filtros).filter(Boolean).length + (busca.trim() ? 1 : 0)
+    if (!activos) return null
+    let tot = 0, vis = 0
+    DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
+      const esComic = sg.saga === 'comics' || sg.saga === 'animacion'
+      tot++
+      if (pasaFiltro(it, esComic) && !(filtros.vistas && vistas[it.id])) vis++
+    })))
+    return { activos, tot, vis }
+  }, [filtros, busca, vistas])
+  const limpiaFiltros = () => {
+    setFiltros({ series: false, opc: false, vistas: false, joyas: false, express: false })
+    setBusca('')
+  }
+
   let delayIdx = 0
   const nextDelay = () => Math.min((delayIdx++) * 30, 360)
   const pct = stats.totN ? Math.round(100 * stats.totV / stats.totN) : 0
@@ -2346,15 +2364,22 @@ export default function App() {
 
       <header className="toolbar">
         <div className="controles" role="group" aria-label="Vista y filtros">
-          <div className="tabs">
+          <nav className="tabs" aria-label="Vistas del maratón">
             {PESTANAS.map(p => (
-              <button className="tab" key={p.id} aria-pressed={vista === p.id} aria-label={p.label}
-                onClick={() => setVista(p.id)}>
+              <a className="tab" key={p.id} href={'#' + p.id} aria-label={p.label}
+                aria-current={vista === p.id ? 'page' : undefined}
+                onClick={e => {
+                  // con modificador o botón central, que el navegador haga lo suyo
+                  // (abrir en otra pestaña): para eso son enlaces de verdad
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                  e.preventDefault()
+                  setVista(p.id)
+                }}>
                 <span className="tab-txt">{p.label}</span>
                 <span className="tab-corto" aria-hidden="true">{p.corto}</span>
-              </button>
+              </a>
             ))}
-          </div>
+          </nav>
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>Ruta express</button>
@@ -2397,6 +2422,14 @@ export default function App() {
           )}
         </div>
       </header>
+
+      {resumenFiltros && (
+        <p className="filtros-resumen" role="status">
+          Ves <b>{resumenFiltros.vis}</b> de {resumenFiltros.tot}
+          {' · '}{resumenFiltros.activos === 1 ? '1 filtro activo' : `${resumenFiltros.activos} filtros activos`}
+          <button className="filtros-quitar" onClick={limpiaFiltros}>Quitar</button>
+        </p>
+      )}
 
       <Estrellas />
       {vista === 'tiempo' ? (
