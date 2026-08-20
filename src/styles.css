@@ -273,20 +273,23 @@ h1 .rojo{color:var(--red)}
 }
 
 /* ── Panel superior plegado: el estado en una línea ── */
+/* Plegado, esto era una caja de 44px justo encima de otra caja: dos barras
+   seguidas antes del contenido, y con el selector de vistas ya son tres.
+   Sin caja deja de leerse como una barra y vuelve a ser parte del hero. */
 .panel-resumen{
-  width:100%; margin-top: var(--e-5); padding: var(--e-4) var(--e-5);
-  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
-  box-shadow:var(--card-shadow); color:var(--ink2); cursor:pointer;
-  display:flex; align-items:center; gap: var(--e-5); flex-wrap:wrap;
+  width:100%; margin-top: var(--e-5); padding: 0;
+  background:none; border:none; border-radius:0;
+  box-shadow:none; color:var(--ink2); cursor:pointer;
+  display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap;
   font-size: var(--t-m); text-align:left;
 }
-.panel-resumen:hover{border-color:var(--ink3); color:var(--ink)}
+.panel-resumen:hover{color:var(--ink)}
 .pr-datos{flex:1; min-width:0}
 .pr-datos b{color:var(--ink); font-weight:700}
 .pr-datos b.pr-dias{color:var(--doom); font-variant-numeric:tabular-nums}
 .pr-abrir{
-  flex:none; font-size: var(--t-s); font-weight:700; letter-spacing:.06em; text-transform:uppercase;
-  color:var(--ink2); border:1px solid var(--line); border-radius:var(--r-pill); padding: var(--e-2) var(--e-4);
+  flex:none; font-size: var(--t-s); font-weight:600; letter-spacing:0;
+  color:var(--ink3); border:1px solid var(--line); border-radius:var(--r-pill); padding: var(--e-1) var(--e-4);
 }
 .panel-resumen:hover .pr-abrir{border-color:var(--ink3); color:var(--ink)}
 @media (max-width:640px){
@@ -295,7 +298,7 @@ h1 .rojo{color:var(--red)}
   .panel-resumen{gap: var(--e-4); padding: var(--e-4) var(--e-5)}
 }
 .panel-plegar{
-  display:block; margin: var(--e-3) 0 0 auto; padding: var(--e-2) var(--e-4);
+  display:block; margin: var(--e-3) 0 0 auto; padding: var(--e-1) var(--e-4);
   background:none; border:1px solid var(--line); border-radius:var(--r-pill);
   color:var(--ink3); font-size: var(--t-s); font-weight:600; cursor:pointer;
 }
