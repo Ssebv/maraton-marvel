@@ -514,7 +514,7 @@ h3{
   transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-larga);
   animation:riseIn .5s var(--curva) both;
   position:relative;
-  content-visibility:auto; contain-intrinsic-size:auto 165px;
+  content-visibility:auto; contain-intrinsic-size:auto 200px;
 }
 .card:hover{
   transform:translate(-2px, -3px);
@@ -531,7 +531,7 @@ h3{
 
 .cover-wrap{flex:none; position:relative; align-self:center}
 .cover{
-  display:block; width:88px; height:132px; border-radius:var(--r-m);
+  display:block; width:112px; height:168px; border-radius:var(--r-m);
   box-shadow:0 4px 14px rgba(0,0,0,.35);
   transition:transform var(--dur-larga) var(--curva), filter var(--dur-larga);
 }
@@ -1261,13 +1261,12 @@ main{animation:entraVista .28s var(--curva) both}
 @media (max-width:640px){
   .hero{padding: var(--e-7) 0 var(--e-5)}
   .credits{display:none}
-  .cover{width:64px; height:96px}
   .checkbox{width:26px; height:26px}
   .abrir{gap: var(--e-4)}
   .rating-badge{font-size: var(--t-xs); padding: var(--e-1) var(--e-2)}
   .stats{grid-template-columns:1fr 1fr}
   .siguiente-stat{grid-column:1 / -1}
-  .cover{width:72px; height:108px}
+  .cover{width:88px; height:132px}
   .cast{display:none}
   .lado .tipo.plat, .lado .tipo.uni{display:none}
   .enlaces{flex-direction:column; align-items:flex-end}
@@ -1486,7 +1485,6 @@ main{animation:entraVista .28s var(--curva) both}
 .stats-vacio{margin: var(--e-5) 0 0; font-size: var(--t-b)}
 .ep-img.real, .modal-prov, .trailer-caja{animation:fadeIn .45s ease both}
 /* ── Mejoras: rendimiento de scroll, restaurar copia, pista del buscador ── */
-.card{content-visibility:auto; contain-intrinsic-size:auto 168px}
 .galeria-item{content-visibility:auto; contain-intrinsic-size:auto 220px}
 .chip-btn.restaurar{position:relative; overflow:hidden; display:inline-flex; align-items:center}
 .chip-btn.restaurar input{position:absolute; inset:0; opacity:0; cursor:pointer}
