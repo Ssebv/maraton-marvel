@@ -100,24 +100,41 @@ const resumenMaraton = (vistasSet, epsSet) => {
 
 // ── TMDB: tráilers, fotogramas y dónde ver (caché de 7 días en el navegador) ──
 const TMDB_IMG = 'https://image.tmdb.org/t/p/'
+// El mapeo id-nuestro → TMDB, leído al revés: sirve para saber si una
+// película de la filmografía de alguien está en el maratón.
+const TMDB_INV = {}
+Object.keys(TMDB).forEach(id => {
+  const m = TMDB[id]
+  if (Array.isArray(m) && m.length === 2) TMDB_INV[`${m[1]}:${m[0]}`] = id
+})
 const tmdbMem = {}
 const clave = n => (n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
 
 const personaMem = {}
 async function cargaPersona(tmdbId) {
   if (personaMem[tmdbId]) return personaMem[tmdbId]
-  const ls = 'maraton-marvel-persona-v2:' + tmdbId
+  const ls = 'maraton-marvel-persona-v3:' + tmdbId
   try {
     const g = JSON.parse(localStorage.getItem(ls))
     if (g && Date.now() - g.t < 30 * 864e5) { personaMem[tmdbId] = g.d; return g.d }
   } catch {}
-  const j = await tmdbJson(`/person/${tmdbId}`)
+  const j = await tmdbJson(`/person/${tmdbId}?append_to_response=combined_credits`)
   const d = {
     bio: typeof j.biography === 'string' ? j.biography.trim() : '',
     nacimiento: typeof j.birthday === 'string' ? j.birthday : null,
     lugar: typeof j.place_of_birth === 'string'
       ? (j.place_of_birth.replace(/\s*\[[^\]]*\]/g, '').trim() || null) : null,
     foto: typeof j.profile_path === 'string' ? j.profile_path : null,
+    // solo los títulos que están EN el maratón: la lista completa serían
+    // cientos de entradas por persona en localStorage
+    enMaraton: (() => {
+      const cc = j.combined_credits || {}
+      const todo = [...(Array.isArray(cc.cast) ? cc.cast : []), ...(Array.isArray(cc.crew) ? cc.crew : [])]
+      return [...new Set(todo
+        .filter(c => c && typeof c.id === 'number' && (c.media_type === 'movie' || c.media_type === 'tv'))
+        .map(c => TMDB_INV[`${c.media_type}:${c.id}`])
+        .filter(Boolean))]
+    })(),
   }
   personaMem[tmdbId] = d
   try { localStorage.setItem(ls, JSON.stringify({ t: Date.now(), d })) } catch {}
@@ -133,7 +150,7 @@ async function cargaTmdb(itemId) {
   if (tmdbMem[itemId]) return tmdbMem[itemId]
   const m = TMDB[itemId]
   if (!m) return null
-  const claveLS = 'maraton-marvel-tmdb-v6:' + itemId
+  const claveLS = 'maraton-marvel-tmdb-v7:' + itemId
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
@@ -149,17 +166,21 @@ async function cargaTmdb(itemId) {
   const reparto = {}
   ;((cred && cred.crew) || []).filter(c => /Director/i.test(c.job || (c.jobs && c.jobs[0] && c.jobs[0].job) || ''))
     .slice(0, 4).forEach(c => { reparto[clave(c.name)] = { id: c.id, papel: '', foto: c.profile_path || null } })
-  ;((cred && cred.cast) || []).slice(0, 24).forEach(c => {
+  const elenco = []
+  ;((cred && cred.cast) || []).filter(c => c && typeof c.name === 'string').slice(0, 18).forEach(c => {
     // TMDB cuela apostillas en inglés: "(24 Years)", "(voice)", "(uncredited)"
     const papel = (c.character || (c.roles && c.roles[0] && c.roles[0].character) || '')
       .replace(/\s*\((?:[^)]*\b(?:years?|voice|uncredited|young|older|archive|footage)\b[^)]*)\)/gi, '')
       .trim()
-    reparto[clave(c.name)] = { id: c.id, papel, foto: c.profile_path || null }
+    const foto = typeof c.profile_path === 'string' ? c.profile_path : null
+    reparto[clave(c.name)] = { id: c.id, papel, foto }
+    elenco.push({ n: c.name, p: typeof papel === 'string' ? papel : '', f: foto, id: c.id })
   })
   const d = {
     trailer: tr ? tr.key : null,
     fondo: base.backdrop_path || null,
     reparto,
+    elenco,
     prov: ((es && es.flatrate) || [])
       .filter(p => p && typeof p.provider_name === 'string')
       .map(p => ({ n: p.provider_name, l: typeof p.logo_path === 'string' ? p.logo_path : null }))
@@ -379,10 +400,11 @@ const IcoEnlace = () => (
   </svg>
 )
 
-function Avatar({ nombre, grande }) {
+function Avatar({ nombre, grande, foto }) {
   const [err, setErr] = useState(false)
   const limpio = limpiaNombre(nombre)
-  const src = PEOPLE[limpio]
+  // primero la foto propia de public/people; si no hay, la de TMDB
+  const src = PEOPLE[limpio] || (typeof foto === 'string' ? `${TMDB_IMG}w185${foto}` : null)
   const cls = 'avatar' + (grande ? ' avatar-grande' : '')
   if (!src || err) {
     return <span className={cls + ' avatar-ini'} aria-hidden="true">{iniciales(limpio)}</span>
@@ -409,14 +431,20 @@ function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, ite
 
   // Lo que ninguna web tiene: dónde más sale dentro de TU maratón
   const tambienEn = useMemo(() => {
+    const porTmdb = datos && Array.isArray(datos.enMaraton)
+      ? new Set(datos.enMaraton.filter(x => typeof x === 'string'))
+      : null
     const k = clave(nombre), fuera = []
     DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
       if (it.id === itemActualId) return
       const gente = [...(it.cast || []), ...(it.dir ? it.dir.split(/, | y | & /) : [])]
-      if (gente.some(g => clave(limpiaNombre(g)) === k)) fuera.push({ item: it, c: era.c, esComic: sg.saga === 'comics' })
+      const porNombre = gente.some(g => clave(limpiaNombre(g)) === k)
+      if (porNombre || (porTmdb && porTmdb.has(it.id))) {
+        fuera.push({ item: it, c: era.c, esComic: sg.saga === 'comics' })
+      }
     })))
     return fuera
-  }, [nombre, itemActualId])
+  }, [nombre, itemActualId, datos])
 
   const bio = datos && datos.bio
   const bioCorta = bio && bio.length > 420 && !masBio ? bio.slice(0, 420).replace(/\s+\S*$/, '') + '…' : bio
@@ -1344,19 +1372,30 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                   <span className="persona-rol">Dirección</span>
                 </button>
               ))}
-              {(item.cast || []).map(p => {
-                const limpio = limpiaNombre(p)
-                const cr = extra && extra.reparto && extra.reparto[clave(limpio)]
-                return (
-                  <button className="persona" key={p}
-                    onClick={() => setPersona({ nombre: limpio, rol: 'Reparto', papel: cr && cr.papel, tmdbId: cr && cr.id })}
-                    title={cr && cr.papel ? `${limpio} — ${cr.papel}` : `Ver a ${limpio} en tu maratón`}>
-                    <Avatar nombre={p} />
-                    <span className="persona-nombre">{limpio}</span>
-                    <span className="persona-rol">{cr && cr.papel ? cr.papel : 'Reparto'}</span>
-                  </button>
-                )
-              })}
+              {(() => {
+                const deTmdb = extra && Array.isArray(extra.elenco)
+                  ? extra.elenco.filter(c => c && typeof c.n === 'string')
+                  : []
+                const lista = deTmdb.length
+                  ? deTmdb
+                  : (item.cast || []).map(p => {
+                      const limpio = limpiaNombre(p)
+                      const cr = extra && extra.reparto && extra.reparto[clave(limpio)]
+                      return { n: limpio, p: cr && cr.papel, f: cr && cr.foto, id: cr && cr.id }
+                    })
+                return lista.map((c, i) => {
+                  const papel = typeof c.p === 'string' && c.p ? c.p : null
+                  return (
+                    <button className="persona" key={c.n + i}
+                      onClick={() => setPersona({ nombre: c.n, rol: 'Reparto', papel, tmdbId: c.id })}
+                      title={papel ? `${c.n} — ${papel}` : `Ver a ${c.n} en tu maratón`}>
+                      <Avatar nombre={c.n} foto={c.f} />
+                      <span className="persona-nombre">{c.n}</span>
+                      <span className="persona-rol">{papel || 'Reparto'}</span>
+                    </button>
+                  )
+                })
+              })()}
               </div>
             </section>
           )}
