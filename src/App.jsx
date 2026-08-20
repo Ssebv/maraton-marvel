@@ -133,7 +133,7 @@ async function cargaTmdb(itemId) {
   if (tmdbMem[itemId]) return tmdbMem[itemId]
   const m = TMDB[itemId]
   if (!m) return null
-  const claveLS = 'maraton-marvel-tmdb-v5:' + itemId
+  const claveLS = 'maraton-marvel-tmdb-v6:' + itemId
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
@@ -160,7 +160,10 @@ async function cargaTmdb(itemId) {
     trailer: tr ? tr.key : null,
     fondo: base.backdrop_path || null,
     reparto,
-    prov: ((es && es.flatrate) || []).map(p => p.provider_name).slice(0, 4),
+    prov: ((es && es.flatrate) || [])
+      .filter(p => p && typeof p.provider_name === 'string')
+      .map(p => ({ n: p.provider_name, l: typeof p.logo_path === 'string' ? p.logo_path : null }))
+      .slice(0, 4),
     eps: {},
   }
   if (tipo === 'tv' && EPISODES[itemId]) {
@@ -348,6 +351,31 @@ const CheckIcon = () => (
   <svg viewBox="0 0 16 16" aria-hidden="true">
     <path d="M2.5 8.5l3.5 3.5 7-8" fill="none" stroke="#fff" strokeWidth="2.5"
       strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
+const IcoPlay = () => (
+  <svg className="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M8 5.5v13l11-6.5z" fill="currentColor" />
+  </svg>
+)
+const IcoCerrar = () => (
+  <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+)
+const IcoFuera = () => (
+  <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M14 5h5v5M19 5l-8 8" /><path d="M18 14v4a1.8 1.8 0 0 1-1.8 1.8H6A1.8 1.8 0 0 1 4.2 18V7.8A1.8 1.8 0 0 1 6 6h4" />
+  </svg>
+)
+const IcoEnlace = () => (
+  <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M10 13.5a4 4 0 0 0 5.7 0l2.8-2.8a4 4 0 0 0-5.7-5.7l-1.4 1.4" />
+    <path d="M14 10.5a4 4 0 0 0-5.7 0l-2.8 2.8a4 4 0 0 0 5.7 5.7l1.4-1.4" />
   </svg>
 )
 
@@ -1264,7 +1292,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
       <div className="modal" onClick={e => e.stopPropagation()}>
         {extra?.fondo && (
           <div className="modal-fondo" aria-hidden="true">
-            <img src={`https://image.tmdb.org/t/p/w780${extra.fondo}`} alt="" />
+            <img src={`${TMDB_IMG}w780${extra.fondo}`} alt="" />
             <span className="mf-velo" />
           </div>
         )}
@@ -1303,7 +1331,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             </p>
           )}
           {(directores.length > 0 || item.cast) && (
-            <div className="personas">
+            <section className="reparto">
+              <h3 className="reparto-titulo">Dirección y reparto</h3>
+              <div className="carril-personas">
               {directores.map(p => (
                 <button className="persona" key={p}
                   onClick={() => setPersona({ nombre: p, rol: 'Dirección',
@@ -1327,7 +1357,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                   </button>
                 )
               })}
-            </div>
+              </div>
+            </section>
           )}
           {item.tipo === 'serie' && EPISODES[item.id] && (() => {
             const lista = EPISODES[item.id]
@@ -1415,8 +1446,26 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             </div>
           )}
           {club && <ComentariosClub club={club} item={item} vista={vista} />}
-          {extra && extra.prov.length > 0 && (
-            <p className="modal-prov">Hoy en España: <b>{extra.prov.join(' · ')}</b></p>
+          {extra && Array.isArray(extra.prov) && extra.prov.length > 0 && (
+            <div className="prov">
+              <span className="prov-label">Hoy en España</span>
+              <div className="prov-lista">
+                {extra.prov.map((pv, i) => {
+                  // la caché vieja guardaba texto suelto: se acepta la forma antigua
+                  const nombre = typeof pv === 'string' ? pv
+                    : (pv && typeof pv.n === 'string' ? pv.n : null)
+                  if (!nombre) return null
+                  const logo = pv && typeof pv.l === 'string' ? pv.l : null
+                  return (
+                    <span className="prov-chip" key={nombre + i}>
+                      {logo && <img className="prov-logo" src={`${TMDB_IMG}w92${logo}`}
+                        alt="" width="26" height="26" loading="lazy" />}
+                      {nombre}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
           )}
           {verTrailer && extra && extra.trailer && (
             <div className="trailer-caja">
@@ -1432,13 +1481,13 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               <>
                 {extra && extra.trailer
                   ? <button className="ghost" aria-pressed={verTrailer} onClick={() => setVerTrailer(v => !v)}>
-                      {verTrailer ? '✕ Cerrar tráiler' : '▶ Tráiler'}
+                      {verTrailer ? <><IcoCerrar />Cerrar tráiler</> : <><IcoPlay />Tráiler</>}
                     </button>
-                  : <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer">▶ Tráiler</a>}
-                <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb</a>
+                  : <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer"><IcoPlay />Tráiler</a>}
+                <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb<IcoFuera /></a>
                 {!item.tipo && (
                   <a className="ghost" href={`https://letterboxd.com/search/films/${encodeURIComponent(item.t)}/`}
-                    target="_blank" rel="noopener noreferrer">Letterboxd</a>
+                    target="_blank" rel="noopener noreferrer">Letterboxd<IcoFuera /></a>
                 )}
               </>
             )}
@@ -1448,7 +1497,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                 setEnlaceCopiado(true)
                 setTimeout(() => setEnlaceCopiado(false), 2000)
               } catch {}
-            }}>{enlaceCopiado ? '✓ Copiado' : 'Enlace'}</button>
+            }}>{enlaceCopiado ? '✓ Copiado' : <><IcoEnlace />Enlace</>}</button>
           </div>
         </div>
         </>)}
@@ -3231,6 +3280,11 @@ function Footer({ onReset }) {
         Pulsa una tarjeta para ver su ficha completa; la casilla redonda marca vista o pendiente y se guarda en este navegador.
         Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas.
         La Ruta express deja solo lo imprescindible para llegar a Vengadores: Doomsday.
+      </p>
+      <p className="nota-pie nota-creditos">
+        Carátulas, fotogramas, tráilers y reparto de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a>;
+        este producto usa su API pero no está avalado ni certificado por TMDB.
+        La disponibilidad por plataforma y sus logos vienen de <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> a través de TMDB.
       </p>
       <div className="reset">
         <button className="chip-btn" onClick={exportar}>

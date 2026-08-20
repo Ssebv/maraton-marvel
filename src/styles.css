@@ -638,7 +638,9 @@ h3{
 .tipo.uni{background:var(--violet-soft); color:var(--violet)}
 .tipo.plat{background:var(--teal-soft); color:var(--teal)}
 .enlaces{display:flex; gap: var(--e-3)}
+.ico{width:15px; height:15px; flex:none; display:block}
 .ghost{
+  display:inline-flex; align-items:center; gap: var(--e-2);
   background:none; cursor:pointer; font-family:inherit;
   font-size: var(--t-s); font-weight:600; color:var(--ink2); text-decoration:none;
   border:1px solid var(--line); border-radius:var(--r-pill); padding: var(--e-2) var(--e-4);
@@ -661,7 +663,8 @@ h3{
   border-radius:var(--r-l); max-width:900px; width:100%; max-height:88vh;
   overflow-y:auto; overflow-x:clip;
   overscroll-behavior:contain;
-  padding: var(--e-7); display:flex; gap: var(--e-7);
+  --pad: var(--e-7);
+  padding: var(--pad); display:flex; gap: var(--e-7);
   box-shadow:var(--card-shadow-up);
   animation:riseIn .3s var(--curva) both;
 }
@@ -693,21 +696,40 @@ h3{
 }
 .modal-pc.sin{color:var(--ink2); background:var(--panel2); border-color:var(--line)}
 .modal-nota{margin: 0; font-size: var(--t-m); color:var(--ink3); font-style:italic}
-.personas{display:flex; flex-wrap:wrap; gap: var(--e-5) var(--e-4); margin-top: var(--e-3)}
+/* Dirección y reparto en carril: apilados en rejilla se comían media
+   ficha, y con 24 nombres el bloque era más alto que la sinopsis. */
+.reparto{display:flex; flex-direction:column; gap: var(--e-3); min-width:0; margin-top: var(--e-2)}
+.reparto-titulo{
+  margin:0; font-size: var(--t-xs); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink3);
+}
+.carril-personas{
+  display:flex; gap: var(--e-4); min-width:0;
+  overflow-x:auto; overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
+  /* el sangrado y el relleno usan el MISMO token que el modal, o el
+     carril arranca desplazado y se come el margen */
+  scroll-padding-inline:var(--pad, 0px);
+  margin-inline:calc(-1 * var(--pad, 0px)); padding-inline:var(--pad, 0px);
+  padding-bottom: var(--e-2);
+  scrollbar-width:none;
+}
+.carril-personas::-webkit-scrollbar{display:none}
 .persona{
+  flex:0 0 auto; scroll-snap-align:start;
   display:flex; flex-direction:column; align-items:center; gap: var(--e-2);
-  width:76px; text-align:center; text-decoration:none; color:inherit;
+  width:88px; text-align:center; text-decoration:none; color:inherit;
 }
 .avatar{
-  width:52px; height:52px; border-radius:50%; object-fit:cover;
+  width:64px; height:64px; border-radius:50%; object-fit:cover;
   background:var(--panel2); border:2px solid var(--line);
   transition:transform var(--dur-media);
 }
 .persona:hover .avatar{transform:scale(1.08); border-color:var(--blue)}
 .avatar-ini{
-  display:grid; place-items:center; font-size: var(--t-b); font-weight:700; color:var(--ink2);
+  display:grid; place-items:center; font-size: var(--t-l); font-weight:700; color:var(--ink2);
 }
-.persona-nombre{font-size: var(--t-xs); font-weight:600; line-height:1.25}
+.persona-nombre{font-size: var(--t-s); font-weight:600; line-height:1.25}
 .persona-rol{font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
 .modal-acciones{display:flex; gap: var(--e-3); flex-wrap:wrap; margin-top: var(--e-3); align-items:center}
 .accion-principal{
@@ -721,7 +743,7 @@ h3{
 .accion-principal:active{transform:scale(.97)}
 .accion-principal.hecha{background:var(--done)}
 @media (max-width:640px){
-  .modal{flex-direction:column; padding: var(--e-6); gap: var(--e-5)}
+  .modal{--pad: var(--e-6); flex-direction:column; padding: var(--pad); gap: var(--e-5)}
   .modal-cover{align-self:center}
 }
 
@@ -1221,6 +1243,9 @@ main.tiempo{margin-top: var(--e-6)}
 footer{margin-top: var(--e-9); border-top:1px solid var(--line); padding-top: var(--e-6);
   display:flex; align-items:center; gap: var(--e-5); flex-wrap:wrap}
 .nota-pie{font-size: var(--t-m); color:var(--ink2); max-width:58ch; margin: 0}
+.nota-creditos{flex-basis:100%; font-size: var(--t-s); color:var(--ink3); max-width:78ch; margin-top: var(--e-3)}
+.nota-creditos a{color:var(--ink2); text-underline-offset:2px}
+.nota-creditos a:hover{color:var(--ink)}
 .reset{margin-left: auto; display:flex; gap: var(--e-3); flex-wrap:wrap; justify-content:flex-end}
 .reset .chip-btn.peligro{color:var(--red); border-color:var(--red)}
 
@@ -1385,11 +1410,25 @@ main{animation:entraVista .28s var(--curva) both}
 .duelo-input{width:100%; min-height:38px}
 .duelo-error{margin: 0; font-size: var(--t-s); color:var(--red); font-weight:600}
 /* ── TMDB: tráiler, dónde ver y sinopsis de episodios ── */
-.modal-prov{
-  margin: var(--e-1) 0 0; font-size: var(--t-xs); font-weight:600; letter-spacing:.08em;
+/* Dónde verla. Los logos son los oficiales que sirve TMDB para cada
+   plataforma: ni se dibujan a mano ni se guardan en el repo. */
+.prov{display:flex; flex-direction:column; gap: var(--e-3); margin-top: var(--e-2)}
+.prov-label{
+  font-size: var(--t-xs); font-weight:700; letter-spacing:.1em;
   text-transform:uppercase; color:var(--ink3);
 }
-.modal-prov b{font-weight:700; letter-spacing:0; text-transform:none; font-size: var(--t-m); color:var(--ink2)}
+.prov-lista{display:flex; flex-wrap:wrap; gap: var(--e-3)}
+.prov-chip{
+  display:inline-flex; align-items:center; gap: var(--e-3);
+  padding: var(--e-2) var(--e-4) var(--e-2) var(--e-2);
+  border:1px solid var(--line); border-radius:var(--r-pill);
+  background:var(--panel2); color:var(--ink);
+  font-size: var(--t-m); font-weight:600; white-space:nowrap;
+}
+.prov-logo{
+  width:26px; height:26px; border-radius:var(--r-s); object-fit:cover;
+  display:block; flex:none;
+}
 .trailer-caja{position:relative; width:100%; aspect-ratio:16/9; border-radius:var(--r-m); overflow:hidden; border:1.5px solid var(--line); background:#000}
 .trailer-caja iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
 .ep{position:relative; flex-wrap:wrap}

@@ -60,4 +60,4 @@ npm run build   # genera novedades.json y compila con Vite a dist/ (un solo HTML
 
 ---
 
-Hecho con [Claude Code](https://claude.com/claude-code). Datos de episodios de Wikipedia; carátulas, fotogramas y metadatos de [TMDB](https://www.themoviedb.org/) (este producto usa la API de TMDB pero no está avalado ni certificado por TMDB).
+Hecho con [Claude Code](https://claude.com/claude-code). Datos de episodios de Wikipedia; carátulas, fotogramas, reparto y metadatos de [TMDB](https://www.themoviedb.org/) (este producto usa la API de TMDB pero no está avalado ni certificado por TMDB). La disponibilidad por plataforma y los logos de cada servicio vienen de [JustWatch](https://www.justwatch.com/) a través de TMDB — **los logos de marca no se dibujan a mano ni se guardan en el repo**: se sirven desde `image.tmdb.org`, que es el canal previsto para ello.
