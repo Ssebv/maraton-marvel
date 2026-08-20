@@ -18,6 +18,8 @@
   --fondo-op:.45; --velo-a:62%; --velo-b:84%; --material:#F6F1E3;
   /* Movimiento: una curva y tres duraciones para toda la app */
   --curva:cubic-bezier(.22, 1, .36, 1);
+  --curva-rebote:cubic-bezier(.34, 1.56, .64, 1);  /* confirmación: pasa de largo y vuelve */
+  --curva-hoja:cubic-bezier(.32, .72, 0, 1);       /* la hoja móvil, curva de iOS */
   --dur-corta:.16s; --dur-media:.24s; --dur-larga:.36s;
   --dur-barra:.5s;  /* recorridos largos: barras de progreso */
   /* Sombras en dos capas: contacto corto + difusa amplia, como en macOS */
@@ -413,7 +415,6 @@ h1 .rojo{color:var(--red)}
 /* un botón que no puede hacer nada debe parecerlo */
 .accion-principal:disabled{opacity:.45; cursor:not-allowed; filter:grayscale(.6)}
 .accion-principal:disabled:hover{filter:grayscale(.6)}
-.accion-principal:disabled::before{content:none}
 
 /* ── Barra de herramientas fija ── */
 .toolbar{
@@ -516,9 +517,11 @@ h3{
   position:relative;
   content-visibility:auto; contain-intrinsic-size:auto 230px;
 }
+/* Un solo gesto: la tarjeta se levanta y proyecta su sombra sólida. El
+   cambio de borde saltaba sin transición (no puede llevarla: congela el
+   tema) y el giro de la carátula era un cuarto movimiento simultáneo. */
 .card:hover{
   transform:translate(-2px, -3px);
-  border-color:color-mix(in srgb, var(--glow, var(--red)) 55%, var(--line));
   box-shadow:5px 6px 0 color-mix(in srgb, var(--glow, var(--red)) 40%, transparent);
 }
 .card:active{transform:translateY(-1px) scale(.997)}
@@ -533,10 +536,9 @@ h3{
 .cover{
   display:block; width:132px; height:198px; border-radius:var(--r-m);
   box-shadow:0 4px 14px rgba(0,0,0,.35);
-  transition:transform var(--dur-larga) var(--curva), filter var(--dur-larga);
+  transition:filter var(--dur-larga);
 }
 .cover.foto{object-fit:cover; background:var(--panel2)}
-.card:hover .cover{transform:scale(1.045) rotate(-1.5deg)}
 .card.vista .cover{filter:grayscale(.8) brightness(.8)}
 .rating-badge{
   position:absolute; top:6px; left:6px; z-index:1;
@@ -551,9 +553,9 @@ h3{
   border:2px solid var(--line); background:transparent; cursor:pointer;
   display:grid; place-items:center; position:relative; padding: 0;
   /* nunca 'all': arrastraría border-color, que se congela al cambiar de tema */
-  transition:background var(--dur-media) cubic-bezier(.34,1.56,.64,1),
-             transform var(--dur-media) cubic-bezier(.34,1.56,.64,1),
-             box-shadow var(--dur-media) cubic-bezier(.34,1.56,.64,1);
+  transition:background var(--dur-media) var(--curva-rebote),
+             transform var(--dur-media) var(--curva-rebote),
+             box-shadow var(--dur-media) var(--curva-rebote);
 }
 .checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:opacity var(--dur-media), transform var(--dur-media)}
 .checkbox:hover{border-color:var(--done); box-shadow:0 0 0 4px color-mix(in srgb, var(--done) 15%, transparent)}
@@ -715,13 +717,6 @@ h3{
   transition:transform var(--dur-corta), filter var(--dur-corta);
   position:relative; overflow:hidden;
 }
-.accion-principal::before{
-  content:""; position:absolute; top:0; left:-80%;
-  width:50%; height:100%;
-  background:linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
-  transform:skewX(-20deg); transition:left var(--dur-barra) ease;
-}
-.accion-principal:hover::before{left:130%}
 .accion-principal:hover{filter:brightness(1.1)}
 .accion-principal:active{transform:scale(.97)}
 .accion-principal.hecha{background:var(--done)}
@@ -773,9 +768,9 @@ h3{
 .busca{
   border:1px solid var(--line); background:var(--panel); color:var(--ink);
   border-radius:var(--r-pill); padding: var(--e-2) var(--e-5); font-size: var(--t-m); font-family:inherit;
-  width:150px; min-height:32px; transition:width var(--dur-media);
+  width:190px; min-height:32px;
 }
-.busca:focus{width:210px; border-color:var(--blue); outline:none}
+.busca:focus{border-color:var(--blue); outline:none}
 .busca:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
 .busca::placeholder{color:var(--ink3)}
 .importar{display:flex; gap: var(--e-3); align-items:center}
@@ -937,7 +932,7 @@ main.galeria{margin-top: var(--e-6)}
   border-radius:50%; flex:none; position:absolute;
   background-image:url('/maraton-marvel/tierra.jpg');
   background-size:auto 100%; background-repeat:repeat-x;
-  animation:girarPlaneta 28s linear infinite, latidoPlaneta 5s ease-in-out infinite;
+  animation:girarPlaneta 28s linear infinite;
   box-shadow:
     0 0 26px -4px color-mix(in srgb, var(--tc, #7BA6E4) 70%, transparent),
     -4px 0 8px rgba(195,244,255,.4) inset,
@@ -954,10 +949,6 @@ main.galeria{margin-top: var(--e-6)}
 @keyframes girarPlaneta{
   from{background-position:0 0}
   to{background-position:-640px 0}
-}
-@keyframes latidoPlaneta{
-  0%, 100%{filter:brightness(1)}
-  50%{filter:brightness(1.14)}
 }
 .mv-card{position:relative; padding-right: 88px}
 @media (max-width:640px){
@@ -1044,9 +1035,9 @@ main.multiverso{margin-top: var(--e-6)}
 }
 .mv-entrar{
   margin-top: auto; padding-top: var(--e-3); font-size: var(--t-s); font-weight:700;
-  color:var(--tc, var(--violet)); transition:letter-spacing var(--dur-media);
+  color:var(--tc, var(--violet)); transition:transform var(--dur-media) var(--curva);
 }
-.mv-card:hover .mv-entrar{letter-spacing:.04em}
+.mv-card:hover .mv-entrar{transform:translateX(3px)}
 
 /* Vista de una Tierra */
 .tierra{animation:portal .65s var(--curva) both}
@@ -1243,9 +1234,38 @@ main{animation:entraVista .28s var(--curva) both}
 /* La casilla responde al dedo antes de que llegue la confirmación. */
 .checkbox:active{transform:scale(.88)}
 
+/* Menos movimiento, no cero. Apagarlo TODO —que es lo que hacía esta
+   regla— se lleva por delante justamente lo que explica qué ha pasado:
+   la confirmación de la casilla, el relleno de las barras, el sello.
+   Lo que sobra es que las cosas se desplacen, giren o no paren nunca. */
 @media (prefers-reduced-motion: reduce){
-  *{animation:none !important; transition:none !important}
   html{scroll-behavior:auto}
+  /* entradas y bucles: resueltos al instante, una sola vez */
+  *{animation-duration:.01ms !important; animation-iteration-count:1 !important}
+  .cielo{display:none}
+  /* el hover deja de mover nada; los que se colocan con transform
+     conservan el suyo o se descoloca la vista entera */
+  .card:hover, .card:active, .mv-card:hover, .tl-card:hover, .galeria-item:hover,
+  .pf-item:hover, .persona:hover .avatar, .dot:hover, .estrella:hover,
+  .planeta-nav:hover, .cine-flecha:hover:not(:disabled), .chip-btn:active,
+  .checkbox:active, .accion-principal:active{
+    transform:none !important;
+  }
+  .nodo:hover, .sol:hover{transform:translate(-50%, -50%) !important}
+}
+
+/* En táctil, tocar dispara :hover y el elemento se queda levantado o
+   encogido hasta que tocas otra cosa. El movimiento de hover es solo
+   para puntero fino: en el móvil, que es donde vive la PWA, estorba. */
+@media (hover: none), (pointer: coarse){
+  .card:hover, .mv-card:hover, .tl-card:hover, .galeria-item:hover,
+  .pf-item:hover, .persona:hover .avatar, .dot:hover, .estrella:hover,
+  .planeta-nav:hover{
+    transform:none;
+  }
+  .nodo:hover, .sol:hover{transform:translate(-50%, -50%)}
+  .card:hover{box-shadow:var(--card-shadow)}
+  .mv-card:hover, .tl-card:hover{box-shadow:none}
 }
 @media (min-width:1240px){
   .wrap{max-width:1720px; padding: 0 var(--e-8)}
@@ -1330,7 +1350,7 @@ main{animation:entraVista .28s var(--curva) both}
     max-width:none; width:100%; border-radius:var(--r-l) var(--r-l) 0 0; border-bottom:none;
     max-height:92dvh; padding-top: var(--e-6);
     padding-bottom:calc(20px + env(safe-area-inset-bottom));
-    animation:sheetUp .38s cubic-bezier(.32,.72,0,1) both;
+    animation:sheetUp .38s var(--curva-hoja) both;
   }
   .modal::before{
     content:""; position:sticky; top:-18px; display:block; margin: calc(-1 * var(--e-4)) auto var(--e-3);
