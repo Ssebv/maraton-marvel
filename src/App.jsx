@@ -1814,12 +1814,11 @@ export default function App() {
   const [fondo, setFondo] = useState(() => {
     try { return localStorage.getItem(KEY_FONDO) || 'banner' } catch { return 'banner' }
   })
-  const cicloFondo = () => setFondo(f => {
-    const i = FONDOS.findIndex(x => x.id === f)
-    const n = FONDOS[(i + 1) % FONDOS.length].id
-    try { localStorage.setItem(KEY_FONDO, n) } catch {}
-    return n
-  })
+  const [ajustes, setAjustes] = useState(false)
+  const ponFondo = id => {
+    setFondo(id)
+    try { localStorage.setItem(KEY_FONDO, id) } catch {}
+  }
   const alternaPanel = () => setPanelAbierto(v => {
     const n = !v
     try { localStorage.setItem(KEY_PANEL, n ? '1' : '0') } catch {}
@@ -2011,10 +2010,6 @@ export default function App() {
     else document.documentElement.setAttribute('data-acento', acento)
     try { localStorage.setItem('maraton-marvel-acento-v1', acento) } catch {}
   }, [acento])
-  const cicloAcento = () => setAcento(a => {
-    const i = ACENTOS.findIndex(x => x.id === a)
-    return ACENTOS[(i + 1) % ACENTOS.length].id
-  })
   const [bienvenida, setBienvenida] = useState(() => {
     try {
       if (localStorage.getItem('maraton-marvel-bienvenida-v1')) return false
@@ -2371,11 +2366,7 @@ export default function App() {
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
           <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>Plan de sesión</button>
-          <button className="chip-btn" aria-pressed={compacto} onClick={alternaCompacto}>Compacto</button>
           <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>Modo cine</button>
-          <button className="chip-btn" onClick={() => setOrden(o => o === 'crono' ? 'imdb' : o === 'imdb' ? 'nota' : 'crono')}>
-            {orden === 'crono' ? '↕ Orden: cronológico' : orden === 'imdb' ? '↕ Orden: nota IMDb' : '↕ Orden: tu nota'}
-          </button>
           <button className="chip-btn" onClick={() => {
             const pendientes = []
             DATA.forEach(saga => { if (saga.saga === 'comics' || saga.saga === 'animacion') return
@@ -2389,17 +2380,14 @@ export default function App() {
           }}>Sorpréndeme</button>
           <input className="busca" type="search" name="busqueda" placeholder="Buscar… ( / )" title="Busca por título, actor, director o año — atajo: /" value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
-          <button className="chip-btn" onClick={cicloFondo} title="Cambia la imagen de fondo del encabezado">
-            Fondo: {FONDOS.find(f => f.id === fondo).nombre}
-          </button>
-          <button className="chip-btn" onClick={cicloAcento} title="Cambia el color de acento de la app">
-            Tema: {ACENTOS.find(a => a.id === acento).nombre}
-          </button>
-          <button className={`chip-btn sync-btn ${syncEstado}`} aria-live="polite" onClick={() => setSyncModal(true)}
-            title={sync ? 'Sincronización activa' : 'Sincronizar entre dispositivos'}>
-            {syncEstado === 'ok' ? 'Sincronizado' : syncEstado === 'syncing' ? 'Guardando…'
-              : syncEstado === 'error' ? 'Sin conexión' : 'Sincronizar'}
-          </button>
+          <button className="chip-btn" aria-pressed={ajustes} onClick={() => setAjustes(true)}>Ajustes</button>
+          {/* El estado de sincronización es estado, no un botón: solo se
+              muestra cuando hay algo que mirar. */}
+          {syncEstado === 'error' && (
+            <button className="chip-btn sync-btn error" aria-live="polite" onClick={() => setSyncModal(true)}>
+              Sin conexión
+            </button>
+          )}
           </div>
           {vista === 'crono' && (
             <nav className="atajos">
@@ -3060,6 +3048,82 @@ export default function App() {
         </div>
       )}
 
+      {ajustes && (
+        <div className="overlay" onClick={() => setAjustes(false)} role="dialog" aria-modal="true" aria-label="Ajustes">
+          <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+            <button className="cerrar" onClick={() => setAjustes(false)} aria-label="Cerrar">✕</button>
+            <div className="modal-info">
+              <h2 className="modal-titulo">Ajustes</h2>
+              <p className="modal-res">Se guardan en este navegador. Lo que cambies aquí no afecta a tu progreso.</p>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">Densidad</h3>
+                  <p className="ajuste-pista">El modo compacto esconde carátulas y sinopsis: cabe el triple de títulos en pantalla.</p>
+                </div>
+                <div className="ajuste-ops">
+                  <button className="chip-btn" aria-pressed={!compacto} onClick={() => { if (compacto) alternaCompacto() }}>Completa</button>
+                  <button className="chip-btn" aria-pressed={compacto} onClick={() => { if (!compacto) alternaCompacto() }}>Compacta</button>
+                </div>
+              </div>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">Orden</h3>
+                  <p className="ajuste-pista">Dentro de cada era. El cronológico es el orden del maratón; los otros dos reordenan por nota.</p>
+                </div>
+                <div className="ajuste-ops">
+                  {[['crono', 'Cronológico'], ['imdb', 'Nota IMDb'], ['nota', 'Tu nota']].map(([id, nombre]) => (
+                    <button key={id} className="chip-btn" aria-pressed={orden === id} onClick={() => setOrden(id)}>{nombre}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">Fondo del encabezado</h3>
+                  <p className="ajuste-pista">El banner usa el fotograma del próximo estreno, así que se renueva solo. El muro son tus carátulas.</p>
+                </div>
+                <div className="ajuste-ops">
+                  {FONDOS.map(f => (
+                    <button key={f.id} className="chip-btn" aria-pressed={fondo === f.id} onClick={() => ponFondo(f.id)}>{f.nombre}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">Color de acento</h3>
+                  <p className="ajuste-pista">Cambia el color que la app usa para destacar. No cambia el modo claro u oscuro, que lo decide tu sistema.</p>
+                </div>
+                <div className="ajuste-ops">
+                  {ACENTOS.map(a => (
+                    <button key={a.id} className="chip-btn" aria-pressed={acento === a.id} onClick={() => setAcento(a.id)}>{a.nombre}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">Sincronización entre dispositivos</h3>
+                  <p className="ajuste-pista">
+                    {syncEstado === 'ok' ? 'Activa y al día. Tu progreso viaja entre el móvil y el ordenador.'
+                      : syncEstado === 'syncing' ? 'Guardando cambios…'
+                      : syncEstado === 'error' ? 'Activa, pero ahora mismo sin conexión. Se reintenta al volver a la app.'
+                      : 'Apagada. Tu progreso vive solo en este navegador.'}
+                  </p>
+                </div>
+                <div className="ajuste-ops">
+                  <button className={`chip-btn sync-btn ${syncEstado}`} onClick={() => { setAjustes(false); setSyncModal(true) }}>
+                    {sync ? 'Configurar' : 'Activar'}
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
       {planModal && plan && (
         <div className="overlay" onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label="Plan de sesión">
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>

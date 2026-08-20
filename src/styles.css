@@ -855,6 +855,20 @@ h3{
   max-height:60px; overflow:auto;
 }
 
+/* ── Ajustes: cada opción con la línea que explica qué hace. En la barra
+      vivían como chips con `title`, que en táctil no existe. ── */
+.ajuste{
+  display:flex; flex-direction:column; gap: var(--e-3);
+  padding: var(--e-4) 0; border-top:1px solid var(--line);
+}
+.ajuste-cab{display:flex; flex-direction:column; gap: var(--e-1)}
+.ajuste-titulo{
+  margin:0; font-size: var(--t-m); font-weight:700; letter-spacing:0;
+  text-transform:none; color:var(--ink);
+}
+.ajuste-pista{margin:0; font-size: var(--t-s); color:var(--ink2); line-height:1.45; text-wrap:pretty}
+.ajuste-ops{display:flex; flex-wrap:wrap; gap: var(--e-3)}
+
 /* ── Valoración personal y modo compacto ── */
 .mi-nota{color:var(--gold-texto); font-weight:600}
 .valoracion{display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-2)}
