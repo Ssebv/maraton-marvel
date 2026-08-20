@@ -242,6 +242,17 @@ const ACENTOS = [
   { id: '828', nombre: '4 Fantásticos' },
 ]
 
+// Nueve pestañas eran nueve destinos planos, pero seis de ellas son formas
+// de mirar el mismo catálogo. Arriba quedan tres; el resto pasa a ser un
+// selector dentro de cada uno. Los ids de vista y el hash no cambian: los
+// enlaces antiguos siguen abriendo lo que abrían.
+const DESTINOS = [
+  { id: 'maraton', label: 'Maratón', vistas: ['crono', 'estreno', 'comics', 'animacion', 'galeria', 'tiempo'] },
+  { id: 'mio', label: 'Mío', vistas: ['listas', 'stats'] },
+  { id: 'multiverso', label: 'Multiverso', vistas: ['multiverso'] },
+]
+const destinoDe = v => (DESTINOS.find(d => d.vistas.includes(v)) || DESTINOS[0]).id
+
 const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
 
 function iniciales(t) {
@@ -260,15 +271,15 @@ function fmtDur(d) {
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
 const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo']
 const PESTANAS = [
-  { id: 'crono', label: 'Cronológico', corto: 'Crono' },
-  { id: 'estreno', label: 'Por estreno', corto: 'Estreno' },
-  { id: 'comics', label: 'Cómics', corto: 'Cómics' },
-  { id: 'animacion', label: 'Animación', corto: 'Anim.' },
-  { id: 'listas', label: 'Listas', corto: 'Listas' },
-  { id: 'galeria', label: 'Galería', corto: 'Galería' },
-  { id: 'multiverso', label: 'Multiverso', corto: 'Multi' },
-  { id: 'tiempo', label: 'Línea temporal', corto: 'Tiempo' },
-  { id: 'stats', label: 'Estadísticas', corto: 'Stats' },
+  { id: 'crono', label: 'Cronológico' },
+  { id: 'estreno', label: 'Por estreno' },
+  { id: 'comics', label: 'Cómics' },
+  { id: 'animacion', label: 'Animación' },
+  { id: 'listas', label: 'Listas' },
+  { id: 'galeria', label: 'Galería' },
+  { id: 'multiverso', label: 'Multiverso' },
+  { id: 'tiempo', label: 'Línea temporal' },
+  { id: 'stats', label: 'Estadísticas' },
 ]
 // Dúos y casos que el split por " y "/" & " rompería
 const DUOS = {
@@ -1744,6 +1755,10 @@ export default function App() {
     const h = window.location.hash.replace('#', '')
     return VISTAS_VALIDAS.includes(h) ? h : 'crono'
   })
+  const [ultimaVista, setUltimaVista] = useState({})
+  useEffect(() => {
+    setUltimaVista(u => (u[destinoDe(vista)] === vista ? u : { ...u, [destinoDe(vista)]: vista }))
+  }, [vista])
   useEffect(() => {
     if (perfil) return
     history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
@@ -2364,21 +2379,22 @@ export default function App() {
 
       <header className="toolbar">
         <div className="controles" role="group" aria-label="Vista y filtros">
-          <nav className="tabs" aria-label="Vistas del maratón">
-            {PESTANAS.map(p => (
-              <a className="tab" key={p.id} href={'#' + p.id} aria-label={p.label}
-                aria-current={vista === p.id ? 'page' : undefined}
-                onClick={e => {
-                  // con modificador o botón central, que el navegador haga lo suyo
-                  // (abrir en otra pestaña): para eso son enlaces de verdad
-                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                  e.preventDefault()
-                  setVista(p.id)
-                }}>
-                <span className="tab-txt">{p.label}</span>
-                <span className="tab-corto" aria-hidden="true">{p.corto}</span>
-              </a>
-            ))}
+          <nav className="tabs" aria-label="Secciones">
+            {DESTINOS.map(d => {
+              // volver a un destino te devuelve donde lo dejaste
+              const destino = ultimaVista[d.id] || d.vistas[0]
+              return (
+                <a className="tab" key={d.id} href={'#' + destino}
+                  aria-current={destinoDe(vista) === d.id ? 'page' : undefined}
+                  onClick={e => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    setVista(destino)
+                  }}>
+                  {d.label}
+                </a>
+              )
+            })}
           </nav>
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
@@ -2422,6 +2438,27 @@ export default function App() {
           )}
         </div>
       </header>
+
+      {(() => {
+        const d = DESTINOS.find(x => x.id === destinoDe(vista))
+        if (!d || d.vistas.length < 2) return null
+        return (
+          <nav className="subvistas" aria-label={`Cómo ver ${d.label}`}>
+            {d.vistas.map(v => {
+              const p = PESTANAS.find(x => x.id === v)
+              return (
+                <a className="subvista" key={v} href={'#' + v}
+                  aria-current={vista === v ? 'page' : undefined}
+                  onClick={e => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    setVista(v)
+                  }}>{p ? p.label : v}</a>
+              )
+            })}
+          </nav>
+        )
+      })()}
 
       {resumenFiltros && (
         <p className="filtros-resumen" role="status">

@@ -441,10 +441,9 @@ h1 .rojo{color:var(--red)}
 .tabs{display:flex; background:var(--panel2);
   border:1px solid color-mix(in srgb, var(--line) 60%, transparent);
   border-radius:var(--r-pill); padding: var(--e-2); gap: var(--e-1)}
-.tab-corto{display:none}
 .tab{
   border:none; background:none; color:var(--ink2); cursor:pointer;
-  border-radius:var(--r-pill); padding: var(--e-2) var(--e-5); font-size: var(--t-m); font-weight:600;
+  border-radius:var(--r-pill); padding: var(--e-3) var(--e-6); font-size: var(--t-m); font-weight:600;
   transition:background var(--dur-media), box-shadow var(--dur-media);
 }
 a.tab{text-decoration:none}
@@ -461,6 +460,32 @@ a.tab{text-decoration:none}
 .atajos{margin-left: auto; display:flex; gap: var(--e-5); font-size: var(--t-m); font-weight:600}
 .atajos a{color:var(--ink2); text-decoration:none; padding: var(--e-3) var(--e-1); display:inline-block}
 .atajos a:hover{color:var(--ink)}
+
+/* Cómo mirar el destino actual. Es un cambio de vista dentro de la misma
+   sección, no un cambio de sitio: enlaces de texto, sin caja ni pastilla. */
+.subvistas{
+  display:flex; gap: var(--e-6); flex-wrap:wrap; align-items:center;
+  margin: var(--e-4) 0 0; padding-bottom: var(--e-1);
+}
+.subvista{
+  font-size: var(--t-m); font-weight:600; color:var(--ink3); text-decoration:none;
+  padding: var(--e-2) 0; border-bottom:2px solid transparent; position:relative;
+}
+.subvista::after{content:""; position:absolute; inset:-11px 0}
+.subvista:hover{color:var(--ink2)}
+.subvista[aria-current="page"]{color:var(--ink); border-bottom-color:var(--red)}
+@media (max-width:720px){
+  /* en móvil se desliza, pero con seis entradas cortas y sin caja el
+     recorrido es mucho menor que el de los chips */
+  .subvistas{
+    flex-wrap:nowrap; overflow-x:auto; overscroll-behavior-x:contain;
+    scrollbar-width:none; gap: var(--e-5);
+    margin-inline:calc(-1 * var(--e-6)); padding-inline:var(--e-6);
+    scroll-padding-inline:var(--e-6);
+  }
+  .subvistas::-webkit-scrollbar{display:none}
+  .subvista{flex:none}
+}
 
 /* Qué han hecho los filtros. Sin esto, con tres puestos no hay ninguna
    frase que diga cuántos títulos quedan ni por qué falta una saga. */
@@ -1382,15 +1407,11 @@ main{animation:entraVista .28s var(--curva) both}
     box-shadow:0 14px 34px -12px rgba(0,0,0,.5);
   }
   .tab{
-    /* 1 1 auto y no 1: cada celda parte de su rótulo, así el aire entre
-       ellos es parejo en vez de amontonarse en los nombres cortos. */
+    /* con tres destinos cada celda pasa de 37 a ~125 px y el rótulo vuelve
+       a caber entero: se acabaron "Anim." y "Multi" */
     flex:1 1 auto; min-width:0; display:flex; align-items:center; justify-content:center;
-    padding: var(--e-4) var(--e-1); border-radius:var(--r-s); background:transparent;
-  }
-  .tab-txt{display:none}
-  .tab-corto{
-    display:block; font-size: var(--t-xs); font-weight:700; letter-spacing:-.01em;
-    white-space:nowrap;
+    padding: var(--e-4) var(--e-2); border-radius:var(--r-m); background:transparent;
+    font-size: var(--t-m);
   }
   .tab{position:relative}
   .tab::after{content:""; position:absolute; inset:-3px 0}
