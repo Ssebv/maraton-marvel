@@ -1,9 +1,9 @@
 :root{
   --doom:#2E7D32; --doom-soft:#2E7D3216;
   --bg:#F3EDDE; --panel:#FCF8EC; --panel2:#EAE2CC; --panel3:#FFFDF4;
-  --ink:#191521; --ink2:#5C5648; --ink3:#8D866F; --line:#D8CFB4;
+  --ink:#191521; --ink2:#5C5648; --ink3:#6A6554; --line:#D8CFB4;
   --red:#C8102E; --red-soft:#C8102E14;
-  --gold:#A8720A; --gold-soft:#A8720A16;
+  --gold:#A8720A; --gold-soft:#A8720A16; --gold-texto:#885C08;
   --blue:#2B5DA8; --blue-soft:#2B5DA814;
   --violet:#6D4FA3; --violet-soft:#6D4FA314;
   --teal:#20735F; --teal-soft:#20735F14;
@@ -28,9 +28,9 @@
   :root:not([data-theme="light"]){
     --doom:#5FD068; --doom-soft:#5FD06818;
     --bg:#0A0C14; --panel:#131725; --panel2:#1C2133; --panel3:#171B2B;
-    --ink:#F2EFE6; --ink2:#A39F92; --ink3:#6B6878; --line:#262B3E;
+    --ink:#F2EFE6; --ink2:#A39F92; --ink3:#898793; --line:#262B3E;
     --red:#F0455C; --red-soft:#F0455C1E;
-    --gold:#E8A93C; --gold-soft:#E8A93C1C;
+    --gold:#E8A93C; --gold-soft:#E8A93C1C; --gold-texto:#E8A93C;
     --blue:#7BA6E4; --blue-soft:#7BA6E41C;
     --violet:#A98BE0; --violet-soft:#A98BE01C;
     --teal:#56C2A7; --teal-soft:#56C2A71C;
@@ -43,9 +43,9 @@
 :root[data-theme="dark"]{
   --doom:#5FD068; --doom-soft:#5FD06818;
   --bg:#0A0C14; --panel:#131725; --panel2:#1C2133; --panel3:#171B2B;
-  --ink:#F2EFE6; --ink2:#A39F92; --ink3:#6B6878; --line:#262B3E;
+  --ink:#F2EFE6; --ink2:#A39F92; --ink3:#898793; --line:#262B3E;
   --red:#F0455C; --red-soft:#F0455C1E;
-  --gold:#E8A93C; --gold-soft:#E8A93C1C;
+  --gold:#E8A93C; --gold-soft:#E8A93C1C; --gold-texto:#E8A93C;
   --blue:#7BA6E4; --blue-soft:#7BA6E41C;
   --violet:#A98BE0; --violet-soft:#A98BE01C;
   --teal:#56C2A7; --teal-soft:#56C2A71C;
@@ -207,7 +207,7 @@ h1 .rojo{color:var(--red)}
   position:relative;
   transition:transform var(--dur-corta), background var(--dur-media);
 }
-.dot::after{content:""; position:absolute; inset:-6px}
+.dot::after{content:""; position:absolute; inset:-2px}
 .dot:hover{transform:scale(1.4); border-color:var(--ink2)}
 .dot.on{background:var(--dc); border-color:var(--dc)}
 .mapa-count{flex:none; font-size: var(--t-xs); color:var(--ink2); font-variant-numeric:tabular-nums}
@@ -626,7 +626,7 @@ h3{
   padding: var(--e-2) var(--e-3); border-radius:var(--r-s); text-transform:uppercase; white-space:nowrap;
 }
 .tipo.serie{background:var(--blue-soft); color:var(--blue)}
-.tipo.esp{background:var(--gold-soft); color:var(--gold)}
+.tipo.esp{background:var(--gold-soft); color:var(--gold-texto)}
 .tipo.opc{background:var(--panel2); color:var(--ink2)}
 .tipo.uni{background:var(--violet-soft); color:var(--violet)}
 .tipo.plat{background:var(--teal-soft); color:var(--teal)}
@@ -665,6 +665,8 @@ h3{
   cursor:pointer; font-size: var(--t-b); display:grid; place-items:center;
   transition:none;
 }
+/* 34 px visibles, 44 táctiles: el mínimo de la HIG sin engordar el aspa */
+.cerrar::after{content:""; position:absolute; inset:-5px; border-radius:50%}
 .cerrar:hover{color:var(--ink); border-color:var(--ink2)}
 .modal-cover{flex:none; align-self:flex-start}
 .modal-cover .cover{width:230px; height:345px; border-radius:var(--r-l)}
@@ -673,12 +675,12 @@ h3{
 .modal-chips{display:flex; flex-wrap:wrap; gap: var(--e-3)}
 .modal-titulo{font-family:"Archivo",sans-serif; font-weight:700; font-size: var(--t-xl); margin: 0; text-transform:none; letter-spacing:-.01em}
 .modal-meta{margin: 0; font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
-.modal-meta .star{color:var(--gold); font-weight:700}
+.modal-meta .star{color:var(--gold-texto); font-weight:700}
 .modal-meta .hist{color:var(--blue); font-weight:600}
 .modal-res{margin: 0; font-size: var(--t-b); line-height:1.55}
 .modal-pc{
   margin: var(--e-1) 0 0; font-size: var(--t-s); font-weight:600;
-  color:var(--gold); background:var(--gold-soft);
+  color:var(--gold-texto); background:var(--gold-soft);
   border:1px solid color-mix(in srgb, var(--gold) 35%, transparent);
   border-radius:var(--r-m); padding: var(--e-3) var(--e-4); align-self:flex-start;
 }
@@ -828,12 +830,14 @@ h3{
 }
 
 /* ── Valoración personal y modo compacto ── */
-.mi-nota{color:var(--gold); font-weight:600}
+.mi-nota{color:var(--gold-texto); font-weight:600}
 .valoracion{display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-2)}
 .valoracion-label{font-size: var(--t-xs); font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
 .estrellas{display:flex; gap: var(--e-1)}
 .estrella{
-  background:none; border:none; cursor:pointer; padding: var(--e-1);
+  background:none; border:none; cursor:pointer; padding:0;
+  /* la estrella se ve de 19 px pero ocupa los 44 que exige el dedo */
+  width:44px; height:44px; display:grid; place-items:center;
   font-size: var(--t-l); line-height:1; color:var(--line);
   transition:transform var(--dur-corta);
 }
@@ -1368,6 +1372,8 @@ main{animation:entraVista .28s var(--curva) both}
   border:1px solid var(--line); background:transparent; color:var(--ink2);
   font-size: var(--t-m); cursor:pointer;
 }
+.ep-sin-btn{position:relative}
+.ep-sin-btn::after{content:""; position:absolute; inset:-8px; border-radius:50%}
 .ep-sin-btn.on, .ep-sin-btn:hover{color:var(--ink); border-color:var(--ink2)}
 .ep-sinopsis{
   flex-basis:100%; margin: var(--e-3) 0 var(--e-1); font-size: var(--t-s); line-height:1.5; color:var(--ink2);
@@ -1494,11 +1500,11 @@ main{animation:entraVista .28s var(--curva) both}
 }
 .diario-fecha{font-size: var(--t-xs); font-weight:600; color:var(--ink3); text-transform:uppercase; letter-spacing:.04em}
 .diario-titulo{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.diario-estrellas{color:var(--gold); font-size: var(--t-s); letter-spacing:.1em}
+.diario-estrellas{color:var(--gold-texto); font-size: var(--t-s); letter-spacing:.1em}
 .diario-mas{margin: var(--e-3) 0 0; font-size: var(--t-xs); color:var(--ink3)}
 .nav-ficha{
   position:fixed; top:50%; transform:translateY(-50%); z-index:60;
-  width:36px; height:56px; border-radius:var(--r-m); border:1px solid var(--line);
+  width:44px; height:56px; border-radius:var(--r-m); border:1px solid var(--line);
   background:color-mix(in srgb, var(--panel) 85%, transparent);
   color:var(--ink2); font-size: var(--t-xl); line-height:1; cursor:pointer;
 }
@@ -1511,7 +1517,7 @@ main{animation:entraVista .28s var(--curva) both}
   .nav-ficha.der{right:8px}
 }
 @media (max-width:720px){
-  .nav-ficha{top:auto; bottom:14px; transform:none; height:40px}
+  .nav-ficha{top:auto; bottom:14px; transform:none; width:44px; height:44px}
   .nav-ficha.izq{left:14px}
   .nav-ficha.der{right:14px}
 }
