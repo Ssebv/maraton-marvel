@@ -514,7 +514,7 @@ h3{
   transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-larga);
   animation:riseIn .5s var(--curva) both;
   position:relative;
-  content-visibility:auto; contain-intrinsic-size:auto 200px;
+  content-visibility:auto; contain-intrinsic-size:auto 230px;
 }
 .card:hover{
   transform:translate(-2px, -3px);
@@ -531,7 +531,7 @@ h3{
 
 .cover-wrap{flex:none; position:relative; align-self:center}
 .cover{
-  display:block; width:112px; height:168px; border-radius:var(--r-m);
+  display:block; width:132px; height:198px; border-radius:var(--r-m);
   box-shadow:0 4px 14px rgba(0,0,0,.35);
   transition:transform var(--dur-larga) var(--curva), filter var(--dur-larga);
 }
