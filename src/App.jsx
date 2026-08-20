@@ -895,7 +895,7 @@ function ComentariosClub({ club, item, vista }) {
         </p>
       ))}
       <div className="club-coment-envio">
-        <input className="busca" placeholder="Comenta para el club (sin spoilers gordos 😉)…"
+        <input className="busca" placeholder="Comenta para el club (sin spoilers gordos 😉)…" autoComplete="off"
           value={txt} maxLength={280} onChange={e => setTxt(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') envia() }} />
         <button className="chip-btn" onClick={envia}>Enviar</button>
@@ -1160,7 +1160,7 @@ function CrearLista({ onCrear }) {
   const enviar = () => { const n = nombre.trim(); if (n) { onCrear(n); setNombre('') } }
   return (
     <div className="crear-lista">
-      <input className="busca sync-input" placeholder="Nombre de la lista (p. ej. Maratón con mi pareja)"
+      <input className="busca sync-input" placeholder="Nombre de la lista (p. ej. Maratón con mi pareja)" autoComplete="off"
         value={nombre} maxLength={40} onChange={e => setNombre(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') enviar() }} aria-label="Nombre de la lista" />
       <button className="accion-principal" onClick={enviar} disabled={!nombre.trim()}>Crear lista</button>
@@ -1177,7 +1177,7 @@ function AgregarALista({ indice, idOrden, enLista, onAgregar }) {
       .slice(0, 6)
   return (
     <div className="agregar-lista">
-      <input className="busca sync-input" placeholder="Buscar título para añadir a la lista…" value={q}
+      <input className="busca sync-input" placeholder="Buscar título para añadir a la lista…" autoComplete="off" value={q}
         onChange={e => setQ(e.target.value)} aria-label="Añadir título a la lista"
         spellCheck={false} autoComplete="off" />
       {resultados.length > 0 && (
@@ -1458,7 +1458,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                   aria-label={`${p} estrellas`} onClick={() => ponNota('p', p)}>{nota.p >= p ? '★' : '☆'}</button>
               ))}
             </span>
-            <input className="busca nota-input" placeholder="Tus notas (solo tuyas)…"
+            <input className="busca nota-input" placeholder="Tus notas (solo tuyas)…" autoComplete="off"
               value={nota.txt || ''} maxLength={280} spellCheck={true}
               onChange={e => ponNota('txt', e.target.value)} aria-label="Tus notas" />
           </div>
@@ -2295,6 +2295,7 @@ export default function App() {
 
   return (
     <div className="wrap">
+      <a className="saltar" href="#contenido">Saltar al contenido</a>
       {fondo === 'banner' && proxEstreno?.img && (
         <div className="fondo-hero fh-banner" aria-hidden="true">
           <img src={proxEstreno.img} alt=""
@@ -2475,6 +2476,8 @@ export default function App() {
           </nav>
         )
       })()}
+
+      <span id="contenido" tabIndex={-1} />
 
       {resumenFiltros && (
         <p className="filtros-resumen" role="status">
@@ -3028,7 +3031,7 @@ export default function App() {
                 para una foto fija, o su <b>código de sincronización</b> (botón «Sincronizar») para un duelo
                 <b> en vivo</b> que se actualiza solo. Todo queda en este navegador.
               </p>
-              <input className="busca duelo-input" placeholder="Enlace de perfil o código de sincronización"
+              <input className="busca duelo-input" placeholder="Enlace de perfil o código de sincronización" autoComplete="off" spellCheck={false}
                 value={dueloInput} onChange={e => { setDueloInput(e.target.value); setDueloError('') }} />
               <input className="busca duelo-input" placeholder="Nombre de tu rival (opcional)"
                 value={dueloNombre} onChange={e => setDueloNombre(e.target.value)} maxLength={24} />
@@ -3108,7 +3111,7 @@ export default function App() {
                 Genera una página de <b>solo lectura</b> con tu progreso, logros y valoraciones.
                 Todo va dentro del propio enlace: quien lo reciba no puede tocar tu maratón (tus notas de texto no se incluyen).
               </p>
-              <input className="busca sync-input" placeholder="Tu nombre para el perfil" value={perfilNombre}
+              <input className="busca sync-input" placeholder="Tu nombre para el perfil" autoComplete="off" value={perfilNombre}
                 maxLength={30} onChange={e => setPerfilNombre(e.target.value)} aria-label="Tu nombre" />
               <div className="modal-acciones">
                 <button className="accion-principal" onClick={() => {

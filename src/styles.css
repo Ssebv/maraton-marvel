@@ -59,7 +59,21 @@
 
 *{box-sizing:border-box}
 :root{color-scheme:light dark}
-html{scroll-behavior:smooth}
+html{
+  scroll-behavior:smooth;
+  /* La barra es pegajosa: sin esto, al tabular o saltar a un ancla el
+     elemento enfocado queda debajo de ella y no se ve. */
+  scroll-padding-top:88px;
+}
+/* Saltar la barra: son 14 controles antes del contenido. Fuera de la
+   pantalla hasta que el tabulador llega a él. */
+.saltar{
+  position:absolute; left: var(--e-3); top:-100px; z-index:100;
+  background:var(--panel); color:var(--ink); text-decoration:none;
+  border:1px solid var(--line); border-radius:var(--r-pill);
+  padding: var(--e-3) var(--e-5); font-size: var(--t-m); font-weight:600;
+}
+.saltar:focus{top: var(--e-3)}
 body{
   background:var(--bg); color:var(--ink);
   font:15px/1.55 "Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
