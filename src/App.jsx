@@ -1455,7 +1455,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             <span className="estrellas" role="radiogroup" aria-label="Tu valoración">
               {[1, 2, 3, 4, 5].map(p => (
                 <button key={p} className={`estrella${nota.p >= p ? ' on' : ''}`}
-                  aria-label={`${p} estrellas`} onClick={() => ponNota('p', p)}>★</button>
+                  aria-label={`${p} estrellas`} onClick={() => ponNota('p', p)}>{nota.p >= p ? '★' : '☆'}</button>
               ))}
             </span>
             <input className="busca nota-input" placeholder="Tus notas (solo tuyas)…"
