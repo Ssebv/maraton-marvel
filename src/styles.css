@@ -152,10 +152,13 @@ h1{
 }
 h1 .rojo{color:var(--red)}
 .stats{display:grid; grid-template-columns:repeat(3,1fr); gap: var(--e-4); margin-top: var(--e-7)}
+/* Seis cajas iguales en la primera pantalla y ninguna manda. Pierden borde
+   y sombra; el fondo se queda porque van sobre el fotograma del hero y el
+   texto necesita superficie para leerse. El único foco es la cuenta atrás. */
 .stat{
-  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
+  background:var(--panel); border:none; border-radius:var(--r-m);
   padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-2);
-  box-shadow:var(--card-shadow);
+  box-shadow:none;
 }
 .stat-label{
   font-size: var(--t-xs); font-weight:600; letter-spacing:.02em;
@@ -193,9 +196,9 @@ h1 .rojo{color:var(--red)}
 }
 .mapa{
   width:100%;
-  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
+  background:var(--panel); border:none; border-radius:var(--r-m);
   padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-4);
-  box-shadow:var(--card-shadow);
+  box-shadow:none;
 }
 .mapa-fila{display:flex; align-items:center; gap: var(--e-4)}
 .mapa-label{
@@ -241,9 +244,9 @@ h1 .rojo{color:var(--red)}
 .cr-sep{font-size: var(--t-xl); font-weight:700; color:var(--ink3); align-self:flex-start; padding-top: var(--e-1)}
 .proximos{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap: var(--e-4)}
 .proximo{
-  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
+  background:var(--panel); border:none; border-radius:var(--r-m);
   padding: var(--e-4) var(--e-5); display:flex; flex-direction:column; gap: var(--e-1);
-  box-shadow:var(--card-shadow);
+  box-shadow:none;
 }
 .proximo-fecha{
   font-size: var(--t-xs); font-weight:700; letter-spacing:.02em;
@@ -341,7 +344,8 @@ h1 .rojo{color:var(--red)}
   animation:entraVista var(--dur-media) var(--curva) both;
 }
 .volver-ficha{
-  align-self:flex-start; background:none; border:1px solid var(--line);
+  align-self:flex-start; display:inline-flex; align-items:center; gap: var(--e-1);
+  background:none; border:1px solid var(--line);
   border-radius:var(--r-pill); padding: var(--e-2) var(--e-5); cursor:pointer;
   font:inherit; font-size: var(--t-s); font-weight:600; color:var(--ink2);
 }
@@ -854,8 +858,8 @@ h3{
 .stats-vista{display:flex; flex-direction:column; gap: var(--e-6); margin-top: var(--e-6)}
 .stats-tiles{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap: var(--e-4)}
 .grafica{
-  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
-  padding: var(--e-6) var(--e-6); box-shadow:var(--card-shadow);
+  background:var(--panel); border:none; border-radius:var(--r-m);
+  padding: var(--e-6) var(--e-6);
 }
 .grafica-titulo{margin: 0 0 var(--e-1); font-size: var(--t-b); font-weight:700; letter-spacing:normal; text-transform:none; color:var(--ink)}
 .grafica-sub{margin: 0 0 var(--e-5); font-size: var(--t-s); color:var(--ink2)}
@@ -1097,7 +1101,7 @@ main.multiverso{margin-top: var(--e-6)}
 .mv-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(310px, 1fr)); gap: var(--e-4)}
 .mv-card{
   background:linear-gradient(180deg, var(--panel3), var(--panel));
-  border:1.5px solid var(--line); border-radius:var(--r-m); padding: var(--e-5) var(--e-6);
+  border:none; border-radius:var(--r-m); padding: var(--e-5) var(--e-6);
   display:flex; flex-direction:column; gap: var(--e-3);
   animation:riseIn .45s var(--curva) both;
 }
@@ -1187,7 +1191,7 @@ main.listas-vista{margin-top: var(--e-6)}
 .crear-lista .sync-input{flex:1; min-width:240px}
 .lista-hero{
   margin: var(--e-5) 0 var(--e-5); padding: var(--e-6) var(--e-6); border-radius:var(--r-l);
-  border:1.5px solid var(--line); background:var(--panel);
+  border:none; background:var(--panel);
   display:flex; flex-direction:column; gap: var(--e-3);
 }
 .lista-nombre{margin: 0; font-size: var(--t-xl); font-weight:700; text-transform:none; letter-spacing:-.01em}
@@ -1223,7 +1227,7 @@ main.tiempo{margin-top: var(--e-6)}
 .tl-lado.der{align-items:flex-start}
 .tl-card{
   display:flex; align-items:center; gap: var(--e-4); text-align:left;
-  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
+  background:var(--panel); border:none; border-radius:var(--r-m);
   padding: var(--e-3) var(--e-4); max-width:340px; cursor:pointer; color:inherit;
   transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-media);
 }
@@ -1456,8 +1460,8 @@ main{animation:entraVista .28s var(--curva) both}
 /* ── Duelo de maratones ── */
 .duelo{
   margin-top: var(--e-6); padding: var(--e-5) var(--e-6);
-  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
-  display:flex; flex-direction:column; gap: var(--e-4); box-shadow:var(--card-shadow);
+  background:var(--panel); border:none; border-radius:var(--r-m);
+  display:flex; flex-direction:column; gap: var(--e-4);
 }
 .duelo-cab{display:flex; align-items:center; justify-content:space-between; gap: var(--e-4)}
 .duelo-cab h2{margin: 0}
@@ -1488,7 +1492,7 @@ main{animation:entraVista .28s var(--curva) both}
   width:26px; height:26px; border-radius:var(--r-s); object-fit:cover;
   display:block; flex:none;
 }
-.trailer-caja{position:relative; width:100%; aspect-ratio:16/9; border-radius:var(--r-m); overflow:hidden; border:1.5px solid var(--line); background:#000}
+.trailer-caja{position:relative; width:100%; aspect-ratio:16/9; border-radius:var(--r-m); overflow:hidden; background:#000}
 .trailer-caja iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
 .ep{position:relative; flex-wrap:wrap}
 .ep-toggle{
@@ -1518,7 +1522,7 @@ main{animation:entraVista .28s var(--curva) both}
   background:
     radial-gradient(70% 60% at 50% 30%, color-mix(in srgb, var(--violet) 7%, transparent), transparent 70%),
     var(--panel);
-  border:1.5px solid var(--line); border-radius:var(--r-m); overflow:hidden;
+  border:none; border-radius:var(--r-m); overflow:hidden;
 }
 .mapa-mv svg{position:absolute; inset:0; width:100%; height:100%}
 .arista{fill:none; stroke:color-mix(in srgb, var(--ink) 24%, transparent); stroke-width:1.5; transition:stroke var(--dur-media), opacity var(--dur-media)}
@@ -1542,8 +1546,8 @@ main{animation:entraVista .28s var(--curva) both}
 .nodo.off{opacity:.45}
 .mapa-leyenda{
   max-width:920px; margin: 0 auto; width:100%;
-  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-m);
-  padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-3); box-shadow:var(--card-shadow);
+  background:var(--panel); border:none; border-radius:var(--r-m);
+  padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-3);
 }
 .mapa-leyenda-cab{display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap}
 .mapa-leyenda-cab b{flex:1; font-size: var(--t-b)}

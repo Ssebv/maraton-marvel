@@ -403,6 +403,12 @@ const IcoFuera = () => (
     <path d="M14 5h5v5M19 5l-8 8" /><path d="M18 14v4a1.8 1.8 0 0 1-1.8 1.8H6A1.8 1.8 0 0 1 4.2 18V7.8A1.8 1.8 0 0 1 6 6h4" />
   </svg>
 )
+const IcoAtras = () => (
+  <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M14 6l-6 6 6 6" />
+  </svg>
+)
 const IcoEnlace = () => (
   <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -462,7 +468,7 @@ function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, ite
 
   return (
     <div className="persona-ficha">
-      <button className="volver-ficha" onClick={onVolver}>‹ Volver a la ficha</button>
+      <button className="volver-ficha" onClick={onVolver}><IcoAtras />Volver a la ficha</button>
       <div className="pf-cabecera">
         <Avatar nombre={nombre} grande />
         <div className="pf-titulos">
@@ -1172,7 +1178,7 @@ function AgregarALista({ indice, idOrden, enLista, onAgregar }) {
           {resultados.map(({ item }) => (
             <button key={item.id} className="chip-btn" aria-pressed={enLista.includes(item.id)}
               onClick={() => onAgregar(item.id)}>
-              {enLista.includes(item.id) ? '✓ ' : '＋ '}{item.t}
+              {item.t}
             </button>
           ))}
         </div>
@@ -1490,7 +1496,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                 {listas.map(l => (
                   <button key={l.id} className="chip-btn" aria-pressed={l.items.includes(item.id)}
                     onClick={() => toggleEnLista(l.id, item.id)}>
-                    {l.items.includes(item.id) ? '✓ ' : '＋ '}{l.nombre}
+                    {l.nombre}
                   </button>
                 ))}
               </span>
@@ -2325,7 +2331,7 @@ export default function App() {
                 }
               }, vista !== 'crono' ? 120 : 0)
             }}>
-              <span className="stat-label">▶ Siguiente</span>
+              <span className="stat-label">Siguiente</span>
               <span className="stat-sig">{stats.siguiente.t}</span>
               <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>
             </button>
@@ -2662,7 +2668,7 @@ export default function App() {
                 <div className="tabs mv-modos">
                   <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>Sistema</button>
                   <button className="tab" aria-pressed={mvModo === 'mapa'} onClick={() => setMvModo('mapa')}>Mapa</button>
-                  <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>▤ Tarjetas</button>
+                  <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>Tarjetas</button>
                 </div>
               </div>
               {mvModo === 'mapa' && <MapaMultiverso onAbrir={d => setDetalle(d)} />}
