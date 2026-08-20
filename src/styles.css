@@ -713,6 +713,10 @@ h3{
   margin-inline:calc(-1 * var(--pad, 0px)); padding-inline:var(--pad, 0px);
   padding-bottom: var(--e-2);
   scrollbar-width:none;
+  /* que se note que sigue: en móvil lo dice el borde de la pantalla, pero
+     en escritorio el carril se cortaba en seco contra el borde del modal */
+  -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 56px), transparent);
+  mask-image:linear-gradient(90deg, #000 calc(100% - 56px), transparent);
 }
 .carril-personas::-webkit-scrollbar{display:none}
 .persona{
@@ -729,7 +733,7 @@ h3{
 .avatar-ini{
   display:grid; place-items:center; font-size: var(--t-l); font-weight:700; color:var(--ink2);
 }
-.persona-nombre{font-size: var(--t-s); font-weight:600; line-height:1.25}
+.persona-nombre{font-size: var(--t-s); font-weight:600; line-height:1.25; min-height:2lh}
 .persona-rol{font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
 .modal-acciones{display:flex; gap: var(--e-3); flex-wrap:wrap; margin-top: var(--e-3); align-items:center}
 .accion-principal{
