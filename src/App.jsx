@@ -95,6 +95,22 @@ const saneaListas = x => {
     prog: saneaMarcas(l.prog) || {},
   }))
 }
+// La vista que estás mirando —búsqueda y filtros— vive en la URL: así se puede
+// compartir «los pendientes de X-Men que son joyas» y, de paso, sobrevive a una
+// recarga, que antes se la llevaba por delante.
+const FILTROS_URL = ['series', 'opc', 'vistas', 'joyas', 'express']
+const sinFiltros = () => Object.fromEntries(FILTROS_URL.map(k => [k, false]))
+const leeVistaUrl = () => {
+  try {
+    const p = new URLSearchParams(window.location.search)
+    const puestos = (p.get('f') || '').split(',')
+    return {
+      busca: (p.get('q') || '').slice(0, 80),
+      filtros: Object.fromEntries(FILTROS_URL.map(k => [k, puestos.includes(k)])),
+    }
+  } catch { return { busca: '', filtros: sinFiltros() } }
+}
+
 // Lee una clave del navegador ya saneada; si estaba corrupta, la limpia sola.
 const leeGuardado = (clave, sanea, porDefecto) => {
   try {
@@ -1827,7 +1843,7 @@ export default function App() {
     const cod = btoa(unescape(encodeURIComponent(JSON.stringify(j)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
     return `${window.location.origin}${window.location.pathname}?perfil=${cod}`
   }
-  const [filtros, setFiltros] = useState({ series: false, opc: false, vistas: false, joyas: false, express: false })
+  const [filtros, setFiltros] = useState(() => leeVistaUrl().filtros)
   const [vista, setVista] = useState(() => {
     const h = window.location.hash.replace('#', '')
     return VISTAS_VALIDAS.includes(h) ? h : 'crono'
@@ -1857,15 +1873,6 @@ export default function App() {
     const nid = ORDEN_IDS[i + dir]
     return nid ? buscaItem(nid) : d
   })
-  // La URL refleja dónde estás: la vista en el hash y la ficha abierta en ?t=.
-  // Antes esto borraba el ?t= nada más montar, así que un enlace directo abría
-  // la ficha pero se perdía al recargar y no se podía copiar de la barra.
-  useEffect(() => {
-    if (perfil) return
-    const q = detalle ? '?t=' + encodeURIComponent(detalle.item.id) : ''
-    const h = vista === 'crono' ? '' : '#' + vista
-    history.replaceState(null, '', window.location.pathname + q + h)
-  }, [vista, detalle, perfil])
   const [tierra, setTierra] = useState(null)
   const [mvModo, setMvModo] = useState('sistema')
   const [planModal, setPlanModal] = useState(false)
@@ -1897,7 +1904,24 @@ export default function App() {
     if (prog[itemId]) delete prog[itemId]; else prog[itemId] = Date.now()
     return { ...l, prog }
   }))
-  const [busca, setBusca] = useState('')
+  const [busca, setBusca] = useState(() => leeVistaUrl().busca)
+  // La URL refleja dónde estás: la vista en el hash, la ficha abierta en ?t= y
+  // lo que estás mirando en ?q= y ?f=. Antes esto borraba los parámetros nada
+  // más montar, así que un enlace directo abría la ficha pero se perdía al
+  // recargar y no se podía copiar de la barra.
+  useEffect(() => {
+    if (perfil) return
+    const p = new URLSearchParams()
+    if (detalle) p.set('t', detalle.item.id)
+    if (busca.trim()) p.set('q', busca.trim())
+    const activos = FILTROS_URL.filter(k => filtros[k])
+    if (activos.length) p.set('f', activos.join(','))
+    // la coma es legal en un valor de consulta y URLSearchParams la escapa igual:
+    // esta URL está para mirarla y compartirla, así que se deja legible
+    const cad = p.toString().replace(/%2C/g, ',')
+    const h = vista === 'crono' ? '' : '#' + vista
+    history.replaceState(null, '', window.location.pathname + (cad ? '?' + cad : '') + h)
+  }, [vista, detalle, busca, filtros, perfil])
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
   const [panelAbierto, setPanelAbierto] = useState(() => {
     try {
