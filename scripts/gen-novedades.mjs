@@ -31,5 +31,19 @@ for (const [id, eps] of Object.entries(EPISODES)) {
   }
 }
 eventos.sort((a, b) => a.f.localeCompare(b.f))
-writeFileSync(join(raiz, 'public/novedades.json'), JSON.stringify({ gen: hoy, eventos }))
-console.log(`novedades.json: ${eventos.length} eventos (generado ${hoy})`)
+
+// Solo se reescribe si CAMBIAN los eventos. Antes la fecha `gen` se refrescaba
+// en cada compilación y ensuciaba el diff todos los meses aunque no hubiera
+// nada nuevo, y eso obliga a decidir «¿esto es un cambio de verdad?» a quien
+// compile —incluida la rutina mensual, que compila sola. Nadie lee `gen`: el
+// service worker solo mira `eventos`.
+const ruta = join(raiz, 'public/novedades.json')
+let antes = null
+try { antes = JSON.parse(readFileSync(ruta, 'utf8')) } catch {}
+const iguales = antes && JSON.stringify(antes.eventos) === JSON.stringify(eventos)
+if (iguales) {
+  console.log(`novedades.json: ${eventos.length} eventos, sin cambios (se deja el gen de ${antes.gen})`)
+} else {
+  writeFileSync(ruta, JSON.stringify({ gen: hoy, eventos }))
+  console.log(`novedades.json: ${eventos.length} eventos (actualizado ${hoy})`)
+}
