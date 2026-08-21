@@ -3591,7 +3591,14 @@ function Footer({ onReset }) {
   const descargaCopia = () => {
     try {
       const datos = {}
-      for (const k of [KEY, KEY_EPS, KEY_NOTAS, KEY_LISTAS, 'maraton-marvel-sync-v1', 'maraton-marvel-amigo-v1', 'maraton-marvel-club-v1']) {
+      const claves = [KEY, KEY_EPS, KEY_NOTAS, KEY_LISTAS, 'maraton-marvel-sync-v1', 'maraton-marvel-amigo-v1', 'maraton-marvel-club-v1']
+      // y lo que se haya apartado por venir roto o por un rescate: es justo lo
+      // que no se puede perder. La caché de TMDB no entra, que son megas y se
+      // vuelve a bajar sola.
+      for (const k of Object.keys(localStorage)) {
+        if (/^maraton-marvel.*(-roto|-rescate-v1)$/.test(k) && !claves.includes(k)) claves.push(k)
+      }
+      for (const k of claves) {
         const v = localStorage.getItem(k)
         if (v) datos[k] = v
       }
