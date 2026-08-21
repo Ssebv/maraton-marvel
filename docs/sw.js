@@ -1,10 +1,17 @@
 // Service worker de Maratón Marvel:
 // - navegación: red primero (para no servir versiones viejas), caché como respaldo sin conexión
 // - pósters, fotos, fondos y fuentes: caché primero (no cambian)
-const CACHE = 'maraton-marvel-v1'
+// La versión va en el nombre: al subirla, el activate borra las cachés viejas.
+// Sin esto una carátula sustituida se quedaba con la vieja para siempre en quien
+// ya la tuviera guardada.
+const CACHE = 'maraton-marvel-v2'
 
 self.addEventListener('install', e => self.skipWaiting())
-self.addEventListener('activate', e => e.waitUntil(clients.claim()))
+self.addEventListener('activate', e => e.waitUntil((async () => {
+  const nombres = await caches.keys()
+  await Promise.all(nombres.filter(n => n !== CACHE).map(n => caches.delete(n)))
+  await clients.claim()
+})()))
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url)
@@ -13,7 +20,9 @@ self.addEventListener('fetch', e => {
       fetch(e.request)
         .then(r => {
           const copia = r.clone()
-          caches.open(CACHE).then(c => c.put('shell', copia))
+          // waitUntil: sin él el navegador puede matar el evento antes de que
+          // termine de guardar, y el respaldo sin conexión se queda a medias
+          e.waitUntil(caches.open(CACHE).then(c => c.put('shell', copia)))
           return r
         })
         .catch(() => caches.match('shell'))
@@ -29,7 +38,7 @@ self.addEventListener('fetch', e => {
       caches.match(e.request).then(hit => hit || fetch(e.request).then(r => {
         if (r.ok) {
           const copia = r.clone()
-          caches.open(CACHE).then(c => c.put(e.request, copia))
+          e.waitUntil(caches.open(CACHE).then(c => c.put(e.request, copia)))
         }
         return r
       }))

@@ -1,8 +1,11 @@
 :root{
-  --doom:#2E7D32; --doom-soft:#2E7D3216;
+  --doom:#2A7230; --doom-soft:#2A723016;
   --bg:#F3EDDE; --panel:#FCF8EC; --panel2:#EAE2CC; --panel3:#FFFDF4;
   --ink:#191521; --ink2:#5C5648; --ink3:#6A6554; --line:#D8CFB4;
   --red:#C8102E; --red-soft:#C8102E14;
+  /* Sobre estos dos va texto BLANCO, así que no siguen al tema: el --red del
+     oscuro (#F0455C) con blanco encima se queda en 3,68. Aquí, 5,88 y 4,69. */
+  --sello:#C8102E; --calido:#B45C15;
   --gold:#A8720A; --gold-soft:#A8720A16; --gold-texto:#885C08;
   --blue:#2B5DA8; --blue-soft:#2B5DA814;
   --violet:#6D4FA3; --violet-soft:#6D4FA314;
@@ -16,6 +19,7 @@
   --e-1:2px; --e-2:4px; --e-3:8px; --e-4:12px;
   --e-5:16px; --e-6:24px; --e-7:32px; --e-8:48px; --e-9:64px;
   --fondo-op:.45; --velo-a:62%; --velo-b:84%; --material:#F6F1E3;
+  --era-tinta:50%;  /* color del titular de era; ver .era-head h3 */
   /* Movimiento: una curva y tres duraciones para toda la app */
   --curva:cubic-bezier(.22, 1, .36, 1);
   --curva-rebote:cubic-bezier(.34, 1.56, .64, 1);  /* confirmación: pasa de largo y vuelve */
@@ -38,6 +42,7 @@
     --teal:#56C2A7; --teal-soft:#56C2A71C;
     --done:#4FB57A;
     --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
+    --era-tinta:60%;  /* color del titular de era; ver .era-head h3 */
   --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
     --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
   }
@@ -53,6 +58,7 @@
   --teal:#56C2A7; --teal-soft:#56C2A71C;
   --done:#4FB57A;
   --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
+  --era-tinta:60%;  /* color del titular de era; ver .era-head h3 */
   --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
   --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
 }
@@ -155,7 +161,7 @@ button{font:inherit}
   margin: 0 0 var(--e-4); display:inline-block;
   font-size: var(--t-xs); font-weight:700; letter-spacing:.14em;
   text-transform:uppercase; color:#fff;
-  background:var(--red); padding: var(--e-2) var(--e-4);
+  background:var(--sello); padding: var(--e-2) var(--e-4);
   transform:skew(-8deg); border-radius:var(--r-s);
 }
 h1{
@@ -224,7 +230,7 @@ h1 .rojo{color:var(--red)}
   width:12px; height:12px; border-radius:var(--r-s); padding: 0; cursor:pointer;
   border:1px solid var(--line); background:var(--panel2);
   position:relative;
-  transition:transform var(--dur-corta), background var(--dur-media);
+  transition:transform var(--dur-corta);
 }
 .dot::after{content:""; position:absolute; inset:-2px}
 .dot:hover{transform:scale(1.4); border-color:var(--ink2)}
@@ -319,6 +325,8 @@ h1 .rojo{color:var(--red)}
   background:none; border:1px solid var(--line); border-radius:var(--r-pill);
   color:var(--ink3); font-size: var(--t-s); font-weight:600; cursor:pointer;
 }
+.panel-plegar{position:relative}
+.panel-plegar::after{content:""; position:absolute; inset:-10px 0}
 .panel-plegar:hover{border-color:var(--ink2); color:var(--ink2)}
 
 /* ── Cabecera de la ficha: el fotograma del propio título ── */
@@ -465,15 +473,22 @@ h1 .rojo{color:var(--red)}
 .tab{
   border:none; background:none; color:var(--ink2); cursor:pointer;
   border-radius:var(--r-pill); padding: var(--e-3) var(--e-6); font-size: var(--t-m); font-weight:600;
-  transition:background var(--dur-media), box-shadow var(--dur-media);
+  transition:box-shadow var(--dur-media);
 }
+/* 36 px dentro de una píldora con gap de 2: se crece solo a lo alto */
+.tab{position:relative}
+.tab::after{content:""; position:absolute; inset:-4px 0}
 a.tab{text-decoration:none}
 .tab[aria-pressed="true"], .tab[aria-current="page"]{background:var(--panel); color:var(--ink); box-shadow:var(--card-shadow)}
 .chip-btn{
   border:1px solid var(--line); background:transparent; color:var(--ink2);
   border-radius:var(--r-pill); padding: var(--e-2) var(--e-4); font-size: var(--t-m); font-weight:500; cursor:pointer;
-  transition:background var(--dur-corta), transform var(--dur-corta);
+  transition:transform var(--dur-corta);
 }
+/* 38 px de alto: el ::after lo sube a los 44 del criterio sin tocar el aspecto.
+   El carril tiene gap de 8, así que 3 px por lado no solapa con el vecino. */
+.chip-btn{position:relative}
+.chip-btn::after{content:""; position:absolute; inset:-3px 0}
 .chip-btn:hover{border-color:var(--ink2); color:var(--ink)}
 .chip-btn:active{transform:scale(.96)}
 .chip-btn[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
@@ -492,7 +507,7 @@ a.tab{text-decoration:none}
   font-size: var(--t-m); font-weight:600; color:var(--ink3); text-decoration:none;
   padding: var(--e-2) 0; border-bottom:2px solid transparent; position:relative;
 }
-.subvista::after{content:""; position:absolute; inset:-11px 0}
+.subvista::after{content:""; position:absolute; inset:-11px -4px}
 .subvista:hover{color:var(--ink2)}
 .subvista[aria-current="page"]{color:var(--ink); border-bottom-color:var(--red)}
 @media (max-width:720px){
@@ -548,7 +563,7 @@ h2{
 .era-head{display:flex; align-items:center; gap: var(--e-4); margin-bottom: var(--e-4)}
 .era-head h3{
   background:color-mix(in srgb, var(--era, var(--ink2)) 16%, transparent);
-  color:color-mix(in srgb, var(--era, var(--ink2)) 70%, var(--ink));
+  color:color-mix(in srgb, var(--era, var(--ink2)) var(--era-tinta), var(--ink));
   padding: var(--e-2) var(--e-4); border-radius:var(--r-s);
 }
 h3{
@@ -621,7 +636,10 @@ h3{
   width:30px; height:30px; border-radius:50%;
   border:2px solid var(--line); background:transparent; cursor:pointer;
   display:grid; place-items:center; position:relative; padding: 0;
-  /* nunca 'all': arrastraría border-color, que se congela al cambiar de tema */
+  /* nunca 'all': arrastraría border-color, que se congela al cambiar de tema.
+     El bug alcanza también a `background`, así que ninguna otra transición del
+     proyecto lo lleva; esta es la excepción y es segura porque el fondo va de
+     transparente a --done, y un verde del tema anterior sigue leyéndose. */
   transition:background var(--dur-media) var(--curva-rebote),
              transform var(--dur-media) var(--curva-rebote),
              box-shadow var(--dur-media) var(--curva-rebote);
@@ -713,8 +731,12 @@ h3{
   background:none; cursor:pointer; font-family:inherit;
   font-size: var(--t-s); font-weight:600; color:var(--ink2); text-decoration:none;
   border:1px solid var(--line); border-radius:var(--r-pill); padding: var(--e-2) var(--e-4);
-  white-space:nowrap; transition:background var(--dur-corta);
+  white-space:nowrap;
 }
+/* los cuatro de la ficha (Tráiler, IMDb, Letterboxd, Enlace) medían 29 px, que
+   es la mitad del objetivo y justo en la pantalla donde de verdad se toca */
+.ghost{position:relative}
+.ghost::after{content:""; position:absolute; inset:-8px 0}
 .ghost:hover{color:var(--ink); border-color:var(--ink2); background:var(--panel2)}
 
 /* ── Ficha de detalle ── */
@@ -813,7 +835,7 @@ h3{
 .accion-principal{
   border:none; border-radius:var(--r-pill); padding: var(--e-4) var(--e-6); cursor:pointer;
   font-size: var(--t-b); font-weight:700; color:#fff;
-  background:linear-gradient(120deg, var(--red), #C8681E);
+  background:linear-gradient(120deg, var(--sello), var(--calido));
   transition:transform var(--dur-corta), filter var(--dur-corta);
   position:relative; overflow:hidden;
 }
@@ -874,6 +896,11 @@ h3{
 .busca:focus{border-color:var(--blue); outline:none}
 .busca:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
 .busca::placeholder{color:var(--ink3)}
+/* un input no admite el truco del ::after, así que en táctil crece de verdad;
+   en escritorio se queda como está para no descuadrar la barra */
+@media (hover: none), (pointer: coarse){
+  .busca{min-height:44px}
+}
 .importar{display:flex; gap: var(--e-3); align-items:center}
 .import-error{font-size: var(--t-s); color:var(--red)}
 /* en el pie, los avisos ocupan la fila entera */
@@ -1646,7 +1673,7 @@ main{animation:entraVista .28s var(--curva) both}
 .bienvenida-acciones{display:flex; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-3)}
 .bienvenida-nota{margin: var(--e-2) 0 0; font-size: var(--t-s); color:var(--ink3)}
 .stats-vacio{margin: var(--e-5) 0 0; font-size: var(--t-b)}
-.ep-img.real, .modal-prov, .trailer-caja{animation:fadeIn .45s ease both}
+.ep-img.real, .trailer-caja{animation:fadeIn .45s ease both}
 /* ── Mejoras: rendimiento de scroll, restaurar copia, pista del buscador ── */
 .galeria-item{content-visibility:auto; contain-intrinsic-size:auto 220px}
 .chip-btn.restaurar{position:relative; overflow:hidden; display:inline-flex; align-items:center}

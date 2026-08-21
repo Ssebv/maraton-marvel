@@ -26,12 +26,23 @@ const FONDOS = [
   { id: 'no', nombre: 'Sin fondo' },
 ]
 
+// El código de sincronización lo escribe cualquiera y trae la URL a la que la
+// app hará PUT de todo el progreso. Comprobar que el texto CONTENGA "firebaseio"
+// no vale: se lo cuelan como ruta (atacante.com/firebaseio.com), como parámetro,
+// como fragmento o como subdominio falso (firebaseio.com.atacante.com). Aquí se
+// mira el host de verdad, y solo por https.
+const DOMINIOS_DB = ['.firebaseio.com', '.firebasedatabase.app']
 function normalizaDbUrl(txt) {
-  let u = txt.trim().replace(/\/+$/, '')
+  let u = (txt || '').trim().replace(/\/+$/, '')
   if (!u) return null
   if (!/^https?:\/\//.test(u)) u = 'https://' + u
-  if (!/firebaseio\.com|firebasedatabase\.app/.test(u)) return null
-  return u
+  try {
+    const url = new URL(u)
+    if (url.protocol !== 'https:') return null
+    if (!DOMINIOS_DB.some(d => url.hostname.endsWith(d))) return null
+    // solo el origen: una ruta en el código sobra y es por donde se colaba
+    return url.origin
+  } catch { return null }
 }
 const codigoSync = (url, room) => btoa(unescape(encodeURIComponent(url + '|' + room)))
 const decodificaSync = cod => {
@@ -42,6 +53,58 @@ const decodificaSync = cod => {
   return null
 }
 const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+// \u2500\u2500 Saneado de todo lo que entra de fuera \u2500\u2500
+// Un try/catch protege de lo ilegible, no de un dato con la forma equivocada:
+// una lista que sea objeto revienta en `listas.map`, y un texto que sea objeto
+// revienta React entero. Lo peor es que estas cuatro estructuras se PERSISTEN,
+// as\u00ed que un dato malo que entre una vez deja la app rota en cada arranque
+// hasta borrar los datos del sitio. Por eso se sanean en los dos extremos: al
+// recibirlas de la red y al leerlas del navegador.
+const esObj = x => !!x && typeof x === 'object' && !Array.isArray(x)
+// { clave: cu\u00e1ndo se marc\u00f3 } \u2014 vistas y episodios
+const saneaMarcas = x => {
+  if (!esObj(x)) return null
+  const out = {}
+  for (const [k, v] of Object.entries(x)) {
+    if (typeof v === 'number' && isFinite(v)) out[k] = v
+    else if (v === 1 || v === true) out[k] = 1
+  }
+  return out
+}
+// { id: { p: 1-5, txt: "\u2026" } }
+const saneaNotas = x => {
+  if (!esObj(x)) return null
+  const out = {}
+  for (const [k, n] of Object.entries(x)) {
+    if (!esObj(n)) continue
+    const limpia = {}
+    if (typeof n.p === 'number' && n.p >= 1 && n.p <= 5) limpia.p = Math.round(n.p)
+    if (typeof n.txt === 'string') limpia.txt = n.txt.slice(0, 4000)
+    if (Object.keys(limpia).length) out[k] = limpia
+  }
+  return out
+}
+// [ { id, nombre, items: [ids], prog: { id: 1 } } ]
+const saneaListas = x => {
+  if (!Array.isArray(x)) return null
+  return x.filter(esObj).map(l => ({
+    id: typeof l.id === 'string' ? l.id : Math.random().toString(36).slice(2, 9),
+    nombre: typeof l.nombre === 'string' ? l.nombre.slice(0, 80) : 'Lista',
+    items: Array.isArray(l.items) ? l.items.filter(i => typeof i === 'string') : [],
+    prog: saneaMarcas(l.prog) || {},
+  }))
+}
+// Lee una clave del navegador ya saneada; si estaba corrupta, la limpia sola.
+const leeGuardado = (clave, sanea, porDefecto) => {
+  try {
+    const crudo = localStorage.getItem(clave)
+    if (crudo == null) return porDefecto
+    const limpio = sanea(JSON.parse(crudo))
+    if (limpio == null) { localStorage.removeItem(clave); return porDefecto }
+    return limpio
+  } catch { return porDefecto }
+}
 
 const ORDEN_IDS = (() => {
   const a = []
@@ -146,11 +209,18 @@ async function tmdbJson(ruta) {
   if (!r.ok) throw new Error('tmdb ' + r.status)
   return r.json()
 }
+// Subir la versión de la caché deja atrás ~106 entradas por usuario; se barren
+// una vez para no dejarle megas muertos en el navegador.
+try {
+  for (const k of Object.keys(localStorage)) {
+    if (/^maraton-marvel-tmdb-v[0-7]:/.test(k)) localStorage.removeItem(k)
+  }
+} catch {}
 async function cargaTmdb(itemId) {
   if (tmdbMem[itemId]) return tmdbMem[itemId]
   const m = TMDB[itemId]
   if (!m) return null
-  const claveLS = 'maraton-marvel-tmdb-v7:' + itemId
+  const claveLS = 'maraton-marvel-tmdb-v8:' + itemId
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
@@ -867,8 +937,18 @@ function ComentariosClub({ club, item, vista }) {
   const [txt, setTxt] = useState('')
   const [desvelado, setDesvelado] = useState(false)
   const ruta = `${club.url}/club/${club.sala}/c/${item.id}.json`
+  // Los comentarios los escribe cualquiera de la sala en una base compartida.
+  // Pintar {c.n} sin mirar el tipo tumbaba la app entera —y a todos los de la
+  // sala a la vez— con un solo comentario mal formado.
+  const saneaComentarios = j => {
+    if (!esObj(j)) return []
+    return Object.values(j)
+      .filter(c => esObj(c) && typeof c.n === 'string' && typeof c.t === 'string')
+      .map(c => ({ n: c.n.slice(0, 40), t: c.t.slice(0, 280), f: typeof c.f === 'number' && isFinite(c.f) ? c.f : 0 }))
+      .sort((a, b) => a.f - b.f)
+  }
   const carga = () => fetch(ruta).then(r => r.json())
-    .then(j => setLista(j ? Object.values(j).sort((a, b) => a.f - b.f) : [])).catch(() => setLista([]))
+    .then(j => setLista(saneaComentarios(j))).catch(() => setLista([]))
   useEffect(() => { setDesvelado(false); setTxt(''); setLista(null); carga() }, [item.id])
   const envia = async () => {
     const t = txt.trim()
@@ -891,7 +971,7 @@ function ComentariosClub({ club, item, vista }) {
       ) : lista.map((c, i) => (
         <p className="club-coment" key={i}>
           <b>{c.n}</b> {c.t}
-          <span className="club-coment-f">{new Date(c.f).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+          {c.f > 0 && <span className="club-coment-f">{new Date(c.f).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>}
         </p>
       ))}
       <div className="club-coment-envio">
@@ -923,8 +1003,9 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
     return () => { vivo = false; clearInterval(iv); window.removeEventListener('focus', carga) }
   }, [amigo, esLive])
   const datos = useMemo(() => {
-    const vA = esLive ? ((remoto && remoto.v) || {}) : deBits(amigo.v, ORDEN_IDS)
-    const eA = esLive ? ((remoto && remoto.e) || {}) : deBits(amigo.e, ORDEN_EPS)
+    // en vivo el rival llega de una base compartida: mismo saneado que el resto
+    const vA = esLive ? (saneaMarcas(remoto && remoto.v) || {}) : deBits(amigo.v, ORDEN_IDS)
+    const eA = esLive ? (saneaMarcas(remoto && remoto.e) || {}) : deBits(amigo.e, ORDEN_EPS)
     const yo = resumenMaraton(vistas, eps)
     const el = resumenMaraton(vA, eA)
     const comunes = ORDEN_IDS.filter(id => vistas[id] && vA[id]).length
@@ -1286,49 +1367,22 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
   const [enlaceCopiado, setEnlaceCopiado] = useState(false)
   const [persona, setPersona] = useState(null)
   const refOverlay = useRef(null)
-  const focoPrevio = useRef(null)
   useEffect(() => { setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null) }, [item.id])
+  // Escape, atrapa-foco, bloqueo del scroll y devolución del foco: lo mismo que
+  // hacen los otros diálogos, así que se usa el mismo hook en vez de una segunda
+  // copia con su propia lista de selectores que mantener a mano.
+  // Con una persona abierta, Escape vuelve a la ficha en vez de cerrarlo todo.
+  useDialogo(refOverlay, () => { persona ? setPersona(null) : onClose() })
   useEffect(() => {
     const onKey = e => {
-      // con una persona abierta, Escape vuelve a la ficha en vez de cerrarlo todo
-      if (e.key === 'Escape') { persona ? setPersona(null) : onClose(); return }
-      // y las flechas no deben saltar de título mientras se lee su biografía
+      // las flechas no deben saltar de título mientras se lee una biografía
       if (persona || !onNav || /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) return
       if (e.key === 'ArrowLeft') onNav(-1)
       if (e.key === 'ArrowRight') onNav(1)
     }
-    const onTab = e => {
-      if (e.key !== 'Tab' || !refOverlay.current) return
-      const foco = [...refOverlay.current.querySelectorAll(
-        'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])')]
-        .filter(el => el.offsetParent !== null)
-      if (!foco.length) return
-      const primero = foco[0], ultimo = foco[foco.length - 1]
-      if (e.shiftKey && (document.activeElement === primero || document.activeElement === refOverlay.current)) {
-        e.preventDefault(); ultimo.focus()
-      } else if (!e.shiftKey && document.activeElement === ultimo) {
-        e.preventDefault(); primero.focus()
-      }
-    }
-    window.addEventListener('keydown', onTab)
     window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      window.removeEventListener('keydown', onTab)
-    }
-  }, [onClose, onNav, persona])
-
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    // el foco entra en la ficha y vuelve al abrirla donde estaba
-    focoPrevio.current = document.activeElement
-    const t = setTimeout(() => refOverlay.current && refOverlay.current.focus(), 0)
-    return () => {
-      clearTimeout(t)
-      document.body.style.overflow = ''
-      try { focoPrevio.current && focoPrevio.current.focus() } catch {}
-    }
-  }, [])
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onNav, persona])
   const dirLimpio = item.dir ? limpiaNombre(item.dir) : ''
   const directores = DUOS[dirLimpio]
     || dirLimpio.split(/, | y | & /).map(s => s.trim()).filter(s => s && s !== 'otros')
@@ -1521,7 +1575,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                                 ? <p className="ep-sinopsis">{sinopsis}</p>
                                 : <p className="ep-sinopsis velada" role="button" tabIndex={0}
                                     onClick={() => setDesveladas(v => ({ ...v, [clave]: true }))}
-                                    onKeyDown={ev => { if (ev.key === 'Enter') setDesveladas(v => ({ ...v, [clave]: true })) }}>
+                                    onKeyDown={ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setDesveladas(v => ({ ...v, [clave]: true })) } }}>
                                     <span className="ep-sin-aviso">Aún no lo has visto: pulsa para desvelar la sinopsis</span>
                                     <span className="ep-sin-borroso" aria-hidden="true">{sinopsis}</span>
                                   </p>
@@ -1734,9 +1788,7 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
 }
 
 export default function App() {
-  const [vistas, setVistas] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(KEY)) || {} } catch { return {} }
-  })
+  const [vistas, setVistas] = useState(() => leeGuardado(KEY, saneaMarcas, {}))
   const [perfilModal, setPerfilModal] = useState(false)
   const [perfilNombre, setPerfilNombre] = useState('')
   const [perfilUrl, setPerfilUrl] = useState('')
@@ -1777,10 +1829,6 @@ export default function App() {
   }, [vista])
   useEffect(() => {
     if (perfil) return
-    history.replaceState(null, '', vista === 'crono' ? window.location.pathname : '#' + vista)
-  }, [vista, perfil])
-  useEffect(() => {
-    if (perfil) return
     const onHash = () => {
       const h = window.location.hash.replace('#', '')
       setVista(VISTAS_VALIDAS.includes(h) ? h : 'crono')
@@ -1800,15 +1848,22 @@ export default function App() {
     const nid = ORDEN_IDS[i + dir]
     return nid ? buscaItem(nid) : d
   })
+  // La URL refleja dónde estás: la vista en el hash y la ficha abierta en ?t=.
+  // Antes esto borraba el ?t= nada más montar, así que un enlace directo abría
+  // la ficha pero se perdía al recargar y no se podía copiar de la barra.
+  useEffect(() => {
+    if (perfil) return
+    const q = detalle ? '?t=' + encodeURIComponent(detalle.item.id) : ''
+    const h = vista === 'crono' ? '' : '#' + vista
+    history.replaceState(null, '', window.location.pathname + q + h)
+  }, [vista, detalle, perfil])
   const [tierra, setTierra] = useState(null)
   const [mvModo, setMvModo] = useState('sistema')
   const [planModal, setPlanModal] = useState(false)
   const [planHoras, setPlanHoras] = useState(2)
   const [planExpress, setPlanExpress] = useState(true)
   const [orden, setOrden] = useState('crono')
-  const [listas, setListas] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(KEY_LISTAS)) || [] } catch { return [] }
-  })
+  const [listas, setListas] = useState(() => leeGuardado(KEY_LISTAS, saneaListas, []))
   const [listaActiva, setListaActiva] = useState(null)
   const [cine, setCine] = useState(false)
   const refCine = useRef(null)
@@ -1855,9 +1910,7 @@ export default function App() {
     try { localStorage.setItem(KEY_PANEL, n ? '1' : '0') } catch {}
     return n
   })
-  const [notas, setNotas] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(KEY_NOTAS)) || {} } catch { return {} }
-  })
+  const [notas, setNotas] = useState(() => leeGuardado(KEY_NOTAS, saneaNotas, {}))
   const ponNota = (id, campo, valor) => setNotas(prev => {
     const item = { ...(prev[id] || {}) }
     if (valor === undefined || valor === '' || (campo === 'p' && item.p === valor)) delete item[campo]
@@ -1870,9 +1923,7 @@ export default function App() {
   const alternaCompacto = () => setCompacto(c => {
     localStorage.setItem(KEY_COMPACTO, c ? '0' : '1'); return !c
   })
-  const [eps, setEps] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(KEY_EPS)) || {} } catch { return {} }
-  })
+  const [eps, setEps] = useState(() => leeGuardado(KEY_EPS, saneaMarcas, {}))
   const [sync, setSync] = useState(() => {
     try { return JSON.parse(localStorage.getItem(KEY_SYNC)) } catch { return null }
   })
@@ -1947,12 +1998,26 @@ export default function App() {
       const r = await fetch(endpoint(conf))
       if (!r.ok) throw new Error(r.status)
       const datos = await r.json()
-      if (datos && datos.t && datos.t > ultimoAplicado.current) {
+      if (esObj(datos) && typeof datos.t === 'number' && datos.t > ultimoAplicado.current) {
+        // El remoto puede llegar con la forma equivocada (escritura a medias,
+        // base manipulada, código de sincronización de un desconocido). Se sanea
+        // ANTES de tocar el estado: lo que no encaja se descarta como si no
+        // hubiera venido, en vez de guardarse y romper la app en cada arranque.
+        // Y un campo CORRUPTO tampoco es un campo vacío: si venía con entradas y
+        // no sobrevivió ninguna, se descarta entero en vez de borrar lo local.
+        const aplicable = (crudo, limpio) => {
+          if (limpio == null) return null
+          const cuenta = x => Array.isArray(x) ? x.length : (esObj(x) ? Object.keys(x).length : 0)
+          return cuenta(crudo) > 0 && cuenta(limpio) === 0 ? null : limpio
+        }
+        const v = aplicable(datos.v, saneaMarcas(datos.v))
+        const e = aplicable(datos.e, saneaMarcas(datos.e))
+        const n = aplicable(datos.n, saneaNotas(datos.n))
+        const l = aplicable(datos.l, saneaListas(datos.l))
         // Un campo AUSENTE no es lo mismo que uno vacío: si el remoto llega
-        // incompleto (escritura a medias, base manipulada) no debe borrar lo local.
+        // incompleto no debe borrar lo local.
         const tengo = Object.keys(vistas).length
-        const traen = datos.v && typeof datos.v === 'object' ? Object.keys(datos.v).length : null
-        if (tengo > 0 && traen === 0) {
+        if (tengo > 0 && v && Object.keys(v).length === 0) {
           // red de seguridad: el remoto vacía el progreso; se guarda el anterior
           try {
             localStorage.setItem(KEY_RESCATE, JSON.stringify({ t: Date.now(), v: vistas, e: eps, n: notas, l: listas }))
@@ -1960,10 +2025,10 @@ export default function App() {
         }
         ultimoAplicado.current = datos.t
         aplicandoRemoto.current = true
-        if (datos.v) { setVistas(datos.v); try { localStorage.setItem(KEY, JSON.stringify(datos.v)) } catch {} }
-        if (datos.e) { setEps(datos.e); try { localStorage.setItem(KEY_EPS, JSON.stringify(datos.e)) } catch {} }
-        if (datos.n) { setNotas(datos.n); try { localStorage.setItem(KEY_NOTAS, JSON.stringify(datos.n)) } catch {} }
-        if (datos.l) { setListas(datos.l); try { localStorage.setItem(KEY_LISTAS, JSON.stringify(datos.l)) } catch {} }
+        if (v) { setVistas(v); try { localStorage.setItem(KEY, JSON.stringify(v)) } catch {} }
+        if (e) { setEps(e); try { localStorage.setItem(KEY_EPS, JSON.stringify(e)) } catch {} }
+        if (n) { setNotas(n); try { localStorage.setItem(KEY_NOTAS, JSON.stringify(n)) } catch {} }
+        if (l) { setListas(l); try { localStorage.setItem(KEY_LISTAS, JSON.stringify(l)) } catch {} }
       }
       setSyncEstado('ok')
     } catch { setSyncEstado('error') }
@@ -1994,10 +2059,12 @@ export default function App() {
       try {
         const r = await fetch(endpoint(conf))
         const datos = r.ok ? await r.json() : null
-        const v = { ...(datos && datos.v || {}), ...vistas }
-        const e = { ...(datos && datos.e || {}), ...eps }
-        const n = { ...(datos && datos.n || {}), ...notas }
-        const lRemoto = (datos && datos.l) || []
+        // lo remoto se sanea igual que en tirar(): al unirse a una sala ajena
+        // es cuando más fácil es tragarse la forma equivocada
+        const v = { ...(esObj(datos) && saneaMarcas(datos.v) || {}), ...vistas }
+        const e = { ...(esObj(datos) && saneaMarcas(datos.e) || {}), ...eps }
+        const n = { ...(esObj(datos) && saneaNotas(datos.n) || {}), ...notas }
+        const lRemoto = (esObj(datos) && saneaListas(datos.l)) || []
         const l = [...lRemoto, ...listas.filter(x => !lRemoto.some(r => r.id === x.id))]
         aplicandoRemoto.current = true
         setVistas(v); setEps(e); setNotas(n); setListas(l)
@@ -2081,8 +2148,11 @@ export default function App() {
         }
       }))
       porSaga[saga.saga] = { v, n, m: extra ? 0 : m }
-      totV += v; totN += n
-      if (!extra) mins += m
+      // El contador de la cabecera cuenta lo mismo que las horas que tiene al
+      // lado: lo que se VE. Los cómics y la bóveda llevan su cuenta en su
+      // propia pestaña; mezclarlos aquí hacía que ver las 91 películas y series
+      // se quedara en un 68 % sin tener nada pendiente que ver.
+      if (!extra) { totV += v; totN += n; mins += m }
     })
     return { totV, totN, mins, siguiente, porSaga }
   }, [vistas, filtros])

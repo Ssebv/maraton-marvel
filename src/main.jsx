@@ -49,6 +49,17 @@ class Salvavidas extends React.Component {
             </button>
             <button className="chip-btn" onClick={() => window.location.reload()}>Recargar la página</button>
             <button className="chip-btn" onClick={() => { window.location.search = ''; }}>Abrir sin parámetros</button>
+            {/* Si lo que rompe es un dato guardado, recargar no arregla nada:
+                vuelve a fallar en cada arranque. Esto tira todo menos lo visto. */}
+            <button className="chip-btn" onClick={() => {
+              try {
+                const salvar = ['maraton-marvel-v1', 'maraton-marvel-eps-v1', 'maraton-marvel-notas-v1']
+                for (const k of Object.keys(localStorage)) {
+                  if (k.startsWith('maraton-marvel') && !salvar.includes(k)) localStorage.removeItem(k)
+                }
+              } catch {}
+              window.location.href = window.location.pathname
+            }}>Borrar ajustes y dejar lo visto</button>
           </div>
           <details className="salvavidas-detalle">
             <summary>Detalle técnico</summary>

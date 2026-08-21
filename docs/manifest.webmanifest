@@ -5,7 +5,6 @@
   "start_url": "/maraton-marvel/",
   "scope": "/maraton-marvel/",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#0A0C14",
   "theme_color": "#0A0C14",
   "lang": "es",
