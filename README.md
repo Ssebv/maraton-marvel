@@ -58,10 +58,21 @@ La hoja de estilos tiene reglas fijas. Se revisaron en agosto de 2026 para que l
 
 ```bash
 npm install
-npm run build   # genera novedades.json y compila con Vite a dist/ (un solo HTML)
+npm test        # comprueba el contrato, el dataset, los archivos y las reglas del CSS
+npm run desplegar   # verifica → compila → copia a docs/ → vuelve a verificar
 ```
 
-**Despliegue**: GitHub Pages sirve la carpeta `docs/` de `main` — tras compilar: `rm -rf docs && cp -R dist docs`, commit y push. El `.nojekyll` es necesario (sin él, Jekyll rompe el build).
+`npm run desplegar` es el flujo entero: si algo no cuadra, para antes de tocar `docs/`. Tras él quedan commit y push, y GitHub Pages sirve `docs/` de `main`. El `.nojekyll` es necesario (sin él, Jekyll rompe el build).
+
+**Qué comprueba `npm test`** (`scripts/verifica.mjs`), que es lo que antes se hacía a mano y por eso a veces no se hacía:
+
+1. **El contrato de los bitsets**, contra `scripts/contrato.lock.json`: el orden de `ORDEN_IDS` y `ORDEN_EPS` tiene que seguir empezando exactamente igual. Mover, quitar o insertar en medio invalida todos los perfiles y clubes ya compartidos, y aquí salta con la posición exacta. Cambiar el **título** de un episodio es seguro; su temporada o su número, no. Cuando añadas algo al final y lo des por bueno: `npm run contrato` actualiza el candado.
+2. **Dataset**: ids únicos, campos obligatorios, notas, años y duraciones en rango.
+3. **Episodios**: secuencias sin huecos ni duplicados, todas empezando en 1, y ninguna sin título.
+4. **Archivos**: cada carátula y cada foto que se referencia existe; avisa de las que sobran y de los títulos sin carátula.
+5. **TMDB**: el mapeo cuadra con `data.js` y avisa de los títulos sin mapear — sin él un título nace sin tráiler, sin reparto y sin plataforma.
+6. **Reglas del CSS**: ni `transition: all`, ni transiciones con `color`, `border-color` o `background` (se congelan al cambiar de tema), ni `border-radius` con valores sueltos.
+7. **Que no se publique una página de sonda**: las de prueba van a `dist/`, y `dist` se copia a `docs`. Ha pasado.
 
 **Mantenimiento automático**: una rutina mensual en la nube (Claude Code) investiga estrenos nuevos, actualiza datos/notas/carátulas/episodios, recompila y publica.
 

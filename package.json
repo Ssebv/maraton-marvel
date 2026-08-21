@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node scripts/gen-novedades.mjs && vite build"
+    "test": "node scripts/verifica.mjs",
+    "build": "node scripts/verifica.mjs && node scripts/gen-novedades.mjs && vite build",
+    "desplegar": "npm run build && rm -rf docs && cp -R dist docs && node scripts/verifica.mjs",
+    "contrato": "node scripts/contrato.mjs"
   },
   "keywords": [],
   "author": "",
