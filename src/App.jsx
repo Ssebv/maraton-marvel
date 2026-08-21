@@ -171,9 +171,20 @@ const parsePerfilCod = entrada => {
     }
   } catch { return null }
 }
+// El duelo y el club comparan «el maratón», que es lo mismo que cuenta la
+// cabecera: las películas y series que se ven. Los cómics y la bóveda llevan su
+// cuenta aparte, y si aquí entraran, la misma persona vería 10/134 en el duelo
+// y 10/91 dos pantallas más allá.
+const ID_MARATON = (() => {
+  const s = new Set()
+  DATA.forEach(sg => { if (sg.saga === 'comics' || sg.saga === 'animacion') return
+    sg.eras.forEach(era => era.items.forEach(it => s.add(it.id))) })
+  return s
+})()
 const resumenMaraton = (vistasSet, epsSet) => {
   let n = 0, min = 0
   DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
+    if (!ID_MARATON.has(it.id)) return
     if (vistasSet[it.id]) { n++; min += it.d || 0 }
     else if (it.tipo === 'serie' && EPISODES[it.id]) {
       const tot = EPISODES[it.id].length
@@ -929,7 +940,7 @@ function Club({ club, vistas, eps, onSalir, onInvitar }) {
     }
     return out.sort((a, b) => b.n - a.n || b.min - a.min)
   }, [miembros, vistas, eps, club])
-  const total = ORDEN_IDS.length
+  const total = ID_MARATON.size
   const media = Math.round(filas.reduce((s, f) => s + f.n, 0) / filas.length)
   const medallas = ['🥇', '🥈', '🥉']
   return (
@@ -1031,11 +1042,11 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
     const eA = esLive ? (saneaMarcas(remoto && remoto.e) || {}) : deBits(amigo.e, ORDEN_EPS)
     const yo = resumenMaraton(vistas, eps)
     const el = resumenMaraton(vA, eA)
-    const comunes = ORDEN_IDS.filter(id => vistas[id] && vA[id]).length
-    const soloEl = ORDEN_IDS.filter(id => !vistas[id] && vA[id])
+    const comunes = ORDEN_IDS.filter(id => ID_MARATON.has(id) && vistas[id] && vA[id]).length
+    const soloEl = ORDEN_IDS.filter(id => ID_MARATON.has(id) && !vistas[id] && vA[id])
     return { yo, el, comunes, soloYo: yo.n - comunes, soloEl }
   }, [amigo, vistas, eps, remoto, esLive])
-  const total = ORDEN_IDS.length
+  const total = ID_MARATON.size
   const dif = datos.yo.n - datos.el.n
   return (
     <section className="duelo">
