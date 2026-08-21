@@ -2193,15 +2193,21 @@ export default function App() {
         fases.push(f)
       })
     })
-    let epVistos = 0, epTot = 0
+    // Los episodios se cuentan por población, como los títulos y los cómics:
+    // mezclar los 941 de la bóveda con los del maratón haría que el contador
+    // de al lado y este hablaran de conjuntos distintos.
+    const deLaBoveda = new Set(DATA.find(sg => sg.saga === 'animacion')
+      .eras.flatMap(era => era.items.map(it => it.id)))
+    let epVistos = 0, epTot = 0, bovedaEpVistos = 0, bovedaEpTot = 0
     Object.entries(EPISODES).forEach(([sid, lista]) => {
-      epTot += lista.length
-      epVistos += lista.filter(e => eps[`${sid}:${e.s}:${e.n}`] || vistas[sid]).length
+      const hechos = lista.filter(e => eps[`${sid}:${e.s}:${e.n}`] || vistas[sid]).length
+      if (deLaBoveda.has(sid)) { bovedaEpTot += lista.length; bovedaEpVistos += hechos }
+      else { epTot += lista.length; epVistos += hechos }
     })
     const comics = DATA.find(sg => sg.saga === 'comics')
     const comicsTot = comics.eras.reduce((a, e) => a + e.items.length, 0)
     const comicsVistos = comics.eras.reduce((a, e) => a + e.items.filter(i => vistas[i.id]).length, 0)
-    return { fases, totMin, vistoMin, titulosVistos, titulosTot, tipos: Object.values(tipos), epVistos, epTot, comicsTot, comicsVistos }
+    return { fases, totMin, vistoMin, titulosVistos, titulosTot, tipos: Object.values(tipos), epVistos, epTot, bovedaEpVistos, bovedaEpTot, comicsTot, comicsVistos }
   }, [vistas, eps])
 
   const indice = useMemo(() => {
@@ -2866,6 +2872,11 @@ export default function App() {
               <span className="stat-label">Cómics leídos</span>
               <span className="stat-num">{estadisticas.comicsVistos}<small> / {estadisticas.comicsTot}</small></span>
               <span className="stat-foot">lecturas esenciales</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Bóveda de animación</span>
+              <span className="stat-num">{estadisticas.bovedaEpVistos}<small> / {estadisticas.bovedaEpTot}</small></span>
+              <span className="stat-foot">episodios de las 17 series</span>
             </div>
           </div>
 

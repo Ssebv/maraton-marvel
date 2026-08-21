@@ -1565,7 +1565,12 @@ main{animation:entraVista .28s var(--curva) both}
 .ep-toggle{
   flex:1; min-width:0; display:flex; align-items:center; gap: var(--e-4); text-align:left;
   background:none; border:none; padding: 0; cursor:pointer; color:inherit; font:inherit;
+  position:relative;
 }
+/* El botón mide lo que la miniatura, 32,6 px, aunque su fila mida 48,6: la zona
+   se estira hasta llenar el relleno de .ep y ni un píxel más, así que nunca
+   cruza el gap de 8 que la separa de la fila siguiente. */
+.ep-toggle::after{content:""; position:absolute; inset:calc(-1 * var(--e-3)) 0}
 .ep-sin-btn{
   flex:none; align-self:center; width:28px; height:28px; border-radius:50%;
   border:1px solid var(--line); background:transparent; color:var(--ink2);
