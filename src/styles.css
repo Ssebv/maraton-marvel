@@ -485,8 +485,11 @@ a.tab{text-decoration:none}
   border-radius:var(--r-pill); padding: var(--e-2) var(--e-4); font-size: var(--t-m); font-weight:500; cursor:pointer;
   transition:transform var(--dur-corta);
 }
-/* 38 px de alto: el ::after lo sube a los 44 del criterio sin tocar el aspecto.
-   El carril tiene gap de 8, así que 3 px por lado no solapa con el vecino. */
+/* El chip mide 30 px de alto. Con el ratón basta el ::after; con el dedo no
+   llega: desde 30 hasta 44 hacen falta 7 px por lado y entre dos filas de
+   chips solo hay 10,9, así que se solaparían. En táctil crece de verdad
+   (38 px) y el ::after remata los 44. Medido con las fuentes cargadas y a
+   zoom 100 %: el zoom de página del navegador infla la medida. */
 .chip-btn{position:relative}
 .chip-btn::after{content:""; position:absolute; inset:-3px 0}
 .chip-btn:hover{border-color:var(--ink2); color:var(--ink)}
@@ -733,10 +736,12 @@ h3{
   border:1px solid var(--line); border-radius:var(--r-pill); padding: var(--e-2) var(--e-4);
   white-space:nowrap;
 }
-/* los cuatro de la ficha (Tráiler, IMDb, Letterboxd, Enlace) medían 29 px, que
-   es la mitad del objetivo y justo en la pantalla donde de verdad se toca */
+/* Los cuatro de la ficha (Tráiler, IMDb, Letterboxd, Enlace) miden 28,6 px, y
+   en móvil se parten en dos filas con 8 px entre ellas: por eso el ::after solo
+   puede crecer 4 px por lado, o las zonas de una fila pisan las de la otra.
+   Los 44 se completan en táctil, creciendo de verdad y separando las filas. */
 .ghost{position:relative}
-.ghost::after{content:""; position:absolute; inset:-8px 0}
+.ghost::after{content:""; position:absolute; inset:-4px 0}
 .ghost:hover{color:var(--ink); border-color:var(--ink2); background:var(--panel2)}
 
 /* ── Ficha de detalle ── */
@@ -896,10 +901,14 @@ h3{
 .busca:focus{border-color:var(--blue); outline:none}
 .busca:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
 .busca::placeholder{color:var(--ink3)}
-/* un input no admite el truco del ::after, así que en táctil crece de verdad;
-   en escritorio se queda como está para no descuadrar la barra */
+/* Con el dedo, los controles crecen de verdad; en escritorio se quedan como
+   están, que con el ratón el ::after ya da de sobra y así no se descuadra la
+   barra. Un <input> nunca admite el truco del ::after. */
 @media (hover: none), (pointer: coarse){
   .busca{min-height:44px}
+  .chip-btn{padding: var(--e-3) var(--e-4)}
+  .ghost{padding: var(--e-3) var(--e-4)}
+  .enlaces{gap: var(--e-4)}
 }
 .importar{display:flex; gap: var(--e-3); align-items:center}
 .import-error{font-size: var(--t-s); color:var(--red)}

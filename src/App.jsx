@@ -101,7 +101,14 @@ const leeGuardado = (clave, sanea, porDefecto) => {
     const crudo = localStorage.getItem(clave)
     if (crudo == null) return porDefecto
     const limpio = sanea(JSON.parse(crudo))
-    if (limpio == null) { localStorage.removeItem(clave); return porDefecto }
+    if (limpio == null) {
+      // Descartarlo a secas era peor que el problema: si lo roto es el
+      // progreso, borrarlo lo pierde para siempre. Se aparta con otro nombre,
+      // que además entra en la copia de seguridad y en la del salvavidas.
+      try { localStorage.setItem(clave + '-roto', crudo) } catch {}
+      localStorage.removeItem(clave)
+      return porDefecto
+    }
     return limpio
   } catch { return porDefecto }
 }
