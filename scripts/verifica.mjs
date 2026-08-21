@@ -56,6 +56,9 @@ for (const [id, lista] of Object.entries(EPISODES)) {
       else if (o[i] !== o[i - 1] + 1) mal(`${id} T${t}: hueco entre ${o[i - 1]} y ${o[i]}`)
     }
   }
+  const temps = Object.keys(porT).map(Number).sort((x, y) => x - y)
+  if (temps[0] !== 1) mal(`${id}: empieza en la temporada ${temps[0]}`)
+  temps.forEach((t, i) => { if (i && t !== temps[i - 1] + 1) mal(`${id}: falta la temporada ${temps[i - 1] + 1}`) })
   for (const e of lista) { if (!e.t) sinT++; if (!e.f) sinF++ }
 }
 if (sinT) mal(`${sinT} episodios sin título`)
@@ -64,6 +67,20 @@ const series = items.filter(i => i.tipo === 'serie')
 const sinEps = series.filter(s => !EPISODES[s.id])
 if (sinEps.length) ojo(`series sin lista de episodios: ${sinEps.map(s => s.id).join(', ')}`)
 bien.push(`${eps.length} episodios: secuencias sin huecos ni duplicados`)
+
+// ── 3 bis · Ids citados desde otros sitios (un dedazo aquí no da error, solo un hueco) ──
+const { MULTIVERSO } = await cargaFuentes()
+for (const u of MULTIVERSO) for (const id of (u.ids || []))
+  if (!vistos.has(id)) mal(`MULTIVERSO «${u.num}» cita «${id}», que no existe en data.js`)
+const app = readFileSync(join(raiz, 'src', 'App.jsx'), 'utf8')
+const lista = (nombre) => {
+  const m = app.match(new RegExp('const ' + nombre + ' = \\[([^\\]]*)\\]'))
+  return m ? [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]) : null
+}
+for (const id of lista('MURO') || []) if (!vistos.has(id)) mal(`MURO (fondo del hero) cita «${id}», que no existe en data.js`)
+const sagas = new Set(DATA.map(s => s.saga))
+for (const sg of lista('FRANJA') || []) if (!sagas.has(sg)) mal(`FRANJA cita la saga «${sg}», que no existe`)
+bien.push('los ids citados desde el multiverso, el muro y las franjas existen')
 
 // ── 4 · Archivos ──
 const pub = join(raiz, 'public')
@@ -101,8 +118,18 @@ for (const t of trans) {
   if (/\ball\b/.test(t)) mal(`transition:all — arrastra border-color y congela el tema: «${t.trim()}»`)
   if (/(^|[\s,])(color|border-color)\b/.test(t)) mal(`transición con color/border-color, se congela al cambiar de tema: «${t.trim()}»`)
 }
-const fondos = trans.filter(t => /\bbackground\b/.test(t))
-if (fondos.length > 2) mal(`${fondos.length} transiciones con background (solo se admiten las de .checkbox y .ep-velo)`)
+// Contar no sirve: alguien puede quitar una permitida y meter otra peligrosa
+// sin que el total cambie. Se mira EN QUÉ SELECTOR está cada una.
+const FONDO_OK = ['.checkbox', '.ep-velo']   // .checkbox va de transparente a --done; .ep-velo usa rgba fijo
+for (const bloque of css.split('}')) {
+  const i = bloque.lastIndexOf('{')
+  if (i < 0) continue
+  const sel = bloque.slice(0, i).split('\n').pop().trim()
+  const decl = bloque.slice(i + 1)
+  const m = decl.match(/transition:\s*([^;]+)/)
+  if (m && /\bbackground\b/.test(m[1]) && !FONDO_OK.some(ok => sel.startsWith(ok)))
+    mal(`«${sel}» transiciona background: se congela al cambiar de tema. Solo se admite en ${FONDO_OK.join(' y ')}`)
+}
 const radios = [...css.matchAll(/border-radius:\s*([^;}]+)/g)].map(m => m[1].trim())
   .filter(v => /\d/.test(v) && !/var\(--r-|50%|0(\s|$)|100%/.test(v))
 if (radios.length) mal(`border-radius con valores sueltos: ${radios.slice(0, 4).join(' · ')}`)
