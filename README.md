@@ -7,7 +7,7 @@ Guía interactiva para ver **todo Marvel y X-Men en orden cronológico de la his
 ## Qué hace
 
 - **134 títulos**: el maratón (17 saga X-Men de Fox, 74 UCM y adyacentes, 26 cómics esenciales) más **La bóveda de animación** — 17 series animadas de Marvel verificadas en el catálogo de Disney+ España vía TMDB — en orden cronológico validado con la comunidad, con notas IMDb, duración, plataforma, reparto con foto y escenas post-créditos.
-- **1.618 episodios marcables** —las 51 series, sin excepción— con fotograma real, fecha y sinopsis anti-spoiler (desenfocada hasta que la pides). Los del maratón salen de Wikipedia; los 941 de la bóveda de animación, de TMDB en español (con el título en inglés donde TMDB no tiene el español).
+- **1.618 episodios marcables** —las 51 series, sin excepción— con fotograma real, fecha y sinopsis anti-spoiler (desenfocada hasta que la pides), **y con el título en español** tal y como lo distribuye Disney España. Las listas y las fechas salen de Wikipedia para el maratón y de TMDB para la bóveda de animación; los títulos, de TMDB. Donde TMDB no tiene el español se queda el original: son 99 episodios de 1.618, casi todos de series antiguas.
 - **Tráilers embebidos y "dónde verla hoy en España"** vía TMDB, con caché de 7 días.
 - **Planificación**: cuenta atrás de Doomsday con tu ritmo real, ruta express, plan de sesión según tus horas libres, recordatorios de estreno (aviso al abrir + notificaciones con la PWA instalada).
 - **Vistas**: cronológica a dos columnas, por estreno, cómics, listas propias, galería de pósters, línea temporal 1845→∞, modo cine para la tele, y el **multiverso** en tres modos (sistema solar animado, mapa de conexiones canónicas y tarjetas con Tierras enterables).
@@ -19,7 +19,7 @@ Guía interactiva para ver **todo Marvel y X-Men en orden cronológico de la his
 | Ruta | Qué es |
 |---|---|
 | `src/data.js` | El dataset: sagas → eras → items, universos del multiverso y calendario `ESTRENOS` |
-| `src/episodes.js` | Episodios por serie (maratón desde Wikipedia, bóveda desde TMDB) |
+| `src/episodes.js` | Episodios por serie (listas: Wikipedia + TMDB; títulos: TMDB en es-ES) |
 | `src/posters.js` / `public/posters/` | Índice y archivos de carátulas (pósters oficiales de TMDB en español) |
 | `src/people.js` / `public/people/` | Fotos de reparto y dirección |
 | `src/tmdb.js` | Mapeo id → TMDB (tráilers, fotogramas, sinopsis, proveedores) |
