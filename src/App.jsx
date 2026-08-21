@@ -4,6 +4,7 @@ import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
 import { EPISODES } from './episodes.js'
 import { TMDB, TMDB_KEY } from './tmdb.js'
+import { ORDEN_CONGELADO } from './orden.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
@@ -129,16 +130,28 @@ const leeGuardado = (clave, sanea, porDefecto) => {
   } catch { return porDefecto }
 }
 
-const ORDEN_IDS = (() => {
+// ── Dos órdenes distintos, que antes eran el mismo y por eso se peleaban ──
+// ORDEN_VISTA es el de la pantalla: sale de data.js y cambia cuando un estreno
+// nuevo se coloca en su hueco cronológico, que es donde tiene que ir.
+// ORDEN_IDS y ORDEN_EPS son los de los BITS: vienen congelados de orden.js y no
+// se mueven nunca. Lo que aún no esté congelado entra al final. Así un título
+// nuevo puede salir en medio de la lista sin corromper un solo enlace
+// compartido — que es exactamente lo que pasaba antes.
+const congela = (congelado, actuales) => {
+  const yaEsta = new Set(congelado)
+  return [...congelado, ...actuales.filter(x => !yaEsta.has(x))]
+}
+const ORDEN_VISTA = (() => {
   const a = []
   DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => a.push(it.id))))
   return a
 })()
-const ORDEN_EPS = (() => {
+const ORDEN_IDS = congela(ORDEN_CONGELADO.ids, ORDEN_VISTA)
+const ORDEN_EPS = congela(ORDEN_CONGELADO.eps, (() => {
   const a = []
-  ORDEN_IDS.forEach(id => (EPISODES[id] || []).forEach(e => a.push(`${id}:${e.s}:${e.n}`)))
+  ORDEN_VISTA.forEach(id => (EPISODES[id] || []).forEach(e => a.push(`${id}:${e.s}:${e.n}`)))
   return a
-})()
+})())
 const aBits = (marcas, orden) => {
   const bytes = new Uint8Array(Math.ceil(orden.length / 8))
   orden.forEach((clave, i) => { if (marcas[clave]) bytes[i >> 3] |= 1 << (i & 7) })
@@ -1148,14 +1161,26 @@ const ORBITAS = {
 function PerfilView({ nombre, vistasP, epsP, notasP }) {
   const est = useMemo(() => {
     let totMin = 0, vistoMin = 0, titulosVistos = 0, titulosTot = 0
-    let comicsVistos = 0, comicsTot = 0
+    let comicsVistos = 0, comicsTot = 0, bovedaVistos = 0, bovedaTot = 0
     const sagas = []
     DATA.forEach(sg => {
       const esComic = sg.saga === 'comics'
+      const esBoveda = sg.saga === 'animacion'
       const items = sg.eras.flatMap(era => era.items.map(item => ({ item, c: era.c })))
       let v = 0
       items.forEach(({ item }) => {
+        // cada colección con su cuenta, igual que en la app: mezclarlas hacía
+        // que este perfil dijera 108 donde la cabecera dice 91
         if (esComic) { comicsTot++; if (vistasP[item.id]) { comicsVistos++; v++ }; return }
+        if (esBoveda) {
+          // en episodios, como en las estadísticas de la app, y con su misma
+          // regla: marcar la serie entera cuenta todos sus episodios
+          const l = EPISODES[item.id] || []
+          bovedaTot += l.length
+          bovedaVistos += l.filter(e => epsP[`${item.id}:${e.s}:${e.n}`] || vistasP[item.id]).length
+          if (vistasP[item.id]) v++
+          return
+        }
         titulosTot++
         totMin += item.d || 0
         if (vistasP[item.id]) { titulosVistos++; v++; vistoMin += item.d || 0 }
@@ -1176,7 +1201,7 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
       .filter(Boolean)
       .sort((a, b) => b.punt - a.punt)
       .slice(0, 8)
-    return { totMin, vistoMin, titulosVistos, titulosTot, comicsVistos, comicsTot, sagas, valoradas }
+    return { totMin, vistoMin, titulosVistos, titulosTot, comicsVistos, comicsTot, bovedaVistos, bovedaTot, sagas, valoradas }
   }, [vistasP, epsP, notasP])
 
   const pct = est.totMin ? Math.round(100 * est.vistoMin / est.totMin) : 0
@@ -1213,6 +1238,11 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
             <span className="stat-label">Cómics leídos</span>
             <span className="stat-num">{est.comicsVistos}<small> / {est.comicsTot}</small></span>
             <span className="stat-foot">lecturas esenciales</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Bóveda de animación</span>
+            <span className="stat-num">{est.bovedaVistos}<small> / {est.bovedaTot}</small></span>
+            <span className="stat-foot">episodios de las 17 series</span>
           </div>
         </div>
         <div className="mapa" aria-label="Mapa de progreso">
@@ -1880,8 +1910,9 @@ export default function App() {
   })
   const navegaDetalle = dir => setDetalle(d => {
     if (!d) return d
-    const i = ORDEN_IDS.indexOf(d.item.id)
-    const nid = ORDEN_IDS[i + dir]
+    // por la pantalla, no por los bits: aquí «siguiente» es el de al lado
+    const i = ORDEN_VISTA.indexOf(d.item.id)
+    const nid = ORDEN_VISTA[i + dir]
     return nid ? buscaItem(nid) : d
   })
   const [tierra, setTierra] = useState(null)

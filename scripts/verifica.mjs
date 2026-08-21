@@ -10,25 +10,36 @@ const mal = m => fallos.push(m)
 const ojo = m => avisos.push(m)
 const bien = []
 
-const { DATA, EPISODES, POSTERS, PEOPLE, TMDB } = await cargaFuentes()
+const fuentes = await cargaFuentes()
+const { DATA, EPISODES, POSTERS, PEOPLE, TMDB, ORDEN_CONGELADO } = fuentes
 const items = DATA.flatMap(s => s.eras.flatMap(e => e.items.map(it => ({ ...it, saga: s.saga }))))
-const { ids, eps } = ordenes({ DATA, EPISODES })
+const { ids, eps, vista } = ordenes(fuentes)
 
 // ── 1 · El contrato de los bitsets ──
+if (!ORDEN_CONGELADO) mal('falta src/orden.js: genéralo con `npm run contrato`')
 const lock = leeLock()
-if (!lock) ojo('no hay contrato.lock.json: genéralo con `node scripts/contrato.mjs`')
-else {
-  const cortaIds = lock.ids.findIndex((k, i) => ids[i] !== k)
-  const cortaEps = lock.eps.findIndex((k, i) => eps[i] !== k)
-  if (cortaIds >= 0) mal(`ORDEN_IDS cambia en la posición ${cortaIds}: era «${lock.ids[cortaIds]}» y ahora «${ids[cortaIds]}».\n` +
-    '    Solo se añade AL FINAL. Mover o quitar algo invalida los perfiles y clubes ya compartidos.')
-  else if (cortaEps >= 0) mal(`ORDEN_EPS cambia en la posición ${cortaEps}: era «${lock.eps[cortaEps]}» y ahora «${eps[cortaEps]}».\n` +
-    '    Solo se añade AL FINAL. Cambiar el TÍTULO de un episodio sí es seguro; su temporada o su número, no.')
-  else if (ids.length > lock.ids.length || eps.length > lock.eps.length)
-    ojo(`se ha añadido al final (+${ids.length - lock.ids.length} títulos, +${eps.length - lock.eps.length} episodios).\n` +
-        '    Es seguro. Cuando lo des por bueno: `node scripts/contrato.mjs` para actualizar el candado.')
-  else bien.push(`contrato intacto (${ids.length} títulos, ${eps.length} episodios)`)
+if (!lock) ojo('no hay contrato.lock.json: genéralo con `npm run contrato`')
+else if (ORDEN_CONGELADO) {
+  // Que el orden congelado no se haya MOVIDO: es lo que mantiene válidos los
+  // enlaces de perfil y los datos de club que ya haya compartidos por ahí.
+  const i = lock.ids.findIndex((k, n) => ORDEN_CONGELADO.ids[n] !== k)
+  const j = lock.eps.findIndex((k, n) => ORDEN_CONGELADO.eps[n] !== k)
+  if (i >= 0) mal(`src/orden.js cambia en la posición ${i}: era «${lock.ids[i]}» y ahora «${ORDEN_CONGELADO.ids[i]}».\n` +
+    '    Ese fichero está GENERADO y solo crece por el final. Mover una posición invalida\n' +
+    '    todos los perfiles y clubes ya compartidos. Recupéralo con git y usa `npm run contrato`.')
+  else if (j >= 0) mal(`src/orden.js cambia en la posición ${j} de los episodios: era «${lock.eps[j]}» y ahora «${ORDEN_CONGELADO.eps[j]}».`)
+  else if (ORDEN_CONGELADO.ids.length < ids.length || ORDEN_CONGELADO.eps.length < eps.length)
+    ojo(`hay ${ids.length - ORDEN_CONGELADO.ids.length} título(s) y ${eps.length - ORDEN_CONGELADO.eps.length} episodio(s) sin congelar.\n` +
+        '    La app los coloca al final sola, así que nada se rompe; cuando lo des por bueno,\n' +
+        '    `npm run contrato` los fija en el fichero.')
+  else bien.push(`orden congelado intacto (${ORDEN_CONGELADO.ids.length} títulos, ${ORDEN_CONGELADO.eps.length} episodios)`)
+  // y que ningún id vivo se haya quedado fuera por un despiste
+  const enOrden = new Set(ids)
+  for (const it of items) if (!enOrden.has(it.id)) mal(`«${it.id}» no aparece en el orden de los bits`)
 }
+// duplicados: dos items con el mismo id romperían el mapa de bits en silencio
+const dupOrden = ids.filter((k, i) => ids.indexOf(k) !== i)
+if (dupOrden.length) mal(`el orden de los bits tiene repetidos: ${[...new Set(dupOrden)].join(', ')}`)
 
 // ── 2 · Dataset ──
 const vistos = new Set()
