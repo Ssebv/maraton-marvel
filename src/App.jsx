@@ -1569,7 +1569,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                                 {hecho ? <CheckIcon /> : <span className="ep-num">{e.n}</span>}
                               </span>
                               <span className="ep-info">
-                                <span className="ep-titulo">{e.t}</span>
+                                {/* el título va recortado con puntos suspensivos cuando no cabe
+                                    —una de cada diez filas—, así que el completo se deja a mano */}
+                                <span className="ep-titulo" title={e.t}>{e.t}</span>
                                 {e.f && <span className="ep-fecha">{new Date(e.f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                               </span>
                             </button>
