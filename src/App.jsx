@@ -729,8 +729,16 @@ function Diario({ vistas, notas }) {
   )
 }
 
+// El iPad moderno se anuncia como MacIntel; lo delata el táctil
+const ES_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+const YA_INSTALADA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+  || window.navigator.standalone === true
+
 function AvisosBtn() {
-  const sop = typeof Notification !== 'undefined' && 'serviceWorker' in navigator
+  // En iOS los avisos van por periodicsync, que Safari no tiene: el botón
+  // prometería avisos que no llegarán nunca. Ahí no se ofrece.
+  const sop = typeof Notification !== 'undefined' && 'serviceWorker' in navigator && !ES_IOS
   const [estado, setEstado] = useState(() => {
     if (!sop) return 'no-sop'
     if (Notification.permission === 'granted') return 'on'
@@ -750,6 +758,42 @@ function AvisosBtn() {
   return estado === 'on'
     ? <span className="aviso-on">Te avisaré cuando algo se estrene</span>
     : <button className="chip-btn aviso-btn" onClick={activar}>Avisarme de estrenos</button>
+}
+
+// El gesto de volver atrás (borde en iOS, botón en Android) cierra la capa de
+// arriba en vez de sacar de la app. Una sola entrada de historial mientras haya
+// algo abierto: abrir la primera capa la crea, cerrar la última la consume, y
+// entre medias solo cambia quién responde al popstate. La conciliación va en un
+// microtask porque cerrar un diálogo y abrir otro pasa en el mismo commit de
+// React (Ajustes → Sincronización): decidir en caliente haría un back() de más.
+let capasAtras = []
+let entradaAtras = false
+function conciliaAtras() {
+  queueMicrotask(() => {
+    if (capasAtras.length && !entradaAtras) { history.pushState({ capa: 1 }, ''); entradaAtras = true }
+    else if (!capasAtras.length && entradaAtras) { entradaAtras = false; history.back() }
+  })
+}
+window.addEventListener('popstate', () => {
+  if (!capasAtras.length || !entradaAtras) return
+  entradaAtras = false
+  const capa = capasAtras.pop()
+  capa()
+  conciliaAtras()
+})
+function useVolverCierra(abierto, onCerrar) {
+  const cierra = useRef(onCerrar)
+  cierra.current = onCerrar
+  useEffect(() => {
+    if (!abierto) return undefined
+    const capa = () => cierra.current()
+    capasAtras.push(capa)
+    conciliaAtras()
+    return () => {
+      capasAtras = capasAtras.filter(c => c !== capa)
+      conciliaAtras()
+    }
+  }, [abierto])
 }
 
 // Lo que aria-modal promete: el foco entra, no se escapa con el tabulador
@@ -1431,6 +1475,56 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
   const [enlaceCopiado, setEnlaceCopiado] = useState(false)
   const [persona, setPersona] = useState(null)
   const refOverlay = useRef(null)
+  const refModal = useRef(null)
+  const refCierra = useRef(onClose)
+  refCierra.current = onClose
+  // El asa de la hoja móvil arrastra de verdad: seguir al dedo desde la franja
+  // superior y, si el tirón pasa de umbral (o es un latigazo), cerrar. Si no,
+  // volver a su sitio. Solo toca transform, y solo existe donde hay hoja.
+  useEffect(() => {
+    const el = refModal.current
+    if (!el || !window.matchMedia('(max-width:720px)').matches) return undefined
+    let y0 = null, dy = 0, t0 = 0
+    const onStart = e => {
+      if (e.touches.length !== 1) return
+      if (e.target.closest('button,a,input,textarea')) return
+      const t = e.touches[0]
+      if (t.clientY - el.getBoundingClientRect().top > 44) return
+      y0 = t.clientY; dy = 0; t0 = e.timeStamp
+      el.style.transition = 'none'
+    }
+    const onMove = e => {
+      if (y0 == null) return
+      dy = Math.max(0, e.touches[0].clientY - y0)
+      e.preventDefault()
+      el.style.transform = `translateY(${dy}px)`
+    }
+    const suelta = () => { y0 = null; el.style.transition = ''; el.style.transform = '' }
+    const onEnd = e => {
+      if (y0 == null) return
+      const latigazo = dy > 24 && e.timeStamp - t0 < 250
+      if (dy > 140 || latigazo) {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { suelta(); refCierra.current(); return }
+        el.style.transition = 'transform var(--dur-media) var(--curva)'
+        el.style.transform = 'translateY(105%)'
+        setTimeout(() => { suelta(); refCierra.current() }, 240)
+      } else {
+        el.style.transition = 'transform var(--dur-media) var(--curva)'
+        el.style.transform = ''
+      }
+      y0 = null
+    }
+    el.addEventListener('touchstart', onStart, { passive: true })
+    el.addEventListener('touchmove', onMove, { passive: false })
+    el.addEventListener('touchend', onEnd)
+    el.addEventListener('touchcancel', suelta)
+    return () => {
+      el.removeEventListener('touchstart', onStart)
+      el.removeEventListener('touchmove', onMove)
+      el.removeEventListener('touchend', onEnd)
+      el.removeEventListener('touchcancel', suelta)
+    }
+  }, [])
   useEffect(() => { setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null) }, [item.id])
   // Escape, atrapa-foco, bloqueo del scroll y devolución del foco: lo mismo que
   // hacen los otros diálogos, así que se usa el mismo hook en vez de una segunda
@@ -1460,7 +1554,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
           <button className="nav-ficha der" onClick={e => { e.stopPropagation(); onNav(1) }} aria-label="Título siguiente" title="Siguiente (→)">›</button>
         </>
       )}
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal" ref={refModal} onClick={e => e.stopPropagation()}>
         {extra?.fondo && (
           <div className="modal-fondo" aria-hidden="true">
             <img src={`${TMDB_IMG}w780${extra.fondo}`} alt="" />
@@ -1976,6 +2070,27 @@ export default function App() {
     try { return localStorage.getItem(KEY_FONDO) || 'banner' } catch { return 'banner' }
   })
   const [ajustes, setAjustes] = useState(false)
+  // Chrome/Edge avisan de que la app se puede instalar; iOS no avisa nunca,
+  // así que allí Ajustes enseña el camino a mano (Compartir → Añadir a inicio)
+  const [instalable, setInstalable] = useState(null)
+  useEffect(() => {
+    const onBip = e => { e.preventDefault(); setInstalable(e) }
+    const onHecha = () => setInstalable(null)
+    window.addEventListener('beforeinstallprompt', onBip)
+    window.addEventListener('appinstalled', onHecha)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBip)
+      window.removeEventListener('appinstalled', onHecha)
+    }
+  }, [])
+  const instalar = async () => {
+    if (!instalable) return
+    try {
+      instalable.prompt()
+      const r = await instalable.userChoice
+      if (r && r.outcome === 'accepted') setInstalable(null)
+    } catch {}
+  }
   const ponFondo = id => {
     setFondo(id)
     try { localStorage.setItem(KEY_FONDO, id) } catch {}
@@ -2023,6 +2138,18 @@ export default function App() {
   const [clubAlias, setClubAlias] = useState('')
   const [clubError, setClubError] = useState('')
   const [clubInvitar, setClubInvitar] = useState(false)
+  // Cada capa que tapa la pantalla se apunta al gesto de volver atrás. La ficha
+  // navega entre títulos sin crear entradas nuevas: la capa es «hay ficha», no
+  // «esta ficha».
+  useVolverCierra(!!detalle, () => setDetalle(null))
+  useVolverCierra(cine, () => setCine(false))
+  useVolverCierra(ajustes, () => setAjustes(false))
+  useVolverCierra(planModal, () => setPlanModal(false))
+  useVolverCierra(perfilModal, () => setPerfilModal(false))
+  useVolverCierra(syncModal, () => setSyncModal(false))
+  useVolverCierra(dueloModal, () => setDueloModal(false))
+  useVolverCierra(clubModal, () => setClubModal(false))
+  useVolverCierra(clubInvitar, () => setClubInvitar(false))
   const guardaClub = c => {
     setClub(c)
     try { c ? localStorage.setItem('maraton-marvel-club-v1', JSON.stringify(c)) : localStorage.removeItem('maraton-marvel-club-v1') } catch {}
@@ -3282,6 +3409,11 @@ export default function App() {
                     })
                   }}>{perfilCopiado ? '¡Copiado!' : 'Copiar enlace'}</button>
                 )}
+                {perfilUrl && !!navigator.share && (
+                  <button className="chip-btn" onClick={() => {
+                    navigator.share({ url: perfilUrl, title: 'Mi maratón Marvel' }).catch(() => {})
+                  }}>Compartir…</button>
+                )}
               </div>
               {perfilUrl && (
                 <div className="sync-codigo">
@@ -3364,6 +3496,24 @@ export default function App() {
                   </button>
                 </div>
               </div>
+
+              {!YA_INSTALADA && (ES_IOS || instalable) && (
+                <div className="ajuste">
+                  <div className="ajuste-cab">
+                    <h3 className="ajuste-titulo">Como app</h3>
+                    <p className="ajuste-pista">
+                      {ES_IOS
+                        ? 'En Safari: botón Compartir y «Añadir a pantalla de inicio». La guía queda a pantalla completa, con su icono.'
+                        : 'Instálala y la guía tendrá su propia ventana y su icono, sin el navegador alrededor.'}
+                    </p>
+                  </div>
+                  {!ES_IOS && (
+                    <div className="ajuste-ops">
+                      <button className="chip-btn" onClick={instalar}>Instalar</button>
+                    </div>
+                  )}
+                </div>
+              )}
 
             </div>
           </div>

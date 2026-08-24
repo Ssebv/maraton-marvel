@@ -80,6 +80,8 @@ html{
   padding: var(--e-3) var(--e-5); font-size: var(--t-m); font-weight:600;
 }
 .saltar:focus{top: var(--e-3)}
+/* iOS infla el texto a su gusto al girar a apaisado; que se quede como está */
+html{-webkit-text-size-adjust:100%}
 body{
   background:var(--bg); color:var(--ink);
   font:15px/1.55 "Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -905,7 +907,9 @@ h3{
    están, que con el ratón el ::after ya da de sobra y así no se descuadra la
    barra. Un <input> nunca admite el truco del ::after. */
 @media (hover: none), (pointer: coarse){
-  .busca{min-height:44px}
+  /* 16px o iOS hace zoom a toda la página al enfocar el campo. Excepción
+     consciente a la escala tipográfica, como el clamp() del hero. */
+  .busca{min-height:44px; font-size:16px}
   .chip-btn{padding: var(--e-3) var(--e-4)}
   .ghost{padding: var(--e-3) var(--e-4)}
   .enlaces{gap: var(--e-4)}
@@ -1498,7 +1502,9 @@ main{animation:entraVista .28s var(--curva) both}
   .controles::-webkit-scrollbar{display:none}
   .ctrl-grupo{flex-wrap:nowrap; flex:none}
   .chip-btn{flex:none; padding: var(--e-3) var(--e-4)}
-  .busca{flex:none; min-height:39px}
+  /* solo flex, sin altura: el min-height:39px que había aquí pisaba los 44px
+     táctiles del bloque (pointer:coarse), que va antes en el archivo */
+  .busca{flex:none}
   .ctrl-sep{align-self:center; height:22px}
   .atajos{display:none}
   .tab[aria-pressed="true"], .tab[aria-current="page"]{background:transparent; color:var(--red); box-shadow:none}
@@ -1506,7 +1512,7 @@ main{animation:entraVista .28s var(--curva) both}
   .overlay{place-items:end center; padding: 0}
   .modal{
     max-width:none; width:100%; border-radius:var(--r-l) var(--r-l) 0 0; border-bottom:none;
-    max-height:92dvh; padding-top: var(--e-6);
+    max-height:92vh; max-height:92dvh; padding-top: var(--e-6);
     padding-bottom:calc(20px + env(safe-area-inset-bottom));
     animation:sheetUp .38s var(--curva-hoja) both;
   }
