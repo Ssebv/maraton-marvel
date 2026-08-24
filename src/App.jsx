@@ -99,7 +99,7 @@ const saneaListas = x => {
 // La vista que estás mirando —búsqueda y filtros— vive en la URL: así se puede
 // compartir «los pendientes de X-Men que son joyas» y, de paso, sobrevive a una
 // recarga, que antes se la llevaba por delante.
-const FILTROS_URL = ['series', 'opc', 'vistas', 'joyas', 'express']
+const FILTROS_URL = ['series', 'opc', 'vistas', 'joyas', 'express', 'disney']
 const sinFiltros = () => Object.fromEntries(FILTROS_URL.map(k => [k, false]))
 const leeVistaUrl = () => {
   try {
@@ -2433,6 +2433,10 @@ export default function App() {
     if (filtros.opc && item.opt) return false
     if (filtros.joyas && !esComic && (item.s == null || item.s < JOYA_MIN)) return false
     if (filtros.express && !item.exp) return false
+    // «esta noche sin alquilar»: 102 de los 108 del maratón están en Disney+,
+    // así que el filtro es un solo interruptor y no un selector de plataforma.
+    // Los cómics van por Panini y quedan fuera del criterio.
+    if (filtros.disney && !esComic && item.plat !== 'Disney+') return false
     return true
   }
 
@@ -2641,7 +2645,7 @@ export default function App() {
     return { activos, tot, vis }
   }, [filtros, busca, vistas])
   const limpiaFiltros = () => {
-    setFiltros({ series: false, opc: false, vistas: false, joyas: false, express: false })
+    setFiltros(sinFiltros())
     setBusca('')
   }
 
@@ -2660,7 +2664,7 @@ export default function App() {
   const filtrosActivos = Object.values(filtros).filter(Boolean).length
   const limpiaTodo = () => {
     setBusca('')
-    setFiltros({ series: false, opc: false, vistas: false, joyas: false, express: false })
+    setFiltros(sinFiltros())
   }
 
   // el título de la pestaña sigue a lo que estás mirando: historial y
@@ -2801,6 +2805,7 @@ export default function App() {
           <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>Sin opcionales</button>
           <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>Solo pendientes</button>
           <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>Joyas ★7,5+</button>
+          <button className="chip-btn" aria-pressed={filtros.disney} onClick={() => setF('disney')}>En Disney+</button>
           </div>
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
