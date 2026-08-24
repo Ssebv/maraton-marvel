@@ -1778,6 +1778,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                 setTimeout(() => setEnlaceCopiado(false), 2000)
               } catch {}
             }}>{enlaceCopiado ? '✓ Copiado' : <><IcoEnlace />Enlace</>}</button>
+            {!!navigator.share && (
+              <button className="ghost" onClick={() => {
+                navigator.share({ url: `${window.location.origin}${window.location.pathname}?t=${item.id}`, title: item.t }).catch(() => {})
+              }}>Compartir…</button>
+            )}
           </div>
         </div>
         )}
@@ -1998,8 +2003,22 @@ export default function App() {
   }, [perfil])
   const [detalle, setDetalle] = useState(() => {
     try {
-      const t = new URLSearchParams(window.location.search).get('t')
-      return t ? buscaItem(t) : null
+      const p = new URLSearchParams(window.location.search)
+      const t = p.get('t')
+      if (t) return buscaItem(t)
+      // ?ir=siguiente: el atajo del icono abre el siguiente pendiente del
+      // maratón (mismo criterio que la cabecera: ni cómics ni bóveda). Se lee
+      // aquí y no en un efecto — el efecto de la URL lo borraría al montar.
+      if (p.get('ir') === 'siguiente') {
+        for (const saga of DATA) {
+          if (saga.saga === 'comics' || saga.saga === 'animacion') continue
+          for (const era of saga.eras) {
+            const item = era.items.find(i => !vistas[i.id])
+            if (item) return buscaItem(item.id)
+          }
+        }
+      }
+      return null
     } catch { return null }
   })
   const navegaDetalle = dir => setDetalle(d => {
