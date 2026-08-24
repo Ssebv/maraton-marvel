@@ -283,7 +283,8 @@ h1 .rojo{color:var(--red)}
   font:inherit; font-size: var(--t-s); font-weight:600; color:var(--blue); cursor:pointer;
   position:relative;
 }
-.proximo-cal::after{content:""; position:absolute; inset:-12px -8px}
+/* 18,6 px de texto + 13 por lado = 44,6: medido, no supuesto */
+.proximo-cal::after{content:""; position:absolute; inset:-13px -8px}
 .proximo-cal:hover{text-decoration:underline}
 @media (max-width:640px){
   .cuenta{justify-content:center; text-align:center}
