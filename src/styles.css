@@ -919,7 +919,10 @@ h3{
   /* 16px o iOS hace zoom a toda la página al enfocar el campo. Excepción
      consciente a la escala tipográfica, como el clamp() del hero. */
   .busca{min-height:44px; font-size:16px}
-  .chip-btn{padding: var(--e-3) var(--e-4)}
+  /* 18,6 de línea + 16 de relleno + 2 de borde = 36,6, y con el ::after de
+     3 por lado se quedaba en 42,6 (medido con Archivo cargada). Los 38
+     mínimos completan los 44 sin cambiar el relleno ni pisar al vecino. */
+  .chip-btn{padding: var(--e-3) var(--e-4); min-height:38px}
   .ghost{padding: var(--e-3) var(--e-4)}
   .enlaces{gap: var(--e-4)}
 }
