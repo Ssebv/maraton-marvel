@@ -277,6 +277,14 @@ h1 .rojo{color:var(--red)}
 .proximo-titulo{font-size: var(--t-b); font-weight:600}
 .proximo-tipo{font-size: var(--t-xs); color:var(--ink3)}
 .proximo-nota{font-size: var(--t-s); color:var(--ink2); margin-top: var(--e-1)}
+/* botón de texto, con la zona táctil ampliada por ::after como los demás */
+.proximo-cal{
+  align-self:flex-start; margin-top: var(--e-2); padding: 0; border:none; background:none;
+  font:inherit; font-size: var(--t-s); font-weight:600; color:var(--blue); cursor:pointer;
+  position:relative;
+}
+.proximo-cal::after{content:""; position:absolute; inset:-12px -8px}
+.proximo-cal:hover{text-decoration:underline}
 @media (max-width:640px){
   .cuenta{justify-content:center; text-align:center}
   .cuenta-info{align-items:center}

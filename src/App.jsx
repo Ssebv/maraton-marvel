@@ -697,6 +697,7 @@ function CuentaAtras({ meta }) {
               </span>
             )
           })()}
+          <button className="chip-btn aviso-btn" onClick={() => descargaIcs(objetivo)}>Al calendario</button>
           <AvisosBtn />
         </div>
       )}
@@ -1173,6 +1174,33 @@ function Novedades({ eps }) {
   )
 }
 
+// Un .ics de un evento de día completo: el calendario del sistema lo abre tal
+// cual, en iOS y Android igual, sin servidor de por medio.
+function descargaIcs(e) {
+  const dia = e.fecha.replace(/-/g, '')
+  const fin = new Date(new Date(e.fecha + 'T00:00:00Z').getTime() + 864e5).toISOString().slice(0, 10).replace(/-/g, '')
+  const esc = s => String(s || '').replace(/([,;\\])/g, '\\$1')
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//maraton-marvel//ES', 'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:${dia}-${e.t.replace(/[^\w]/g, '').slice(0, 24)}@maraton-marvel`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
+    `DTSTART;VALUE=DATE:${dia}`,
+    `DTEND;VALUE=DATE:${fin}`,
+    `SUMMARY:${esc('Estreno: ' + e.t)}`,
+    `DESCRIPTION:${esc((e.tipo ? e.tipo + '. ' : '') + (e.n || ''))}`,
+    'END:VEVENT', 'END:VCALENDAR',
+  ].join('\r\n')
+  const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `estreno-${e.t.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '')}.ics`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 4000)
+}
+
 function Proximos() {
   const primero = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
   return (
@@ -1183,6 +1211,7 @@ function Proximos() {
           <span className="proximo-titulo">{e.t}</span>
           <span className="proximo-tipo">{e.tipo}</span>
           <span className="proximo-nota">{e.n}</span>
+          {e.fecha && <button className="proximo-cal" onClick={() => descargaIcs(e)}>Al calendario</button>}
         </div>
       ))}
     </div>
@@ -1513,6 +1542,61 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
         el.style.transform = ''
       }
       y0 = null
+    }
+    el.addEventListener('touchstart', onStart, { passive: true })
+    el.addEventListener('touchmove', onMove, { passive: false })
+    el.addEventListener('touchend', onEnd)
+    el.addEventListener('touchcancel', suelta)
+    return () => {
+      el.removeEventListener('touchstart', onStart)
+      el.removeEventListener('touchmove', onMove)
+      el.removeEventListener('touchend', onEnd)
+      el.removeEventListener('touchcancel', suelta)
+    }
+  }, [])
+  const refNav = useRef(onNav)
+  refNav.current = onNav
+  const refPersona = useRef(persona)
+  refPersona.current = persona
+  // Deslizar en horizontal pasa de título, como las flechas ‹ ›. El eje se
+  // decide con el primer tramo del movimiento: si domina la vertical, el
+  // scroll sigue siendo del navegador y aquí no se toca nada. Quedan fuera el
+  // asa (que es del gesto de cerrar), el carril del reparto (que ya se desliza
+  // solo) y la ficha de persona (donde las flechas tampoco navegan).
+  useEffect(() => {
+    const el = refModal.current
+    if (!el || !window.matchMedia('(max-width:720px)').matches) return undefined
+    let x0 = null, y0 = null, dx = 0, modo = null
+    const onStart = e => {
+      if (e.touches.length !== 1 || refPersona.current || !refNav.current) return
+      const t = e.touches[0]
+      if (t.clientY - el.getBoundingClientRect().top <= 44) return
+      if (e.target.closest('.carril-personas,input,textarea')) return
+      x0 = t.clientX; y0 = t.clientY; dx = 0; modo = null
+    }
+    const onMove = e => {
+      if (x0 == null) return
+      const t = e.touches[0]
+      dx = t.clientX - x0
+      if (!modo) {
+        const dy = t.clientY - y0
+        if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return
+        modo = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'x' : 'no'
+        if (modo === 'x') el.style.transition = 'none'
+      }
+      if (modo !== 'x') return
+      e.preventDefault()
+      el.style.transform = `translateX(${dx}px)`
+    }
+    const suelta = () => { x0 = null; modo = null; el.style.transition = ''; el.style.transform = '' }
+    const onEnd = () => {
+      if (x0 == null) return
+      if (modo === 'x') {
+        el.style.transition = 'transform var(--dur-media) var(--curva)'
+        el.style.transform = ''
+        if (Math.abs(dx) > 70 && refNav.current) refNav.current(dx < 0 ? 1 : -1)
+      }
+      x0 = null; modo = null
     }
     el.addEventListener('touchstart', onStart, { passive: true })
     el.addEventListener('touchmove', onMove, { passive: false })
