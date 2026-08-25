@@ -569,6 +569,18 @@ h2{
 }
 .saga-count{margin-left: auto; font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
 .saga-desc{margin: var(--e-3) 0 0; font-size: var(--t-b); color:var(--ink2); max-width:68ch}
+/* La guía de una saga con reinicio: plegada, porque solo hace falta la
+   primera vez y no debe empujar la lista hacia abajo cada día. */
+.saga-guia{margin: var(--e-3) 0 0; max-width:68ch; font-size: var(--t-b); color:var(--ink2)}
+.saga-guia summary{
+  position:relative; display:inline-block; cursor:pointer; padding: var(--e-2) 0;
+  font-weight:600; color:var(--gold-texto);
+}
+.saga-guia summary::after{content:""; position:absolute; inset:-8px 0}
+.saga-guia summary:hover{text-decoration:underline}
+.saga-guia[open] summary{color:var(--ink)}
+.saga-guia p{margin: var(--e-3) 0 0; line-height:1.55; text-wrap:pretty}
+.saga-guia p b{color:var(--ink)}
 .saga .barra{margin-top: var(--e-4)}
 .saga[data-saga="xmen"] .barra > i{background:linear-gradient(90deg, var(--gold), #E8C93C)}
 .saga[data-saga="comics"] .barra > i{background:linear-gradient(90deg, var(--violet), #C89BE8)}

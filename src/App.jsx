@@ -3343,6 +3343,12 @@ export default function App() {
                   </span>
                 </div>
                 <p className="saga-desc">{saga.desc}</p>
+                {saga.guia && (
+                  <details className="saga-guia">
+                    <summary>Cómo entender la saga</summary>
+                    {saga.guia.map(g => <p key={g.t}><b>{g.t}.</b> {g.p}</p>)}
+                  </details>
+                )}
                 <div className="barra"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
                 {saga.eras.map(era => {
                   const filtrados = era.items.filter(it => pasaFiltro(it, esComic))
