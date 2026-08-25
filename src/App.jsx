@@ -1195,7 +1195,8 @@ function Novedades({ eps }) {
 function descargaIcs(e) {
   const dia = e.fecha.replace(/-/g, '')
   const fin = new Date(new Date(e.fecha + 'T00:00:00Z').getTime() + 864e5).toISOString().slice(0, 10).replace(/-/g, '')
-  const esc = s => String(s || '').replace(/([,;\\])/g, '\\$1')
+  // un salto de línea en una nota partiría el evento en dos propiedades
+  const esc = s => String(s || '').replace(/\r?\n/g, ' ').replace(/([,;\\])/g, '\\$1')
   // iCalendar parte las líneas a 75 octetos (no caracteres: las tildes pesan 2)
   const pliega = linea => {
     const out = []; let actual = '', bytes = 0
