@@ -4,26 +4,15 @@
 export const DATA = [
 {
   saga: "xmen", titulo: "Saga X-Men (Fox)", uni: "Tierra-10005",
-  desc: "El universo mutante de 20th Century Fox, ordenado por cuándo ocurre cada historia. Termina en Logan; el puente con el UCM es Deadpool y Lobezno, al final del UCM.",
+  desc: "El universo mutante de 20th Century Fox son DOS líneas temporales: la original, que Lobezno borra al viajar a 1973 en Días del futuro pasado, y la nueva, que nace ahí y termina en Logan. Se ven en ese orden —no por año de la historia— para que nadie muera antes de aparecer vivo. El puente con el UCM es Deadpool y Lobezno, al final del UCM.",
   eras: [
-    { era: "Los orígenes", rango: "1962–1992", c: ["#E8A93C", "#8A5408"], items: [
+    { era: "La línea original", rango: "1962–2023", c: ["#E8A93C", "#8A5408"], items: [
       { id: "first-class", pc: "0", t: "X-Men: Primera generación", h: "1962", r: 2011, s: 7.7, d: 132, plat: "Disney+",
         dir: "Matthew Vaughn", cast: ["James McAvoy", "Michael Fassbender", "Jennifer Lawrence"],
         res: "Charles y Erik se conocen en plena Guerra Fría y fundan los primeros X-Men." },
       { id: "origins-wolverine", pc: "1 al final", t: "X-Men Orígenes: Lobezno", h: "1845–1979", r: 2009, s: 6.5, d: 107, plat: "Disney+",
         dir: "Gavin Hood", cast: ["Hugh Jackman", "Liev Schreiber", "Ryan Reynolds"],
         res: "El pasado de Logan: el programa Arma X y el adamantium.", n: "Salta entre décadas; su grueso ocurre en 1979." },
-      { id: "dofp", pc: "1 al final", t: "X-Men: Días del futuro pasado", h: "1973 y 2023", r: 2014, s: 7.9, d: 132, plat: "Disney+",
-        dir: "Bryan Singer", cast: ["Hugh Jackman", "James McAvoy", "Michael Fassbender"],
-        res: "Lobezno viaja a 1973 para evitar el futuro de los Centinelas.", n: "Reinicia la línea temporal desde 1973." },
-      { id: "apocalypse", pc: "1 al final", t: "X-Men: Apocalipsis", h: "1983", r: 2016, s: 6.9, d: 144, plat: "Disney+",
-        dir: "Bryan Singer", cast: ["James McAvoy", "Michael Fassbender", "Oscar Isaac"],
-        res: "El primer mutante de la historia despierta y quiere rehacer el mundo." },
-      { id: "dark-phoenix", pc: "0", t: "X-Men: Fénix Oscura", h: "1992", r: 2019, s: 5.7, d: 114, plat: "Disney+",
-        dir: "Simon Kinberg", cast: ["Sophie Turner", "James McAvoy", "Jessica Chastain"],
-        res: "Jean Grey absorbe una fuerza cósmica que no puede controlar." },
-    ]},
-    { era: "La trilogía original y Lobezno", rango: "2000–2029", c: ["#C98A10", "#6E4204"], items: [
       { id: "xmen1", pc: "0", t: "X-Men", h: "2000", r: 2000, s: 7.3, d: 104, plat: "Disney+",
         dir: "Bryan Singer", cast: ["Hugh Jackman", "Patrick Stewart", "Ian McKellen"],
         res: "Magneto amenaza a la humanidad y los X-Men de Xavier debutan en el cine." },
@@ -36,6 +25,18 @@ export const DATA = [
       { id: "the-wolverine", pc: "1 a mitad", pcn: "prepara Días del futuro pasado", t: "Lobezno inmortal", h: "2013", r: 2013, s: 6.7, d: 126, plat: "Disney+",
         dir: "James Mangold", cast: ["Hugh Jackman", "Tao Okamoto", "Rila Fukushima"],
         res: "Logan viaja a Japón y se enfrenta a su propia inmortalidad." },
+      { id: "dofp", pc: "1 al final", t: "X-Men: Días del futuro pasado", h: "1973 y 2023", r: 2014, s: 7.9, d: 132, plat: "Disney+",
+        dir: "Bryan Singer", cast: ["Hugh Jackman", "James McAvoy", "Michael Fassbender"],
+        res: "Lobezno viaja a 1973 para evitar el futuro de los Centinelas.",
+        n: "Aquí se parte la saga: el 2023 de los Centinelas es el futuro de la línea original (la de X-Men 1, 2 y 3), y el viaje a 1973 la borra. Todo lo que viene después ocurre en la línea nueva." },
+    ]},
+    { era: "La línea nueva", rango: "1983–2029", c: ["#C98A10", "#6E4204"], items: [
+      { id: "apocalypse", pc: "1 al final", t: "X-Men: Apocalipsis", h: "1983", r: 2016, s: 6.9, d: 144, plat: "Disney+",
+        dir: "Bryan Singer", cast: ["James McAvoy", "Michael Fassbender", "Oscar Isaac"],
+        res: "El primer mutante de la historia despierta y quiere rehacer el mundo.", n: "Primera película que ocurre entera en la línea nueva." },
+      { id: "dark-phoenix", pc: "0", t: "X-Men: Fénix Oscura", h: "1992", r: 2019, s: 5.7, d: 114, plat: "Disney+",
+        dir: "Simon Kinberg", cast: ["Sophie Turner", "James McAvoy", "Jessica Chastain"],
+        res: "Jean Grey absorbe una fuerza cósmica que no puede controlar.", n: "Mística muere aquí, en la línea nueva; la Mística de X-Men 1 y 2 vivía en la línea borrada." },
       { id: "deadpool1", pc: "1 al final", pcn: "al estilo Ferris Bueller", t: "Deadpool", h: "2016", r: 2016, s: 8.0, d: 108, plat: "Disney+", exp: true,
         dir: "Tim Miller", cast: ["Ryan Reynolds", "Morena Baccarin", "Ed Skrein"],
         res: "Wade Wilson busca venganza sin dejar de romper la cuarta pared." },
@@ -48,6 +49,8 @@ export const DATA = [
       { id: "logan", pc: "0", t: "Logan", h: "2029", r: 2017, s: 8.1, d: 137, plat: "Disney+", exp: true,
         dir: "James Mangold", cast: ["Hugh Jackman", "Patrick Stewart", "Dafne Keen"],
         res: "Un Logan envejecido cruza el país para salvar a una niña como él.", n: "El cierre de la saga." },
+    ]},
+    { era: "Las series, con continuidad propia", rango: "1992–2024", c: ["#A8720A", "#4F3103"], items: [
       { id: "gifted", t: "The Gifted (T1–T2)", h: "—", r: 2017, s: 7.2, d: 1250, tipo: "serie", opt: true, plat: "Disney+",
         dir: "Matt Nix (creador)", cast: ["Stephen Moyer", "Amy Acker", "Emma Dumont"],
         res: "Una familia huye con sus hijos mutantes en un mundo sin X-Men.", n: "Continuidad paralela del universo Fox." },
