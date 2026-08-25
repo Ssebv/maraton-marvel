@@ -8,7 +8,8 @@
     "build": "node scripts/verifica.mjs && node scripts/gen-novedades.mjs && vite build",
     "desplegar": "npm run build && rm -rf docs && cp -R dist docs && node scripts/verifica.mjs",
     "contrato": "node scripts/contrato.mjs",
-    "plataformas": "node scripts/plataformas.mjs; node scripts/paises.mjs"
+    "plataformas": "node scripts/plataformas.mjs; node scripts/paises.mjs; node scripts/titulos.mjs",
+    "titulos": "node scripts/titulos.mjs"
   },
   "keywords": [],
   "author": "",

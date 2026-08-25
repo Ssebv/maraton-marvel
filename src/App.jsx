@@ -6,6 +6,7 @@ import { EPISODES } from './episodes.js'
 import { TMDB, TMDB_KEY } from './tmdb.js'
 import { ORDEN_CONGELADO } from './orden.js'
 import { PLATAFORMAS, PAISES } from './plataformas.js'
+import { TITULOS_LATAM } from './titulos.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
@@ -709,13 +710,13 @@ function CuentaAtras({ meta }) {
   )
 }
 
-function Diario({ vistas, notas }) {
+function Diario({ vistas, notas, pais }) {
   const marcas = useMemo(() => (
     Object.entries(vistas)
       .filter(([id, ts]) => typeof ts === 'number' && ts > 1e12 && TITULOS[id])
       .sort((a, b) => b[1] - a[1])
       .slice(0, 30)
-  ), [vistas])
+  ), [vistas, pais])
   if (!marcas.length) return null
   return (
     <section className="grafica diario">
@@ -861,6 +862,24 @@ function useDialogo(ref, onEscape, activo = true) {
 }
 
 const TITULOS = Object.fromEntries(DATA.flatMap(s => s.eras.flatMap(e => e.items)).map(i => [i.id, i.t]))
+// Los títulos de data.js son los de Disney España. Fuera de España se enseñan
+// los latinos (src/titulos.js), sustituyendo `t` en el propio dato para que
+// TODAS las vistas —lista, ficha, plan, cine, diario, imagen compartida— digan
+// lo mismo sin tocar cada sitio. Los originales se guardan para volver y para
+// que la búsqueda entienda los dos nombres. Se aplica antes de renderizar.
+const T_ES = { ...TITULOS }
+const E_ES = ESTRENOS.map(e => e.t)
+function aplicaTitulos(pais) {
+  const latino = pais !== 'ES'
+  DATA.forEach(s => s.eras.forEach(era => era.items.forEach(it => {
+    it.t = (latino && TITULOS_LATAM[it.id]) || T_ES[it.id]
+    TITULOS[it.id] = it.t
+  })))
+  ESTRENOS.forEach((e, i) => {
+    const id = Object.keys(T_ES).find(k => T_ES[k] === E_ES[i])
+    e.t = (id && latino && TITULOS_LATAM[id]) || E_ES[i]
+  })
+}
 
 function Bienvenida({ onCerrar, onExpress }) {
   const ref = useRef(null)
@@ -2289,15 +2308,18 @@ export default function App() {
   // País para las plataformas: el guardado, o el del idioma del navegador
   // (es-CL → Chile) si está entre los que la app conoce; si no, España.
   const [pais, setPais] = useState(() => {
+    let p = 'ES'
     try {
       const g = localStorage.getItem('maraton-marvel-pais-v1')
-      if (g && PAISES.some(p => p.id === g)) return g
       const region = (navigator.language || '').split('-')[1]
-      if (region && PAISES.some(p => p.id === region.toUpperCase())) return region.toUpperCase()
+      if (g && PAISES.some(x => x.id === g)) p = g
+      else if (region && PAISES.some(x => x.id === region.toUpperCase())) p = region.toUpperCase()
     } catch {}
-    return 'ES'
+    aplicaTitulos(p)
+    return p
   })
   const ponPais = id => {
+    aplicaTitulos(id)
     setPais(id)
     try { localStorage.setItem('maraton-marvel-pais-v1', id) } catch {}
   }
@@ -2554,7 +2576,8 @@ export default function App() {
 
   const pasaFiltro = (item, esComic) => {
     if (busca) {
-      const pajar = norm([item.t, item.dir || '', ...(item.cast || []), String(item.r)].join(' '))
+      // se busca por los dos títulos: «Lobezno» y «Wolverine» abren la misma ficha
+      const pajar = norm([item.t, T_ES[item.id] || '', TITULOS_LATAM[item.id] || '', item.dir || '', ...(item.cast || []), String(item.r)].join(' '))
       if (!pajar.includes(norm(busca))) return false
     }
     if (filtros.series && item.tipo === 'serie') return false
@@ -3343,7 +3366,7 @@ export default function App() {
 
           <Actividad vistas={vistas} eps={eps} />
 
-          <Diario vistas={vistas} notas={notas} />
+          <Diario vistas={vistas} notas={notas} pais={pais} />
 
           <Logros ctx={{
             vistas,
@@ -3742,7 +3765,7 @@ export default function App() {
               <div className="ajuste">
                 <div className="ajuste-cab">
                   <h3 className="ajuste-titulo">País</h3>
-                  <p className="ajuste-pista">Decide en qué plataforma aparece cada título y el filtro «En Disney+». Los catálogos cambian cada mes y se revisan con la app.</p>
+                  <p className="ajuste-pista">Decide en qué plataforma aparece cada título, el filtro «En Disney+» y cómo se titulan las obras: como las distribuye Disney en España o en Latinoamérica («Lobezno inmortal» o «Wolverine: Inmortal»). Los catálogos cambian cada mes y se revisan con la app.</p>
                 </div>
                 <div className="ajuste-ops">
                   {PAISES.map(p => (
