@@ -621,7 +621,8 @@ h3{
   border-radius:var(--r-m); padding: var(--e-5);
   box-shadow:none;
   transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-larga);
-  animation:riseIn .5s var(--curva) both;
+  /* sin entrada propia: la vista ya entra con `main`, y 134 tarjetas subiendo
+     500 ms cada una (y otra vez con cada filtro) era animar dos cosas a la vez */
   position:relative;
   content-visibility:auto; contain-intrinsic-size:auto 230px;
 }
@@ -1200,7 +1201,6 @@ main.multiverso{margin-top: var(--e-6)}
   background:linear-gradient(180deg, var(--panel3), var(--panel));
   border:none; border-radius:var(--r-m); padding: var(--e-5) var(--e-6);
   display:flex; flex-direction:column; gap: var(--e-3);
-  animation:riseIn .45s var(--curva) both;
 }
 .mv-num{
   align-self:flex-start; font-size: var(--t-xs); font-weight:700; letter-spacing:.08em;
@@ -1370,7 +1370,7 @@ main.tiempo{margin-top: var(--e-6)}
 .cine-flecha:disabled{opacity:.25; cursor:default}
 .cine-panel{
   display:flex; align-items:center; gap: var(--e-7); min-width:0;
-  animation:riseIn .35s var(--curva) both;
+  animation:riseIn var(--dur-larga) var(--curva) both;
 }
 .cine-poster .cover{
   width:min(300px, 34vw); height:auto; aspect-ratio:2/3; border-radius:var(--r-m);
@@ -1417,6 +1417,9 @@ footer{margin-top: var(--e-9); border-top:1px solid var(--line); padding-top: va
 /* ── Movimiento con propósito (HIG: nada de animar por animar) ── */
 /* Cambiar de pestaña es un cambio de contexto: se anuncia con un fundido corto. */
 main{animation:entraVista .28s var(--curva) both}
+/* Pasar de título dentro de la ficha (flechas o deslizar) cambiaba el contenido
+   de golpe; el mismo fundido corto, solo al navegar, nunca al abrir. */
+.modal-cambio{animation:entraVista var(--dur-corta) var(--curva) both}
 @keyframes entraVista{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
 
 /* El escalonado de las tarjetas ya lo pone el JSX (animationDelay en línea). */

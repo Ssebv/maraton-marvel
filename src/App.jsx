@@ -1607,13 +1607,13 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
   useEffect(() => {
     const el = refModal.current
     if (!el || !window.matchMedia('(max-width:720px)').matches) return undefined
-    let x0 = null, y0 = null, dx = 0, modo = null
+    let x0 = null, y0 = null, dx = 0, modo = null, t0 = 0
     const onStart = e => {
       if (e.touches.length !== 1 || refPersona.current || !refNav.current) return
       const t = e.touches[0]
       if (t.clientY - el.getBoundingClientRect().top <= 44) return
       if (e.target.closest('.carril-personas,input,textarea')) return
-      x0 = t.clientX; y0 = t.clientY; dx = 0; modo = null
+      x0 = t.clientX; y0 = t.clientY; dx = 0; modo = null; t0 = e.timeStamp
     }
     const onMove = e => {
       if (x0 == null) return
@@ -1630,12 +1630,14 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
       el.style.transform = `translateX(${dx}px)`
     }
     const suelta = () => { x0 = null; modo = null; el.style.transition = ''; el.style.transform = '' }
-    const onEnd = () => {
+    const onEnd = e => {
       if (x0 == null) return
       if (modo === 'x') {
         el.style.transition = 'transform var(--dur-media) var(--curva)'
         el.style.transform = ''
-        if (Math.abs(dx) > 70 && refNav.current) refNav.current(dx < 0 ? 1 : -1)
+        // un latigazo corto también navega: cuenta la velocidad, no solo el recorrido
+        const latigazo = Math.abs(dx) > 24 && Math.abs(dx) / Math.max(1, e.timeStamp - t0) > 0.11
+        if ((Math.abs(dx) > 70 || latigazo) && refNav.current) refNav.current(dx < 0 ? 1 : -1)
       }
       x0 = null; modo = null
     }
@@ -1650,7 +1652,14 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
       el.removeEventListener('touchcancel', suelta)
     }
   }, [])
-  useEffect(() => { setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null) }, [item.id])
+  // cuántas veces se ha cambiado de título con la ficha abierta: al navegar el
+  // contenido entra con un fundido corto; al abrir, no (la hoja ya entra sola)
+  const [cambios, setCambios] = useState(0)
+  const montado = useRef(false)
+  useEffect(() => {
+    setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null)
+    if (montado.current) setCambios(c => c + 1); else montado.current = true
+  }, [item.id])
   // Escape, atrapa-foco, bloqueo del scroll y devolución del foco: lo mismo que
   // hacen los otros diálogos, así que se usa el mismo hook en vez de una segunda
   // copia con su propia lista de selectores que mantener a mano.
@@ -1701,7 +1710,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             onVolver={() => setPersona(null)}
             onAbrirTitulo={d => { setPersona(null); onIrA && onIrA(d) }} />
         ) : (
-        <div className="modal-info">
+        <div className={cambios ? 'modal-info modal-cambio' : 'modal-info'} key={cambios}>
           <div className="modal-chips">
             {item.uni && <span className="tipo uni">{item.uni}</span>}
             {item.tipo === 'serie' && <span className="tipo serie">Serie</span>}
