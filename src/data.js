@@ -78,6 +78,14 @@ export const DATA = [
 {
   saga: "ucm", titulo: "Universo Cinematográfico de Marvel", uni: "Tierra-616",
   desc: "Películas, series de Disney+ y especiales en orden cronológico de la historia, desde 1943 hasta hoy.",
+  guia: [
+    { t: "La idea", p: "A diferencia de los X-Men, el UCM es una sola línea: nada se borra. Los saltos que notarás vienen de dos cosas, el Chasquido y el multiverso, y las dos se explican aquí." },
+    { t: "El Chasquido y el Lapso", p: "En Infinity War (2018) Thanos borra a la mitad del universo. Endgame salta cinco años, a 2023, y los devuelve. Todo lo posterior habla del «Lapso» (Blip): los desaparecidos no envejecieron, y por eso Peter Parker sigue en el instituto en 2024." },
+    { t: "Los viajes en el tiempo de Endgame no borran nada", p: "Crean ramas. El Loki de 2012 escapa con el Teseracto y de ahí nacen la serie Loki, la TVA y las variantes: por eso Loki va justo después de Endgame aunque esté «fuera del tiempo». What If…?, Marvel Zombies y Your Friendly Neighborhood Spider-Man son otros universos: se ven ahí, pero no tocan la línea principal." },
+    { t: "El multiverso", p: "No Way Home trae a los Spider-Man de las películas de Sony (por eso ese bloque va justo antes), y Multiverso de la locura y Loki T2 lo consolidan. Los 4 Fantásticos viven en otra Tierra, en unos años 60 alternativos. Y Deadpool y Lobezno viene del universo Fox: por eso la saga X-Men entera se ve antes y esa película casi al final, como puente. Doomsday junta a todos." },
+    { t: "Las series de Netflix y ABC", p: "Agents of S.H.I.E.L.D., Daredevil, Jessica Jones y compañía se hicieron aparte y durante años no contaron. Daredevil: Born Again las recupera con los mismos actores. Se pueden saltar sin perder el hilo de las películas." },
+    { t: "Cómo saber dónde estás", p: "Si mencionan el Lapso, estás después de 2023. Si Thanos sigue vivo, antes de 2018. Si alguien habla de variantes o de la TVA, estás en la saga del multiverso." },
+  ],
   eras: [
     { era: "Los orígenes", rango: "1943–2012", c: ["#2B5DA8", "#122A55"], items: [
       { id: "cap1", pc: "1 al final", t: "Capitán América: El primer vengador", h: "1943–45", r: 2011, s: 6.9, d: 124, plat: "Disney+", exp: true,
