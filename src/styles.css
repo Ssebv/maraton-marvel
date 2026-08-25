@@ -621,8 +621,9 @@ h3{
   border-radius:var(--r-m); padding: var(--e-5);
   box-shadow:none;
   transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-larga);
-  /* sin entrada propia: la vista ya entra con `main`, y 134 tarjetas subiendo
-     500 ms cada una (y otra vez con cada filtro) era animar dos cosas a la vez */
+  /* La lista entra escalonada (30 ms por tarjeta, tope 360): es LA animación
+     de la vista, así que main no se funde además — ver main.crono más abajo. */
+  animation:entraVista var(--dur-media) var(--curva) both;
   position:relative;
   content-visibility:auto; contain-intrinsic-size:auto 230px;
 }
@@ -1417,6 +1418,29 @@ footer{margin-top: var(--e-9); border-top:1px solid var(--line); padding-top: va
 /* ── Movimiento con propósito (HIG: nada de animar por animar) ── */
 /* Cambiar de pestaña es un cambio de contexto: se anuncia con un fundido corto. */
 main{animation:entraVista .28s var(--curva) both}
+/* en las listas la entrada la ponen las tarjetas, escalonadas; una cosa, no dos */
+main.crono, main.comics, main.estreno{animation:none}
+/* La guía de la saga se despliega párrafo a párrafo (decorativo: no bloquea). */
+.saga-guia[open] > p{animation:entraVista var(--dur-corta) var(--curva) both}
+.saga-guia[open] > p:nth-of-type(2){animation-delay:30ms}
+.saga-guia[open] > p:nth-of-type(3){animation-delay:60ms}
+.saga-guia[open] > p:nth-of-type(4){animation-delay:90ms}
+.saga-guia[open] > p:nth-of-type(5){animation-delay:120ms}
+.saga-guia[open] > p:nth-of-type(6){animation-delay:150ms}
+/* Todo lo pulsable responde al dedo igual: encoge un 4 % y vuelve en 160 ms.
+   Los chips, la casilla, la tarjeta y el botón principal ya lo hacían. */
+.ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .estrella, .tab{transition:transform var(--dur-corta)}
+.ep{transition:opacity var(--dur-corta), transform var(--dur-corta)}
+.ghost:active, .subvista:active, .siguiente-stat:active, .filtros-quitar:active, .proximo-cal:active,
+.saga-guia summary:active, .estrella:active, .tab:active, .cerrar:active, .ep:active{transform:scale(.96)}
+@media (prefers-reduced-motion: reduce){
+  .ghost:active, .subvista:active, .siguiente-stat:active, .filtros-quitar:active, .proximo-cal:active,
+  .saga-guia summary:active, .estrella:active, .tab:active, .cerrar:active, .ep:active{transform:none}
+}
+/* Un número que cambia rueda hacia su sitio en vez de saltar. */
+@keyframes cifraRueda{from{opacity:0; transform:translateY(.45em)} to{opacity:1; transform:none}}
+.cifra{display:inline-block}
+.cifra-cambio{animation:cifraRueda var(--dur-media) var(--curva) both}
 /* Pasar de título dentro de la ficha (flechas o deslizar) cambiaba el contenido
    de golpe; el mismo fundido corto, solo al navegar, nunca al abrir. */
 .modal-cambio{animation:entraVista var(--dur-corta) var(--curva) both}
@@ -1521,12 +1545,23 @@ main{animation:entraVista .28s var(--curva) both}
   }
   .tab{
     /* con tres destinos cada celda pasa de 37 a ~125 px y el rótulo vuelve
-       a caber entero: se acabaron "Anim." y "Multi" */
-    flex:1 1 auto; min-width:0; display:flex; align-items:center; justify-content:center;
+       a caber entero: se acabaron "Anim." y "Multi". Tercios exactos (flex 0)
+       para que la píldora que se desliza caiga siempre debajo del activo. */
+    flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center;
     padding: var(--e-4) var(--e-2); border-radius:var(--r-m); background:transparent;
     font-size: var(--t-m);
   }
-  .tab{position:relative}
+  .tab{position:relative; z-index:1}
+  /* la píldora del destino activo se desliza al siguiente en vez de saltar;
+     --tab lo pone la app (0, 1 o 2). El dock ya es position:fixed, que sirve
+     de contenedor: NO volver a ponerle position:relative, lo desclava. */
+  .tabs::before{
+    content:""; position:absolute; top: var(--e-2); bottom: var(--e-2); left: var(--e-2);
+    width:calc((100% - 2 * var(--e-2)) / 3); border-radius:var(--r-m);
+    background:var(--panel2);
+    transform:translateX(calc(var(--tab, 0) * 100%));
+    transition:transform var(--dur-media) var(--curva);
+  }
   .tab::after{content:""; position:absolute; inset:-3px 0}
 
   /* La barra ocupaba 399 px (5 filas de chips) al crecer el número de filtros.
@@ -1779,3 +1814,9 @@ main{animation:entraVista .28s var(--curva) both}
 :root[data-acento="tva"]{--red:var(--violet); --red-soft:var(--violet-soft)}
 :root[data-acento="zombi"]{--red:var(--doom); --red-soft:var(--doom-soft)}
 :root[data-acento="828"]{--red:var(--teal); --red-soft:var(--teal-soft)}
+
+/* Va al final a propósito: la píldora del dock se declara dentro del bloque
+   de 720 px y esta regla tiene que venir DESPUÉS para ganar. */
+@media (prefers-reduced-motion: reduce){
+  .tabs::before{transition:none}
+}

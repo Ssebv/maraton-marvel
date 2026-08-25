@@ -738,6 +738,16 @@ const YA_INSTALADA = (window.matchMedia && window.matchMedia('(display-mode: sta
 // Con el dedo, el placeholder dice qué se puede buscar (el atajo «/» no existe)
 const ES_TACTIL = !!(window.matchMedia && window.matchMedia('(hover: none)').matches)
 
+// Un contador que cambia (17 → 18) rueda hacia su sitio; al montar, quieto.
+function Cifra({ n }) {
+  const previo = useRef(n)
+  const [vuelta, setVuelta] = useState(0)
+  useEffect(() => {
+    if (previo.current !== n) { previo.current = n; setVuelta(v => v + 1) }
+  }, [n])
+  return <span key={vuelta} className={vuelta ? 'cifra cifra-cambio' : 'cifra'}>{n}</span>
+}
+
 function AvisosBtn() {
   // Los avisos van por periodicsync. Donde el navegador no lo tiene (todo iOS,
   // Safari y Firefox de escritorio) el botón prometería avisos que no llegarán
@@ -1333,23 +1343,23 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
         <div className="stats">
           <div className="stat">
             <span className="stat-label">Horas vistas</span>
-            <span className="stat-num">{Math.round(est.vistoMin / 60)}<small> / {Math.round(est.totMin / 60)} h</small></span>
+            <span className="stat-num"><Cifra n={Math.round(est.vistoMin / 60)} /><small> / {Math.round(est.totMin / 60)} h</small></span>
             <div className="barra"><i style={{ width: `${pct}%` }} /></div>
             <span className="stat-foot">{pct}% del maratón</span>
           </div>
           <div className="stat">
             <span className="stat-label">Títulos vistos</span>
-            <span className="stat-num">{est.titulosVistos}<small> / {est.titulosTot}</small></span>
+            <span className="stat-num"><Cifra n={est.titulosVistos} /><small> / {est.titulosTot}</small></span>
             <span className="stat-foot">películas, series y especiales</span>
           </div>
           <div className="stat">
             <span className="stat-label">Cómics leídos</span>
-            <span className="stat-num">{est.comicsVistos}<small> / {est.comicsTot}</small></span>
+            <span className="stat-num"><Cifra n={est.comicsVistos} /><small> / {est.comicsTot}</small></span>
             <span className="stat-foot">lecturas esenciales</span>
           </div>
           <div className="stat">
             <span className="stat-label">Bóveda de animación</span>
-            <span className="stat-num">{est.bovedaVistos}<small> / {est.bovedaTot}</small></span>
+            <span className="stat-num"><Cifra n={est.bovedaVistos} /><small> / {est.bovedaTot}</small></span>
             <span className="stat-foot">episodios de las 17 series</span>
           </div>
         </div>
@@ -1652,6 +1662,32 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
       el.removeEventListener('touchcancel', suelta)
     }
   }, [])
+  // Al abrir desde la lista, la carátula vuela desde su tarjeta hasta la ficha:
+  // la misma pieza en dos sitios, y el ojo sabe de dónde viene. Se mide el
+  // destino con la entrada de la hoja apagada (a tiempo cero la desplaza), y
+  // solo se hace si la tarjeta está en pantalla y el movimiento no está reducido.
+  const refPortada = useRef(null)
+  React.useLayoutEffect(() => {
+    // se anima el contenedor, no la <img>: React la reemplaza nada más montar
+    // (la portada se vuelve a renderizar) y la animación moriría con el nodo
+    const destino = refPortada.current
+    const origen = document.querySelector(`#card-${CSS.escape(item.id)} .cover`)
+    const modal = refModal.current
+    if (!destino || !origen || !modal || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const ro = origen.getBoundingClientRect()
+    if (!ro.width || ro.bottom < 0 || ro.top > window.innerHeight) return
+    const anim = modal.style.animation
+    modal.style.animation = 'none'
+    const rd = destino.getBoundingClientRect()
+    modal.style.animation = anim
+    if (!rd.width) return
+    const hoja = window.matchMedia('(max-width:720px)').matches
+    destino.style.transformOrigin = '0 0'
+    destino.animate(
+      [{ transform: `translate(${ro.left - rd.left}px, ${ro.top - rd.top}px) scale(${ro.width / rd.width}, ${ro.height / rd.height})` }, { transform: 'none' }],
+      { duration: hoja ? 380 : 260, easing: hoja ? 'cubic-bezier(.32, .72, 0, 1)' : 'cubic-bezier(.22, 1, .36, 1)', fill: 'backwards' }
+    )
+  }, [])
   // cuántas veces se ha cambiado de título con la ficha abierta: al navegar el
   // contenido entra con un fundido corto; al abrir, no (la hoja ya entra sola)
   const [cambios, setCambios] = useState(0)
@@ -1697,7 +1733,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
         )}
         <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
         <div className="modal-cover">
-          <div className="modal-portada">
+          <div className="modal-portada" ref={refPortada}>
             <Portada item={item} c={c} esComic={esComic} />
             {vista && <span className="sello" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
           </div>
@@ -2766,7 +2802,7 @@ export default function App() {
         <div className="stats">
           <div className="stat">
             <span className="stat-label">Completados</span>
-            <span className="stat-num">{stats.totV}<small> / {stats.totN}</small></span>
+            <span className="stat-num"><Cifra n={stats.totV} /><small> / {stats.totN}</small></span>
             <div className="barra"><i style={{ width: `${pct}%` }} /></div>
             <span className="stat-foot">{pct}% del maratón</span>
           </div>
@@ -2842,7 +2878,7 @@ export default function App() {
 
       <header className="toolbar">
         <div className="controles" role="group" aria-label="Vista y filtros">
-          <nav className="tabs" aria-label="Secciones">
+          <nav className="tabs" aria-label="Secciones" style={{ '--tab': Math.max(0, DESTINOS.findIndex(d => d.id === destinoDe(vista))) }}>
             {DESTINOS.map(d => {
               // volver a un destino te devuelve donde lo dejaste
               const destino = ultimaVista[d.id] || d.vistas[0]
