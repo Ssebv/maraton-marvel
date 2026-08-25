@@ -1736,9 +1736,11 @@ main{animation:entraVista .28s var(--curva) both}
 .nav-ficha.izq{left:calc(50% - min(450px, 50vw - 20px) - 52px)}
 .nav-ficha.der{right:calc(50% - min(450px, 50vw - 20px) - 52px)}
 @media (max-width:1040px){
-  /* sin sitio a los lados: se apoyan en el borde de la ventana */
-  .nav-ficha.izq{left:8px}
-  .nav-ficha.der{right:8px}
+  /* sin sitio a los lados: se apoyan en el borde de la ventana. Un iPhone
+     apaisado mide 812-956 px y cae AQUÍ, no en el bloque de 720: las zonas
+     seguras laterales tienen que estar en este también. */
+  .nav-ficha.izq{left:calc(8px + env(safe-area-inset-left, 0px))}
+  .nav-ficha.der{right:calc(8px + env(safe-area-inset-right, 0px))}
 }
 @media (max-width:720px){
   /* por encima del indicador de inicio del iPhone, como el dock */

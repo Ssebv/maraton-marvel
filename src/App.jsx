@@ -739,9 +739,11 @@ const YA_INSTALADA = (window.matchMedia && window.matchMedia('(display-mode: sta
 const ES_TACTIL = !!(window.matchMedia && window.matchMedia('(hover: none)').matches)
 
 function AvisosBtn() {
-  // En iOS los avisos van por periodicsync, que Safari no tiene: el botón
-  // prometería avisos que no llegarán nunca. Ahí no se ofrece.
-  const sop = typeof Notification !== 'undefined' && 'serviceWorker' in navigator && !ES_IOS
+  // Los avisos van por periodicsync. Donde el navegador no lo tiene (todo iOS,
+  // Safari y Firefox de escritorio) el botón prometería avisos que no llegarán
+  // nunca: se detecta la capacidad, no la plataforma.
+  const hayPeriodicSync = typeof ServiceWorkerRegistration !== 'undefined' && 'periodicSync' in ServiceWorkerRegistration.prototype
+  const sop = typeof Notification !== 'undefined' && 'serviceWorker' in navigator && hayPeriodicSync
   const [estado, setEstado] = useState(() => {
     if (!sop) return 'no-sop'
     if (Notification.permission === 'granted') return 'on'
@@ -770,14 +772,26 @@ function AvisosBtn() {
 // microtask porque cerrar un diálogo y abrir otro pasa en el mismo commit de
 // React (Ajustes → Sincronización): decidir en caliente haría un back() de más.
 let capasAtras = []
-let entradaAtras = false
+// Tras recargar con una capa abierta la entrada {capa:1} sobrevive: se reutiliza
+// en vez de apilar otra, o hacía falta un atrás de más para salir de la app.
+let entradaAtras = !!(history.state && history.state.capa === 1)
+// La última URL que compuso el efecto de App. Al consumir la entrada con back()
+// se vuelve a la anterior, que aún lleva el ?t= del título recién cerrado: hay
+// que volver a escribir la buena al aterrizar.
+let urlEstado = null
+let consumiendoAtras = false
 function conciliaAtras() {
   queueMicrotask(() => {
     if (capasAtras.length && !entradaAtras) { history.pushState({ capa: 1 }, ''); entradaAtras = true }
-    else if (!capasAtras.length && entradaAtras) { entradaAtras = false; history.back() }
+    else if (!capasAtras.length && entradaAtras) { entradaAtras = false; consumiendoAtras = true; history.back() }
   })
 }
 window.addEventListener('popstate', () => {
+  if (consumiendoAtras) {
+    consumiendoAtras = false
+    if (urlEstado != null) history.replaceState(history.state, '', urlEstado)
+    return
+  }
   if (!capasAtras.length || !entradaAtras) return
   entradaAtras = false
   const capa = capasAtras.pop()
@@ -1182,6 +1196,16 @@ function descargaIcs(e) {
   const dia = e.fecha.replace(/-/g, '')
   const fin = new Date(new Date(e.fecha + 'T00:00:00Z').getTime() + 864e5).toISOString().slice(0, 10).replace(/-/g, '')
   const esc = s => String(s || '').replace(/([,;\\])/g, '\\$1')
+  // iCalendar parte las líneas a 75 octetos (no caracteres: las tildes pesan 2)
+  const pliega = linea => {
+    const out = []; let actual = '', bytes = 0
+    for (const ch of linea) {
+      const b = new TextEncoder().encode(ch).length
+      if (bytes + b > 74) { out.push(actual); actual = ' ' + ch; bytes = 1 + b } else { actual += ch; bytes += b }
+    }
+    out.push(actual)
+    return out.join('\r\n')
+  }
   const ics = [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//maraton-marvel//ES', 'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT',
@@ -1192,11 +1216,19 @@ function descargaIcs(e) {
     `SUMMARY:${esc('Estreno: ' + e.t)}`,
     `DESCRIPTION:${esc((e.tipo ? e.tipo + '. ' : '') + (e.n || ''))}`,
     'END:VEVENT', 'END:VCALENDAR',
-  ].join('\r\n')
-  const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }))
+  ].map(pliega).join('\r\n')
+  const nombre = `estreno-${e.t.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '')}.ics`
+  // Con el dedo va por la hoja de compartir del sistema: en la app instalada
+  // de iOS una descarga por <a download> puede no hacer nada, y sin aviso.
+  const archivo = new File([ics], nombre, { type: 'text/calendar' })
+  if (ES_TACTIL && navigator.canShare && navigator.canShare({ files: [archivo] })) {
+    navigator.share({ files: [archivo], title: 'Estreno: ' + e.t }).catch(() => {})
+    return
+  }
+  const url = URL.createObjectURL(archivo)
   const a = document.createElement('a')
   a.href = url
-  a.download = `estreno-${e.t.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '')}.ics`
+  a.download = nombre
   document.body.appendChild(a)
   a.click()
   a.remove()
@@ -1509,15 +1541,18 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
   const refModal = useRef(null)
   const refCierra = useRef(onClose)
   refCierra.current = onClose
+  // La biografía es una capa dentro de la ficha: atrás vuelve a la ficha, como
+  // hace Escape, y no cierra las dos de golpe
+  useVolverCierra(!!persona, () => setPersona(null))
   // El asa de la hoja móvil arrastra de verdad: seguir al dedo desde la franja
   // superior y, si el tirón pasa de umbral (o es un latigazo), cerrar. Si no,
   // volver a su sitio. Solo toca transform, y solo existe donde hay hoja.
   useEffect(() => {
     const el = refModal.current
     if (!el || !window.matchMedia('(max-width:720px)').matches) return undefined
-    let y0 = null, dy = 0, t0 = 0
+    let y0 = null, dy = 0, t0 = 0, cerrando = false
     const onStart = e => {
-      if (e.touches.length !== 1) return
+      if (cerrando || e.touches.length !== 1) return
       if (e.target.closest('button,a,input,textarea')) return
       const t = e.touches[0]
       if (t.clientY - el.getBoundingClientRect().top > 44) return
@@ -1530,15 +1565,18 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
       e.preventDefault()
       el.style.transform = `translateY(${dy}px)`
     }
-    const suelta = () => { y0 = null; el.style.transition = ''; el.style.transform = '' }
+    // mientras la hoja se va (240 ms) ni un toque nuevo ni un touchcancel la
+    // devuelven a su sitio: se cerraría de golpe sin salida
+    const suelta = () => { if (cerrando) return; y0 = null; el.style.transition = ''; el.style.transform = '' }
     const onEnd = e => {
       if (y0 == null) return
       const latigazo = dy > 24 && e.timeStamp - t0 < 250
       if (dy > 140 || latigazo) {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { suelta(); refCierra.current(); return }
+        cerrando = true
         el.style.transition = 'transform var(--dur-media) var(--curva)'
         el.style.transform = 'translateY(105%)'
-        setTimeout(() => { suelta(); refCierra.current() }, 240)
+        setTimeout(() => { cerrando = false; suelta(); refCierra.current() }, 240)
       } else {
         el.style.transition = 'transform var(--dur-media) var(--curva)'
         el.style.transform = ''
@@ -2096,13 +2134,8 @@ export default function App() {
       // maratón (mismo criterio que la cabecera: ni cómics ni bóveda). Se lee
       // aquí y no en un efecto — el efecto de la URL lo borraría al montar.
       if (p.get('ir') === 'siguiente') {
-        for (const saga of DATA) {
-          if (saga.saga === 'comics' || saga.saga === 'animacion') continue
-          for (const era of saga.eras) {
-            const item = era.items.find(i => !vistas[i.id])
-            if (item) return buscaItem(item.id)
-          }
-        }
+        const id = ORDEN_VISTA.find(id => ID_MARATON.has(id) && !vistas[id])
+        return id ? buscaItem(id) : null
       }
       return null
     } catch { return null }
@@ -2161,7 +2194,9 @@ export default function App() {
     // esta URL está para mirarla y compartirla, así que se deja legible
     const cad = p.toString().replace(/%2C/g, ',')
     const h = vista === 'crono' ? '' : '#' + vista
-    history.replaceState(null, '', window.location.pathname + (cad ? '?' + cad : '') + h)
+    urlEstado = window.location.pathname + (cad ? '?' + cad : '') + h
+    // se conserva history.state: ahí vive la marca {capa:1} del gesto atrás
+    history.replaceState(history.state, '', urlEstado)
   }, [vista, detalle, busca, filtros, perfil])
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
   const [panelAbierto, setPanelAbierto] = useState(() => {
@@ -2190,11 +2225,11 @@ export default function App() {
   }, [])
   const instalar = async () => {
     if (!instalable) return
-    try {
-      instalable.prompt()
-      const r = await instalable.userChoice
-      if (r && r.outcome === 'accepted') setInstalable(null)
-    } catch {}
+    // el evento solo admite un prompt(): se gasta acepte o no, y si el usuario
+    // lo descarta Chrome vuelve a avisar más tarde y el botón reaparece
+    const ev = instalable
+    setInstalable(null)
+    try { await ev.prompt(); await ev.userChoice } catch {}
   }
   const ponFondo = id => {
     setFondo(id)
@@ -2425,6 +2460,8 @@ export default function App() {
     setBienvenida(false)
     try { localStorage.setItem('maraton-marvel-bienvenida-v1', '1') } catch {}
   }
+  // también es una capa: en la primera visita, atrás la cierra en vez de salir
+  useVolverCierra(bienvenida && !perfil, cierraBienvenida)
 
   const pasaFiltro = (item, esComic) => {
     if (busca) {
