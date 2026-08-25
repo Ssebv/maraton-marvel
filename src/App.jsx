@@ -5,6 +5,7 @@ import { PEOPLE } from './people.js'
 import { EPISODES } from './episodes.js'
 import { TMDB, TMDB_KEY } from './tmdb.js'
 import { ORDEN_CONGELADO } from './orden.js'
+import { PLATAFORMAS, PAISES } from './plataformas.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
@@ -260,14 +261,15 @@ async function tmdbJson(ruta) {
 // una vez para no dejarle megas muertos en el navegador.
 try {
   for (const k of Object.keys(localStorage)) {
-    if (/^maraton-marvel-tmdb-v[0-7]:/.test(k)) localStorage.removeItem(k)
+    if (/^maraton-marvel-tmdb-v[0-8]:/.test(k)) localStorage.removeItem(k)
   }
 } catch {}
 async function cargaTmdb(itemId) {
   if (tmdbMem[itemId]) return tmdbMem[itemId]
   const m = TMDB[itemId]
   if (!m) return null
-  const claveLS = 'maraton-marvel-tmdb-v8:' + itemId
+  // v9: guarda los proveedores de los seis países de Ajustes, no solo España
+  const claveLS = 'maraton-marvel-tmdb-v9:' + itemId
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
@@ -278,7 +280,11 @@ async function cargaTmdb(itemId) {
   const tr = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official)
     || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer')
     || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser')
-  const es = base['watch/providers'] && base['watch/providers'].results && base['watch/providers'].results.ES
+  const regiones = (base['watch/providers'] && base['watch/providers'].results) || {}
+  const proveedores = region => (((regiones[region] || {}).flatrate) || [])
+    .filter(p => p && typeof p.provider_name === 'string')
+    .map(p => ({ n: p.provider_name, l: typeof p.logo_path === 'string' ? p.logo_path : null }))
+    .slice(0, 4)
   const cred = base.credits || base.aggregate_credits
   const reparto = {}
   ;((cred && cred.crew) || []).filter(c => /Director/i.test(c.job || (c.jobs && c.jobs[0] && c.jobs[0].job) || ''))
@@ -298,10 +304,8 @@ async function cargaTmdb(itemId) {
     fondo: base.backdrop_path || null,
     reparto,
     elenco,
-    prov: ((es && es.flatrate) || [])
-      .filter(p => p && typeof p.provider_name === 'string')
-      .map(p => ({ n: p.provider_name, l: typeof p.logo_path === 'string' ? p.logo_path : null }))
-      .slice(0, 4),
+    prov: proveedores('ES'),
+    provPais: Object.fromEntries(PAISES.map(p => [p.id, proveedores(p.id)])),
     eps: {},
   }
   if (tipo === 'tv' && EPISODES[itemId]) {
@@ -1540,7 +1544,16 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miN
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA }) {
+// En qué plataforma está un título en el país elegido. España manda desde el
+// campo `plat` de data.js (curado a mano); el resto sale del mapa generado.
+// Cómics y cine no dependen del país, y sin dato se enseña el de España.
+const platDe = (pais, item) => {
+  if (!item.plat || pais === 'ES' || /panini|unlimited|^cine/i.test(item.plat)) return item.plat
+  return (PLATAFORMAS[pais] && PLATAFORMAS[pais][item.id]) || item.plat
+}
+const nombrePais = pais => (PAISES.find(p => p.id === pais) || PAISES[0]).nombre
+
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, pais }) {
   const { item, c, esComic } = d
   const extra = useTmdb(item)
   const [verTrailer, setVerTrailer] = useState(false)
@@ -1752,7 +1765,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             {item.tipo === 'serie' && <span className="tipo serie">Serie</span>}
             {item.tipo === 'esp' && <span className="tipo esp">Especial</span>}
             {item.opt && <span className="tipo opc">Opcional</span>}
-            {item.plat && <span className="tipo plat">{item.plat}</span>}
+            {platDe(pais, item) && <span className="tipo plat">{platDe(pais, item)}</span>}
           </div>
           <h2 className="modal-titulo">{item.t}</h2>
           <p className="modal-meta">
@@ -1811,11 +1824,13 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               </div>
             </section>
           )}
-          {extra && Array.isArray(extra.prov) && extra.prov.length > 0 && (
+          {extra && (() => {
+            const provs = (extra.provPais && Array.isArray(extra.provPais[pais])) ? extra.provPais[pais] : (Array.isArray(extra.prov) ? extra.prov : [])
+            return provs.length > 0 && (
             <div className="prov">
-              <span className="prov-label">Hoy en España</span>
+              <span className="prov-label">Hoy en {nombrePais(pais)}</span>
               <div className="prov-lista">
-                {extra.prov.map((pv, i) => {
+                {provs.map((pv, i) => {
                   // la caché vieja guardaba texto suelto: se acepta la forma antigua
                   const nombre = typeof pv === 'string' ? pv
                     : (pv && typeof pv.n === 'string' ? pv.n : null)
@@ -1831,7 +1846,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                 })}
               </div>
             </div>
-          )}
+            )
+          })()}
           <div className="valoracion">
             <span className="valoracion-label">Tu valoración</span>
             <span className="estrellas" role="radiogroup" aria-label="Tu valoración">
@@ -2270,6 +2286,21 @@ export default function App() {
   const [ajustes, setAjustes] = useState(false)
   // Chrome/Edge avisan de que la app se puede instalar; iOS no avisa nunca,
   // así que allí Ajustes enseña el camino a mano (Compartir → Añadir a inicio)
+  // País para las plataformas: el guardado, o el del idioma del navegador
+  // (es-CL → Chile) si está entre los que la app conoce; si no, España.
+  const [pais, setPais] = useState(() => {
+    try {
+      const g = localStorage.getItem('maraton-marvel-pais-v1')
+      if (g && PAISES.some(p => p.id === g)) return g
+      const region = (navigator.language || '').split('-')[1]
+      if (region && PAISES.some(p => p.id === region.toUpperCase())) return region.toUpperCase()
+    } catch {}
+    return 'ES'
+  })
+  const ponPais = id => {
+    setPais(id)
+    try { localStorage.setItem('maraton-marvel-pais-v1', id) } catch {}
+  }
   const [instalable, setInstalable] = useState(null)
   useEffect(() => {
     const onBip = e => { e.preventDefault(); setInstalable(e) }
@@ -2533,7 +2564,7 @@ export default function App() {
     // «esta noche sin alquilar»: 102 de los 108 del maratón están en Disney+,
     // así que el filtro es un solo interruptor y no un selector de plataforma.
     // Los cómics van por Panini y quedan fuera del criterio.
-    if (filtros.disney && !esComic && item.plat !== 'Disney+') return false
+    if (filtros.disney && !esComic && !/Disney\+/.test(platDe(pais, item) || '')) return false
     return true
   }
 
@@ -2561,7 +2592,7 @@ export default function App() {
       if (!extra) { totV += v; totN += n; mins += m }
     })
     return { totV, totN, mins, siguiente, porSaga }
-  }, [vistas, filtros])
+  }, [vistas, filtros, pais])
 
   const estadisticas = useMemo(() => {
     const minutosVistos = item => {
@@ -2740,7 +2771,7 @@ export default function App() {
       if (pasaFiltro(it, esComic) && !(filtros.vistas && vistas[it.id])) vis++
     })))
     return { activos, tot, vis }
-  }, [filtros, busca, vistas])
+  }, [filtros, busca, vistas, pais])
   const limpiaFiltros = () => {
     setFiltros(sinFiltros())
     setBusca('')
@@ -3708,6 +3739,18 @@ export default function App() {
                 </div>
               </div>
 
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">País</h3>
+                  <p className="ajuste-pista">Decide en qué plataforma aparece cada título y el filtro «En Disney+». Los catálogos cambian cada mes y se revisan con la app.</p>
+                </div>
+                <div className="ajuste-ops">
+                  {PAISES.map(p => (
+                    <button key={p.id} className="chip-btn" aria-pressed={pais === p.id} onClick={() => ponPais(p.id)}>{p.nombre}</button>
+                  ))}
+                </div>
+              </div>
+
               {!YA_INSTALADA && (ES_IOS || instalable) && (
                 <div className="ajuste">
                   <div className="ajuste-cab">
@@ -3780,7 +3823,7 @@ export default function App() {
       )}
 
       {detalle && (
-        <Detalle d={detalle} vista={!!vistas[detalle.item.id]}
+        <Detalle d={detalle} vista={!!vistas[detalle.item.id]} pais={pais}
           onToggle={() => toggle(detalle.item.id)}
           onClose={() => setDetalle(null)}
           eps={eps} toggleEp={toggleEp}
