@@ -1055,6 +1055,11 @@ a.accion-principal{text-decoration:none; display:inline-block}
   grid-auto-columns:13px; gap: var(--e-2); overflow-x:auto; padding-bottom: var(--e-2);
 }
 .hm-celda{width:13px; height:13px; border-radius:var(--r-s); background:var(--panel2)}
+/* escala del mapa de calor: un solo tono, de menos a más, con sus extremos en texto */
+.hm-escala{display:flex; align-items:center; gap: var(--e-2); margin-top: var(--e-3); font-size: var(--t-xs); color:var(--ink3)}
+.hm-escala i{display:block; width:13px; height:13px; border-radius:var(--r-s); background:var(--panel2)}
+.hm-escala span + i{margin-left: var(--e-1)}
+.hm-escala i + span{margin-left: var(--e-1)}
 .logros{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap: var(--e-4)}
 .logro{
   display:flex; flex-direction:column; align-items:center; text-align:center; gap: var(--e-2);

@@ -1936,18 +1936,30 @@ function Actividad({ vistas, eps }) {
   let racha = 0
   for (let i = celdas.length - 1; i >= 0 && celdas[i].n > 0; i--) racha++
   const total = [...dias.values()].reduce((a, b) => a + b, 0)
+  const diasActivos = celdas.filter(c => c.n > 0).length
+  const tono = n => `color-mix(in srgb, var(--red) ${25 + 75 * n / max}%, var(--panel2))`
+  // El title de cada celda no existe con el dedo: los valores viven también en
+  // texto (resumen y escala), y el diario de abajo es la tabla gemela.
+  const resumen = `${total} marcas en ${diasActivos} día${diasActivos === 1 ? '' : 's'} de los últimos 140` + (max > 1 ? ` · máximo ${max} en un día` : '')
   return (
     <section className="grafica">
       <h3 className="grafica-titulo">Actividad del maratón</h3>
       <p className="grafica-sub">
-        Últimas 20 semanas · {total} marcas con fecha{racha > 0 ? ` · 🔥 racha de ${racha} día${racha > 1 ? 's' : ''}` : ''}
+        Últimas 20 semanas · {resumen}{racha > 0 ? ` · 🔥 racha de ${racha} día${racha > 1 ? 's' : ''}` : ''}
       </p>
-      <div className="heatmap" role="img" aria-label="Calendario de actividad">
+      <div className="heatmap" role="img" aria-label={`Calendario de actividad: ${resumen}`}>
         {celdas.map(c => (
           <span key={c.t} className="hm-celda"
             title={`${c.f.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}: ${c.n} marca${c.n === 1 ? '' : 's'}`}
-            style={c.n ? { background: `color-mix(in srgb, var(--red) ${25 + 75 * c.n / max}%, var(--panel2))` } : undefined} />
+            style={c.n ? { background: tono(c.n) } : undefined} />
         ))}
+      </div>
+      <div className="hm-escala" aria-hidden="true">
+        <span>0</span>
+        <i />
+        {[1, 2, 3].filter(n => n <= max).map(n => <i key={n} style={{ background: tono(n) }} />)}
+        {max > 3 && <i style={{ background: tono(max) }} />}
+        <span>{max > 1 ? `${max} marcas` : '1 marca'}</span>
       </div>
     </section>
   )
