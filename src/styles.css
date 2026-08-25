@@ -1487,7 +1487,11 @@ main{animation:entraVista .28s var(--curva) both}
 @media (max-width:720px){
   .toolbar{background:var(--bg)}
   .tabs{
-    position:fixed; left:10px; right:10px;
+    /* los laterales también son zona segura: en apaisado el notch y las
+       esquinas redondeadas se comen 44-59 px de cada lado */
+    position:fixed;
+    left:calc(10px + env(safe-area-inset-left, 0px));
+    right:calc(10px + env(safe-area-inset-right, 0px));
     bottom:calc(10px + env(safe-area-inset-bottom));
     z-index:40; justify-content:space-between; gap: 0; padding: var(--e-2);
     background:var(--panel);
@@ -1739,8 +1743,14 @@ main{animation:entraVista .28s var(--curva) both}
 @media (max-width:720px){
   /* por encima del indicador de inicio del iPhone, como el dock */
   .nav-ficha{top:auto; bottom:calc(14px + env(safe-area-inset-bottom, 0px)); transform:none; width:44px; height:44px}
-  .nav-ficha.izq{left:14px}
-  .nav-ficha.der{right:14px}
+  .nav-ficha.izq{left:calc(14px + env(safe-area-inset-left, 0px))}
+  .nav-ficha.der{right:calc(14px + env(safe-area-inset-right, 0px))}
+}
+/* Un iPhone apaisado tiene 390 px de alto y la barra pegajosa, con sus tres
+   grupos partidos en filas, medía 170: casi la mitad de la pantalla clavada
+   arriba. Si no hay alto, la barra se va con el scroll. */
+@media (max-height:500px){
+  .toolbar{position:static}
 }
 /* ── Temas de acento por universo (alias sobre tokens ya adaptados a claro/oscuro) ── */
 :root[data-acento="xmen"]{--red:var(--gold); --red-soft:var(--gold-soft)}

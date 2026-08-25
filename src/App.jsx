@@ -735,6 +735,8 @@ const ES_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 const YA_INSTALADA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
   || window.navigator.standalone === true
+// Con el dedo, el placeholder dice qué se puede buscar (el atajo «/» no existe)
+const ES_TACTIL = !!(window.matchMedia && window.matchMedia('(hover: none)').matches)
 
 function AvisosBtn() {
   // En iOS los avisos van por periodicsync, que Safari no tiene: el botón
@@ -2822,7 +2824,7 @@ export default function App() {
               setDetalle({ item: e.item, c: e.c, esComic: false })
             }
           }}>Sorpréndeme</button>
-          <input className="busca" type="search" name="busqueda" placeholder="Buscar… ( / )" title="Busca por título, actor, director o año — atajo: /" value={busca} spellCheck={false}
+          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? 'Título, actor, director o año' : 'Buscar… ( / )'} title="Busca por título, actor, director o año — atajo: /" value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
           <button className="chip-btn" aria-pressed={ajustes} onClick={() => setAjustes(true)}>Ajustes</button>
           {/* El estado de sincronización es estado, no un botón: solo se
