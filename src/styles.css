@@ -1341,7 +1341,7 @@ main.tiempo{margin-top: var(--e-6)}
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap: var(--e-5);
   animation:fadeIn .25s ease both;
 }
-.cine-cerrar{position:fixed; top:22px; right:24px}
+.cine-cerrar{position:fixed; top:calc(22px + env(safe-area-inset-top, 0px)); right:calc(24px + env(safe-area-inset-right, 0px))}
 .cine-centro{display:flex; align-items:center; gap: var(--e-6); max-width:1100px; padding: 0 var(--e-6)}
 .cine-flecha{
   flex:none; width:58px; height:58px; border-radius:50%;
@@ -1737,7 +1737,8 @@ main{animation:entraVista .28s var(--curva) both}
   .nav-ficha.der{right:8px}
 }
 @media (max-width:720px){
-  .nav-ficha{top:auto; bottom:14px; transform:none; width:44px; height:44px}
+  /* por encima del indicador de inicio del iPhone, como el dock */
+  .nav-ficha{top:auto; bottom:calc(14px + env(safe-area-inset-bottom, 0px)); transform:none; width:44px; height:44px}
   .nav-ficha.izq{left:14px}
   .nav-ficha.der{right:14px}
 }
