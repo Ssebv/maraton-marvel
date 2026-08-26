@@ -1697,7 +1697,7 @@ function TuArchivo({ item, lectura, onLeer, onOlvida }) {
   return (
     <div className="prov leer-aqui">
       <span className="prov-label">Leer aquí</span>
-      <input ref={inputRef} type="file" hidden accept=".cbz,.zip,.pdf,image/*" multiple onChange={elegir} />
+      <input ref={inputRef} type="file" hidden accept=".cbz,.cbr,.zip,.rar,.pdf,image/*" multiple onChange={elegir} />
       <div className="modal-acciones">
         {meta
           ? <>
@@ -1708,11 +1708,11 @@ function TuArchivo({ item, lectura, onLeer, onOlvida }) {
               <button className="ghost" onClick={quitar} disabled={ocupado}>Quitar</button>
             </>
           : meta === null
-            ? <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>Elegir mi archivo (CBZ, PDF o imágenes)</button>
+            ? <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>Elegir mi archivo (CBZ, CBR, PDF o imágenes)</button>
             : null}
       </div>
       {meta && <p className="prov-nota">{meta.nombre} · {fmtTam(meta.tam)} · guardado en este navegador</p>}
-      {meta === null && <p className="prov-nota">Se lee dentro de la app y el archivo se queda en este navegador: no se sube a ningún sitio. Vale un CBZ/ZIP o las páginas como imágenes (pasan página a página); un PDF se abre con el visor del navegador, que en iPhone solo enseña bien la primera página, así que allí mejor CBZ; un CBR hay que convertirlo a CBZ.</p>}
+      {meta === null && <p className="prov-nota">Se lee dentro de la app y el archivo se queda en este navegador: no se sube a ningún sitio. Vale un CBZ o un CBR (pasan página a página; el CBR carga la primera vez un descompresor de 250 kB), las páginas como imágenes, o un PDF, que se abre con el visor del navegador (en iPhone solo enseña bien la primera página: allí mejor CBZ o CBR).</p>}
       {error && <div className="aviso peligro">{error}</div>}
     </div>
   )

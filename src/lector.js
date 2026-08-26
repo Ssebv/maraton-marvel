@@ -2,7 +2,9 @@
 // CBZ/ZIP (imágenes comprimidas), una carpeta de imágenes o un PDF. El archivo
 // se guarda en IndexedDB de este navegador (nada sale de aquí ni se descarga
 // de ningún sitio) y la ficha del cómic lo abre a pantalla completa.
-// CBR (RAR) no: haría falta un descompresor de 1 MB; se avisa y se pide CBZ.
+// Los CBR (RAR) se abren con node-unrar-js, que NO va en el bundle: son 250 kB
+// (public/rar/unrar.js + unrar.wasm) que se cargan la primera vez que alguien
+// elige un CBR. Ver README, «Lector de cómics».
 import { unzipSync } from 'fflate'
 
 const DB = 'maraton-marvel-lector'
@@ -38,11 +40,11 @@ export function clasifica(archivos) {
     return { tipo: 'imagenes', archivos: imgs.sort(ordenNatural), nombre: `${imgs.length} imágenes` }
   }
   const f = lista[0]
-  if (/\.cbr$|\.rar$/i.test(f.name)) return { error: 'Es un CBR (RAR): conviértelo a CBZ (ZIP) para leerlo aquí' }
+  if (/\.cbr$|\.rar$/i.test(f.name)) return { tipo: 'cbr', archivo: f, nombre: f.name }
   if (/\.pdf$/i.test(f.name) || f.type === 'application/pdf') return { tipo: 'pdf', archivo: f, nombre: f.name }
   if (/\.cbz$|\.zip$/i.test(f.name) || /zip/.test(f.type)) return { tipo: 'cbz', archivo: f, nombre: f.name }
   if (ES_IMAGEN.test(f.name)) return { tipo: 'imagenes', archivos: [f], nombre: f.name }
-  return { error: 'Formato no reconocido: vale un CBZ/ZIP, un PDF o imágenes' }
+  return { error: 'Formato no reconocido: vale un CBZ/ZIP, un CBR, un PDF o imágenes' }
 }
 
 const ordenNatural = (a, b) => (a.name || a).localeCompare(b.name || b, 'es', { numeric: true, sensitivity: 'base' })
@@ -59,7 +61,7 @@ export async function guardaArchivo(id, eleccion) {
 function valido(reg) {
   if (!reg || typeof reg !== 'object' || typeof reg.nombre !== 'string') return false
   if (reg.tipo === 'imagenes') return Array.isArray(reg.archivos) && reg.archivos.every(f => f instanceof Blob)
-  return (reg.tipo === 'cbz' || reg.tipo === 'pdf') && reg.archivo instanceof Blob
+  return (reg.tipo === 'cbz' || reg.tipo === 'cbr' || reg.tipo === 'pdf') && reg.archivo instanceof Blob
 }
 const meta = reg => ({ tipo: reg.tipo, nombre: reg.nombre, tam: typeof reg.tam === 'number' ? reg.tam : 0 })
 export async function leeArchivo(id) {
@@ -74,6 +76,49 @@ export async function metaArchivo(id) {
 const ZIP_MAGIC = [0x50, 0x4b]
 const RAR_MAGIC = [0x52, 0x61, 0x72, 0x21]
 const empiezaPor = (u8, m) => m.every((b, i) => u8[i] === b)
+const esPagina = n => ES_IMAGEN.test(n) && !/(^|\/)__MACOSX\//.test(n) && !/(^|\/)\./.test(n)
+
+// El descompresor de RAR se trae una sola vez, desde la carpeta de la app
+// (misma ruta relativa que las carátulas: vale en Pages y en local)
+let unrarPromesa = null
+function cargaUnrar() {
+  if (!unrarPromesa) {
+    unrarPromesa = (async () => {
+      const base = new URL('rar/', document.baseURI)
+      const [mod, wasm] = await Promise.all([
+        import(/* @vite-ignore */ new URL('unrar.js', base).href),
+        fetch(new URL('unrar.wasm', base)).then(r => { if (!r.ok) throw new Error('wasm ' + r.status); return r.arrayBuffer() }),
+      ])
+      return { crea: mod.createExtractorFromData, wasm }
+    })().catch(e => { unrarPromesa = null; throw new Error('No se pudo cargar el descompresor de RAR (¿sin conexión?): ' + (e && e.message ? e.message : e)) })
+  }
+  return unrarPromesa
+}
+async function abreRar(data) {
+  const { crea, wasm } = await cargaUnrar()
+  let ex
+  try { ex = await crea({ wasmBinary: wasm, data }) } catch (e) { throw new Error('El archivo no es un RAR/CBR válido' + (e && e.message ? ' (' + e.message + ')' : '')) }
+  let cabeceras
+  try { cabeceras = [...ex.getFileList().fileHeaders] } catch (e) { throw new Error('No se pudo leer el índice del CBR' + (e && e.message ? ' (' + e.message + ')' : '')) }
+  const nombres = cabeceras.filter(h => h && !(h.flags && h.flags.directory) && typeof h.name === 'string' && esPagina(h.name)).map(h => h.name).sort(ordenNatural)
+  if (!nombres.length) throw new Error('El CBR no trae imágenes')
+  const urls = new Map()
+  return {
+    tipo: 'imagenes', tot: nombres.length,
+    pagina(i) {
+      if (!urls.has(i)) {
+        const n = nombres[i]
+        let bytes = null
+        try { for (const f of ex.extract({ files: [n] }).files) if (f && f.extraction) bytes = f.extraction } catch { bytes = null }
+        if (!bytes) throw new Error(`No se pudo leer la página ${i + 1}: el archivo está dañado o cifrado`)
+        urls.set(i, URL.createObjectURL(new Blob([bytes])))
+        for (const k of [...urls.keys()]) if (urls.size > 8 && Math.abs(k - i) > 3) { URL.revokeObjectURL(urls.get(k)); urls.delete(k) }
+      }
+      return urls.get(i)
+    },
+    cierra() { urls.forEach(u => URL.revokeObjectURL(u)) },
+  }
+}
 
 // Abre un registro y devuelve cómo pasar página. Las imágenes de un CBZ se
 // descomprimen una a una al pedirlas (un CBZ de 100 MB no se expande entero).
@@ -88,11 +133,12 @@ export async function abreComic(reg) {
     }
   }
   const data = new Uint8Array(await reg.archivo.arrayBuffer())
-  if (empiezaPor(data, RAR_MAGIC)) throw new Error('Es un CBR (RAR) con otra extensión: conviértelo a CBZ')
-  if (!empiezaPor(data, ZIP_MAGIC)) throw new Error('El archivo no es un ZIP/CBZ válido')
+  // manda lo que el archivo ES, no su extensión: hay CBZ que son RAR y al revés
+  if (empiezaPor(data, RAR_MAGIC)) return abreRar(data)
+  if (!empiezaPor(data, ZIP_MAGIC)) throw new Error(reg.tipo === 'cbr' ? 'El archivo no es un RAR/CBR válido' : 'El archivo no es un ZIP/CBZ válido')
   const nombres = []
   try {
-    unzipSync(data, { filter: f => { if (ES_IMAGEN.test(f.name) && !/(^|\/)__MACOSX\//.test(f.name) && !/(^|\/)\./.test(f.name)) nombres.push(f.name); return false } })
+    unzipSync(data, { filter: f => { if (esPagina(f.name)) nombres.push(f.name); return false } })
   } catch { throw new Error('El archivo está dañado o no es un ZIP/CBZ válido') }
   nombres.sort(ordenNatural)
   if (!nombres.length) throw new Error('El CBZ no trae imágenes')
