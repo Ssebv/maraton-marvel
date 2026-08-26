@@ -9,6 +9,7 @@ import { PLATAFORMAS, PAISES } from './plataformas.js'
 import { TITULOS_LATAM } from './titulos.js'
 import { latiniza } from './latam.js'
 import { EPISODIOS_LATAM } from './episodios-latam.js'
+import { clasifica, guardaArchivo, leeArchivo, borraArchivo, metaArchivo, abreComic, fmtTam } from './lector.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
@@ -18,6 +19,8 @@ const KEY_LISTAS = 'maraton-marvel-listas-v1'
 const KEY_PANEL = 'maraton-marvel-panel-v1'
 const KEY_FONDO = 'maraton-marvel-fondo-v1'
 const KEY_RESCATE = 'maraton-marvel-rescate-v1'
+// página por la que va cada cómic leído en la app: { id: { p, t } }
+const KEY_LECTOR = 'maraton-marvel-lector-v1'
 
 // Pósters propios (public/mini, 200 px) para el fondo del encabezado y las franjas de saga
 const MURO = ['avengers1', 'endgame', 'logan', 'deadpool1', 'cap1', 'blackpanther',
@@ -78,6 +81,14 @@ const saneaMarcas = x => {
   return out
 }
 // { id: { p: 1-5, txt: "\u2026" } }
+const saneaLector = x => {
+  if (!esObj(x)) return null
+  const out = {}
+  for (const [k, v] of Object.entries(x)) {
+    if (esObj(v) && Number.isInteger(v.p) && Number.isInteger(v.t) && v.p >= 0 && v.t > 0) out[k] = { p: Math.min(v.p, v.t - 1), t: v.t }
+  }
+  return out
+}
 const saneaNotas = x => {
   if (!esObj(x)) return null
   const out = {}
@@ -841,6 +852,9 @@ function useDialogo(ref, onEscape, activo = true) {
     if (!activo) return undefined
     const previo = document.activeElement
     const t = setTimeout(() => ref.current && ref.current.focus(), 0)
+    // se restaura lo que había, no '': con el lector sobre la ficha, al cerrar
+    // el lector la ficha sigue abierta y el fondo debe seguir sin scroll
+    const overflowPrevio = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = e => {
       if (e.key === 'Escape') { salir.current && salir.current(); return }
@@ -858,7 +872,7 @@ function useDialogo(ref, onEscape, activo = true) {
     return () => {
       clearTimeout(t)
       window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
+      document.body.style.overflow = overflowPrevio
       try { previo && previo.focus() } catch {}
     }
   }, [ref, activo])
@@ -1636,7 +1650,151 @@ function DondeLeer({ item, pais }) {
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, pais }) {
+// Un cómic que el usuario tiene en archivo (CBZ, PDF o imágenes) se lee dentro
+// de la app: el archivo se guarda en IndexedDB de este navegador y no sale de él.
+function TuArchivo({ item, lectura, onLeer, onOlvida }) {
+  const [meta, setMeta] = useState(undefined) // undefined: cargando · null: sin archivo
+  const [error, setError] = useState('')
+  const [ocupado, setOcupado] = useState(false)
+  const inputRef = useRef(null)
+  // La lectura inicial del almacén puede tardar (la primera vez crea la base) y
+  // resolver DESPUÉS de que el usuario haya elegido ya un archivo: cada acción
+  // sube la generación y una lectura de una generación vieja se ignora.
+  const gen = useRef(0)
+  useEffect(() => {
+    const g = ++gen.current
+    setMeta(undefined); setError('')
+    metaArchivo(item.id).then(m => { if (gen.current === g) setMeta(m) })
+    return () => { gen.current++ }
+  }, [item.id])
+  const elegir = async e => {
+    const el = clasifica(e.target.files)
+    e.target.value = ''
+    if (el.error) { setError(el.error); return }
+    gen.current++
+    setError(''); setOcupado(true)
+    try {
+      const m = await guardaArchivo(item.id, el)
+      onOlvida(item.id)
+      setMeta(m)
+      const reg = await leeArchivo(item.id)
+      if (reg) onLeer(item, reg)
+    } catch (x) {
+      setError('No se pudo guardar el archivo' + (x && x.message ? ': ' + x.message : ''))
+    } finally { setOcupado(false) }
+  }
+  const abrir = async () => {
+    gen.current++
+    setOcupado(true)
+    try {
+      const reg = await leeArchivo(item.id)
+      if (reg) onLeer(item, reg)
+      else { setMeta(null); setError('El archivo ya no está en este navegador: elígelo otra vez') }
+    } catch (x) { setError('No se pudo abrir' + (x && x.message ? ': ' + x.message : '')) }
+    finally { setOcupado(false) }
+  }
+  const quitar = async () => { gen.current++; try { await borraArchivo(item.id) } catch {} setMeta(null); onOlvida(item.id) }
+  return (
+    <div className="prov leer-aqui">
+      <span className="prov-label">Leer aquí</span>
+      <input ref={inputRef} type="file" hidden accept=".cbz,.zip,.pdf,image/*" multiple onChange={elegir} />
+      <div className="modal-acciones">
+        {meta
+          ? <>
+              <button className="ghost" onClick={abrir} disabled={ocupado}>
+                {lectura && lectura.t > 1 ? `Seguir leyendo · pág. ${lectura.p + 1} de ${lectura.t}` : 'Abrir'}
+              </button>
+              <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>Cambiar archivo</button>
+              <button className="ghost" onClick={quitar} disabled={ocupado}>Quitar</button>
+            </>
+          : meta === null
+            ? <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>Elegir mi archivo (CBZ, PDF o imágenes)</button>
+            : null}
+      </div>
+      {meta && <p className="prov-nota">{meta.nombre} · {fmtTam(meta.tam)} · guardado en este navegador</p>}
+      {meta === null && <p className="prov-nota">Se lee dentro de la app y el archivo se queda en este navegador: no se sube a ningún sitio. Vale un CBZ/ZIP o las páginas como imágenes (pasan página a página); un PDF se abre con el visor del navegador, que en iPhone solo enseña bien la primera página, así que allí mejor CBZ; un CBR hay que convertirlo a CBZ.</p>}
+      {error && <div className="aviso peligro">{error}</div>}
+    </div>
+  )
+}
+
+// El lector a pantalla completa: una página, flechas, teclado, deslizar y
+// pulsar la mitad izquierda/derecha de la página. Recuerda por dónde vas.
+function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido }) {
+  const ref = useRef(null)
+  useDialogo(ref, onCerrar)
+  const [comic, setComic] = useState(null)
+  const [error, setError] = useState('')
+  const [pag, setPag] = useState(pagInicial || 0)
+  const [ancho, setAncho] = useState(false)
+  const tot = comic ? comic.tot : 0
+  useEffect(() => {
+    let c = null, vivo = true
+    abreComic(registro)
+      .then(x => { if (!vivo) { x.cierra(); return } c = x; setComic(x); setPag(p => Math.max(0, Math.min(p, x.tot - 1))) })
+      .catch(e => { if (vivo) setError(e && e.message ? e.message : 'No se pudo abrir') })
+    return () => { vivo = false; if (c) c.cierra() }
+  }, [registro])
+  useEffect(() => { if (comic && comic.tipo === 'imagenes') onPagina(pag, comic.tot) }, [pag, comic])
+  const ant = () => setPag(p => Math.max(0, p - 1))
+  const sig = () => setPag(p => Math.min(Math.max(0, tot - 1), p + 1))
+  // La ficha, debajo, también escucha ←/→ (navega entre títulos) y Escape
+  // (se cierra): el lector coge esas teclas en fase de captura y no las deja
+  // pasar, o pasar página saltaría al cómic siguiente.
+  useEffect(() => {
+    const k = e => {
+      if (e.key === 'ArrowRight') sig()
+      else if (e.key === 'ArrowLeft') ant()
+      else if (e.key === 'Escape') onCerrar()
+      else return
+      e.stopImmediatePropagation(); e.preventDefault()
+    }
+    window.addEventListener('keydown', k, true)
+    return () => window.removeEventListener('keydown', k, true)
+  }, [tot, onCerrar])
+  // la página siguiente se descomprime antes de que haga falta
+  useEffect(() => {
+    if (comic && comic.tipo === 'imagenes' && pag + 1 < comic.tot) { const im = new Image(); im.src = comic.pagina(pag + 1) }
+  }, [pag, comic])
+  const t0 = useRef(null)
+  const onTS = e => { t0.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
+  const onTE = e => {
+    const a = t0.current; t0.current = null
+    if (!a) return
+    const dx = e.changedTouches[0].clientX - a.x, dy = e.changedTouches[0].clientY - a.y
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) (dx < 0 ? sig : ant)()
+  }
+  const onClickPag = e => {
+    const r = e.currentTarget.getBoundingClientRect()
+    ;((e.clientX - r.left) / r.width < 0.4 ? ant : sig)()
+  }
+  const ultima = comic && comic.tipo === 'imagenes' && pag === tot - 1
+  return (
+    <div className={`lector${ancho ? ' ancho' : ''}`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Leyendo ${item.t}`}>
+      <button className="cerrar lector-cerrar" onClick={onCerrar} aria-label="Cerrar el lector">✕</button>
+      {error
+        ? <div className="lector-centro"><div className="aviso peligro centrado">{error}</div></div>
+        : !comic
+          ? <div className="lector-centro"><p className="lector-estado">Abriendo {item.t}…</p></div>
+          : comic.tipo === 'pdf'
+            ? <iframe className="lector-pdf" src={comic.url} title={`Leyendo ${item.t}`} />
+            : <div className="lector-pag" onTouchStart={onTS} onTouchEnd={onTE} onClick={onClickPag}>
+                <img src={comic.pagina(pag)} alt={`Página ${pag + 1} de ${tot}`} draggable={false} />
+              </div>}
+      {comic && comic.tipo === 'imagenes' && (
+        <div className="lector-barra">
+          <button className="ghost lector-flecha" onClick={ant} disabled={pag === 0} aria-label="Página anterior">‹</button>
+          <span className="lector-contador"><b>{pag + 1}</b> / {tot}<span className="lector-titulo"> · {item.t}</span></span>
+          <button className="ghost lector-flecha" onClick={sig} disabled={pag >= tot - 1} aria-label="Página siguiente">›</button>
+          <button className="ghost" aria-pressed={ancho} onClick={() => setAncho(a => !a)}>{ancho ? 'Ver entera' : 'Ajustar al ancho'}</button>
+          {ultima && !leido && <button className="accion-principal lector-fin" onClick={onLeido}>Marcar como leído</button>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, pais, onLeer, lectura, onOlvida }) {
   const { item, c, esComic } = d
   const extra = useTmdb(item)
   const [verTrailer, setVerTrailer] = useState(false)
@@ -1907,6 +2065,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               </div>
             </section>
           )}
+          {esComic && <TuArchivo item={item} lectura={lectura} onLeer={onLeer} onOlvida={onOlvida} />}
           {esComic && <DondeLeer item={item} pais={pais} />}
           {extra && (() => {
             const provs = (extra.provPais && Array.isArray(extra.provPais[pais])) ? extra.provPais[pais] : (Array.isArray(extra.prov) ? extra.prov : [])
@@ -2314,6 +2473,10 @@ export default function App() {
   const [listas, setListas] = useState(() => leeGuardado(KEY_LISTAS, saneaListas, []))
   const [listaActiva, setListaActiva] = useState(null)
   const [cine, setCine] = useState(false)
+  // el cómic abierto en el lector y por qué página va cada uno
+  const [lector, setLector] = useState(null)
+  const [lecturas, setLecturas] = useState(() => leeGuardado(KEY_LECTOR, saneaLector, {}))
+  useEffect(() => { try { localStorage.setItem(KEY_LECTOR, JSON.stringify(lecturas)) } catch {} }, [lecturas])
   const refCine = useRef(null)
   useDialogo(refCine, () => setCine(false), cine)
   const [cineIdx, setCineIdx] = useState(0)
@@ -2459,6 +2622,7 @@ export default function App() {
   // «esta ficha».
   useVolverCierra(!!detalle, () => setDetalle(null))
   useVolverCierra(cine, () => setCine(false))
+  useVolverCierra(!!lector, () => setLector(null))
   useVolverCierra(ajustes, () => setAjustes(false))
   useVolverCierra(planModal, () => setPlanModal(false))
   useVolverCierra(perfilModal, () => setPerfilModal(false))
@@ -3600,6 +3764,11 @@ export default function App() {
         </main>
       )}
 
+      {lector && (
+        <Lector item={lector.item} registro={lector.registro} pagInicial={(lecturas[lector.item.id] || {}).p || 0}
+          onPagina={(p, t) => setLecturas(l => (l[lector.item.id] && l[lector.item.id].p === p && l[lector.item.id].t === t) ? l : { ...l, [lector.item.id]: { p, t } })}
+          onCerrar={() => setLector(null)} leido={!!vistas[lector.item.id]} onLeido={() => { toggle(lector.item.id); setLector(null) }} />
+      )}
       {cine && cineLista.length > 0 && (() => {
         const idx = Math.min(cineIdx, cineLista.length - 1)
         const { item, c } = cineLista[idx]
@@ -3912,6 +4081,8 @@ export default function App() {
 
       {detalle && (
         <Detalle d={detalle} vista={!!vistas[detalle.item.id]} pais={pais}
+          onLeer={(item, registro) => setLector({ item, registro })} lectura={lecturas[detalle.item.id]}
+          onOlvida={id => setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c })}
           onToggle={() => toggle(detalle.item.id)}
           onClose={() => setDetalle(null)}
           eps={eps} toggleEp={toggleEp}
@@ -4082,7 +4253,7 @@ function Footer({ onReset }) {
   const descargaCopia = () => {
     try {
       const datos = {}
-      const claves = [KEY, KEY_EPS, KEY_NOTAS, KEY_LISTAS, 'maraton-marvel-sync-v1', 'maraton-marvel-amigo-v1', 'maraton-marvel-club-v1']
+      const claves = [KEY, KEY_EPS, KEY_NOTAS, KEY_LISTAS, KEY_LECTOR, 'maraton-marvel-sync-v1', 'maraton-marvel-amigo-v1', 'maraton-marvel-club-v1']
       // y lo que se haya apartado por venir roto o por un rescate: es justo lo
       // que no se puede perder. La caché de TMDB no entra, que son megas y se
       // vuelve a bajar sola.

@@ -1824,3 +1824,35 @@ a.prov-chip:hover{border-color:var(--ink3)}
 @media (prefers-reduced-motion: reduce){
   .tabs::before{transition:none}
 }
+
+/* Lector de cómics: una capa a pantalla completa sobre la ficha. Los controles
+   fijos llevan safe-area en los cuatro lados. */
+.lector{
+  position:fixed; inset:0; z-index:80;
+  background:color-mix(in srgb, var(--bg) 97%, black);
+  display:flex; flex-direction:column;
+  animation:fadeIn var(--dur-media) ease both;
+}
+.lector-cerrar{position:fixed; z-index:2; top:calc(12px + env(safe-area-inset-top, 0px)); right:calc(12px + env(safe-area-inset-right, 0px))}
+.lector-centro{flex:1; display:flex; align-items:center; justify-content:center; padding: var(--e-6)}
+.lector-estado{color:var(--ink2); font-size: var(--t-b)}
+.lector-pag{
+  flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:auto;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+  cursor:pointer; -webkit-user-select:none; user-select:none;
+}
+.lector-pag img{max-width:100%; max-height:100%; object-fit:contain; display:block; background:var(--material)}
+.lector.ancho .lector-pag{align-items:flex-start}
+.lector.ancho .lector-pag img{width:100%; height:auto; max-height:none}
+.lector-pdf{flex:1; width:100%; border:0; background:var(--material)}
+.lector-barra{
+  display:flex; align-items:center; gap: var(--e-3); flex-wrap:wrap;
+  padding: var(--e-3) calc(var(--e-4) + env(safe-area-inset-right, 0px)) calc(var(--e-3) + env(safe-area-inset-bottom, 0px)) calc(var(--e-4) + env(safe-area-inset-left, 0px));
+  background:var(--panel); border-top:1px solid var(--line);
+}
+.lector-flecha{font-size: var(--t-l); line-height:1; min-width:44px; justify-content:center}
+.lector-contador{flex:1; min-width:0; font-size: var(--t-m); color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.lector-contador b{color:var(--ink)}
+.lector-fin{margin-left:auto}
+@media (max-width:720px){ .lector-titulo{display:none} .lector-fin{width:100%; margin-left:0} }
+@media (prefers-reduced-motion: reduce){ .lector{animation:none} }
