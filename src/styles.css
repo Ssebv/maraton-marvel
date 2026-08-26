@@ -1883,3 +1883,6 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .lector-pag.doble{gap:2px}
 .lector-pag.doble img{max-width:calc(50% - 1px)}
 @media (prefers-reduced-motion: reduce){ .seguir-barra span{transition:none} }
+.lector-progreso{height:3px; background:var(--panel2); flex:none}
+.lector-progreso span{display:block; height:100%; background:linear-gradient(90deg, var(--red), var(--gold)); transition:width var(--dur-media) var(--curva)}
+@media (prefers-reduced-motion: reduce){ .lector-progreso span{transition:none} }

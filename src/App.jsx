@@ -1778,9 +1778,17 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   const [comic, setComic] = useState(null)
   const [error, setError] = useState('')
   const [pag, setPag] = useState(pagInicial || 0)
-  const [ancho, setAncho] = useState(false)
+  // ajuste: en pantalla estrecha, al ancho (entera sale diminuta con bandas);
+  // lo que elijas se recuerda, igual que la doble página
+  const [ancho, setAncho] = useState(() => {
+    try { const g = localStorage.getItem('maraton-marvel-lector-ajuste-v1'); if (g === 'ancho' || g === 'entera') return g === 'ancho' } catch {}
+    return window.innerWidth < 600
+  })
+  const ponAncho = v => { setAncho(v); try { localStorage.setItem('maraton-marvel-lector-ajuste-v1', v ? 'ancho' : 'entera') } catch {} }
   // doble página: la portada sola y luego pares (1-2, 3-4…), como un cómic abierto
-  const [doble, setDoble] = useState(false)
+  const [doble, setDoble] = useState(() => { try { return localStorage.getItem('maraton-marvel-lector-doble-v1') === '1' } catch { return false } })
+  const ponDoble = v => { setDoble(v); try { localStorage.setItem('maraton-marvel-lector-doble-v1', v ? '1' : '0') } catch {} }
+  const pagRef = useRef(null)
   const [apaisado, setApaisado] = useState(() => window.innerWidth > window.innerHeight)
   useEffect(() => {
     const f = () => setApaisado(window.innerWidth > window.innerHeight)
@@ -1800,7 +1808,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
     let vivo = true
     setError('')
     Promise.all(paginas.map(i => comic.pagina(i)))
-      .then(u => { if (vivo) setSrcs(u) })
+      .then(u => { if (vivo) { setSrcs(u); if (pagRef.current) pagRef.current.scrollTop = 0 } })
       .catch(e => { if (vivo) setError(e && e.message ? e.message : 'No se pudo leer la página') })
     return () => { vivo = false }
   }, [clavePags, comic])
@@ -1820,9 +1828,23 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   // (se cierra): el lector coge esas teclas en fase de captura y no las deja
   // pasar, o pasar página saltaría al cómic siguiente.
   useEffect(() => {
+    // espacio y AvPág/RePág: si la página (al ancho) aún tiene scroll, se
+    // avanza por pantallas; si no, se pasa página. Inicio/Fin: portada/última.
+    const desplaza = signo => {
+      const el = pagRef.current
+      if (!el) return false
+      const paso = Math.round(el.clientHeight * 0.9)
+      if (signo > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1) { el.scrollBy({ top: paso, behavior: 'smooth' }); return true }
+      if (signo < 0 && el.scrollTop > 0) { el.scrollBy({ top: -paso, behavior: 'smooth' }); return true }
+      return false
+    }
     const k = e => {
       if (e.key === 'ArrowRight') sig()
       else if (e.key === 'ArrowLeft') ant()
+      else if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) { if (!desplaza(1)) sig() }
+      else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) { if (!desplaza(-1)) ant() }
+      else if (e.key === 'Home') setPag(0)
+      else if (e.key === 'End') setPag(Math.max(0, tot - 1))
       else if (e.key === 'Escape') onCerrar()
       else return
       e.stopImmediatePropagation(); e.preventDefault()
@@ -1856,16 +1878,19 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
           ? <div className="lector-centro"><p className="lector-estado">Abriendo {item.t}…</p></div>
           : comic.tipo === 'pdf'
             ? <iframe className="lector-pdf" src={comic.url} title={`Leyendo ${item.t}`} />
-            : <div className={`lector-pag${enDoble ? ' doble' : ''}`} onTouchStart={onTS} onTouchEnd={onTE} onClick={onClickPag}>
+            : <div className={`lector-pag${enDoble ? ' doble' : ''}`} ref={pagRef} onTouchStart={onTS} onTouchEnd={onTE} onClick={onClickPag}>
                 {paginas.map((i, k) => srcs[k] && <img key={k} src={srcs[k]} alt={`Página ${i + 1} de ${tot}`} draggable={false} />)}
               </div>}
+      {comic && comic.tipo === 'imagenes' && (
+        <div className="lector-progreso" aria-hidden="true"><span style={{ width: `${Math.round(100 * (paginas[paginas.length - 1] + 1) / tot)}%` }} /></div>
+      )}
       {comic && comic.tipo === 'imagenes' && (
         <div className="lector-barra">
           <button className="ghost lector-flecha" onClick={ant} disabled={pag === 0} aria-label="Página anterior">‹</button>
           <span className="lector-contador"><b>{paginas.length > 1 ? `${paginas[0] + 1}–${paginas[paginas.length - 1] + 1}` : pag + 1}</b> / {tot}<span className="lector-titulo"> · {item.t}</span></span>
           <button className="ghost lector-flecha" onClick={sig} disabled={pag >= tot - 1} aria-label="Página siguiente">›</button>
-          <button className="ghost" aria-pressed={ancho} onClick={() => setAncho(a => !a)}>{ancho ? 'Ver entera' : 'Ajustar al ancho'}</button>
-          {apaisado && !ancho && tot > 1 && <button className="ghost" aria-pressed={doble} onClick={() => setDoble(v => !v)}>{doble ? 'Una página' : 'Doble página'}</button>}
+          <button className="ghost" aria-pressed={ancho} onClick={() => ponAncho(!ancho)}>{ancho ? 'Ver entera' : 'Ajustar al ancho'}</button>
+          {apaisado && !ancho && tot > 1 && <button className="ghost" aria-pressed={doble} onClick={() => ponDoble(!doble)}>{doble ? 'Una página' : 'Doble página'}</button>}
           {ultima && !leido && <button className="accion-principal lector-fin" onClick={onLeido}>Marcar como leído</button>}
         </div>
       )}
