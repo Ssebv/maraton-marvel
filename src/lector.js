@@ -5,7 +5,7 @@
 // Los CBR (RAR) se abren con node-unrar-js, que NO va en el bundle: son 250 kB
 // (public/rar/unrar.js + unrar.wasm) que se cargan la primera vez que alguien
 // elige un CBR. Ver README, «Lector de cómics».
-import { unzipSync } from 'fflate'
+import { inflateSync } from 'fflate'
 
 const DB = 'maraton-marvel-lector'
 const ALMACEN = 'archivos'
@@ -133,62 +133,88 @@ async function abreRar(data) {
   try { cabeceras = [...ex.getFileList().fileHeaders] } catch (e) { throw new Error('No se pudo leer el índice del CBR' + (e && e.message ? ' (' + e.message + ')' : '')) }
   const nombres = cabeceras.filter(h => h && !(h.flags && h.flags.directory) && typeof h.name === 'string' && esPagina(h.name)).map(h => h.name).sort(ordenNatural)
   if (!nombres.length) throw new Error('El CBR no trae imágenes')
-  const urls = new Map()
-  return {
-    tipo: 'imagenes', tot: nombres.length,
-    pagina(i) {
-      if (!urls.has(i)) {
-        const n = nombres[i]
-        let bytes = null
-        try { for (const f of ex.extract({ files: [n] }).files) if (f && f.extraction) bytes = f.extraction } catch { bytes = null }
-        if (!bytes) throw new Error(`No se pudo leer la página ${i + 1}: el archivo está dañado o cifrado`)
-        urls.set(i, URL.createObjectURL(new Blob([bytes])))
-        for (const k of [...urls.keys()]) if (urls.size > 8 && Math.abs(k - i) > 3) { URL.revokeObjectURL(urls.get(k)); urls.delete(k) }
-      }
-      return urls.get(i)
-    },
-    cierra() { urls.forEach(u => URL.revokeObjectURL(u)) },
-  }
+  return lectorDePaginas(nombres.length, i => {
+    const n = nombres[i]
+    let bytes = null
+    try { for (const f of ex.extract({ files: [n] }).files) if (f && f.extraction) bytes = f.extraction } catch { bytes = null }
+    if (!bytes) throw new Error(`No se pudo leer la página ${i + 1}: el archivo está dañado o cifrado`)
+    return bytes
+  })
 }
 
-// Abre un registro y devuelve cómo pasar página. Las imágenes de un CBZ se
-// descomprimen una a una al pedirlas (un CBZ de 100 MB no se expande entero).
 export async function abreComic(reg) {
   if (reg.tipo === 'pdf') return { tipo: 'pdf', url: URL.createObjectURL(reg.archivo), tot: 0, cierra() { URL.revokeObjectURL(this.url) } }
-  if (reg.tipo === 'imagenes') {
-    const urls = new Map()
-    return {
-      tipo: 'imagenes', tot: reg.archivos.length,
-      pagina(i) { if (!urls.has(i)) urls.set(i, URL.createObjectURL(reg.archivos[i])); return urls.get(i) },
-      cierra() { urls.forEach(u => URL.revokeObjectURL(u)) },
-    }
+  if (reg.tipo === 'imagenes') return lectorDePaginas(reg.archivos.length, i => reg.archivos[i])
+  // Se mira la firma de los primeros bytes, no la extensión: hay CBZ que son
+  // RAR y al revés
+  const firma = new Uint8Array(await reg.archivo.slice(0, 4).arrayBuffer())
+  if (empiezaPor(firma, RAR_MAGIC)) return abreRar(new Uint8Array(await reg.archivo.arrayBuffer()))
+  if (!empiezaPor(firma, ZIP_MAGIC)) throw new Error(reg.tipo === 'cbr' ? 'El archivo no es un RAR/CBR válido' : 'El archivo no es un ZIP/CBZ válido')
+  return abreZip(reg.archivo)
+}
+
+// ZIP leído POR TROZOS desde el Blob: el índice central (unos KB al final del
+// archivo) se lee una vez y cada página se corta con blob.slice y se infla
+// sola. En memoria vive una página, no el cómic: un CBZ de 300 MB en un
+// iPhone no tumba la pestaña. ZIP64 (>4 GB) no hace falta.
+async function indiceZip(blob) {
+  const tam = blob.size
+  const cola = new Uint8Array(await blob.slice(Math.max(0, tam - 66000), tam).arrayBuffer())
+  let i = cola.length - 22
+  for (; i >= 0; i--) if (cola[i] === 0x50 && cola[i + 1] === 0x4b && cola[i + 2] === 0x05 && cola[i + 3] === 0x06) break
+  if (i < 0) throw new Error('El archivo está dañado o no es un ZIP/CBZ válido')
+  const dv = new DataView(cola.buffer, cola.byteOffset, cola.byteLength)
+  const cdTam = dv.getUint32(i + 12, true), cdOff = dv.getUint32(i + 16, true)
+  if (cdOff === 0xffffffff || cdOff + cdTam > tam) throw new Error('El CBZ es demasiado grande o está dañado (ZIP64)')
+  const cd = new Uint8Array(await blob.slice(cdOff, cdOff + cdTam).arrayBuffer())
+  const d2 = new DataView(cd.buffer, cd.byteOffset, cd.byteLength)
+  const td = new TextDecoder()
+  const entradas = []
+  let p = 0
+  while (p + 46 <= cd.length && d2.getUint32(p, true) === 0x02014b50) {
+    const metodo = d2.getUint16(p + 10, true), csize = d2.getUint32(p + 20, true)
+    const nl = d2.getUint16(p + 28, true), el = d2.getUint16(p + 30, true), cl = d2.getUint16(p + 32, true)
+    const off = d2.getUint32(p + 42, true)
+    entradas.push({ nombre: td.decode(cd.subarray(p + 46, p + 46 + nl)), metodo, csize, off })
+    p += 46 + nl + el + cl
   }
-  const data = new Uint8Array(await reg.archivo.arrayBuffer())
-  // manda lo que el archivo ES, no su extensión: hay CBZ que son RAR y al revés
-  if (empiezaPor(data, RAR_MAGIC)) return abreRar(data)
-  if (!empiezaPor(data, ZIP_MAGIC)) throw new Error(reg.tipo === 'cbr' ? 'El archivo no es un RAR/CBR válido' : 'El archivo no es un ZIP/CBZ válido')
-  const nombres = []
-  try {
-    unzipSync(data, { filter: f => { if (esPagina(f.name)) nombres.push(f.name); return false } })
-  } catch { throw new Error('El archivo está dañado o no es un ZIP/CBZ válido') }
-  nombres.sort(ordenNatural)
-  if (!nombres.length) throw new Error('El CBZ no trae imágenes')
+  return entradas
+}
+async function leeEntrada(blob, e) {
+  const cab = new DataView(await blob.slice(e.off, e.off + 30).arrayBuffer())
+  if (cab.byteLength < 30 || cab.getUint32(0, true) !== 0x04034b50) throw new Error('dañado')
+  const inicio = e.off + 30 + cab.getUint16(26, true) + cab.getUint16(28, true)
+  const datos = new Uint8Array(await blob.slice(inicio, inicio + e.csize).arrayBuffer())
+  if (datos.length !== e.csize) throw new Error('truncado')
+  if (e.metodo === 0) return datos
+  if (e.metodo === 8) return inflateSync(datos)
+  throw new Error('comprimido con un método que no se puede abrir aquí')
+}
+async function abreZip(blob) {
+  const entradas = (await indiceZip(blob)).filter(e => esPagina(e.nombre)).sort((a, b) => ordenNatural(a.nombre, b.nombre))
+  if (!entradas.length) throw new Error('El CBZ no trae imágenes')
+  return lectorDePaginas(entradas.length, async i => {
+    let bytes
+    try { bytes = await leeEntrada(blob, entradas[i]) } catch (x) { throw new Error(`No se pudo leer la página ${i + 1}: el archivo está ${x && x.message === 'comprimido con un método que no se puede abrir aquí' ? x.message : 'dañado'}`) }
+    return bytes
+  })
+}
+// Lo común a CBZ y CBR: cada página se pide una vez (promesa cacheada) y no
+// hay más de ocho descomprimidas a la vez
+function lectorDePaginas(tot, saca) {
   const urls = new Map()
   return {
-    tipo: 'imagenes', tot: nombres.length,
+    tipo: 'imagenes', tot,
     pagina(i) {
       if (!urls.has(i)) {
-        const n = nombres[i]
-        let bytes
-        try { bytes = unzipSync(data, { filter: f => f.name === n })[n] } catch { bytes = null }
-        if (!bytes) throw new Error(`No se pudo leer la página ${i + 1}: el archivo está dañado`)
-        urls.set(i, URL.createObjectURL(new Blob([bytes])))
-        // no más de ocho páginas descomprimidas a la vez
-        for (const k of [...urls.keys()]) if (urls.size > 8 && Math.abs(k - i) > 3) { URL.revokeObjectURL(urls.get(k)); urls.delete(k) }
+        const pr = Promise.resolve().then(() => saca(i)).then(bytes => URL.createObjectURL(new Blob([bytes])))
+        pr.catch(() => urls.delete(i))
+        urls.set(i, pr)
+        for (const k of [...urls.keys()]) if (urls.size > 8 && Math.abs(k - i) > 3) { urls.get(k).then(u => URL.revokeObjectURL(u), () => {}); urls.delete(k) }
       }
       return urls.get(i)
     },
-    cierra() { urls.forEach(u => URL.revokeObjectURL(u)) },
+    cierra() { urls.forEach(pr => pr.then(u => URL.revokeObjectURL(u), () => {})) },
   }
 }
 

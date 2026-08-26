@@ -1785,6 +1785,18 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   const enDoble = doble && apaisado && !ancho && tot > 1
   const primera = enDoble && pag > 0 && pag % 2 === 0 ? pag - 1 : pag
   const paginas = enDoble ? (primera === 0 ? [0] : [primera, primera + 1].filter(i => i < tot)) : [pag]
+  // las páginas llegan como promesas (se cortan e inflan al pedirlas); la
+  // anterior se queda en pantalla hasta que la nueva está lista
+  const [srcs, setSrcs] = useState([])
+  const clavePags = paginas.join(',')
+  useEffect(() => {
+    if (!comic || comic.tipo !== 'imagenes') return undefined
+    let vivo = true
+    Promise.all(paginas.map(i => comic.pagina(i)))
+      .then(u => { if (vivo) setSrcs(u) })
+      .catch(e => { if (vivo) setError(e && e.message ? e.message : 'No se pudo leer la página') })
+    return () => { vivo = false }
+  }, [clavePags, comic])
   useEffect(() => {
     let c = null, vivo = true
     abreComic(registro)
@@ -1811,7 +1823,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   }, [tot, onCerrar, enDoble])
   // la página siguiente se descomprime antes de que haga falta
   useEffect(() => {
-    if (comic && comic.tipo === 'imagenes') for (const i of [pag + 1, pag + 2]) if (i < comic.tot) { const im = new Image(); im.src = comic.pagina(i) }
+    if (comic && comic.tipo === 'imagenes') for (const i of [pag + 1, pag + 2]) if (i < comic.tot) comic.pagina(i).then(u => { const im = new Image(); im.src = u }, () => {})
   }, [pag, comic])
   const t0 = useRef(null)
   const onTS = e => { t0.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
@@ -1836,7 +1848,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
           : comic.tipo === 'pdf'
             ? <iframe className="lector-pdf" src={comic.url} title={`Leyendo ${item.t}`} />
             : <div className={`lector-pag${enDoble ? ' doble' : ''}`} onTouchStart={onTS} onTouchEnd={onTE} onClick={onClickPag}>
-                {paginas.map(i => <img key={i} src={comic.pagina(i)} alt={`Página ${i + 1} de ${tot}`} draggable={false} />)}
+                {paginas.map((i, k) => srcs[k] && <img key={k} src={srcs[k]} alt={`Página ${i + 1} de ${tot}`} draggable={false} />)}
               </div>}
       {comic && comic.tipo === 'imagenes' && (
         <div className="lector-barra">
