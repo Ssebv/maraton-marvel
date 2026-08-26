@@ -49,10 +49,23 @@ export function clasifica(archivos) {
 
 const ordenNatural = (a, b) => (a.name || a).localeCompare(b.name || b, 'es', { numeric: true, sensitivity: 'base' })
 
+// Un File elegido en el diálogo, guardado tal cual, Chrome lo persiste como
+// REFERENCIA al fichero del disco: si lo mueves o lo borras, la copia de la
+// app deja de leerse. Se copian los bytes (por trozos de 8 MB, sin un
+// ArrayBuffer gigante) para que el almacén sea de verdad autónomo.
+async function copiaBytes(file) {
+  const TROZO = 8 * 1024 * 1024
+  const trozos = []
+  for (let i = 0; i < file.size; i += TROZO) trozos.push(await file.slice(i, Math.min(file.size, i + TROZO)).arrayBuffer())
+  return new Blob(trozos, { type: file.type || '' })
+}
 export async function guardaArchivo(id, eleccion) {
   const reg = { tipo: eleccion.tipo, nombre: eleccion.nombre, fecha: Date.now() }
-  if (eleccion.tipo === 'imagenes') { reg.archivos = eleccion.archivos; reg.tam = eleccion.archivos.reduce((s, f) => s + f.size, 0) }
-  else { reg.archivo = eleccion.archivo; reg.tam = eleccion.archivo.size }
+  if (eleccion.tipo === 'imagenes') {
+    reg.archivos = []
+    for (const f of eleccion.archivos) reg.archivos.push(await copiaBytes(f))
+    reg.tam = eleccion.archivos.reduce((s, f) => s + f.size, 0)
+  } else { reg.archivo = await copiaBytes(eleccion.archivo); reg.tam = eleccion.archivo.size }
   await pide('readwrite', st => st.put(reg, id))
   pidePersistencia()
   return meta(reg)
@@ -125,21 +138,41 @@ function cargaUnrar() {
   }
   return unrarPromesa
 }
-async function abreRar(data) {
+// El RAR sí vive entero en memoria (lo exige el descompresor), pero UNA vez:
+// se le pasa el ArrayBuffer y el envoltorio lo mira sin copiarlo. Las páginas
+// se extraen con un solo generador hacia delante (en un RAR sólido, sacar la
+// página k obliga a descomprimir las k-1 anteriores: con un generador por
+// página era O(n²) leyendo del tirón; así es O(n), y volver atrás reinicia).
+// Lo extraído se borra del envoltorio nada más leerlo, que si no lo retiene.
+async function abreRar(buffer) {
   const { crea, wasm } = await cargaUnrar()
   let ex
-  try { ex = await crea({ wasmBinary: wasm, data }) } catch (e) { throw new Error('El archivo no es un RAR/CBR válido' + (e && e.message ? ' (' + e.message + ')' : '')) }
+  try { ex = await crea({ wasmBinary: wasm, data: buffer }) } catch (e) { throw new Error('El archivo no es un RAR/CBR válido' + (e && e.message ? ' (' + e.message + ')' : '')) }
   let cabeceras
   try { cabeceras = [...ex.getFileList().fileHeaders] } catch (e) { throw new Error('No se pudo leer el índice del CBR' + (e && e.message ? ' (' + e.message + ')' : '')) }
   const nombres = cabeceras.filter(h => h && !(h.flags && h.flags.directory) && typeof h.name === 'string' && esPagina(h.name)).map(h => h.name).sort(ordenNatural)
   if (!nombres.length) throw new Error('El CBR no trae imágenes')
-  return lectorDePaginas(nombres.length, i => {
+  const esNuestra = new Set(nombres)
+  const suelta = nombre => { try { delete ex.dataFiles[ex.getExtractedFileName(nombre)] } catch {} }
+  let gen = null, sacados = null
+  const lector = lectorDePaginas(nombres.length, i => {
     const n = nombres[i]
+    if (!gen || sacados.has(n)) { gen = ex.extract({ files: h => esNuestra.has(h.name) }).files; sacados = new Set() }
     let bytes = null
-    try { for (const f of ex.extract({ files: [n] }).files) if (f && f.extraction) bytes = f.extraction } catch { bytes = null }
+    try {
+      for (const f of gen) {
+        const nombre = f && f.fileHeader && f.fileHeader.name
+        sacados.add(nombre)
+        if (nombre === n) { bytes = f.extraction; suelta(nombre); break }
+        suelta(nombre)
+      }
+    } catch { bytes = null; gen = null }
     if (!bytes) throw new Error(`No se pudo leer la página ${i + 1}: el archivo está dañado o cifrado`)
     return bytes
   })
+  const cierraUrls = lector.cierra
+  lector.cierra = () => { cierraUrls(); gen = null; try { ex.dataFiles = {}; ex.dataFileMap = {} } catch {} }
+  return lector
 }
 
 export async function abreComic(reg) {
@@ -148,7 +181,7 @@ export async function abreComic(reg) {
   // Se mira la firma de los primeros bytes, no la extensión: hay CBZ que son
   // RAR y al revés
   const firma = new Uint8Array(await reg.archivo.slice(0, 4).arrayBuffer())
-  if (empiezaPor(firma, RAR_MAGIC)) return abreRar(new Uint8Array(await reg.archivo.arrayBuffer()))
+  if (empiezaPor(firma, RAR_MAGIC)) return abreRar(await reg.archivo.arrayBuffer())
   if (!empiezaPor(firma, ZIP_MAGIC)) throw new Error(reg.tipo === 'cbr' ? 'El archivo no es un RAR/CBR válido' : 'El archivo no es un ZIP/CBZ válido')
   return abreZip(reg.archivo)
 }

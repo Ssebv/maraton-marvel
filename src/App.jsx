@@ -845,6 +845,14 @@ function useVolverCierra(abierto, onCerrar) {
 // Lo que aria-modal promete: el foco entra, no se escapa con el tabulador
 // y vuelve a su sitio al cerrar. Escrito una vez para todos los diálogos.
 const FOCABLES = 'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])'
+// Cuántas capas tienen el fondo bloqueado: solo la última en irse lo libera,
+// da igual en qué orden se cierren (cine bajo ficha, lector sobre ficha…)
+let capasBloqueando = 0
+const bloqueaFondo = () => { capasBloqueando++; document.body.style.overflow = 'hidden' }
+const liberaFondo = () => { capasBloqueando = Math.max(0, capasBloqueando - 1); if (!capasBloqueando) document.body.style.overflow = '' }
+// visible de verdad: offsetParent es null también para position:fixed
+const visible = el => el.getClientRects().length > 0
+
 function useDialogo(ref, onEscape, activo = true) {
   const salir = useRef(onEscape)
   salir.current = onEscape
@@ -852,14 +860,11 @@ function useDialogo(ref, onEscape, activo = true) {
     if (!activo) return undefined
     const previo = document.activeElement
     const t = setTimeout(() => ref.current && ref.current.focus(), 0)
-    // se restaura lo que había, no '': con el lector sobre la ficha, al cerrar
-    // el lector la ficha sigue abierta y el fondo debe seguir sin scroll
-    const overflowPrevio = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    bloqueaFondo()
     const onKey = e => {
       if (e.key === 'Escape') { salir.current && salir.current(); return }
       if (e.key !== 'Tab' || !ref.current) return
-      const foco = [...ref.current.querySelectorAll(FOCABLES)].filter(el => el.offsetParent !== null)
+      const foco = [...ref.current.querySelectorAll(FOCABLES)].filter(visible)
       if (!foco.length) return
       const primero = foco[0], ultimo = foco[foco.length - 1]
       if (e.shiftKey && (document.activeElement === primero || document.activeElement === ref.current)) {
@@ -872,7 +877,7 @@ function useDialogo(ref, onEscape, activo = true) {
     return () => {
       clearTimeout(t)
       window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = overflowPrevio
+      liberaFondo()
       try { previo && previo.focus() } catch {}
     }
   }, [ref, activo])
@@ -1725,6 +1730,7 @@ function TuArchivo({ item, lectura, onLeer, onOlvida, onBiblioteca }) {
       setMeta(m)
       const reg = await leeArchivo(item.id)
       if (reg) onLeer(item, reg)
+      else setError('Se guardó pero no se pudo volver a leer: prueba a elegirlo otra vez')
     } catch (x) {
       setError('No se pudo guardar el archivo' + (x && x.message ? ': ' + x.message : ''))
     } finally { setOcupado(false) }
@@ -1792,6 +1798,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   useEffect(() => {
     if (!comic || comic.tipo !== 'imagenes') return undefined
     let vivo = true
+    setError('')
     Promise.all(paginas.map(i => comic.pagina(i)))
       .then(u => { if (vivo) setSrcs(u) })
       .catch(e => { if (vivo) setError(e && e.message ? e.message : 'No se pudo leer la página') })
@@ -1805,8 +1812,10 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
     return () => { vivo = false; if (c) c.cierra() }
   }, [registro])
   useEffect(() => { if (comic && comic.tipo === 'imagenes') onPagina(pag, comic.tot) }, [pag, comic])
-  const ant = () => setPag(p => (enDoble ? (p <= 1 ? 0 : (p % 2 === 0 ? p - 3 : p - 2)) : Math.max(0, p - 1)))
-  const sig = () => setPag(p => Math.min(Math.max(0, tot - 1), enDoble ? (p === 0 ? 1 : (p % 2 === 0 ? p + 1 : p + 2)) : p + 1))
+  // en doble, la pareja empieza en impar (1-2, 3-4…): se razona sobre su primera
+  const primeraDe = p => (p > 0 && p % 2 === 0 ? p - 1 : p)
+  const ant = () => setPag(p => (enDoble ? Math.max(0, primeraDe(p) <= 2 ? 0 : primeraDe(p) - 2) : Math.max(0, p - 1)))
+  const sig = () => setPag(p => Math.min(Math.max(0, tot - 1), enDoble ? (primeraDe(p) === 0 ? 1 : primeraDe(p) + 2) : p + 1))
   // La ficha, debajo, también escucha ←/→ (navega entre títulos) y Escape
   // (se cierra): el lector coge esas teclas en fase de captura y no las deja
   // pasar, o pasar página saltaría al cómic siguiente.
@@ -1826,7 +1835,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
     if (comic && comic.tipo === 'imagenes') for (const i of [pag + 1, pag + 2]) if (i < comic.tot) comic.pagina(i).then(u => { const im = new Image(); im.src = u }, () => {})
   }, [pag, comic])
   const t0 = useRef(null)
-  const onTS = e => { t0.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
+  const onTS = e => { t0.current = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null }
   const onTE = e => {
     const a = t0.current; t0.current = null
     if (!a) return
@@ -3004,8 +3013,8 @@ export default function App() {
       if (e.key === 'Enter' && cineLista[cineIdx]) toggle(cineLista[cineIdx].item.id)
     }
     window.addEventListener('keydown', onKey)
-    document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+    bloqueaFondo()
+    return () => { window.removeEventListener('keydown', onKey); liberaFondo() }
   }, [cine, cineLista, cineIdx])
 
   const idOrden = useMemo(() => {
@@ -3437,7 +3446,7 @@ export default function App() {
                   )}
                   <div className="grid tierra-grid">
                     {itemsOrdenados.map(({ item, c, esComic }, i) => (
-                      <Card key={item.id} item={item} num={i + 1} c={c} esComic={esComic}
+                      <Card key={item.id} item={item} num={i + 1} c={c} esComic={esComic} lectura={esComic ? lecturas[item.id] : null}
                         vista={!!l.prog[item.id]}
                         onToggle={() => toggleProgLista(l.id, item.id)}
                         onAbrir={() => setDetalle({ item, c, esComic })}
@@ -3512,7 +3521,7 @@ export default function App() {
                 </header>
                 <div className="grid tierra-grid">
                   {items.map(({ item, c }, i) => (
-                    <Card key={item.id} item={item} num={i + 1} c={c}
+                    <Card key={item.id} item={item} num={i + 1} c={c} lectura={item.id.startsWith('c-') ? lecturas[item.id] : null}
                       esComic={item.id.startsWith('c-')}
                       vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
@@ -3868,9 +3877,9 @@ export default function App() {
       )}
 
       {lector && (
-        <Lector item={lector.item} registro={lector.registro} pagInicial={(lecturas[lector.item.id] || {}).p || 0}
+        <Lector key={lector.item.id} item={lector.item} registro={lector.registro} pagInicial={(lecturas[lector.item.id] || {}).p || 0}
           onPagina={(p, t) => setLecturas(l => (l[lector.item.id] && l[lector.item.id].p === p && l[lector.item.id].t === t) ? l : { ...l, [lector.item.id]: { p, t, f: Date.now() } })}
-          onCerrar={() => setLector(null)} leido={!!vistas[lector.item.id]} onLeido={() => { toggle(lector.item.id); setLector(null) }} />
+          onCerrar={() => setLector(null)} leido={!!vistas[lector.item.id]} onLeido={() => { const id = lector.item.id; toggle(id); setLector(null); setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c }) }} />
       )}
       {cine && cineLista.length > 0 && (() => {
         const idx = Math.min(cineIdx, cineLista.length - 1)
@@ -4197,7 +4206,7 @@ export default function App() {
           onIrA={d => setDetalle(d)} />
       )}
 
-      <Footer onReset={() => { setVistas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
+      <Footer onReset={() => { setVistas({}); setLecturas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
     </div>
   )
 }
