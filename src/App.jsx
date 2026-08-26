@@ -8,6 +8,7 @@ import { ORDEN_CONGELADO } from './orden.js'
 import { PLATAFORMAS, PAISES } from './plataformas.js'
 import { TITULOS_LATAM } from './titulos.js'
 import { latiniza } from './latam.js'
+import { EPISODIOS_LATAM } from './episodios-latam.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
@@ -871,7 +872,11 @@ const TITULOS = Object.fromEntries(DATA.flatMap(s => s.eras.flatMap(e => e.items
 // Y lo mismo con los textos escritos a mano (sinopsis, notas, guías, eras,
 // multiverso): src/latam.js cambia los nombres que el doblaje latino dice
 // distinto, para que la ficha de «Wolverine: Inmortal» no hable de Lobezno.
+// Y los episodios llevan el título con el que Disney+ los enseña en cada
+// sitio (src/episodios-latam.js, por clave «temporada:número»); las claves
+// de los bits (id:s:n) no cambian.
 const T_ES = { ...TITULOS }
+const EP_ES = Object.fromEntries(Object.entries(EPISODES).map(([id, eps]) => [id, eps.map(e => e.t)]))
 const E_ES = ESTRENOS.map(e => e.t)
 const ORIGINALES = new WeakMap()
 function traduce(obj, campos, latino) {
@@ -900,6 +905,10 @@ function aplicaTitulos(pais) {
     traduce(e, ['n'], latino)
   })
   MULTIVERSO.forEach(u => traduce(u, ['nombre', 'estado', 'desc'], latino))
+  Object.entries(EPISODES).forEach(([id, eps]) => {
+    const lat = latino && EPISODIOS_LATAM[id]
+    eps.forEach((e, i) => { e.t = (lat && lat[`${e.s}:${e.n}`]) || EP_ES[id][i] })
+  })
 }
 
 function Bienvenida({ onCerrar, onExpress }) {
