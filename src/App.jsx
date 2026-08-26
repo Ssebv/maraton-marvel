@@ -893,7 +893,7 @@ function aplicaTitulos(pais) {
     s.eras.forEach(era => {
       traduce(era, ['era'], latino)
       era.items.forEach(it => {
-        it.t = (latino && TITULOS_LATAM[it.id]) || T_ES[it.id]
+        it.t = (latino && TITULOS_LATAM[it.id]) || (latino && s.saga === 'comics' ? latiniza(T_ES[it.id]) : T_ES[it.id])
         TITULOS[it.id] = it.t
         traduce(it, ['res', 'n', 'pcn'], latino)
       })
@@ -1601,6 +1601,33 @@ const platDe = (pais, item) => {
   return (PLATAFORMAS[pais] && PLATAFORMAS[pais][item.id]) || item.plat
 }
 const nombrePais = pais => (PAISES.find(p => p.id === pais) || PAISES[0]).nombre
+// Dónde leer un cómic, de verdad y por país: Marvel Unlimited (todo el catálogo,
+// en inglés, suscripción), la tienda de Panini del país (edición en español, en
+// papel; Colombia y Perú no tienen tienda propia) y Kindle (Panini digital).
+const TIENDA_PANINI = {
+  ES: 'https://www.panini.es/shp_esp_es/catalogsearch/result/?q=',
+  CL: 'https://tiendapanini.cl/catalogsearch/result/?q=',
+  MX: 'https://tiendapanini.com.mx/catalogsearch/result/?q=',
+  AR: 'https://tiendapanini.com.ar/catalogsearch/result/?q=',
+}
+const busquedaComic = t => encodeURIComponent(t.replace(/\s*\(.*?\)|#\d+|:/g, ' ').replace(/\s+/g, ' ').trim())
+function DondeLeer({ item, pais }) {
+  const q = busquedaComic(item.t)
+  const panini = TIENDA_PANINI[pais]
+  const amazon = pais === 'ES' ? 'https://www.amazon.es' : 'https://www.amazon.com'
+  return (
+    <div className="prov leer">
+      <span className="prov-label">Dónde leerlo</span>
+      <div className="prov-lista">
+        <a className="prov-chip" href={`https://www.marvel.com/search?content_type=comics&query=${encodeURIComponent(item.en || item.t)}`}
+          target="_blank" rel="noopener noreferrer">Marvel Unlimited</a>
+        {panini && <a className="prov-chip" href={panini + q} target="_blank" rel="noopener noreferrer">Panini {nombrePais(pais)}</a>}
+        <a className="prov-chip" href={`${amazon}/s?k=${q}+panini&i=digital-text`} target="_blank" rel="noopener noreferrer">Kindle</a>
+      </div>
+      <p className="prov-nota">Marvel Unlimited tiene los 26 de esta lista (en inglés, por suscripción). Panini los edita en español, en papel y en Kindle; los enlaces abren la búsqueda del título.</p>
+    </div>
+  )
+}
 
 function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, pais }) {
   const { item, c, esComic } = d
@@ -1873,6 +1900,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               </div>
             </section>
           )}
+          {esComic && <DondeLeer item={item} pais={pais} />}
           {extra && (() => {
             const provs = (extra.provPais && Array.isArray(extra.provPais[pais])) ? extra.provPais[pais] : (Array.isArray(extra.prov) ? extra.prov : [])
             return provs.length > 0 && (
