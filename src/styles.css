@@ -1856,3 +1856,30 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .lector-fin{margin-left:auto}
 @media (max-width:720px){ .lector-titulo{display:none} .lector-fin{width:100%; margin-left:0} }
 @media (prefers-reduced-motion: reduce){ .lector{animation:none} }
+
+/* Seguir leyendo (pestaña Cómics) y Biblioteca (Ajustes) */
+.seguir{margin: 0 0 var(--e-6)}
+.seguir-titulo{font-family:'Archivo Black', Archivo, sans-serif; font-size: var(--t-l); margin: 0 0 var(--e-4); letter-spacing:0}
+.seguir-lista{display:flex; gap: var(--e-4); overflow-x:auto; scroll-snap-type:x proximity; padding-bottom: var(--e-2); scroll-padding-inline: var(--e-2)}
+.seguir-item{
+  flex:none; scroll-snap-align:start; display:flex; align-items:center; gap: var(--e-4); min-width:0; width:min(300px, 80vw);
+  padding: var(--e-3); border:1px solid var(--line); border-radius:var(--r-m); background:var(--panel);
+  color:inherit; font:inherit; text-align:left; cursor:pointer;
+}
+.seguir-item:hover{border-color:var(--ink3)}
+.seguir-item:active{transform:scale(.98)}
+.seguir-cara{flex:none; width:56px}
+.seguir-cara .cover, .seguir-cara img{width:56px; height:84px; border-radius:var(--r-s); object-fit:cover; display:block}
+.seguir-info{display:flex; flex-direction:column; gap: var(--e-2); min-width:0; flex:1}
+.seguir-nombre{font-weight:700; font-size: var(--t-b); line-height:1.25; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+.seguir-pag{font-size: var(--t-s); color:var(--ink2)}
+.seguir-barra{display:block; height:4px; border-radius:var(--r-pill); background:var(--panel2); overflow:hidden}
+.seguir-barra span{display:block; height:100%; border-radius:var(--r-pill); background:linear-gradient(90deg, var(--red), var(--gold)); transition:width var(--dur-barra) var(--curva)}
+.biblio{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap: var(--e-3)}
+.biblio-item{display:grid; grid-template-columns:1fr auto; gap: var(--e-1) var(--e-4); align-items:center}
+.biblio-nombre{font-weight:700; font-size: var(--t-m)}
+.biblio-meta{grid-column:1; font-size: var(--t-xs); color:var(--ink3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.biblio-item .ghost{grid-row:1 / span 2}
+.lector-pag.doble{gap:2px}
+.lector-pag.doble img{max-width:calc(50% - 1px)}
+@media (prefers-reduced-motion: reduce){ .seguir-barra span{transition:none} }

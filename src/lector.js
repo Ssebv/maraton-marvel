@@ -54,6 +54,7 @@ export async function guardaArchivo(id, eleccion) {
   if (eleccion.tipo === 'imagenes') { reg.archivos = eleccion.archivos; reg.tam = eleccion.archivos.reduce((s, f) => s + f.size, 0) }
   else { reg.archivo = eleccion.archivo; reg.tam = eleccion.archivo.size }
   await pide('readwrite', st => st.put(reg, id))
+  pidePersistencia()
   return meta(reg)
 }
 // Todo lo que sale del almacén se valida por tipo: un registro raro no debe
@@ -69,6 +70,36 @@ export async function leeArchivo(id) {
   return valido(reg) ? reg : null
 }
 export const borraArchivo = id => pide('readwrite', st => st.delete(id))
+// Todos los archivos guardados, solo sus datos (no los bytes): { id: meta }
+export async function listaArchivos() {
+  try {
+    const db = await abreDb()
+    return await new Promise((res, rej) => {
+      const out = {}
+      const cur = db.transaction(ALMACEN, 'readonly').objectStore(ALMACEN).openCursor()
+      cur.onsuccess = () => { const c = cur.result; if (!c) { db.close(); res(out); return } if (typeof c.key === 'string' && valido(c.value)) out[c.key] = meta(c.value); c.continue() }
+      cur.onerror = () => { db.close(); rej(cur.error) }
+    })
+  } catch { return {} }
+}
+// Safari borra el almacén de una web que no se abre en 7 días (no si está
+// instalada como app); Chrome y Firefox lo respetan si se pide persistencia.
+export async function persistencia() {
+  try {
+    if (!navigator.storage || !navigator.storage.persisted) return null
+    return await navigator.storage.persisted()
+  } catch { return null }
+}
+export async function pidePersistencia() {
+  try { return navigator.storage && navigator.storage.persist ? await navigator.storage.persist() : null } catch { return null }
+}
+export async function espacio() {
+  try {
+    if (!navigator.storage || !navigator.storage.estimate) return null
+    const e = await navigator.storage.estimate()
+    return { usado: e.usage || 0, cuota: e.quota || 0 }
+  } catch { return null }
+}
 export async function metaArchivo(id) {
   try { const r = await leeArchivo(id); return r ? meta(r) : null } catch { return null }
 }
