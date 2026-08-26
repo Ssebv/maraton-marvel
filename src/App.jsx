@@ -7,6 +7,7 @@ import { TMDB, TMDB_KEY } from './tmdb.js'
 import { ORDEN_CONGELADO } from './orden.js'
 import { PLATAFORMAS, PAISES } from './plataformas.js'
 import { TITULOS_LATAM } from './titulos.js'
+import { latiniza } from './latam.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
@@ -867,18 +868,38 @@ const TITULOS = Object.fromEntries(DATA.flatMap(s => s.eras.flatMap(e => e.items
 // TODAS las vistas —lista, ficha, plan, cine, diario, imagen compartida— digan
 // lo mismo sin tocar cada sitio. Los originales se guardan para volver y para
 // que la búsqueda entienda los dos nombres. Se aplica antes de renderizar.
+// Y lo mismo con los textos escritos a mano (sinopsis, notas, guías, eras,
+// multiverso): src/latam.js cambia los nombres que el doblaje latino dice
+// distinto, para que la ficha de «Wolverine: Inmortal» no hable de Lobezno.
 const T_ES = { ...TITULOS }
 const E_ES = ESTRENOS.map(e => e.t)
+const ORIGINALES = new WeakMap()
+function traduce(obj, campos, latino) {
+  if (!obj) return
+  let orig = ORIGINALES.get(obj)
+  if (!orig) { orig = {}; campos.forEach(c => { orig[c] = obj[c] }); ORIGINALES.set(obj, orig) }
+  campos.forEach(c => { if (typeof orig[c] === 'string') obj[c] = latino ? latiniza(orig[c]) : orig[c] })
+}
 function aplicaTitulos(pais) {
   const latino = pais !== 'ES'
-  DATA.forEach(s => s.eras.forEach(era => era.items.forEach(it => {
-    it.t = (latino && TITULOS_LATAM[it.id]) || T_ES[it.id]
-    TITULOS[it.id] = it.t
-  })))
+  DATA.forEach(s => {
+    traduce(s, ['desc'], latino)
+    ;(s.guia || []).forEach(g => traduce(g, ['t', 'p'], latino))
+    s.eras.forEach(era => {
+      traduce(era, ['era'], latino)
+      era.items.forEach(it => {
+        it.t = (latino && TITULOS_LATAM[it.id]) || T_ES[it.id]
+        TITULOS[it.id] = it.t
+        traduce(it, ['res', 'n', 'pcn'], latino)
+      })
+    })
+  })
   ESTRENOS.forEach((e, i) => {
     const id = Object.keys(T_ES).find(k => T_ES[k] === E_ES[i])
     e.t = (id && latino && TITULOS_LATAM[id]) || E_ES[i]
+    traduce(e, ['n'], latino)
   })
+  MULTIVERSO.forEach(u => traduce(u, ['nombre', 'estado', 'desc'], latino))
 }
 
 function Bienvenida({ onCerrar, onExpress }) {
@@ -2891,7 +2912,7 @@ export default function App() {
           <span className="pr-datos">
             {proxEstreno && objetivo
               ? <>
-                  <b>{proxEstreno.t.replace(/^Vengadores: /, '')}</b> en <b className="pr-dias">{objetivo.dias} días</b>
+                  <b>{proxEstreno.t.replace(/^(Vengadores|Avengers): /, '')}</b> en <b className="pr-dias">{objetivo.dias} días</b>
                   {objetivo.restante > 0 && <span className="pr-extra"> · ruta express: {objetivo.necesario} min/día</span>}
                 </>
               : <>Mapa de progreso, próximos estrenos y cuenta atrás</>}
@@ -3212,7 +3233,7 @@ export default function App() {
             <>
               <div className="mv-cabecera">
                 <p className="saga-desc mv-intro">
-                  Los universos que hay que conocer antes de Vengadores: Doomsday. Entra en cada Tierra para ver y marcar todo lo que ocurre en ella.
+                  Los universos que hay que conocer antes de {TITULOS.doomsday}. Entra en cada Tierra para ver y marcar todo lo que ocurre en ella.
                 </p>
                 <div className="tabs mv-modos">
                   <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>Sistema</button>
@@ -3765,7 +3786,7 @@ export default function App() {
               <div className="ajuste">
                 <div className="ajuste-cab">
                   <h3 className="ajuste-titulo">País</h3>
-                  <p className="ajuste-pista">Decide en qué plataforma aparece cada título, el filtro «En Disney+» y cómo se titulan las obras: como las distribuye Disney en España o en Latinoamérica («Lobezno inmortal» o «Wolverine: Inmortal»). Los catálogos cambian cada mes y se revisan con la app.</p>
+                  <p className="ajuste-pista">Decide en qué plataforma aparece cada título, el filtro «En Disney+» y cómo se nombran las obras y sus personajes: como en España o como en Latinoamérica («Lobezno inmortal» o «Wolverine: Inmortal», «el Lapso» o «el Blip»). Los catálogos cambian cada mes y se revisan con la app.</p>
                 </div>
                 <div className="ajuste-ops">
                   {PAISES.map(p => (
@@ -4061,7 +4082,7 @@ function Footer({ onReset }) {
       <p className="nota-pie">
         Pulsa una tarjeta para ver su ficha completa; la casilla redonda marca vista o pendiente y se guarda en este navegador.
         Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas.
-        La Ruta express deja solo lo imprescindible para llegar a Vengadores: Doomsday.
+        La Ruta express deja solo lo imprescindible para llegar a {TITULOS.doomsday}.
       </p>
       <p className="nota-pie nota-creditos">
         Carátulas, fotogramas, tráilers y reparto de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a>;
