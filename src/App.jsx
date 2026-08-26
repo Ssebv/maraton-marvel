@@ -941,6 +941,7 @@ const ui = (pais, texto) => (pais === 'ES' ? texto : latiniza(texto))
 // y si el navegador promete no borrarlos
 function Biblioteca({ archivos, onQuitar }) {
   const ids = Object.keys(archivos)
+  const [confirma, setConfirma] = useState(null) // id pendiente de confirmar
   const [persistente, setPersistente] = useState(null)
   const [uso, setUso] = useState(null)
   useEffect(() => { persistencia().then(setPersistente); espacio().then(setUso) }, [ids.length])
@@ -970,7 +971,12 @@ function Biblioteca({ archivos, onQuitar }) {
             <li key={id} className="biblio-item">
               <span className="biblio-nombre">{d ? d.item.t : id}</span>
               <span className="biblio-meta">{archivos[id].nombre} · {fmtTam(archivos[id].tam)}</span>
-              <button className="ghost" onClick={() => onQuitar(id)}>Quitar</button>
+              {confirma === id
+                ? <span className="biblio-confirma">
+                    <button className="chip-btn peligro" onClick={() => { setConfirma(null); onQuitar(id) }}>¿Seguro? Sí</button>
+                    <button className="ghost" onClick={() => setConfirma(null)}>Cancelar</button>
+                  </span>
+                : <button className="ghost" onClick={() => setConfirma(id)}>Quitar</button>}
             </li>
           )
         })}
@@ -1707,6 +1713,7 @@ function TuArchivo({ item, lectura, onLeer, onOlvida, onBiblioteca }) {
   const [meta, setMeta] = useState(undefined) // undefined: cargando · null: sin archivo
   const [error, setError] = useState('')
   const [ocupado, setOcupado] = useState(false)
+  const [confirmaQuitar, setConfirmaQuitar] = useState(false)
   const inputRef = useRef(null)
   // La lectura inicial del almacén puede tardar (la primera vez crea la base) y
   // resolver DESPUÉS de que el usuario haya elegido ya un archivo: cada acción
@@ -1745,7 +1752,8 @@ function TuArchivo({ item, lectura, onLeer, onOlvida, onBiblioteca }) {
     } catch (x) { setError('No se pudo abrir' + (x && x.message ? ': ' + x.message : '')) }
     finally { setOcupado(false) }
   }
-  const quitar = async () => { gen.current++; try { await borraArchivo(item.id) } catch {} setMeta(null); onOlvida(item.id); onBiblioteca() }
+  const quitar = async () => { gen.current++; setConfirmaQuitar(false); try { await borraArchivo(item.id) } catch {} setMeta(null); onOlvida(item.id); onBiblioteca() }
+  useEffect(() => { setConfirmaQuitar(false) }, [item.id, meta])
   return (
     <div className="prov leer-aqui">
       <span className="prov-label">Leer aquí</span>
@@ -1757,7 +1765,8 @@ function TuArchivo({ item, lectura, onLeer, onOlvida, onBiblioteca }) {
                 {lectura && lectura.t > 1 ? `Seguir leyendo · pág. ${lectura.p + 1} de ${lectura.t}` : 'Abrir'}
               </button>
               <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>Cambiar archivo</button>
-              <button className="ghost" onClick={quitar} disabled={ocupado}>Quitar</button>
+              <button className="ghost" onClick={() => setConfirmaQuitar(v => !v)} disabled={ocupado} aria-expanded={confirmaQuitar}>{confirmaQuitar ? 'Cancelar' : 'Quitar'}</button>
+              {confirmaQuitar && <button className="chip-btn peligro" onClick={quitar} disabled={ocupado}>¿Seguro? Sí, quitar el archivo</button>}
             </>
           : meta === null
             ? <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>Elegir mi archivo (CBZ, CBR, PDF o imágenes)</button>
@@ -1789,6 +1798,11 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   const [doble, setDoble] = useState(() => { try { return localStorage.getItem('maraton-marvel-lector-doble-v1') === '1' } catch { return false } })
   const ponDoble = v => { setDoble(v); try { localStorage.setItem('maraton-marvel-lector-doble-v1', v ? '1' : '0') } catch {} }
   const pagRef = useRef(null)
+  // la primera vez, cómo se pasa página; desaparece al pasar la primera
+  const [pista, setPista] = useState(() => { try { return localStorage.getItem('maraton-marvel-lector-pista-v1') !== '1' } catch { return true } })
+  const quitaPista = () => { if (pista) { setPista(false); try { localStorage.setItem('maraton-marvel-lector-pista-v1', '1') } catch {} } }
+  // toque en el centro: esconde o enseña los controles (el ✕ se queda)
+  const [controles, setControles] = useState(true)
   const [apaisado, setApaisado] = useState(() => window.innerWidth > window.innerHeight)
   useEffect(() => {
     const f = () => setApaisado(window.innerWidth > window.innerHeight)
@@ -1822,8 +1836,8 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   useEffect(() => { if (comic && comic.tipo === 'imagenes') onPagina(pag, comic.tot) }, [pag, comic])
   // en doble, la pareja empieza en impar (1-2, 3-4…): se razona sobre su primera
   const primeraDe = p => (p > 0 && p % 2 === 0 ? p - 1 : p)
-  const ant = () => setPag(p => (enDoble ? Math.max(0, primeraDe(p) <= 2 ? 0 : primeraDe(p) - 2) : Math.max(0, p - 1)))
-  const sig = () => setPag(p => Math.min(Math.max(0, tot - 1), enDoble ? (primeraDe(p) === 0 ? 1 : primeraDe(p) + 2) : p + 1))
+  const ant = () => { quitaPista(); setPag(p => (enDoble ? Math.max(0, primeraDe(p) <= 2 ? 0 : primeraDe(p) - 2) : Math.max(0, p - 1))) }
+  const sig = () => { quitaPista(); setPag(p => Math.min(Math.max(0, tot - 1), enDoble ? (primeraDe(p) === 0 ? 1 : primeraDe(p) + 2) : p + 1)) }
   // La ficha, debajo, también escucha ←/→ (navega entre títulos) y Escape
   // (se cierra): el lector coge esas teclas en fase de captura y no las deja
   // pasar, o pasar página saltaría al cómic siguiente.
@@ -1866,11 +1880,14 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   }
   const onClickPag = e => {
     const r = e.currentTarget.getBoundingClientRect()
-    ;((e.clientX - r.left) / r.width < 0.4 ? ant : sig)()
+    const x = (e.clientX - r.left) / r.width
+    if (x < 0.35) ant()
+    else if (x > 0.65) sig()
+    else { quitaPista(); setControles(v => !v) }
   }
   const ultima = comic && comic.tipo === 'imagenes' && paginas[paginas.length - 1] === tot - 1
   return (
-    <div className={`lector${ancho ? ' ancho' : ''}`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Leyendo ${item.t}`}>
+    <div className={`lector${ancho ? ' ancho' : ''}${controles ? '' : ' sin-controles'}`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Leyendo ${item.t}`}>
       <button className="cerrar lector-cerrar" onClick={onCerrar} aria-label="Cerrar el lector">✕</button>
       {error
         ? <div className="lector-centro"><div className="aviso peligro centrado">{error}</div></div>
@@ -1881,10 +1898,13 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
             : <div className={`lector-pag${enDoble ? ' doble' : ''}`} ref={pagRef} onTouchStart={onTS} onTouchEnd={onTE} onClick={onClickPag}>
                 {paginas.map((i, k) => srcs[k] && <img key={k} src={srcs[k]} alt={`Página ${i + 1} de ${tot}`} draggable={false} />)}
               </div>}
-      {comic && comic.tipo === 'imagenes' && (
+      {comic && comic.tipo === 'imagenes' && pista && controles && (
+        <p className="lector-pista" role="status">Toca los lados o desliza para pasar página · toca el centro para esconder los controles</p>
+      )}
+      {comic && comic.tipo === 'imagenes' && controles && (
         <div className="lector-progreso" aria-hidden="true"><span style={{ width: `${Math.round(100 * (paginas[paginas.length - 1] + 1) / tot)}%` }} /></div>
       )}
-      {comic && comic.tipo === 'imagenes' && (
+      {comic && comic.tipo === 'imagenes' && controles && (
         <div className="lector-barra">
           <button className="ghost lector-flecha" onClick={ant} disabled={pag === 0} aria-label="Página anterior">‹</button>
           <span className="lector-contador"><b>{paginas.length > 1 ? `${paginas[0] + 1}–${paginas[paginas.length - 1] + 1}` : pag + 1}</b> / {tot}<span className="lector-titulo"> · {item.t}</span></span>

@@ -1886,3 +1886,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .lector-progreso{height:3px; background:var(--panel2); flex:none}
 .lector-progreso span{display:block; height:100%; background:linear-gradient(90deg, var(--red), var(--gold)); transition:width var(--dur-media) var(--curva)}
 @media (prefers-reduced-motion: reduce){ .lector-progreso span{transition:none} }
+.lector-pista{margin:0; padding: var(--e-2) var(--e-5); font-size: var(--t-s); color:var(--ink2); background:var(--panel); border-top:1px solid var(--line); text-align:center; text-wrap:pretty}
+.biblio-confirma{display:flex; gap: var(--e-2); grid-row:1 / span 2; align-items:center}
+/* en iPhone apaisado la barra roba altura: el ajuste y la doble página se abrevian */
+@media (max-height:500px){ .lector-barra{padding-top: var(--e-2)} .lector-barra .ghost{padding-top: var(--e-1); padding-bottom: var(--e-1)} }
