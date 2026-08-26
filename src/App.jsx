@@ -3,7 +3,7 @@ import { DATA, ESTRENOS, JOYA_MIN, KEY, MULTIVERSO } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
 import { EPISODES } from './episodes.js'
-import { TMDB, TMDB_KEY } from './tmdb.js'
+import { TMDB, TMDB_KEY, DESPLAZA_TEMPORADA } from './tmdb.js'
 import { ORDEN_CONGELADO } from './orden.js'
 import { PLATAFORMAS, PAISES } from './plataformas.js'
 import { TITULOS_LATAM } from './titulos.js'
@@ -264,7 +264,7 @@ async function tmdbJson(ruta) {
 // una vez para no dejarle megas muertos en el navegador.
 try {
   for (const k of Object.keys(localStorage)) {
-    if (/^maraton-marvel-tmdb-v[0-8]:/.test(k)) localStorage.removeItem(k)
+    if (/^maraton-marvel-tmdb-v[0-9]:/.test(k)) localStorage.removeItem(k)
   }
 } catch {}
 async function cargaTmdb(itemId) {
@@ -272,7 +272,8 @@ async function cargaTmdb(itemId) {
   const m = TMDB[itemId]
   if (!m) return null
   // v9: guarda los proveedores de los seis países de Ajustes, no solo España
-  const claveLS = 'maraton-marvel-tmdb-v9:' + itemId
+  // v10: loki2 pedía la temporada 1 de TMDB (fotogramas y sinopsis de Loki T1)
+  const claveLS = 'maraton-marvel-tmdb-v10:' + itemId
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
@@ -315,7 +316,7 @@ async function cargaTmdb(itemId) {
     const temporadas = [...new Set(EPISODES[itemId].map(e => e.s))]
     for (const t of temporadas) {
       try {
-        const sd = await tmdbJson(`/tv/${tid}/season/${t}`)
+        const sd = await tmdbJson(`/tv/${tid}/season/${t + (DESPLAZA_TEMPORADA[itemId] || 0)}`)
         ;(sd.episodes || []).forEach(ep => {
           d.eps[`${t}:${ep.episode_number}`] = { im: ep.still_path || null, o: ep.overview || null }
         })
@@ -905,13 +906,19 @@ function aplicaTitulos(pais) {
     traduce(e, ['n'], latino)
   })
   MULTIVERSO.forEach(u => traduce(u, ['nombre', 'estado', 'desc'], latino))
+  LOGROS.forEach(l => traduce(l, ['t', 'd'], latino))
+  MAPA_ARISTAS.forEach(a => traduce(a, ['t'], latino))
   Object.entries(EPISODES).forEach(([id, eps]) => {
     const lat = latino && EPISODIOS_LATAM[id]
-    eps.forEach((e, i) => { e.t = (lat && lat[`${e.s}:${e.n}`]) || EP_ES[id][i] })
+    eps.forEach((e, i) => { e.t = (lat && lat[`${e.s}:${e.n}`]) || (latino ? latiniza(EP_ES[id][i]) : EP_ES[id][i]) })
   })
 }
 
-function Bienvenida({ onCerrar, onExpress }) {
+// Textos de la interfaz que dicen «móvil» u «ordenador»: fuera de España pasan
+// por el mismo diccionario que la prosa («celular», «computadora»)
+const ui = (pais, texto) => (pais === 'ES' ? texto : latiniza(texto))
+
+function Bienvenida({ onCerrar, onExpress, pais }) {
   const ref = useRef(null)
   useDialogo(ref, onCerrar)
   return (
@@ -931,7 +938,7 @@ function Bienvenida({ onCerrar, onExpress }) {
             <button className="accion-principal" onClick={onCerrar}>Empezar por el principio</button>
             <button className="chip-btn" onClick={onExpress}>Solo lo esencial para Doomsday</button>
           </div>
-          <p className="bienvenida-nota">Consejo: desde el móvil puedes instalarla como app (menú del navegador → «Añadir a pantalla de inicio»).</p>
+          <p className="bienvenida-nota">{ui(pais, 'Consejo: desde el móvil puedes instalarla como app (menú del navegador → «Añadir a pantalla de inicio»).')}</p>
         </div>
       </div>
     </div>
@@ -1968,7 +1975,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                         const clave = `${item.id}:${e.s}:${e.n}`
                         const hecho = !!eps[clave]
                         const tm = extra && extra.eps[`${e.s}:${e.n}`]
-                        const sinopsis = tm && tm.o
+                        const sinopsis = tm && tm.o && ui(pais, tm.o)
                         const abierta = sinAbierta === clave
                         return (
                           <div key={clave} className={`ep${hecho ? ' hecho' : ''}`}>
@@ -2719,7 +2726,7 @@ export default function App() {
     const comicsTot = comics.eras.reduce((a, e) => a + e.items.length, 0)
     const comicsVistos = comics.eras.reduce((a, e) => a + e.items.filter(i => vistas[i.id]).length, 0)
     return { fases, totMin, vistoMin, titulosVistos, titulosTot, tipos: Object.values(tipos), epVistos, epTot, bovedaEpVistos, bovedaEpTot, comicsTot, comicsVistos }
-  }, [vistas, eps])
+  }, [vistas, eps, pais])
 
   const indice = useMemo(() => {
     const m = {}
@@ -2836,7 +2843,7 @@ export default function App() {
       grupos.get(it.r).push(it)
     })
     return [...grupos.entries()]
-  }, [filtros])
+  }, [filtros, pais])
 
   const oculto = (item, esComic) => filtros.vistas && vistas[item.id] && pasaFiltro(item, esComic)
 
@@ -3442,10 +3449,10 @@ export default function App() {
             {['xmen', 'ucm'].map(sg => (
               <div key={sg} className="grafica-grupo">
                 <div className="grafica-grupo-nombre">{sg === 'xmen' ? 'Saga X-Men' : 'UCM'}</div>
-                {estadisticas.fases.filter(f => f.saga === sg).map(f => {
+                {estadisticas.fases.filter(f => f.saga === sg).map((f, i) => {
                   const pct = f.tot ? 100 * f.visto / f.tot : 0
                   return (
-                    <div className="gbar" key={f.era}
+                    <div className="gbar" key={i}
                       title={`${f.era}: ${Math.round(f.visto / 60)} h de ${Math.round(f.tot / 60)} h · ${f.vistos}/${f.items} títulos`}>
                       <span className="gbar-label">{f.era} <em>{f.rango}</em></span>
                       <span className="gbar-pista">
@@ -3516,7 +3523,7 @@ export default function App() {
                 {saga.guia && (
                   <details className="saga-guia">
                     <summary>Cómo entender la saga</summary>
-                    {saga.guia.map(g => <p key={g.t}><b>{g.t}.</b> {g.p}</p>)}
+                    {saga.guia.map((g, i) => <p key={i}><b>{g.t}.</b> {g.p}</p>)}
                   </details>
                 )}
                 <div className="barra"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
@@ -3533,7 +3540,7 @@ export default function App() {
                   num += numerados.length
                   const vEra = numerados.filter(it => vistas[it.id]).length
                   return (
-                    <div className="era" key={era.era} style={{ '--era': era.c[0] }}>
+                    <div className="era" key={era.items[0] ? era.items[0].id : era.rango} style={{ '--era': era.c[0] }}>
                       <div className="era-head">
                         <h3>{era.era}</h3>
                         <span className="era-rango">{era.rango}</span>
@@ -3656,7 +3663,7 @@ export default function App() {
         </div>
       )}
       {bienvenida && !perfil && (
-        <Bienvenida onCerrar={cierraBienvenida}
+        <Bienvenida pais={pais} onCerrar={cierraBienvenida}
           onExpress={() => { if (!filtros.express) setF('express'); cierraBienvenida() }} />
       )}
       {clubModal && (
@@ -3807,7 +3814,7 @@ export default function App() {
                 <div className="ajuste-cab">
                   <h3 className="ajuste-titulo">Sincronización entre dispositivos</h3>
                   <p className="ajuste-pista">
-                    {syncEstado === 'ok' ? 'Activa y al día. Tu progreso viaja entre el móvil y el ordenador.'
+                    {syncEstado === 'ok' ? ui(pais, 'Activa y al día. Tu progreso viaja entre el móvil y el ordenador.')
                       : syncEstado === 'syncing' ? 'Guardando cambios…'
                       : syncEstado === 'error' ? 'Activa, pero ahora mismo sin conexión. Se reintenta al volver a la app.'
                       : 'Apagada. Tu progreso vive solo en este navegador.'}
@@ -3898,7 +3905,7 @@ export default function App() {
       )}
 
       {syncModal && (
-        <SyncModal sync={sync} estado={syncEstado}
+        <SyncModal pais={pais} sync={sync} estado={syncEstado}
           onActivar={activarSync} onDesactivar={desactivarSync}
           onClose={() => setSyncModal(false)} />
       )}
@@ -3919,7 +3926,7 @@ export default function App() {
   )
 }
 
-function SyncModal({ sync, estado, onActivar, onDesactivar, onClose }) {
+function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais }) {
   const [modo, setModo] = useState(sync ? 'activo' : 'menu')
   const [url, setUrl] = useState('')
   const [codigo, setCodigo] = useState('')
@@ -3965,8 +3972,7 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose }) {
                 (al momento en este dispositivo; cada pocos segundos en los demás).
                 Estado: <b>{estado === 'ok' ? 'conectado' : estado === 'error' ? 'sin conexión' : 'guardando…'}</b>
               </p>
-              <p className="modal-res">Para conectar otro dispositivo (el móvil, por ejemplo), abre allí la web,
-                pulsa Sincronizar → «Conectar con un código» y pega este código:</p>
+              <p className="modal-res">{ui(pais, 'Para conectar otro dispositivo (el móvil, por ejemplo), abre allí la web, pulsa Sincronizar → «Conectar con un código» y pega este código:')}</p>
               <div className="sync-codigo">
                 <code>{codigoSync(sync.url, sync.room)}</code>
                 <button className="chip-btn" onClick={copiarCodigo}>{copiado ? '¡Copiado!' : 'Copiar'}</button>

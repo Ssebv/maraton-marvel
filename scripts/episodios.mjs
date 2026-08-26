@@ -6,17 +6,18 @@
 // Cada episodio se empareja por temporada y número, y se descarta si la fecha
 // de TMDB no cuadra con la de episodes.js (numeración distinta = título ajeno).
 // Necesita red: `npm run episodios` (y lo lanza `npm run plataformas`).
-import { writeFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
-import { cargaFuentes } from './contrato.mjs'
+import { writeFileSync, existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { cargaFuentes, raiz } from './contrato.mjs'
 
-const { EPISODES, TMDB, TMDB_KEY } = await cargaFuentes()
+const { EPISODES, TMDB, TMDB_KEY, DESPLAZA_TEMPORADA } = await cargaFuentes()
 const dormir = ms => new Promise(r => setTimeout(r, ms))
 const huella = s => s.toLowerCase().replace(/[.\-–:,'’!¿?¡…]/g, '').replace(/\s+/g, ' ').trim()
 const generico = t => /^(episodio|episode|capítulo|chapter)\s*\d+$/i.test(t.trim())
-// loki1 y loki2 comparten serie en TMDB y el segundo guarda su temporada como 1
-const temporadaTmdb = (id, s) => (id === 'loki2' ? s + 1 : s)
+// loki2 guarda su temporada como 1 aunque en TMDB sea la 2 (src/tmdb.js)
+const temporadaTmdb = (id, s) => s + (DESPLAZA_TEMPORADA[id] || 0)
+const temporada = async (tmdbId, s, idioma) =>
+  (await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${s}?api_key=${TMDB_KEY}&language=${idioma}`)).json()
 const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000)
 
 const salida = {}
@@ -26,15 +27,21 @@ for (const [id, eps] of Object.entries(EPISODES)) {
   if (!m || m[1] !== 'tv') { console.error('  (sin serie de TMDB: ' + id + ')'); continue }
   const temporadas = [...new Set(eps.map(e => e.s))]
   for (const s of temporadas) {
-    let r
+    // TMDB devuelve el título INGLÉS cuando no tiene traducción es-MX: se pide
+    // también el inglés y, si coinciden, no hay título latino que valga
+    let r, en
     try {
-      r = await (await fetch(`https://api.themoviedb.org/3/tv/${m[0]}/season/${temporadaTmdb(id, s)}?api_key=${TMDB_KEY}&language=es-MX`)).json()
+      r = await temporada(m[0], temporadaTmdb(id, s), 'es-MX')
+      en = await temporada(m[0], temporadaTmdb(id, s), 'en-US')
     } catch { console.error('  (sin red para ' + id + ' T' + s + ')'); continue }
+    if (!Array.isArray(r.episodes)) { console.error('  (TMDB no dio episodios para ' + id + ' T' + s + ': ' + (r.status_message || '?') + ')'); continue }
     consultadas++
-    const porNumero = new Map((r.episodes || []).map(e => [e.episode_number, e]))
+    const porNumero = new Map(r.episodes.map(e => [e.episode_number, e]))
+    const ingles = new Map(((en && en.episodes) || []).map(e => [e.episode_number, e.name || '']))
     for (const ep of eps.filter(e => e.s === s)) {
       const t = porNumero.get(ep.n)
       if (!t || !t.name || generico(t.name)) continue
+      if (huella(t.name) === huella(ingles.get(ep.n) || '')) continue
       if (ep.f && t.air_date && dias(ep.f, t.air_date) > 3) { descartados++; continue }
       const nombre = t.name.trim()
       if (huella(nombre) === huella(ep.t)) continue
@@ -44,8 +51,14 @@ for (const [id, eps] of Object.entries(EPISODES)) {
     await dormir(60)
   }
 }
-const raiz = dirname(dirname(fileURLToPath(import.meta.url)))
-writeFileSync(join(raiz, 'src', 'episodios-latam.js'), `// GENERADO por \`npm run episodios\` (scripts/episodios.mjs). NO SE EDITA A MANO.
+// Una ejecución sin red o con la clave caducada no debe dejar el fichero vacío
+const destino = join(raiz, 'src', 'episodios-latam.js')
+const antes = existsSync(destino) ? (readFileSync(destino, 'utf8').match(/"\d+:\d+":/g) || []).length : 0
+if (consultadas === 0 || distintos < antes / 2) {
+  console.error(`PARO sin escribir: ${consultadas} temporadas consultadas y ${distintos} títulos (antes había ${antes}). ¿Sin red o clave caducada?`)
+  process.exit(1)
+}
+writeFileSync(destino, `// GENERADO por \`npm run episodios\` (scripts/episodios.mjs). NO SE EDITA A MANO.
 //
 // Título latinoamericano de cada episodio (TMDB es-MX) solo donde difiere de
 // verdad del de España de episodes.js, por clave "temporada:número".

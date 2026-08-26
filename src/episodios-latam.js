@@ -68,7 +68,6 @@ export const EPISODIOS_LATAM = {
  },
  "aos": {
   "1:4": "Ojo de espía",
-  "1:6": "FZZT",
   "1:7": "El eje",
   "1:13": "C.A.R.R.I.L.E.S.",
   "1:15": "Sí, señores",
@@ -100,7 +99,6 @@ export const EPISODIOS_LATAM = {
   "1:8": "Arma blanca",
   "1:9": "De frente al enemigo",
   "1:10": "Virtud del vicioso",
-  "2:1": "Roadhouse Blues",
   "2:2": "Luchar o correr",
   "2:5": "Cuidado con las jotas",
   "2:7": "Mal día",
@@ -202,8 +200,7 @@ export const EPISODIOS_LATAM = {
   "1:1": "Matiné",
   "1:2": "Auto-grabación",
   "1:4": "El Portero",
-  "1:5": "Evidencia",
-  "1:6": "Callback"
+  "1:5": "Evidencia"
  },
  "sm-amigos81": {
   "1:1": "El triunfo del Goblin Verde",
@@ -289,9 +286,7 @@ export const EPISODIOS_LATAM = {
   "1:24": "El Ataque de Escarabajo",
   "1:25": "La Revelación",
   "1:26": "El Duende Verde al Acecho",
-  "2:5": "Hawkeye",
   "2:7": "¡Hombraraña!",
-  "2:8": "Carnage",
   "2:10": "El Hombre Lobo",
   "2:12": "Itsy Bitsy Hombre Araña",
   "2:13": "La Travesía de Puño de Hierro",
@@ -347,11 +342,9 @@ export const EPISODIOS_LATAM = {
   "2:17": "Vengadores Secretos",
   "2:18": "La aparición de Ultrón",
   "2:19": "El nuevo",
-  "2:21": "Spectrums",
   "2:23": "La resistencia final de los Vengadores",
   "2:24": "Los Vengadores en la clandestinidad",
   "2:26": "Mundo de Vengadores",
-  "3:2": "The Ultimates",
   "3:7": "Viaje a la Dimensión Oscura."
  },
  "hitmonkey": {
@@ -359,7 +352,6 @@ export const EPISODIOS_LATAM = {
   "1:3": "La leyenda del mono ebrio",
   "1:5": "Corre, Monkey, corre",
   "1:6": "La larga despedida",
-  "1:7": "Sayonara, Monkey",
   "1:9": "El final: Parte uno",
   "1:10": "El final: Parte dos",
   "2:1": "Devolver al remitente",

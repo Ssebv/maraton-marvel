@@ -108,3 +108,9 @@ export const TMDB = {
   "brandnewday": [969681, "movie"],
   "doomsday": [1003596, "movie"],
 }
+
+// Series cuya numeración en la app no es la de TMDB: loki1 y loki2 comparten
+// serie (84958) y loki2 guarda su temporada como 1 aunque en TMDB sea la 2.
+// Lo leen la app (fotogramas y sinopsis), scripts/episodios.mjs y verifica.mjs:
+// es el ÚNICO sitio donde vive el desplazamiento.
+export const DESPLAZA_TEMPORADA = { loki2: 1 }
