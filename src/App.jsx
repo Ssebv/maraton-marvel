@@ -3226,7 +3226,7 @@ export default function App() {
       {fondo === 'muro' && (
         <div className="fondo-hero fh-muro" aria-hidden="true">
           <div className="fh-tira">
-            {MURO.map(id => <img key={id} src={`mini/${id}.jpg`} alt="" loading="lazy" />)}
+            {MURO.map(id => <img key={id} src={`mini/${id}.webp`} alt="" loading="lazy" decoding="async" />)}
           </div>
           <span className="fh-velo" />
         </div>
@@ -3842,8 +3842,8 @@ export default function App() {
                 <div className="saga-head">
                   {FRANJA.includes(saga.saga) && (
                     <div className="saga-franja" aria-hidden="true">
-                      <img src={`fondo/${saga.saga}.jpg`} alt="" loading="lazy"
-                        srcSet={`fondo/${saga.saga}-560.jpg 560w, fondo/${saga.saga}.jpg 900w`}
+                      <img src={`fondo/${saga.saga}.webp`} alt="" loading="lazy" decoding="async"
+                        srcSet={`fondo/${saga.saga}-560.webp 560w, fondo/${saga.saga}.webp 900w`}
                         sizes="(max-width: 640px) 100vw, 50vw" />
                       <span className="sf-velo" />
                     </div>
