@@ -569,6 +569,21 @@ h2{
 }
 .saga-count{margin-left: auto; font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
 .saga-desc{margin: var(--e-3) 0 0; font-size: var(--t-b); color:var(--ink2); max-width:68ch}
+/* En móvil la descripción de la saga (5-6 líneas) empujaba el primer título
+   fuera de la primera pantalla: se pliega a dos líneas con «Leer más». En
+   escritorio se lee entera y el botón no existe. */
+.leer-mas{
+  display:none; background:none; border:none; padding: var(--e-2) 0; margin: 0;
+  font:inherit; font-size: var(--t-m); font-weight:600; color:var(--gold-texto); cursor:pointer;
+  position:relative;
+}
+.leer-mas::after{content:""; position:absolute; inset:-11px 0}
+@media (max-width:640px){
+  .saga-desc-wrap:not(.abierta) .saga-desc{
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+  }
+  .saga-desc-wrap.larga .leer-mas{display:inline-block}
+}
 /* La guía de una saga con reinicio: plegada, porque solo hace falta la
    primera vez y no debe empujar la lista hacia abajo cada día. */
 .saga-guia{margin: var(--e-3) 0 0; max-width:68ch; font-size: var(--t-b); color:var(--ink2)}
@@ -635,8 +650,10 @@ h3{
   box-shadow:5px 6px 0 color-mix(in srgb, var(--glow, var(--red)) 40%, transparent);
 }
 .card:active{transform:translateY(-1px) scale(.997)}
-/* El tachado, el check verde y el sello ya dicen "vista": la opacidad es
-   el cuarto aviso. Con la tarjeta plana, .62 la borraba del fondo. */
+/* El check verde, el sello y la carátula apagada ya dicen "vista": la
+   opacidad es el cuarto aviso. Con la tarjeta plana, .62 la borraba del fondo.
+   El tachado del titular se quitó: en Archivo Black y a dos líneas dejaba el
+   título ilegible y era el quinto aviso del mismo estado. */
 .card.vista{opacity:.68}
 .card.vista:hover{opacity:.85}
 @keyframes riseIn{
@@ -731,7 +748,7 @@ h3{
   font-family:"Archivo Black","Archivo",sans-serif; font-weight:400;
   font-size: var(--t-l); line-height:1.1; letter-spacing:-.02em;
 }
-.card.vista .titulo{color:var(--ink2); text-decoration:line-through; text-decoration-thickness:1.5px}
+.card.vista .titulo{color:var(--ink2)}
 .meta{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
 .meta .hist{color:var(--blue); font-weight:600}
 .res{font-size: var(--t-b); color:var(--ink2); max-width:60ch; line-height:1.5}
@@ -1192,6 +1209,8 @@ main.galeria{margin-top: var(--e-6)}
 @media (max-width:720px){
   .sistema-wrap{padding: 0}
   .sistema{transform:scale(.48); transform-origin:center center; margin: -180px 0}
+  /* A escala .48 los 11 px de la etiqueta se quedaban en 5: se compensa */
+  .nav-nombre{font-size:calc(var(--t-xs) * 1.8)}
 }
 
 /* ── Guía del multiverso ── */
@@ -1413,7 +1432,8 @@ footer{margin-top: var(--e-9); border-top:1px solid var(--line); padding-top: va
 .nota-creditos a{color:var(--ink2); text-underline-offset:2px}
 .nota-creditos a:hover{color:var(--ink)}
 .reset{margin-left: auto; display:flex; gap: var(--e-3); flex-wrap:wrap; justify-content:flex-end}
-.reset .chip-btn.peligro{color:var(--red); border-color:var(--red)}
+.chip-btn.peligro{color:var(--red); border-color:var(--red)}
+.pie-ajustes{margin-left:auto}
 
 /* ── Movimiento con propósito (HIG: nada de animar por animar) ── */
 /* Cambiar de pestaña es un cambio de contexto: se anuncia con un fundido corto. */
@@ -1510,7 +1530,14 @@ main.crono, main.comics, main.estreno{animation:none}
   main.comics .era .grid{display:grid; grid-template-columns:1fr 1fr; gap: var(--e-4)}
 }
 @media (max-width:640px){
-  .hero{padding: var(--e-7) 0 var(--e-5)}
+  /* La primera pantalla del móvil no enseñaba ni un título: el hero con
+     sus tres cajas medía 424 px. Un paso menos de titular y de aire. */
+  .hero{padding: var(--e-6) 0 var(--e-4)}
+  .hero-eyebrow{margin-bottom: var(--e-3)}
+  h1{font-size:clamp(28px,7.4vw,50px); text-wrap:balance}
+  .stats{margin-top: var(--e-5)}
+  .stat{padding: var(--e-4)}
+  .saga{margin-top: var(--e-7)}
   .credits{display:none}
   .checkbox{width:26px; height:26px}
   .abrir{gap: var(--e-4)}
@@ -1521,6 +1548,14 @@ main.crono, main.comics, main.estreno{animation:none}
   /* Archivo Black a 19px parte los títulos en tres líneas dentro de los
      143px que quedan al lado de la carátula. Un paso menos, mismo carácter. */
   .titulo{font-size: var(--t-b)}
+  /* La columna de chips (Opcional, Serie) dejaba al título 87 px de ancho y
+     «El multiverso de Sony (Raimi, Garfield, Venom…)» partía en cinco líneas.
+     Pasa a una fila bajo el texto, alineada con él (26 + 12 + 88 + 16). */
+  .card{flex-wrap:wrap}
+  .lado{flex-basis:100%; padding: 0 0 0 142px; margin-top:calc(-1 * var(--e-2))}
+  .lado:empty{display:none}
+  main.compacto .lado{padding-left:calc(24px + var(--e-4))}
+  .chips{flex-direction:row; align-items:flex-start}
   .cast{display:none}
   .enlaces{flex-direction:column; align-items:flex-end}
   .card{gap: var(--e-4); padding: var(--e-4)}
@@ -1529,7 +1564,20 @@ main.crono, main.comics, main.estreno{animation:none}
 /* ── Liquid Glass móvil: dock inferior + fichas como sheet ── */
 @keyframes sheetUp{from{transform:translateY(46%); opacity:.6}}
 @media (max-width:720px){
-  .toolbar{background:var(--bg)}
+  /* Barra de app de borde a borde: la caja flotante con esquinas dejaba ver
+     el texto por el hueco de arriba y por las esquinas al desplazarse. */
+  .toolbar{
+    background:var(--bg); top:env(safe-area-inset-top, 0px);
+    margin: var(--e-4) calc(-1 * var(--e-6)) var(--e-2); padding: var(--e-3) var(--e-6);
+    border-radius:0; border-width:0 0 1px; box-shadow:none;
+  }
+  /* Los destinos van en el dock de abajo: el separador que los seguía quedaba
+     solo al principio del carril y parecía un chip cortado. */
+  .tabs + .ctrl-sep{display:none}
+  /* Los grupos se disuelven en el carril para poder poner la búsqueda la
+     primera: estaba en la posición 11, detrás de diez chips. */
+  .ctrl-grupo{display:contents}
+  .busca{order:-1; width:168px}
   .tabs{
     /* los laterales también son zona segura: en apaisado el notch y las
        esquinas redondeadas se comen 44-59 px de cada lado */
@@ -1568,10 +1616,9 @@ main.crono, main.comics, main.estreno{animation:none}
      En móvil pasa a ser un carril de una sola fila que se desliza. */
   .controles{
     flex-wrap:nowrap; overflow-x:auto; overscroll-behavior-x:contain;
-    scrollbar-width:none; margin-inline: calc(-1 * var(--e-5)); padding-inline: var(--e-5);
+    scrollbar-width:none; margin-inline: calc(-1 * var(--e-6)); padding-inline: var(--e-6);
   }
   .controles::-webkit-scrollbar{display:none}
-  .ctrl-grupo{flex-wrap:nowrap; flex:none}
   .chip-btn{flex:none; padding: var(--e-3) var(--e-4)}
   /* solo flex, sin altura: el min-height:39px que había aquí pisaba los 44px
      táctiles del bloque (pointer:coarse), que va antes en el archivo */
@@ -1747,15 +1794,19 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .club-coment-envio{display:flex; gap: var(--e-3)}
 .club-coment-envio .busca{flex:1; min-height:36px}
 /* ── Acabados: sello de coleccionista, bienvenida, vacíos y fundidos ── */
+/* El centrado va DENTRO de transform y en cada fotograma: el minificador
+   funde una propiedad `translate` suelta con `transform`, y la animación
+   (con `both`) pisa ese transform y deja el sello desplazado medio cuerpo
+   hacia abajo y a la derecha — así estuvo en producción sin que se viera. */
 @keyframes sellazo{
-  0%{transform:rotate(-14deg) scale(2.4); opacity:0}
-  55%{transform:rotate(-14deg) scale(.92); opacity:1}
-  75%{transform:rotate(-14deg) scale(1.06)}
-  100%{transform:rotate(-14deg) scale(1)}
+  0%{transform:translate(-50%,-50%) rotate(-14deg) scale(2.4); opacity:0}
+  55%{transform:translate(-50%,-50%) rotate(-14deg) scale(.92); opacity:1}
+  75%{transform:translate(-50%,-50%) rotate(-14deg) scale(1.06)}
+  100%{transform:translate(-50%,-50%) rotate(-14deg) scale(1)}
 }
 .sello{
   position:absolute; left:50%; top:50%; z-index:2;
-  transform:rotate(-14deg); transform-origin:center; translate:-50% -50%;
+  transform:translate(-50%,-50%) rotate(-14deg); transform-origin:center;
   font-family:"Archivo Black","Archivo",sans-serif; font-size: var(--t-l); letter-spacing:.12em;
   color:var(--done); border:3px solid var(--done); border-radius:var(--r-s); padding: var(--e-2) var(--e-4);
   background:color-mix(in srgb, var(--bg) 55%, transparent);

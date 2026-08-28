@@ -3840,7 +3840,7 @@ export default function App() {
                     {s.v} / {s.n}{s.m ? ` · quedan ${fmtDur(s.m)}` : ''}
                   </span>
                 </div>
-                <p className="saga-desc">{saga.desc}</p>
+                <DescPlegable texto={saga.desc} />
                 {saga.guia && (
                   <details className="saga-guia">
                     <summary>Cómo entender la saga</summary>
@@ -4153,6 +4153,8 @@ export default function App() {
                 </div>
               </div>
 
+              <Datos onReset={() => { setVistas({}); setLecturas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
+
               <div className="ajuste">
                 <div className="ajuste-cab">
                   <h3 className="ajuste-titulo">País</h3>
@@ -4251,7 +4253,7 @@ export default function App() {
           onIrA={d => setDetalle(d)} />
       )}
 
-      <Footer onReset={() => { setVistas({}); setLecturas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
+      <Footer onAjustes={() => setAjustes(true)} />
     </div>
   )
 }
@@ -4357,7 +4359,33 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais }) {
   )
 }
 
-function Footer({ onReset }) {
+// La descripción de la saga, plegada a dos líneas en móvil (CSS) con un
+// «Leer más» que solo aparece si de verdad se ha cortado algo.
+function DescPlegable({ texto }) {
+  const [abierta, setAbierta] = useState(false)
+  const [larga, setLarga] = useState(false)
+  const ref = useRef(null)
+  React.useLayoutEffect(() => {
+    const p = ref.current
+    if (!p) return
+    const mide = () => setLarga(p.scrollHeight > p.clientHeight + 1)
+    mide()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(mide)
+    ro.observe(p)
+    return () => ro.disconnect()
+  }, [texto, abierta])
+  return (
+    <div className={`saga-desc-wrap${abierta ? ' abierta' : ''}${larga || abierta ? ' larga' : ''}`}>
+      <p className="saga-desc" ref={ref}>{texto}</p>
+      <button type="button" className="leer-mas" aria-expanded={abierta} onClick={() => setAbierta(a => !a)}>
+        {abierta ? 'Leer menos' : 'Leer más'}
+      </button>
+    </div>
+  )
+}
+
+function Datos({ onReset }) {
   const [confirmando, setConfirmando] = useState(false)
   const [sonido, setSonido] = useState(() => {
     try { return localStorage.getItem('maraton-marvel-sonido-v1') === '1' } catch { return false }
@@ -4367,12 +4395,6 @@ function Footer({ onReset }) {
   const [codigo, setCodigo] = useState('')
   const [msgImport, setMsgImport] = useState('')
   const [confirmaImport, setConfirmaImport] = useState(null)
-  const [rescate, setRescate] = useState(() => {
-    try {
-      const g = JSON.parse(localStorage.getItem(KEY_RESCATE))
-      return g && Date.now() - g.t < 7 * 864e5 ? g : null
-    } catch { return null }
-  })
   const exportar = () => {
     try {
       const datos = {
@@ -4451,24 +4473,42 @@ function Footer({ onReset }) {
     lector.readAsText(archivo)
   }
   return (
-    <footer>
-      <p className="nota-pie">
-        Pulsa una tarjeta para ver su ficha completa; la casilla redonda marca vista o pendiente y se guarda en este navegador.
-        Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas.
-        La Ruta express deja solo lo imprescindible para llegar a {TITULOS.doomsday}.
-      </p>
-      <p className="nota-pie nota-creditos">
-        Carátulas, fotogramas, tráilers y reparto de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a>;
-        este producto usa su API pero no está avalado ni certificado por TMDB.
-        La disponibilidad por plataforma y sus logos vienen de <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> a través de TMDB.
-      </p>
-      <div className="reset">
-        <button className="chip-btn" onClick={exportar}>
-          {copiado ? '¡Copiado!' : 'Copiar código de progreso'}
-        </button>
-        <button className="chip-btn" onClick={() => { setImportando(i => !i); setMsgImport('') }}>
-          {importando ? 'Cancelar' : 'Cargar código'}
-        </button>
+    <>
+      <div className="ajuste">
+        <div className="ajuste-cab">
+          <h3 className="ajuste-titulo">Sonido</h3>
+          <p className="ajuste-pista">Un toque breve al marcar un título como visto.</p>
+        </div>
+        <div className="ajuste-ops">
+          {[[true, 'Sí'], [false, 'No']].map(([v, t]) => (
+            <button key={t} className="chip-btn" aria-pressed={sonido === v} onClick={() => {
+              if (sonido === v) return
+              setSonido(v)
+              try { localStorage.setItem('maraton-marvel-sonido-v1', v ? '1' : '0') } catch {}
+              if (v) suenaPop.ctx = null
+            }}>{t}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ajuste">
+        <div className="ajuste-cab">
+          <h3 className="ajuste-titulo">Tu progreso</h3>
+          <p className="ajuste-pista">Un código para llevar lo visto a otro navegador, o una copia completa en archivo: progreso, episodios, notas, listas y lecturas.</p>
+        </div>
+        <div className="ajuste-ops">
+          <button className="chip-btn" onClick={exportar}>
+            {copiado ? '¡Copiado!' : 'Copiar código'}
+          </button>
+          <button className="chip-btn" onClick={() => { setImportando(i => !i); setMsgImport('') }}>
+            {importando ? 'Cancelar' : 'Cargar código'}
+          </button>
+          <button className="chip-btn" onClick={descargaCopia}>Descargar copia</button>
+          <label className="chip-btn restaurar">
+            Restaurar copia
+            <input type="file" accept="application/json,.json" onChange={restauraCopia} aria-label="Restaurar copia de seguridad" />
+          </label>
+        </div>
         {importando && (
           <span className="importar">
             <input className="busca" name="codigo-progreso" placeholder="Pega el código aquí" spellCheck={false} autoComplete="off"
@@ -4477,33 +4517,8 @@ function Footer({ onReset }) {
             {msgImport && <span className="import-error">{msgImport}</span>}
           </span>
         )}
-        {rescate && Object.keys(rescate.v || {}).length > 0 && (
-          <div className="aviso info en-pie" role="status">
-            <p className="aviso-texto">
-              La sincronización dejó tu progreso a cero y antes tenías{' '}
-              <b>{Object.keys(rescate.v).length} título{Object.keys(rescate.v).length === 1 ? '' : 's'}</b>.
-              Se guardó una copia por si fue un accidente.
-            </p>
-            <div className="aviso-acciones">
-              <button className="chip-btn destacado" aria-pressed="false" onClick={() => {
-                try {
-                  localStorage.setItem(KEY, JSON.stringify(rescate.v || {}))
-                  localStorage.setItem(KEY_EPS, JSON.stringify(rescate.e || {}))
-                  localStorage.setItem(KEY_NOTAS, JSON.stringify(rescate.n || {}))
-                  localStorage.setItem(KEY_LISTAS, JSON.stringify(rescate.l || []))
-                  localStorage.removeItem(KEY_RESCATE)
-                } catch {}
-                window.location.reload()
-              }}>Recuperar ese progreso</button>
-              <button className="chip-btn" onClick={() => {
-                try { localStorage.removeItem(KEY_RESCATE) } catch {}
-                setRescate(null)
-              }}>Descartar</button>
-            </div>
-          </div>
-        )}
         {confirmaImport && (
-          <div className="aviso peligro en-pie" role="alertdialog" aria-label="Confirmar carga de progreso">
+          <div className="aviso peligro" role="alertdialog" aria-label="Confirmar carga de progreso">
             <p className="aviso-texto">
               Cargar este código <b>sustituye</b> tu progreso: pasarías de{' '}
               <b>{confirmaImport.tengo} título{confirmaImport.tengo === 1 ? '' : 's'}</b> a{' '}
@@ -4518,28 +4533,76 @@ function Footer({ onReset }) {
             </div>
           </div>
         )}
-        <button className="chip-btn" aria-pressed={sonido} onClick={() => {
-          const v = !sonido
-          setSonido(v)
-          try { localStorage.setItem('maraton-marvel-sonido-v1', v ? '1' : '0') } catch {}
-          if (v) suenaPop.ctx = null
-        }}>
-          {sonido ? 'Sonido al marcar: sí' : 'Sonido al marcar: no'}
-        </button>
-        <button className="chip-btn" onClick={descargaCopia}>Descargar copia</button>
-        <label className="chip-btn restaurar">
-          Restaurar copia
-          <input type="file" accept="application/json,.json" onChange={restauraCopia} aria-label="Restaurar copia de seguridad" />
-        </label>
-        <button className="chip-btn" onClick={() => setConfirmando(c => !c)}>
-          {confirmando ? 'Cancelar' : 'Reiniciar progreso'}
-        </button>
-        {confirmando && (
-          <button className="chip-btn peligro" onClick={() => { onReset(); setConfirmando(false) }}>
-            ¿Seguro? Sí, borrar todo
-          </button>
-        )}
       </div>
+
+      <div className="ajuste">
+        <div className="ajuste-cab">
+          <h3 className="ajuste-titulo">Empezar de cero</h3>
+          <p className="ajuste-pista">Borra lo visto y las lecturas de este navegador. Las notas, las listas y los ajustes se quedan.</p>
+        </div>
+        <div className="ajuste-ops">
+          <button className="chip-btn" onClick={() => setConfirmando(c => !c)}>
+            {confirmando ? 'Cancelar' : 'Reiniciar progreso'}
+          </button>
+          {confirmando && (
+            <button className="chip-btn peligro" onClick={() => { onReset(); setConfirmando(false) }}>
+              ¿Seguro? Sí, borrar todo
+            </button>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
+// El pie de cada vista: la nota de uso, los créditos obligatorios de TMDB y,
+// si hace falta, el rescate del progreso. Las herramientas de datos viven en
+// Ajustes (Datos); aquí solo queda el camino hasta ellas.
+function Footer({ onAjustes }) {
+  const [rescate, setRescate] = useState(() => {
+    try {
+      const g = JSON.parse(localStorage.getItem(KEY_RESCATE))
+      return g && Date.now() - g.t < 7 * 864e5 ? g : null
+    } catch { return null }
+  })
+  return (
+    <footer>
+      <p className="nota-pie">
+        Pulsa una tarjeta para ver su ficha completa; la casilla redonda marca vista o pendiente y se guarda en este navegador.
+        Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas.
+        La Ruta express deja solo lo imprescindible para llegar a {TITULOS.doomsday}.
+      </p>
+      <button className="chip-btn pie-ajustes" onClick={onAjustes}>Copia de seguridad y código</button>
+      {rescate && Object.keys(rescate.v || {}).length > 0 && (
+        <div className="aviso info en-pie" role="status">
+          <p className="aviso-texto">
+            La sincronización dejó tu progreso a cero y antes tenías{' '}
+            <b>{Object.keys(rescate.v).length} título{Object.keys(rescate.v).length === 1 ? '' : 's'}</b>.
+            Se guardó una copia por si fue un accidente.
+          </p>
+          <div className="aviso-acciones">
+            <button className="chip-btn destacado" aria-pressed="false" onClick={() => {
+              try {
+                localStorage.setItem(KEY, JSON.stringify(rescate.v || {}))
+                localStorage.setItem(KEY_EPS, JSON.stringify(rescate.e || {}))
+                localStorage.setItem(KEY_NOTAS, JSON.stringify(rescate.n || {}))
+                localStorage.setItem(KEY_LISTAS, JSON.stringify(rescate.l || []))
+                localStorage.removeItem(KEY_RESCATE)
+              } catch {}
+              window.location.reload()
+            }}>Recuperar ese progreso</button>
+            <button className="chip-btn" onClick={() => {
+              try { localStorage.removeItem(KEY_RESCATE) } catch {}
+              setRescate(null)
+            }}>Descartar</button>
+          </div>
+        </div>
+      )}
+      <p className="nota-pie nota-creditos">
+        Carátulas, fotogramas, tráilers y reparto de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a>;
+        este producto usa su API pero no está avalado ni certificado por TMDB.
+        La disponibilidad por plataforma y sus logos vienen de <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> a través de TMDB.
+      </p>
     </footer>
   )
 }
