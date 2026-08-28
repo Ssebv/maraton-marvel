@@ -31,7 +31,7 @@ self.addEventListener('fetch', e => {
   }
   const esEstatico =
     (url.origin === location.origin && (url.pathname.includes('/posters/') || url.pathname.includes('/people/') ||
-      url.pathname.includes('/mini/') || url.pathname.includes('/fondo/') || url.pathname.endsWith('/social.jpg'))) ||
+      url.pathname.includes('/mini/') || url.pathname.includes('/fondo/') || url.pathname.includes('/fonts/') || url.pathname.endsWith('/social.jpg'))) ||
     url.hostname === 'fonts.gstatic.com' || url.hostname === 'fonts.googleapis.com'
   if (esEstatico) {
     e.respondWith(
