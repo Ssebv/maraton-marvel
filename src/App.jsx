@@ -398,10 +398,11 @@ function iniciales(t) {
 
 function fmtDur(d) {
   if (!d) return ''
-  if (d >= 600) return `~${Math.round(d / 60)} h`
+  // espacios duros: «1 h 47 min» no se parte entre líneas en las tarjetas del móvil
+  if (d >= 600) return `~${Math.round(d / 60)}\u00a0h`
   const h = Math.floor(d / 60), m = d % 60
-  if (!h) return `${m} min`
-  return `${h} h${m ? ` ${m} min` : ''}`
+  if (!h) return `${m}\u00a0min`
+  return `${h}\u00a0h${m ? `\u00a0${m}\u00a0min` : ''}`
 }
 
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
@@ -1116,7 +1117,7 @@ function MapaMultiverso({ onAbrir }) {
           })}
         </div>
       ) : (
-        <p className="mapa-ayuda">Pulsa un título para iluminar sus conexiones con el resto del multiverso.</p>
+        <p className="mapa-ayuda">Pulsa un título para iluminar sus conexiones con el resto del multiverso.<span className="solo-movil"> Desliza para recorrer el mapa entero.</span></p>
       )}
     </div>
   )
