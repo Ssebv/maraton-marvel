@@ -472,24 +472,6 @@ h1 .rojo{color:var(--red)}
 .accion-principal:disabled{opacity:.45; cursor:not-allowed; filter:grayscale(.6)}
 .accion-principal:disabled:hover{filter:grayscale(.6)}
 
-/* ── Fundido al final de los carriles deslizables ──
-   Sin JavaScript: una animación ligada al scroll del propio carril mueve dos
-   longitudes registradas que dibujan la máscara. Al principio solo se funde
-   el lado derecho (queda contenido allí), al final solo el izquierdo, y si el
-   carril no desborda la línea de tiempo está inactiva y no hay máscara. En un
-   navegador sin scroll-timeline (Safari < 26) no pasa nada: el corte del
-   último chip ya avisa, como hasta ahora. */
-@property --fun-izq{syntax:"<length>"; inherits:false; initial-value:0px}
-@property --fun-der{syntax:"<length>"; inherits:false; initial-value:0px}
-@supports (animation-timeline: scroll()){
-  .controles, .subvistas, .carril-personas, .proximos, .mapa-mv-wrap, .seguir-lista{
-    animation:fundidoCarril linear both; animation-timeline:scroll(self inline);
-    -webkit-mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
-    mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
-  }
-  @keyframes fundidoCarril{from{--fun-izq:0px; --fun-der:28px} to{--fun-izq:28px; --fun-der:0px}}
-}
-
 /* ── Barra de herramientas fija ── */
 .toolbar{
   position:sticky; top:calc(env(safe-area-inset-top, 0px) + 10px); z-index:10;
@@ -1613,7 +1595,9 @@ main.crono, main.comics, main.estreno{animation:none}
   /* Los grupos se disuelven en el carril para poder poner la búsqueda la
      primera: estaba en la posición 11, detrás de diez chips. */
   .ctrl-grupo{display:contents}
-  .busca{order:-1; width:168px}
+  /* acotado al carril: .busca es también el campo de nombre de lista, el de
+     comentarios del club y el del código de sincronización */
+  .controles .busca{order:-1; width:168px}
   nav.tabs{
     /* los laterales también son zona segura: en apaisado el notch y las
        esquinas redondeadas se comen 44-59 px de cada lado */
@@ -1658,7 +1642,7 @@ main.crono, main.comics, main.estreno{animation:none}
   .chip-btn{flex:none; padding: var(--e-3) var(--e-4)}
   /* solo flex, sin altura: el min-height:39px que había aquí pisaba los 44px
      táctiles del bloque (pointer:coarse), que va antes en el archivo */
-  .busca{flex:none}
+  .controles .busca{flex:none}
   .ctrl-sep{align-self:center; height:22px}
   .atajos{display:none}
   nav.tabs .tab[aria-current="page"]{background:transparent; color:var(--red); box-shadow:none}
@@ -1765,6 +1749,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .mapa-mv svg{position:absolute; inset:0; width:100%; height:100%}
 /* En móvil el mapa no se encoge (los nodos son de 42×60 px fijos y a 327 px
    de ancho se montaban unos sobre otros): conserva 760 px y se desliza. */
+.solo-movil{display:none}
 @media (max-width:720px){
   .mapa-mv-wrap{overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; margin-inline:calc(-1 * var(--e-6)); padding-inline:var(--e-6)}
   .mapa-mv-wrap::-webkit-scrollbar{display:none}
@@ -1807,7 +1792,6 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .mapa-conexion-t{font-weight:700; font-size: var(--t-m)}
 .mapa-conexion-d{font-size: var(--t-s); color:var(--ink2)}
 .mapa-ayuda{margin: 0; font-size: var(--t-m); color:var(--ink2); text-align:center}
-.solo-movil{display:none}
 @media (max-width:720px){
   .nodo{width:56px}
   .nodo img, .nodo-ini{width:32px; height:46px}
@@ -1989,3 +1973,46 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .biblio-confirma{display:flex; gap: var(--e-2); grid-row:1 / span 2; align-items:center}
 /* en iPhone apaisado la barra roba altura: el ajuste y la doble página se abrevian */
 @media (max-height:500px){ .lector-barra{padding-top: var(--e-2)} .lector-barra .ghost{padding-top: var(--e-1); padding-bottom: var(--e-1)} }
+
+/* ── Fundido al final de los carriles deslizables ──
+   Sin JavaScript: una animación ligada al scroll del propio carril mueve dos
+   longitudes registradas que dibujan la máscara. Al principio solo se funde
+   el lado derecho (queda contenido allí), al final solo el izquierdo, y si el
+   carril no desborda la línea de tiempo está inactiva y no hay máscara. En un
+   navegador sin scroll-timeline (Safari < 26) no pasa nada.
+   Va AL FINAL del archivo porque el relleno vertical de compensación (para
+   que la máscara no recorte el anillo de foco de los chips: mask-clip es la
+   caja del borde) tiene que ganar a los rellenos base de cada carril.
+   `.controles` NO lleva máscara: el dock móvil (nav.tabs, position:fixed) es
+   hijo suyo y una máscara recorta a los descendientes al borde del ancestro —
+   el dock desapareció en producción por eso. Ahí el fundido son dos
+   pseudoelementos de la barra con la línea de tiempo del carril con nombre. */
+@property --fun-izq{syntax:"<length>"; inherits:false; initial-value:0px}
+@property --fun-der{syntax:"<length>"; inherits:false; initial-value:0px}
+@supports (animation-timeline: scroll()){
+  .subvistas, .proximos, .mapa-mv-wrap, .seguir-lista{
+    animation:fundidoCarril linear both; animation-timeline:scroll(self inline);
+    -webkit-mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
+    mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
+    padding-block:6px; margin-block:-6px;
+  }
+  .subvistas{margin-top:calc(var(--e-4) - 6px)}
+  .mapa-mv-wrap{margin-top:calc(var(--e-5) - 6px)}
+  @keyframes fundidoCarril{from{--fun-izq:0px; --fun-der:28px} to{--fun-izq:28px; --fun-der:0px}}
+  @media (max-width:720px){
+    .toolbar{timeline-scope:--carril}
+    .controles{scroll-timeline:--carril inline}
+    .toolbar::before, .toolbar::after{
+      content:""; position:absolute; top:0; bottom:0; width:28px; pointer-events:none; z-index:1; opacity:0;
+      /* longhands: en el atajo `animation:linear both` Chrome se queda «linear»
+         como NOMBRE y la curva sale ease; y el relleno explícito es lo que
+         mantiene el velo encendido en el tope exacto del carril */
+      animation-duration:auto; animation-timing-function:linear; animation-fill-mode:both;
+      animation-timeline:--carril; animation-range:0% 100%;
+    }
+    .toolbar::before{left:0; background:linear-gradient(to right, var(--bg), transparent); animation-name:fundidoIzq}
+    .toolbar::after{right:0; background:linear-gradient(to left, var(--bg), transparent); animation-name:fundidoDer}
+    @keyframes fundidoIzq{from{opacity:0} to{opacity:1}}
+    @keyframes fundidoDer{from{opacity:1} to{opacity:0}}
+  }
+}

@@ -1539,7 +1539,7 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
 
 function MiniTl({ item, c, vista, onAbrir }) {
   return (
-    <button className={`tl-card${vista ? ' vista' : ''}`} style={{ '--glow': c[0] }} onClick={onAbrir}>
+    <button id={`tl-${item.id}`} className={`tl-card${vista ? ' vista' : ''}`} style={{ '--glow': c[0] }} onClick={onAbrir}>
       <span className="tl-poster"><Portada item={item} c={c} esComic={false} /></span>
       <span className="tl-info">
         <span className="tl-titulo">{item.t}</span>
@@ -1623,12 +1623,12 @@ function Estrellas() {
 // comparación porque solo capturan cosas estables (item, era, setters) o
 // funciones con setState funcional; `pais` viaja como prop porque el país
 // MUTA los textos de `item` sin cambiar su identidad.
-const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miNota, lectura }) {
+const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, epHechos, miNota, lectura }) {
   let epProg = null
   if (esComic && lectura && lectura.t > 1 && !vista) epProg = `pág. ${lectura.p + 1}/${lectura.t}`
   if (item.tipo === 'serie' && EPISODES[item.id]) {
     const total = EPISODES[item.id].length
-    const hechos = EPISODES[item.id].filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length
+    const hechos = epHechos || 0
     if (hechos > 0 && !vista) epProg = `${hechos}/${total} ep`
   }
   return (
@@ -2965,23 +2965,36 @@ export default function App() {
   const posiciones = useRef({})
   const vistaRef = useRef(vista); vistaRef.current = vista
   useEffect(() => {
-    let ultimo = 0
+    let ultimo = 0, cola = 0
     const guarda = () => {
       const v = vistaRef.current, ahora = Date.now()
       const p = posiciones.current[v] || (posiciones.current[v] = {})
       p.y = window.scrollY
+      // acelerado mientras se desplaza y, además, una muestra de cola al parar:
+      // sin ella el último tramo (el que cuenta) se quedaba sin ancla
+      clearTimeout(cola); cola = setTimeout(() => { ultimo = 0; guarda() }, 150)
       if (ahora - ultimo > 200) {
         ultimo = ahora
-        // solo tarjetas: el ancestro con id más cercano de una cabecera de era
-        // es la saga entera, y eso devolvía a su principio
-        const el = document.elementFromPoint(window.innerWidth / 2, 100)
-        const con = el && el.closest && el.closest('.card')
+        // solo tarjetas con id: el ancestro con id más cercano de una cabecera
+        // de era es la saga entera, y eso devolvía a su principio. Se muestrea
+        // justo bajo la barra pegajosa (mide 60 px en el móvil pero 150 en
+        // escritorio y 110 en la app instalada: a 100 px fijos caía dentro de
+        // ella y nunca había ancla) y, si ahí no hay tarjeta, más abajo.
+        const barra = document.querySelector('.toolbar')
+        const y0 = barra ? barra.getBoundingClientRect().bottom + 8 : 100
+        let con = null
+        for (const dy of [0, 120, 240]) {
+          const el = document.elementFromPoint(window.innerWidth / 2, y0 + dy)
+          con = el && el.closest && el.closest('.card, .galeria-item, .tl-card')
+          if (con && con.id) break
+          con = null
+        }
         p.id = con ? con.id : null
         p.dy = con ? con.getBoundingClientRect().top : 0
       }
     }
     window.addEventListener('scroll', guarda, { passive: true })
-    return () => window.removeEventListener('scroll', guarda)
+    return () => { clearTimeout(cola); window.removeEventListener('scroll', guarda) }
   }, [])
   React.useLayoutEffect(() => {
     const p = posiciones.current[vista]
@@ -2993,6 +3006,10 @@ export default function App() {
     } else window.scrollTo({ top: p.y, behavior: 'instant' })
   }, [vista])
 
+  // episodios vistos de una serie, como NÚMERO: pasar el mapa `eps` entero a
+  // cada tarjeta rompía el memo de las 134 al marcar un solo episodio
+  const epHechosDe = item => (item.tipo === 'serie' && EPISODES[item.id])
+    ? EPISODES[item.id].reduce((n, e) => n + (eps[`${item.id}:${e.s}:${e.n}`] ? 1 : 0), 0) : 0
   const pasaFiltro = (item, esComic) => {
     if (buscaLenta) {
       // se busca por los dos títulos: «Lobezno» y «Wolverine» abren la misma ficha
@@ -3545,7 +3562,7 @@ export default function App() {
                         vista={!!l.prog[item.id]}
                         onToggle={() => toggleProgLista(l.id, item.id)}
                         onAbrir={() => setDetalle({ item, c, esComic })}
-                        delay={Math.min(i * 30, 300)} eps={eps}
+                        delay={Math.min(i * 30, 300)} epHechos={epHechosDe(item)}
                         miNota={notas[item.id] && notas[item.id].p} />
                     ))}
                   </div>
@@ -3621,7 +3638,7 @@ export default function App() {
                       vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
                       onAbrir={() => setDetalle({ item, c, esComic: item.id.startsWith('c-') })}
-                      delay={Math.min(i * 30, 300)} eps={eps}
+                      delay={Math.min(i * 30, 300)} epHechos={epHechosDe(item)}
                       miNota={notas[item.id] && notas[item.id].p} />
                   ))}
                 </div>
@@ -3711,7 +3728,7 @@ export default function App() {
                 <h2 className={`galeria-titulo ${saga.saga}`}>{saga.titulo}</h2>
                 <div className="galeria-grid">
                   {items.map(({ item, c }) => (
-                    <button key={item.id} className={`galeria-item${vistas[item.id] ? ' vista' : ''}`}
+                    <button key={item.id} id={`gal-${item.id}`} className={`galeria-item${vistas[item.id] ? ' vista' : ''}`}
                       title={item.t} onClick={() => setDetalle({ item, c, esComic })}>
                       <Portada item={item} c={c} esComic={esComic} />
                       {vistas[item.id] && <span className="galeria-check"><CheckIcon /></span>}
@@ -3840,8 +3857,8 @@ export default function App() {
             <div className="aviso centrado">
               <p className="sr-titulo">Nada coincide con lo que buscas</p>
               <p className="sr-detalle">
-                {busca.trim()
-                  ? <>No hay ningún título con «<b>{busca.trim()}</b>»{filtrosActivos > 0 ? ' entre los filtros que tienes puestos' : ''}.</>
+                {buscaLenta.trim()
+                  ? <>No hay ningún título con «<b>{buscaLenta.trim()}</b>»{filtrosActivos > 0 ? ' entre los filtros que tienes puestos' : ''}.</>
                   : <>Los filtros que tienes puestos no dejan ningún título.</>}
               </p>
               <button className="chip-btn destacado" aria-pressed="false" onClick={limpiaTodo}>
@@ -3928,7 +3945,7 @@ export default function App() {
                                 esComic={esComic} vista={!!vistas[item.id]}
                                 onToggle={() => toggle(item.id)}
                                 onAbrir={() => setDetalle({ item, c: era.c, esComic })}
-                                delay={nextDelay()} eps={eps} miNota={notas[item.id] && notas[item.id].p} lectura={esComic ? lecturas[item.id] : null} />
+                                delay={nextDelay()} epHechos={epHechosDe(item)} miNota={notas[item.id] && notas[item.id].p} lectura={esComic ? lecturas[item.id] : null} />
                             )
                           )}
                         </div>
@@ -3959,7 +3976,7 @@ export default function App() {
                       esComic={false} vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
                       onAbrir={() => setDetalle({ item, c: item.c, esComic: false })}
-                      delay={nextDelay()} eps={eps} miNota={notas[item.id] && notas[item.id].p} />
+                      delay={nextDelay()} epHechos={epHechosDe(item)} miNota={notas[item.id] && notas[item.id].p} />
                   ))}
                 </div>
               </section>
@@ -4420,6 +4437,9 @@ function DescPlegable({ texto }) {
     if (!p) return
     const mide = () => setLarga(p.scrollHeight > p.clientHeight + 1)
     mide()
+    // la caja plegada mide dos líneas con cualquier fuente: hay que volver a
+    // medir cuando entra la de verdad, que puede partir el texto distinto
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(mide)
     if (typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(mide)
     ro.observe(p)
