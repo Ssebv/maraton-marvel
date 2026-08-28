@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { DATA, ESTRENOS, JOYA_MIN, KEY, MULTIVERSO } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
@@ -499,7 +499,7 @@ function Portada({ item, c, esComic }) {
   }
   return (
     <img className="cover foto" src={src} alt={`Póster de ${item.t}`}
-      loading="lazy"
+      loading="lazy" decoding="async"
       onLoad={e => {
         const img = e.target
         if (img.naturalWidth <= img.naturalHeight * 1.05) return
@@ -1618,7 +1618,12 @@ function Estrellas() {
   )
 }
 
-function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miNota, lectura }) {
+// Memoizada: sin esto, cada tecla en la búsqueda, cada marca y cada ficha
+// abierta re-renderizaban las 134 tarjetas. Los dos callbacks se ignoran en la
+// comparación porque solo capturan cosas estables (item, era, setters) o
+// funciones con setState funcional; `pais` viaja como prop porque el país
+// MUTA los textos de `item` sin cambiar su identidad.
+const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miNota, lectura }) {
   let epProg = null
   if (esComic && lectura && lectura.t > 1 && !vista) epProg = `pág. ${lectura.p + 1}/${lectura.t}`
   if (item.tipo === 'serie' && EPISODES[item.id]) {
@@ -1670,7 +1675,10 @@ function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, eps, miN
       </div>
     </article>
   )
-}
+}, (a, b) => {
+  for (const k in a) if (k !== 'onToggle' && k !== 'onAbrir' && !Object.is(a[k], b[k])) return false
+  return true
+})
 
 // En qué plataforma está un título en el país elegido. España manda desde el
 // campo `plat` de data.js (curado a mano); el resto sale del mapa generado.
@@ -2106,7 +2114,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
       <div className="modal" ref={refModal} onClick={e => e.stopPropagation()}>
         {extra?.fondo && (
           <div className="modal-fondo" aria-hidden="true">
-            <img src={`${TMDB_IMG}w780${extra.fondo}`} alt="" />
+            <img src={`${TMDB_IMG}w780${extra.fondo}`} alt="" decoding="async" />
             <span className="mf-velo" />
           </div>
         )}
@@ -2621,10 +2629,13 @@ export default function App() {
   const refCine = useRef(null)
   useDialogo(refCine, () => setCine(false), cine)
   const [cineIdx, setCineIdx] = useState(0)
-  const guardaListas = next => {
-    setListas(next)
-    try { localStorage.setItem(KEY_LISTAS, JSON.stringify(next)) } catch {}
-  }
+  // acepta valor o función: los cierres de las tarjetas memoizadas no deben
+  // leer `listas` de un render viejo
+  const guardaListas = next => setListas(prev => {
+    const v = typeof next === 'function' ? next(prev) : next
+    try { localStorage.setItem(KEY_LISTAS, JSON.stringify(v)) } catch {}
+    return v
+  })
   const crearLista = nombre => guardaListas([...listas, { id: Math.random().toString(36).slice(2, 9), nombre, items: [], prog: {} }])
   const borrarLista = id => { guardaListas(listas.filter(l => l.id !== id)); if (listaActiva === id) setListaActiva(null) }
   const toggleEnLista = (lid, itemId) => guardaListas(listas.map(l => {
@@ -2634,13 +2645,15 @@ export default function App() {
     if (dentro) delete prog[itemId]
     return { ...l, items: dentro ? l.items.filter(x => x !== itemId) : [...l.items, itemId], prog }
   }))
-  const toggleProgLista = (lid, itemId) => guardaListas(listas.map(l => {
+  const toggleProgLista = (lid, itemId) => guardaListas(listas => listas.map(l => {
     if (l.id !== lid) return l
     const prog = { ...l.prog }
     if (prog[itemId]) delete prog[itemId]; else prog[itemId] = Date.now()
     return { ...l, prog }
   }))
   const [busca, setBusca] = useState(() => leeVistaUrl().busca)
+  // la caja responde a cada tecla; la lista de 134 tarjetas se filtra un instante después
+  const buscaLenta = useDeferredValue(busca)
   // La URL refleja dónde estás: la vista en el hash, la ficha abierta en ?t= y
   // lo que estás mirando en ?q= y ?f=. Antes esto borraba los parámetros nada
   // más montar, así que un enlace directo abría la ficha pero se perdía al
@@ -2945,10 +2958,10 @@ export default function App() {
   useVolverCierra(bienvenida && !perfil, cierraBienvenida)
 
   const pasaFiltro = (item, esComic) => {
-    if (busca) {
+    if (buscaLenta) {
       // se busca por los dos títulos: «Lobezno» y «Wolverine» abren la misma ficha
       const pajar = norm([item.t, T_ES[item.id] || '', TITULOS_LATAM[item.id] || '', item.dir || '', ...(item.cast || []), String(item.r)].join(' '))
-      if (!pajar.includes(norm(busca))) return false
+      if (!pajar.includes(norm(buscaLenta))) return false
     }
     if (filtros.series && item.tipo === 'serie') return false
     if (filtros.opc && item.opt) return false
@@ -3155,7 +3168,7 @@ export default function App() {
   // Cuántos títulos deja ver lo que hay puesto. Ojo: "Solo pendientes" no
   // vive en pasaFiltro, se aplica aparte, así que hay que mirar los dos.
   const resumenFiltros = useMemo(() => {
-    const activos = Object.values(filtros).filter(Boolean).length + (busca.trim() ? 1 : 0)
+    const activos = Object.values(filtros).filter(Boolean).length + (buscaLenta.trim() ? 1 : 0)
     if (!activos) return null
     let tot = 0, vis = 0
     DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
@@ -3164,7 +3177,7 @@ export default function App() {
       if (pasaFiltro(it, esComic) && !(filtros.vistas && vistas[it.id])) vis++
     })))
     return { activos, tot, vis }
-  }, [filtros, busca, vistas, pais])
+  }, [filtros, buscaLenta, vistas, pais])
   const limpiaFiltros = () => {
     setFiltros(sinFiltros())
     setBusca('')
@@ -3204,7 +3217,7 @@ export default function App() {
       <a className="saltar" href="#contenido">Saltar al contenido</a>
       {fondo === 'banner' && proxEstreno?.img && (
         <div className="fondo-hero fh-banner" aria-hidden="true">
-          <img src={proxEstreno.img} alt=""
+          <img src={proxEstreno.img} alt="" decoding="async"
             srcSet={`${proxEstreno.img.replace(/\.jpg$/, '-780.jpg')} 780w, ${proxEstreno.img} 1280w`}
             sizes="100vw" />
           <span className="fh-velo" />
@@ -3492,7 +3505,7 @@ export default function App() {
                   )}
                   <div className="grid tierra-grid">
                     {itemsOrdenados.map(({ item, c, esComic }, i) => (
-                      <Card key={item.id} item={item} num={i + 1} c={c} esComic={esComic} lectura={esComic ? lecturas[item.id] : null}
+                      <Card key={item.id} pais={pais} item={item} num={i + 1} c={c} esComic={esComic} lectura={esComic ? lecturas[item.id] : null}
                         vista={!!l.prog[item.id]}
                         onToggle={() => toggleProgLista(l.id, item.id)}
                         onAbrir={() => setDetalle({ item, c, esComic })}
@@ -3567,7 +3580,7 @@ export default function App() {
                 </header>
                 <div className="grid tierra-grid">
                   {items.map(({ item, c }, i) => (
-                    <Card key={item.id} item={item} num={i + 1} c={c} lectura={item.id.startsWith('c-') ? lecturas[item.id] : null}
+                    <Card key={item.id} pais={pais} item={item} num={i + 1} c={c} lectura={item.id.startsWith('c-') ? lecturas[item.id] : null}
                       esComic={item.id.startsWith('c-')}
                       vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
@@ -3875,7 +3888,7 @@ export default function App() {
                         <div className="grid">
                           {numerados.map((item, i) =>
                             visibles.includes(item) && (
-                              <Card key={item.id} item={item} num={base + i + 1} c={era.c}
+                              <Card key={item.id} pais={pais} item={item} num={base + i + 1} c={era.c}
                                 esComic={esComic} vista={!!vistas[item.id]}
                                 onToggle={() => toggle(item.id)}
                                 onAbrir={() => setDetalle({ item, c: era.c, esComic })}
@@ -3906,7 +3919,7 @@ export default function App() {
                 </div>
                 <div className="grid">
                   {visibles.map((item, i) => (
-                    <Card key={item.id} item={item} num={i + 1} c={item.c}
+                    <Card key={item.id} pais={pais} item={item} num={i + 1} c={item.c}
                       esComic={false} vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
                       onAbrir={() => setDetalle({ item, c: item.c, esComic: false })}

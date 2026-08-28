@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "node scripts/verifica.mjs",
-    "build": "node scripts/verifica.mjs && node scripts/gen-novedades.mjs && vite build",
+    "build": "node scripts/verifica.mjs && node scripts/webp.mjs && node scripts/gen-novedades.mjs && vite build",
     "desplegar": "npm run build && rm -rf docs && cp -R dist docs && node scripts/verifica.mjs",
     "contrato": "node scripts/contrato.mjs",
     "plataformas": "node scripts/plataformas.mjs; node scripts/paises.mjs; node scripts/titulos.mjs; node scripts/episodios.mjs",
     "titulos": "node scripts/titulos.mjs",
-    "episodios": "node scripts/episodios.mjs"
+    "episodios": "node scripts/episodios.mjs",
+    "webp": "node scripts/webp.mjs"
   },
   "keywords": [],
   "author": "",

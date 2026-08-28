@@ -1629,7 +1629,9 @@ main.crono, main.comics, main.estreno{animation:none}
   .atajos{display:none}
   nav.tabs .tab[aria-current="page"]{background:transparent; color:var(--red); box-shadow:none}
 
-  .overlay{place-items:end center; padding: 0}
+  /* Sin blur bajo la hoja: desenfocar una página llena de carátulas mientras
+     la hoja sube era el tirón más visible del móvil. Un velo más oscuro cumple. */
+  .overlay{place-items:end center; padding: 0; -webkit-backdrop-filter:none; backdrop-filter:none; background:rgba(8,10,14,.74)}
   .modal{
     max-width:none; width:100%; border-radius:var(--r-l) var(--r-l) 0 0; border-bottom:none;
     max-height:92vh; max-height:92dvh; padding-top: var(--e-6);
