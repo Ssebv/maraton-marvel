@@ -472,6 +472,24 @@ h1 .rojo{color:var(--red)}
 .accion-principal:disabled{opacity:.45; cursor:not-allowed; filter:grayscale(.6)}
 .accion-principal:disabled:hover{filter:grayscale(.6)}
 
+/* ── Fundido al final de los carriles deslizables ──
+   Sin JavaScript: una animación ligada al scroll del propio carril mueve dos
+   longitudes registradas que dibujan la máscara. Al principio solo se funde
+   el lado derecho (queda contenido allí), al final solo el izquierdo, y si el
+   carril no desborda la línea de tiempo está inactiva y no hay máscara. En un
+   navegador sin scroll-timeline (Safari < 26) no pasa nada: el corte del
+   último chip ya avisa, como hasta ahora. */
+@property --fun-izq{syntax:"<length>"; inherits:false; initial-value:0px}
+@property --fun-der{syntax:"<length>"; inherits:false; initial-value:0px}
+@supports (animation-timeline: scroll()){
+  .controles, .subvistas, .carril-personas, .proximos, .mapa-mv-wrap, .seguir-lista{
+    animation:fundidoCarril linear both; animation-timeline:scroll(self inline);
+    -webkit-mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
+    mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
+  }
+  @keyframes fundidoCarril{from{--fun-izq:0px; --fun-der:28px} to{--fun-izq:28px; --fun-der:0px}}
+}
+
 /* ── Barra de herramientas fija ── */
 .toolbar{
   position:sticky; top:calc(env(safe-area-inset-top, 0px) + 10px); z-index:10;
