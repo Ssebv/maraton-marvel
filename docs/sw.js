@@ -4,7 +4,7 @@
 // La versión va en el nombre: al subirla, el activate borra las cachés viejas.
 // Sin esto una carátula sustituida se quedaba con la vieja para siempre en quien
 // ya la tuviera guardada.
-const CACHE = 'maraton-marvel-v2'
+const CACHE = 'maraton-marvel-v3'
 
 self.addEventListener('install', e => self.skipWaiting())
 self.addEventListener('activate', e => e.waitUntil((async () => {
