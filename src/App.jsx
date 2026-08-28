@@ -2957,6 +2957,42 @@ export default function App() {
   // también es una capa: en la primera visita, atrás la cierra en vez de salir
   useVolverCierra(bienvenida && !perfil, cierraBienvenida)
 
+  // Cada vista recuerda dónde la dejaste: a media lista en Maratón, pasar a
+  // Mío y volver te devolvía a la cabecera (706 px en vez de 2.400). Se guarda
+  // al desplazar (barato: un número y, cada 200 ms, el id del elemento que hay
+  // bajo la barra) y se restaura por elemento —no por píxel— porque las
+  // tarjetas fuera de pantalla (content-visibility) aún no tienen su alto real.
+  const posiciones = useRef({})
+  const vistaRef = useRef(vista); vistaRef.current = vista
+  useEffect(() => {
+    let ultimo = 0
+    const guarda = () => {
+      const v = vistaRef.current, ahora = Date.now()
+      const p = posiciones.current[v] || (posiciones.current[v] = {})
+      p.y = window.scrollY
+      if (ahora - ultimo > 200) {
+        ultimo = ahora
+        // solo tarjetas: el ancestro con id más cercano de una cabecera de era
+        // es la saga entera, y eso devolvía a su principio
+        const el = document.elementFromPoint(window.innerWidth / 2, 100)
+        const con = el && el.closest && el.closest('.card')
+        p.id = con ? con.id : null
+        p.dy = con ? con.getBoundingClientRect().top : 0
+      }
+    }
+    window.addEventListener('scroll', guarda, { passive: true })
+    return () => window.removeEventListener('scroll', guarda)
+  }, [])
+  React.useLayoutEffect(() => {
+    const p = posiciones.current[vista]
+    if (!p) return
+    const el = p.id && document.getElementById(p.id)
+    if (el) {
+      el.scrollIntoView({ block: 'start', behavior: 'instant' })
+      window.scrollBy({ top: el.getBoundingClientRect().top - p.dy, behavior: 'instant' })
+    } else window.scrollTo({ top: p.y, behavior: 'instant' })
+  }, [vista])
+
   const pasaFiltro = (item, esComic) => {
     if (buscaLenta) {
       // se busca por los dos títulos: «Lobezno» y «Wolverine» abren la misma ficha
