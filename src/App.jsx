@@ -3290,10 +3290,20 @@ export default function App() {
     const conf = cuenta ? { cuenta } : sync
     if (!conf) { setSyncEstado('off'); return }
     tirar(conf)
-    const id = setInterval(() => tirar(conf), 25000)
-    const alFoco = () => tirar(conf)
+    // Entre TUS dispositivos (base propia) cada 25 s está bien; contra el
+    // proyecto central de la comunidad sería un derroche del cupo gratuito
+    // de descarga (10 GB/mes en Spark): con cuenta se refresca cada 2 min y,
+    // sobre todo, al volver a la app — que es cuando de verdad hace falta.
+    const id = setInterval(() => tirar(conf), conf.cuenta ? 120000 : 25000)
+    // visibilitychange también dispara al esconderse: ahí no se pide nada
+    const alFoco = () => { if (!document.hidden) tirar(conf) }
     window.addEventListener('focus', alFoco)
-    return () => { clearInterval(id); window.removeEventListener('focus', alFoco) }
+    document.addEventListener('visibilitychange', alFoco)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener('focus', alFoco)
+      document.removeEventListener('visibilitychange', alFoco)
+    }
   }, [sync, cuenta])
 
   useEffect(() => {
