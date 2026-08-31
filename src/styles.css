@@ -1869,6 +1869,13 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .sello-mini{font-size: var(--t-xs); border-width:2px; padding: var(--e-1) var(--e-3); letter-spacing:.09em}
 .cover-wrap{position:relative}
 .bienvenida-pasos{margin: var(--e-2) 0 0; padding-left: var(--e-6); display:flex; flex-direction:column; gap: var(--e-4); font-size: var(--t-b); line-height:1.55}
+/* ── Cuenta de Google ── */
+.cuenta-fila{display:flex; align-items:center; gap: var(--e-4)}
+.cuenta-foto{width:32px; height:32px; border-radius:var(--r-pill); object-fit:cover}
+.cuenta-nombre{font-size: var(--t-m); font-weight:600; color:var(--ink)}
+/* el botón lo pinta Google en un iframe; que no desborde el modal */
+.cuenta-google{max-width:100%; overflow:hidden; border-radius:var(--r-s)}
+
 /* ── Horario de maratón ── */
 .hor-campos{display:flex; flex-direction:column; gap: var(--e-4); margin-top: var(--e-2)}
 .hor-dias{display:flex; gap: var(--e-2); flex-wrap:wrap}

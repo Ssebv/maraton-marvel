@@ -10,6 +10,7 @@ import { TITULOS_LATAM } from './titulos.js'
 import { latiniza } from './latam.js'
 import { EPISODIOS_LATAM } from './episodios-latam.js'
 import { clasifica, guardaArchivo, leeArchivo, borraArchivo, metaArchivo, abreComic, fmtTam, listaArchivos, persistencia, pidePersistencia, espacio } from './lector.js'
+import { NUBE, cargaGis, entraConGoogle, refrescaToken } from './nube.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
@@ -23,6 +24,8 @@ const KEY_RESCATE = 'maraton-marvel-rescate-v1'
 const KEY_LECTOR = 'maraton-marvel-lector-v1'
 // horario de visionado: { dias: [0-6], min, hora: 'HH:MM', exp }
 const KEY_HORARIO = 'maraton-marvel-horario-v1'
+// sesión de la cuenta de Google: { uid, rt, nombre, email, foto }
+const KEY_CUENTA = 'maraton-marvel-cuenta-v1'
 
 // Pósters propios (public/mini, 200 px) para el fondo del encabezado y las franjas de saga
 const MURO = ['avengers1', 'endgame', 'logan', 'deadpool1', 'cap1', 'blackpanther',
@@ -123,6 +126,17 @@ const saneaHorario = x => {
   if (typeof x.min !== 'number' || !isFinite(x.min) || x.min < 15 || x.min > 600) return null
   const hora = typeof x.hora === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x.hora) ? x.hora : '21:00'
   return { dias, min: Math.round(x.min), hora, exp: x.exp !== false }
+}
+const saneaCuenta = x => {
+  if (!esObj(x)) return null
+  if (typeof x.uid !== 'string' || !x.uid || typeof x.rt !== 'string' || !x.rt) return null
+  return {
+    uid: x.uid.slice(0, 128),
+    rt: x.rt,
+    nombre: typeof x.nombre === 'string' ? x.nombre.slice(0, 80) : '',
+    email: typeof x.email === 'string' ? x.email.slice(0, 120) : '',
+    foto: typeof x.foto === 'string' && x.foto.startsWith('https://') ? x.foto : '',
+  }
 }
 // La vista que estás mirando —búsqueda y filtros— vive en la URL: así se puede
 // compartir «los pendientes de X-Men que son joyas» y, de paso, sobrevive a una
@@ -964,6 +978,54 @@ function aplicaTitulos(pais) {
 // Textos de la interfaz que dicen «móvil» u «ordenador»: fuera de España pasan
 // por el mismo diccionario que la prosa («celular», «computadora»)
 const ui = (pais, texto) => (pais === 'ES' ? texto : latiniza(texto))
+
+// Ajustes › Cuenta: entrar con Google para que el progreso siga a la persona.
+// Solo existe si el proyecto central (NUBE) está configurado; sin él la app
+// ni lo menciona. El botón lo pinta Google (GIS), que se carga al llegar aquí.
+function CuentaAjuste({ cuenta, estado, onCredencial, onSalir }) {
+  const ref = useRef(null)
+  const [falloGis, setFalloGis] = useState(false)
+  useEffect(() => {
+    if (!NUBE || cuenta) return
+    let vivo = true
+    cargaGis().then(() => {
+      if (!vivo || !ref.current || !(window.google && window.google.accounts)) return
+      window.google.accounts.id.initialize({
+        client_id: NUBE.clientId,
+        callback: r => { if (r && typeof r.credential === 'string') onCredencial(r.credential) },
+      })
+      window.google.accounts.id.renderButton(ref.current, { type: 'standard', theme: 'outline', size: 'large', text: 'signin_with' })
+    }).catch(() => { if (vivo) setFalloGis(true) })
+    return () => { vivo = false }
+  }, [cuenta])
+  if (!NUBE) return null
+  return (
+    <div className="ajuste">
+      <div className="ajuste-cab">
+        <h3 className="ajuste-titulo">Cuenta</h3>
+        <p className="ajuste-pista">
+          {cuenta
+            ? (estado === 'error'
+              ? 'Dentro, pero ahora mismo sin conexión. Se reintenta al volver a la app.'
+              : 'Dentro. Tu progreso, notas, listas y horario te siguen a cualquier dispositivo donde entres.')
+            : 'Entra con Google y tu progreso te sigue a cualquier dispositivo. Sin cuenta, todo se guarda igual en este navegador.'}
+        </p>
+      </div>
+      {cuenta ? (
+        <div className="ajuste-ops cuenta-fila">
+          {cuenta.foto && <img className="cuenta-foto" src={cuenta.foto} alt="" referrerPolicy="no-referrer" />}
+          <span className="cuenta-nombre">{cuenta.nombre || cuenta.email}</span>
+          <button className="ghost" onClick={onSalir}>Salir</button>
+        </div>
+      ) : (
+        <div className="ajuste-ops">
+          <div ref={ref} className="cuenta-google" />
+          {falloGis && <span className="import-error">No se pudo cargar el acceso de Google. Prueba a recargar.</span>}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // Ajustes › Biblioteca: los cómics guardados en este navegador, lo que ocupan
 // y si el navegador promete no borrarlos
@@ -3029,25 +3091,57 @@ export default function App() {
   const aplicandoRemoto = React.useRef(false)
   const ultimoAplicado = React.useRef(0)
 
-  const endpoint = s => `${s.url}/maraton/${s.room}.json`
+  // ── La cuenta de Google (si el proyecto NUBE está configurado) ──
+  // El progreso de cada cuenta vive en usuarios/{uid} del Firebase central y
+  // reutiliza la misma maquinaria de empujar/tirar que la base propia. Si hay
+  // cuenta, manda la cuenta; la base propia queda como alternativa sin cuenta.
+  const [cuenta, setCuenta] = useState(() => (NUBE ? leeGuardado(KEY_CUENTA, saneaCuenta, null) : null))
+  // el token de sesión dura una hora y no se persiste: se renueva del rt
+  const tokenNube = useRef({ t: null, hasta: 0 })
+  const salirCuenta = () => {
+    setCuenta(null)
+    tokenNube.current = { t: null, hasta: 0 }
+    setSyncEstado(sync ? 'ok' : 'off')
+    try { localStorage.removeItem(KEY_CUENTA) } catch {}
+  }
+  const tokenCuenta = async () => {
+    if (tokenNube.current.t && tokenNube.current.hasta > Date.now() + 60000) return tokenNube.current.t
+    const r = await refrescaToken(cuenta.rt)
+    tokenNube.current = { t: r.token, hasta: Date.now() + r.dura * 1000 }
+    return r.token
+  }
+
+  const endpoint = async s => (s.cuenta
+    ? `${NUBE.db}/usuarios/${s.cuenta.uid}.json?auth=${await tokenCuenta()}`
+    : `${s.url}/maraton/${s.room}.json`)
+  // una sesión de cuenta que ya no vale (revocada, caducada) cierra la sesión
+  // en vez de reintentar para siempre contra un muro
+  const trataFallo = (conf, er) => {
+    if (conf && conf.cuenta && er && er.auth) salirCuenta()
+    setSyncEstado('error')
+  }
 
   const empujar = async (conf, v, e, n, l) => {
     try {
       setSyncEstado('syncing')
       const t = Date.now()
-      const r = await fetch(endpoint(conf), {
+      // el horario también viaja con la cuenta; la base propia conserva su
+      // forma de siempre, que otros dispositivos ya saben leer
+      const cuerpo = { v, e, n: n || notas, l: l || listas, t }
+      if (conf.cuenta) cuerpo.h = horario
+      const r = await fetch(await endpoint(conf), {
         method: 'PUT',
-        body: JSON.stringify({ v, e, n: n || notas, l: l || listas, t }),
+        body: JSON.stringify(cuerpo),
       })
       if (!r.ok) throw new Error(r.status)
       ultimoAplicado.current = t
       setSyncEstado('ok')
-    } catch { setSyncEstado('error') }
+    } catch (er) { trataFallo(conf, er) }
   }
 
   const tirar = async conf => {
     try {
-      const r = await fetch(endpoint(conf))
+      const r = await fetch(await endpoint(conf))
       if (!r.ok) throw new Error(r.status)
       const datos = await r.json()
       if (esObj(datos) && typeof datos.t === 'number' && datos.t > ultimoAplicado.current) {
@@ -3081,27 +3175,75 @@ export default function App() {
         if (e) { setEps(e); try { localStorage.setItem(KEY_EPS, JSON.stringify(e)) } catch {} }
         if (n) { setNotas(n); try { localStorage.setItem(KEY_NOTAS, JSON.stringify(n)) } catch {} }
         if (l) { setListas(l); try { localStorage.setItem(KEY_LISTAS, JSON.stringify(l)) } catch {} }
+        // el horario solo viaja con la cuenta, y uno ausente no borra el local
+        if (conf.cuenta) { const h = saneaHorario(datos.h); if (h) guardaHorario(h) }
       }
       setSyncEstado('ok')
-    } catch { setSyncEstado('error') }
+    } catch (er) { trataFallo(conf, er) }
   }
+
+  // la fuente de sincronización: la cuenta si la hay, si no la base propia
+  const fuenteSync = cuenta ? { cuenta } : sync
 
   useEffect(() => {
     if (perfil) return
-    if (!sync) { setSyncEstado('off'); return }
-    tirar(sync)
-    const id = setInterval(() => tirar(sync), 25000)
-    const alFoco = () => tirar(sync)
+    const conf = cuenta ? { cuenta } : sync
+    if (!conf) { setSyncEstado('off'); return }
+    tirar(conf)
+    const id = setInterval(() => tirar(conf), 25000)
+    const alFoco = () => tirar(conf)
     window.addEventListener('focus', alFoco)
     return () => { clearInterval(id); window.removeEventListener('focus', alFoco) }
-  }, [sync])
+  }, [sync, cuenta])
 
   useEffect(() => {
-    if (perfil || !sync) return
+    if (perfil || !fuenteSync) return
     if (aplicandoRemoto.current) { aplicandoRemoto.current = false; return }
-    const id = setTimeout(() => empujar(sync, vistas, eps, notas, listas), 1200)
+    const id = setTimeout(() => empujar(fuenteSync, vistas, eps, notas, listas), 1200)
     return () => clearTimeout(id)
-  }, [vistas, eps, notas, listas])
+  }, [vistas, eps, notas, listas, horario])
+
+  // Entrar con Google: cambia el carné por una sesión, FUSIONA lo remoto con
+  // lo local (lo local manda por clave, como al unirse a una sala) y sube la
+  // unión. Sin nada remoto, el primer PUT estrena la cuenta con lo local.
+  const entrarCuenta = async credencial => {
+    try {
+      const c = await entraConGoogle(credencial)
+      tokenNube.current = { t: c.token, hasta: Date.now() + c.dura * 1000 }
+      let datos = null
+      try {
+        const r = await fetch(`${NUBE.db}/usuarios/${c.uid}.json?auth=${c.token}`)
+        datos = r.ok ? await r.json() : null
+      } catch {}
+      const v = { ...(esObj(datos) && saneaMarcas(datos.v) || {}), ...vistas }
+      const e = { ...(esObj(datos) && saneaMarcas(datos.e) || {}), ...eps }
+      const n = { ...(esObj(datos) && saneaNotas(datos.n) || {}), ...notas }
+      const lRemoto = (esObj(datos) && saneaListas(datos.l)) || []
+      const l = [...lRemoto, ...listas.filter(x => !lRemoto.some(r2 => r2.id === x.id))]
+      const h = horario || (esObj(datos) ? saneaHorario(datos.h) : null)
+      aplicandoRemoto.current = true
+      setVistas(v); setEps(e); setNotas(n); setListas(l)
+      if (h) guardaHorario(h)
+      try {
+        localStorage.setItem(KEY, JSON.stringify(v))
+        localStorage.setItem(KEY_EPS, JSON.stringify(e))
+        localStorage.setItem(KEY_NOTAS, JSON.stringify(n))
+        localStorage.setItem(KEY_LISTAS, JSON.stringify(l))
+      } catch {}
+      const cta = { uid: c.uid, rt: c.rt, nombre: c.nombre, email: c.email, foto: c.foto }
+      setCuenta(cta)
+      // el rt es una llave de larga duración: se guarda aquí y A PROPÓSITO
+      // queda fuera de la copia de seguridad descargable
+      try { localStorage.setItem(KEY_CUENTA, JSON.stringify(cta)) } catch {}
+      const t = Date.now()
+      await fetch(`${NUBE.db}/usuarios/${c.uid}.json?auth=${c.token}`, {
+        method: 'PUT',
+        body: JSON.stringify({ v, e, n, l, h, t }),
+      })
+      ultimoAplicado.current = t
+      setSyncEstado('ok')
+    } catch { setSyncEstado('error') }
+  }
 
   const activarSync = async (url, roomExistente) => {
     const room = roomExistente || Math.random().toString(36).slice(2, 10)
@@ -4373,6 +4515,8 @@ export default function App() {
               <h2 className="modal-titulo">Ajustes</h2>
               <p className="modal-res">Se guardan en este navegador. Lo que cambies aquí no afecta a tu progreso.</p>
 
+              <CuentaAjuste cuenta={cuenta} estado={syncEstado} onCredencial={entrarCuenta} onSalir={salirCuenta} />
+
               <div className="ajuste">
                 <div className="ajuste-cab">
                   <h3 className="ajuste-titulo">Densidad</h3>
@@ -4424,7 +4568,8 @@ export default function App() {
                 <div className="ajuste-cab">
                   <h3 className="ajuste-titulo">Sincronización entre dispositivos</h3>
                   <p className="ajuste-pista">
-                    {syncEstado === 'ok' ? ui(pais, 'Activa y al día. Tu progreso viaja entre el móvil y el ordenador.')
+                    {cuenta ? 'Tu cuenta de Google ya se encarga de esto. Esta opción queda como alternativa sin cuenta, con tu propia base de datos.'
+                      : syncEstado === 'ok' ? ui(pais, 'Activa y al día. Tu progreso viaja entre el móvil y el ordenador.')
                       : syncEstado === 'syncing' ? 'Guardando cambios…'
                       : syncEstado === 'error' ? 'Activa, pero ahora mismo sin conexión. Se reintenta al volver a la app.'
                       : 'Apagada. Tu progreso vive solo en este navegador.'}
