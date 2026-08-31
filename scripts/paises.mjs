@@ -13,11 +13,24 @@ import { cargaFuentes } from './contrato.mjs'
 
 export const PAISES = [
   { id: 'ES', nombre: 'España' },
-  { id: 'CL', nombre: 'Chile' },
-  { id: 'MX', nombre: 'México' },
   { id: 'AR', nombre: 'Argentina' },
+  { id: 'BO', nombre: 'Bolivia' },
+  { id: 'CL', nombre: 'Chile' },
   { id: 'CO', nombre: 'Colombia' },
+  { id: 'CR', nombre: 'Costa Rica' },
+  { id: 'EC', nombre: 'Ecuador' },
+  { id: 'SV', nombre: 'El Salvador' },
+  { id: 'US', nombre: 'Estados Unidos' },
+  { id: 'GT', nombre: 'Guatemala' },
+  { id: 'HN', nombre: 'Honduras' },
+  { id: 'MX', nombre: 'México' },
+  { id: 'NI', nombre: 'Nicaragua' },
+  { id: 'PA', nombre: 'Panamá' },
+  { id: 'PY', nombre: 'Paraguay' },
   { id: 'PE', nombre: 'Perú' },
+  { id: 'DO', nombre: 'República Dominicana' },
+  { id: 'UY', nombre: 'Uruguay' },
+  { id: 'VE', nombre: 'Venezuela' },
 ]
 
 const { DATA, TMDB, TMDB_KEY } = await cargaFuentes()

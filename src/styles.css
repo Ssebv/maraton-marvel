@@ -959,6 +959,24 @@ h3{
 .busca:focus{border-color:var(--blue); outline:none}
 .busca:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
 .busca::placeholder{color:var(--ink3)}
+/* Un <select> vestido de chip, para listas largas (país) donde 19 chips
+   serían ruido. Elemento reemplazado: no pinta pseudoelementos, así que la
+   flecha la pone el envoltorio y en táctil crece de verdad, como .busca. */
+.sel-envuelto{position:relative; display:inline-flex}
+.sel-envuelto::after{
+  content:""; position:absolute; right:14px; top:50%; width:7px; height:7px;
+  border-right:1.5px solid var(--ink3); border-bottom:1.5px solid var(--ink3);
+  transform:translateY(-70%) rotate(45deg); pointer-events:none;
+}
+.selector{
+  appearance:none; -webkit-appearance:none;
+  border:1px solid var(--line); background:transparent; color:var(--ink);
+  border-radius:var(--r-pill); padding: var(--e-2) var(--e-7) var(--e-2) var(--e-4);
+  font-size: var(--t-m); font-weight:500; font-family:inherit; cursor:pointer;
+}
+.selector:hover{border-color:var(--ink2)}
+.selector:focus{border-color:var(--blue); outline:none}
+.selector:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
 /* Con el dedo, los controles crecen de verdad; en escritorio se quedan como
    están, que con el ratón el ::after ya da de sobra y así no se descuadra la
    barra. Un <input> nunca admite el truco del ::after. */
@@ -966,6 +984,9 @@ h3{
   /* 16px o iOS hace zoom a toda la página al enfocar el campo. Excepción
      consciente a la escala tipográfica, como el clamp() del hero. */
   .busca{min-height:44px; font-size:16px}
+  /* el <select> tampoco pinta ::after: crece de verdad, y a 16px o iOS
+     hace zoom al abrirlo */
+  .selector{min-height:44px; font-size:16px}
   /* 18,6 de línea + 16 de relleno + 2 de borde = 36,6, y con el ::after de
      3 por lado se quedaba en 42,6 (medido con Archivo cargada). Los 38
      mínimos completan los 44 sin cambiar el relleno ni pisar al vecino. */
@@ -1848,6 +1869,9 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .sello-mini{font-size: var(--t-xs); border-width:2px; padding: var(--e-1) var(--e-3); letter-spacing:.09em}
 .cover-wrap{position:relative}
 .bienvenida-pasos{margin: var(--e-2) 0 0; padding-left: var(--e-6); display:flex; flex-direction:column; gap: var(--e-4); font-size: var(--t-b); line-height:1.55}
+.bienvenida-pais{display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-2)}
+.bienvenida-pais-label{font-size: var(--t-m); font-weight:600; color:var(--ink2)}
+.bienvenida-pais-pista{flex-basis:100%; margin:0; font-size: var(--t-s); color:var(--ink3)}
 .bienvenida-acciones{display:flex; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-3)}
 .bienvenida-nota{margin: var(--e-2) 0 0; font-size: var(--t-s); color:var(--ink3)}
 .stats-vacio{margin: var(--e-5) 0 0; font-size: var(--t-b)}

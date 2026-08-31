@@ -989,7 +989,7 @@ function Biblioteca({ archivos, onQuitar }) {
   )
 }
 
-function Bienvenida({ onCerrar, onExpress, pais }) {
+function Bienvenida({ onCerrar, onExpress, pais, onPais }) {
   const ref = useRef(null)
   useDialogo(ref, onCerrar)
   return (
@@ -1005,6 +1005,15 @@ function Bienvenida({ onCerrar, onExpress, pais }) {
             <li><b>Marca lo visto</b> con la casilla redonda de cada tarjeta — o entra en la ficha para episodios, tráiler, sinopsis y escenas post-créditos.</li>
             <li><b>La cuenta atrás de Doomsday</b> te dice el ritmo que necesitas; el Plan de sesión te propone qué ver hoy.</li>
           </ol>
+          <div className="bienvenida-pais">
+            <label className="bienvenida-pais-label" htmlFor="bienvenida-pais">Tu país</label>
+            <span className="sel-envuelto">
+              <select id="bienvenida-pais" className="selector" value={pais} onChange={e => onPais(e.target.value)}>
+                {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+              </select>
+            </span>
+            <p className="bienvenida-pais-pista">Decide en qué plataforma ves cada título y cómo se nombran las obras. Se cambia cuando quieras en Ajustes.</p>
+          </div>
           <div className="bienvenida-acciones">
             <button className="accion-principal" onClick={onCerrar}>Empezar por el principio</button>
             <button className="chip-btn" onClick={onExpress}>Solo lo esencial para Doomsday</button>
@@ -4056,7 +4065,7 @@ export default function App() {
         </div>
       )}
       {bienvenida && !perfil && (
-        <Bienvenida pais={pais} onCerrar={cierraBienvenida}
+        <Bienvenida pais={pais} onPais={ponPais} onCerrar={cierraBienvenida}
           onExpress={() => { if (!filtros.express) setF('express'); cierraBienvenida() }} />
       )}
       {clubModal && (
@@ -4228,9 +4237,11 @@ export default function App() {
                   <p className="ajuste-pista">Decide en qué plataforma aparece cada título, el filtro «En Disney+» y cómo se nombran las obras y sus personajes: como en España o como en Latinoamérica («Lobezno inmortal» o «Wolverine: Inmortal», «el Lapso» o «el Blip»). Los catálogos cambian cada mes y se revisan con la app.</p>
                 </div>
                 <div className="ajuste-ops">
-                  {PAISES.map(p => (
-                    <button key={p.id} className="chip-btn" aria-pressed={pais === p.id} onClick={() => ponPais(p.id)}>{p.nombre}</button>
-                  ))}
+                  <span className="sel-envuelto">
+                    <select className="selector" value={pais} aria-label="País" onChange={e => ponPais(e.target.value)}>
+                      {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    </select>
+                  </span>
                 </div>
               </div>
 
