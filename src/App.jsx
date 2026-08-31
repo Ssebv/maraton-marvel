@@ -307,7 +307,7 @@ async function tmdbJson(ruta) {
 // una vez para no dejarle megas muertos en el navegador.
 try {
   for (const k of Object.keys(localStorage)) {
-    if (/^maraton-marvel-tmdb-v[0-9]:/.test(k)) localStorage.removeItem(k)
+    if (/^maraton-marvel-tmdb-v[0-9]+:/.test(k) && !k.startsWith('maraton-marvel-tmdb-v11:')) localStorage.removeItem(k)
   }
 } catch {}
 async function cargaTmdb(itemId) {
@@ -316,7 +316,9 @@ async function cargaTmdb(itemId) {
   if (!m) return null
   // v9: guarda los proveedores de los seis países de Ajustes, no solo España
   // v10: loki2 pedía la temporada 1 de TMDB (fotogramas y sinopsis de Loki T1)
-  const claveLS = 'maraton-marvel-tmdb-v10:' + itemId
+  // v11: provPais pasó de 6 a 19 países — una entrada v10 no trae los nuevos
+  // y la ficha caía a los proveedores de España bajo «Hoy en Bolivia»
+  const claveLS = 'maraton-marvel-tmdb-v11:' + itemId
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
@@ -1033,6 +1035,12 @@ const ui = (pais, texto, en) => (IDIOMA_ACTUAL === 'en' && en !== undefined ? en
 function CuentaAjuste({ cuenta, estado, onCredencial, onSalir }) {
   const ref = useRef(null)
   const [falloGis, setFalloGis] = useState(false)
+  // el botón se registra una vez pero debe llamar al entrarCuenta del render
+  // ACTUAL: con el cierre del montaje, la fusión partiría de un estado viejo
+  // (lo que un tirón de fondo trajo mientras Ajustes estaba abierto se
+  // perdería al subir la unión)
+  const credencial = useRef(onCredencial)
+  credencial.current = onCredencial
   useEffect(() => {
     if (!NUBE || cuenta) return
     let vivo = true
@@ -1040,7 +1048,7 @@ function CuentaAjuste({ cuenta, estado, onCredencial, onSalir }) {
       if (!vivo || !ref.current || !(window.google && window.google.accounts)) return
       window.google.accounts.id.initialize({
         client_id: NUBE.clientId,
-        callback: r => { if (r && typeof r.credential === 'string') onCredencial(r.credential) },
+        callback: r => { if (r && typeof r.credential === 'string') credencial.current(r.credential) },
       })
       window.google.accounts.id.renderButton(ref.current, { type: 'standard', theme: 'outline', size: 'large', text: 'signin_with' })
     }).catch(() => { if (vivo) setFalloGis(true) })
@@ -1055,7 +1063,7 @@ function CuentaAjuste({ cuenta, estado, onCredencial, onSalir }) {
           {cuenta
             ? (estado === 'error'
               ? tr('Dentro, pero ahora mismo sin conexión. Se reintenta al volver a la app.', 'Signed in, but offline right now. It retries when you come back.')
-              : tr('Dentro. Tu progreso, notas, listas y horario te siguen a cualquier dispositivo donde entres.', 'Signed in. Your progress, notes, lists and schedule follow you to any device you sign into.'))
+              : tr('Dentro. Tu progreso, notas, listas, horario y páginas de lectura te siguen a cualquier dispositivo donde entres.', 'Signed in. Your progress, notes, lists, schedule and reading pages follow you to any device you sign into.'))
             : tr('Entra con Google y tu progreso te sigue a cualquier dispositivo. Sin cuenta, todo se guarda igual en este navegador.', 'Sign in with Google and your progress follows you to any device. Without an account, everything still saves in this browser.')}
         </p>
       </div>
@@ -3208,6 +3216,13 @@ export default function App() {
     if (tokenNube.current.t && tokenNube.current.hasta > Date.now() + 60000) return tokenNube.current.t
     const r = await refrescaToken(cuenta.rt)
     tokenNube.current = { t: r.token, hasta: Date.now() + r.dura * 1000 }
+    // Google puede rotar el token de refresco: quedarse con el viejo dejaría
+    // la sesión muerta en el siguiente arranque
+    if (r.rt && r.rt !== cuenta.rt) {
+      const cta = { ...cuenta, rt: r.rt }
+      setCuenta(cta)
+      try { localStorage.setItem(KEY_CUENTA, JSON.stringify(cta)) } catch {}
+    }
     return r.token
   }
 
@@ -3225,10 +3240,11 @@ export default function App() {
     try {
       setSyncEstado('syncing')
       const t = Date.now()
-      // el horario también viaja con la cuenta; la base propia conserva su
-      // forma de siempre, que otros dispositivos ya saben leer
+      // el horario y las lecturas de cómics también viajan con la cuenta; la
+      // base propia conserva su forma de siempre, que otros dispositivos ya
+      // saben leer
       const cuerpo = { v, e, n: n || notas, l: l || listas, t }
-      if (conf.cuenta) cuerpo.h = horario
+      if (conf.cuenta) { cuerpo.h = horario; cuerpo.lec = lecturas }
       const r = await fetch(await endpoint(conf), {
         method: 'PUT',
         body: JSON.stringify(cuerpo),
@@ -3275,8 +3291,18 @@ export default function App() {
         if (e) { setEps(e); try { localStorage.setItem(KEY_EPS, JSON.stringify(e)) } catch {} }
         if (n) { setNotas(n); try { localStorage.setItem(KEY_NOTAS, JSON.stringify(n)) } catch {} }
         if (l) { setListas(l); try { localStorage.setItem(KEY_LISTAS, JSON.stringify(l)) } catch {} }
-        // el horario solo viaja con la cuenta, y uno ausente no borra el local
-        if (conf.cuenta) { const h = saneaHorario(datos.h); if (h) guardaHorario(h) }
+        // El horario y las lecturas solo viajan con la cuenta, y AQUÍ el que
+        // escribe manda siempre el nodo entero: un horario que ya no viene es
+        // un horario BORRADO en otro dispositivo (RTDB quita los null), no un
+        // campo perdido — sin esto, quitar el horario en el móvil hacía que
+        // el portátil lo resucitara en su siguiente empujón. Solo lo corrupto
+        // se ignora, como en el resto.
+        if (conf.cuenta) {
+          if (datos.h == null) guardaHorario(null)
+          else { const h = saneaHorario(datos.h); if (h) guardaHorario(h) }
+          if (datos.lec == null) setLecturas({})
+          else { const lec = aplicable(datos.lec, saneaLector(datos.lec)); if (lec) setLecturas(lec) }
+        }
       }
       setSyncEstado('ok')
     } catch (er) { trataFallo(conf, er) }
@@ -3285,18 +3311,27 @@ export default function App() {
   // la fuente de sincronización: la cuenta si la hay, si no la base propia
   const fuenteSync = cuenta ? { cuenta } : sync
 
+  // El intervalo vive fijado a [sync, cuenta], así que sin esto llamaría a un
+  // tirar() de un render VIEJO: su red de rescate compararía contra el estado
+  // del montaje y guardaría esa foto antigua como «progreso a salvar».
+  const tirarRef = useRef(tirar)
+  tirarRef.current = tirar
+
   useEffect(() => {
     if (perfil) return
     const conf = cuenta ? { cuenta } : sync
     if (!conf) { setSyncEstado('off'); return }
-    tirar(conf)
     // Entre TUS dispositivos (base propia) cada 25 s está bien; contra el
     // proyecto central de la comunidad sería un derroche del cupo gratuito
     // de descarga (10 GB/mes en Spark): con cuenta se refresca cada 2 min y,
     // sobre todo, al volver a la app — que es cuando de verdad hace falta.
-    const id = setInterval(() => tirar(conf), conf.cuenta ? 120000 : 25000)
-    // visibilitychange también dispara al esconderse: ahí no se pide nada
-    const alFoco = () => { if (!document.hidden) tirar(conf) }
+    // Con la pestaña escondida no se pide nada, y al volver, focus y
+    // visibilitychange llegan JUNTOS: el sello de tiempo deja pasar uno.
+    let ultimoTiron = 0
+    const tira = () => { ultimoTiron = Date.now(); tirarRef.current(conf) }
+    tira()
+    const id = setInterval(() => { if (!document.hidden) tira() }, conf.cuenta ? 120000 : 25000)
+    const alFoco = () => { if (!document.hidden && Date.now() - ultimoTiron > 5000) tira() }
     window.addEventListener('focus', alFoco)
     document.addEventListener('visibilitychange', alFoco)
     return () => {
@@ -3311,7 +3346,9 @@ export default function App() {
     if (aplicandoRemoto.current) { aplicandoRemoto.current = false; return }
     const id = setTimeout(() => empujar(fuenteSync, vistas, eps, notas, listas), 1200)
     return () => clearTimeout(id)
-  }, [vistas, eps, notas, listas, horario])
+    // cuenta y sync también: al salir de la cuenta (o entrar) el temporizador
+    // pendiente se cancela en vez de escribir en el destino ANTERIOR
+  }, [vistas, eps, notas, listas, horario, lecturas, cuenta, sync])
 
   // Entrar con Google: cambia el carné por una sesión, FUSIONA lo remoto con
   // lo local (lo local manda por clave, como al unirse a una sala) y sube la
@@ -3320,19 +3357,33 @@ export default function App() {
     try {
       const c = await entraConGoogle(credencial)
       tokenNube.current = { t: c.token, hasta: Date.now() + c.dura * 1000 }
-      let datos = null
-      try {
-        const r = await fetch(`${NUBE.db}/usuarios/${c.uid}.json?auth=${c.token}`)
-        datos = r.ok ? await r.json() : null
-      } catch {}
+      // La lectura inicial DEBE distinguir «cuenta vacía» (RTDB responde un
+      // null legítimo) de «no se pudo leer»: tratarlas igual estrenaba la
+      // cuenta con solo lo local y el PUT de abajo PISABA el progreso remoto.
+      // Si no se puede leer o escribir, no se entra: nada cambia en ningún
+      // lado y el usuario ve «error» en vez de una fusión a medias.
+      const r = await fetch(`${NUBE.db}/usuarios/${c.uid}.json?auth=${c.token}`)
+      if (!r.ok) throw new Error(r.status)
+      const datos = await r.json()
       const v = { ...(esObj(datos) && saneaMarcas(datos.v) || {}), ...vistas }
       const e = { ...(esObj(datos) && saneaMarcas(datos.e) || {}), ...eps }
       const n = { ...(esObj(datos) && saneaNotas(datos.n) || {}), ...notas }
       const lRemoto = (esObj(datos) && saneaListas(datos.l)) || []
       const l = [...lRemoto, ...listas.filter(x => !lRemoto.some(r2 => r2.id === x.id))]
       const h = horario || (esObj(datos) ? saneaHorario(datos.h) : null)
+      const lec = { ...(esObj(datos) && saneaLector(datos.lec) || {}), ...lecturas }
+      const t = Date.now()
+      const w = await fetch(`${NUBE.db}/usuarios/${c.uid}.json?auth=${c.token}`, {
+        method: 'PUT',
+        body: JSON.stringify({ v, e, n, l, h, lec, t }),
+      })
+      if (!w.ok) throw new Error(w.status)
+      // El orden importa: el marcador va ANTES de setCuenta, porque setCuenta
+      // relanza el intervalo y su primer tirón no debe re-aplicar un remoto
+      // más viejo que la unión que se acaba de subir.
+      ultimoAplicado.current = t
       aplicandoRemoto.current = true
-      setVistas(v); setEps(e); setNotas(n); setListas(l)
+      setVistas(v); setEps(e); setNotas(n); setListas(l); setLecturas(lec)
       if (h) guardaHorario(h)
       try {
         localStorage.setItem(KEY, JSON.stringify(v))
@@ -3343,14 +3394,8 @@ export default function App() {
       const cta = { uid: c.uid, rt: c.rt, nombre: c.nombre, email: c.email, foto: c.foto }
       setCuenta(cta)
       // el rt es una llave de larga duración: se guarda aquí y A PROPÓSITO
-      // queda fuera de la copia de seguridad descargable
+      // queda fuera de la copia de seguridad descargable y de la restaurable
       try { localStorage.setItem(KEY_CUENTA, JSON.stringify(cta)) } catch {}
-      const t = Date.now()
-      await fetch(`${NUBE.db}/usuarios/${c.uid}.json?auth=${c.token}`, {
-        method: 'PUT',
-        body: JSON.stringify({ v, e, n, l, h, t }),
-      })
-      ultimoAplicado.current = t
       setSyncEstado('ok')
     } catch { setSyncEstado('error') }
   }
@@ -3361,7 +3406,10 @@ export default function App() {
     if (roomExistente) {
       // unirse: fusionar lo remoto con lo local y subir la unión
       try {
-        const r = await fetch(endpoint(conf))
+        // endpoint() es async desde la cuenta de Google: sin el await interior
+        // fetch recibía una promesa, pedía «[object Promise]» (404) y el
+        // empujar de abajo PISABA la sala a la que te unías con lo local
+        const r = await fetch(await endpoint(conf))
         const datos = r.ok ? await r.json() : null
         // lo remoto se sanea igual que en tirar(): al unirse a una sala ajena
         // es cuando más fácil es tragarse la forma equivocada
@@ -5003,6 +5051,9 @@ function Datos({ onReset }) {
       // que no se puede perder. La caché de TMDB no entra, que son megas y se
       // vuelve a bajar sola.
       for (const k of Object.keys(localStorage)) {
+        // la sesión de la cuenta (y su cuarentena -roto) NUNCA viaja en la
+        // copia: lleva el token de refresco, y una copia se comparte
+        if (k.startsWith(KEY_CUENTA)) continue
         if (/^maraton-marvel.*(-roto|-rescate-v1)$/.test(k) && !claves.includes(k)) claves.push(k)
       }
       for (const k of claves) {
@@ -5026,6 +5077,10 @@ function Datos({ onReset }) {
         const j = JSON.parse(lector.result)
         if (j.app !== 'maraton-marvel' || !j.datos) throw new Error('formato')
         Object.entries(j.datos).forEach(([k, v]) => {
+          // una copia ajena no debe poder colar una sesión de cuenta (el
+          // progreso se subiría al uid del archivo): en la cuenta se entra
+          // solo con el botón de Google
+          if (k.startsWith(KEY_CUENTA)) return
           if (k.startsWith('maraton-marvel-') || k === KEY) localStorage.setItem(k, v)
         })
         window.location.reload()

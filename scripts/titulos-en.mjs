@@ -5,7 +5,7 @@
 // orden. Los cómics no hacen falta: ya llevan su título inglés en el campo
 // `en` de data.js (el de la búsqueda de Marvel Unlimited).
 // Necesita red: `npm run titulos-en` (y lo lanza `npm run plataformas`).
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { cargaFuentes } from './contrato.mjs'
@@ -34,6 +34,8 @@ for (const it of items) {
   try {
     r = await (await fetch(`https://api.themoviedb.org/3/${m[1]}/${m[0]}?api_key=${TMDB_KEY}&language=en-US`)).json()
   } catch { console.error('  (sin red para ' + it.id + ')'); continue }
+  // el respiro va antes de los descartes o la mayoría de vueltas iría a pelo
+  await dormir(60)
   consultados++
   let t = ((m[1] === 'tv' ? r.name : r.title) || '').trim()
   if (!t) continue
@@ -43,10 +45,19 @@ for (const it of items) {
   const conApostilla = t + apostilla
   if (huella(conApostilla) === huella(it.t)) continue
   salida[it.id] = conApostilla
-  await dormir(60)
 }
 const raiz = dirname(dirname(fileURLToPath(import.meta.url)))
-writeFileSync(join(raiz, 'src', 'titulos-en.js'), `// GENERADO por \`npm run titulos-en\` (scripts/titulos-en.mjs). NO SE EDITA A MANO.
+// Una ejecución sin red o con la clave caducada no debe dejar el fichero
+// vacío con salida 0: la rutina mensual seguiría y los usuarios en inglés
+// se quedarían con los títulos en español sin que nadie lo viera.
+const destino = join(raiz, 'src', 'titulos-en.js')
+const antes = existsSync(destino) ? (readFileSync(destino, 'utf8').match(/^ "/gm) || []).length : 0
+const distintos = Object.keys(salida).length
+if (consultados === 0 || distintos < antes / 2) {
+  console.error(`PARO sin escribir: ${consultados} consultados y ${distintos} títulos (antes había ${antes}). ¿Sin red o clave caducada?`)
+  process.exit(1)
+}
+writeFileSync(destino, `// GENERADO por \`npm run titulos-en\` (scripts/titulos-en.mjs). NO SE EDITA A MANO.
 //
 // Título en inglés (TMDB en-US) solo donde difiere de verdad del de España
 // de data.js. Se enseña cuando el idioma elegido en Ajustes es English.
