@@ -269,11 +269,12 @@ const clave = n => (n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').to
 
 const personaMem = {}
 async function cargaPersona(tmdbId) {
-  if (personaMem[tmdbId]) return personaMem[tmdbId]
-  const ls = 'maraton-marvel-persona-v3:' + tmdbId
+  const k = tmdbPref() + tmdbId
+  if (personaMem[k]) return personaMem[k]
+  const ls = 'maraton-marvel-persona-v3:' + k
   try {
     const g = JSON.parse(localStorage.getItem(ls))
-    if (g && Date.now() - g.t < 30 * 864e5) { personaMem[tmdbId] = g.d; return g.d }
+    if (g && Date.now() - g.t < 30 * 864e5) { personaMem[k] = g.d; return g.d }
   } catch {}
   const j = await tmdbJson(`/person/${tmdbId}?append_to_response=combined_credits`)
   const d = {
@@ -293,13 +294,19 @@ async function cargaPersona(tmdbId) {
         .filter(Boolean))]
     })(),
   }
-  personaMem[tmdbId] = d
+  personaMem[k] = d
   try { localStorage.setItem(ls, JSON.stringify({ t: Date.now(), d })) } catch {}
   return d
 }
 
+// El idioma vivo también manda en lo que se pide a TMDB: con la interfaz en
+// English, las sinopsis de episodio y las biografías llegan en inglés en vez
+// de quedarse en español. La caché va separada por idioma (prefijo «en:»)
+// para que cambiar de idioma no enseñe la mezcla ni pise la otra.
+const tmdbIdioma = () => (IDIOMA_ACTUAL === 'en' ? 'en-US' : 'es-ES')
+const tmdbPref = () => (IDIOMA_ACTUAL === 'en' ? 'en:' : '')
 async function tmdbJson(ruta) {
-  const r = await fetch(`https://api.themoviedb.org/3${ruta}${ruta.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=es-ES`)
+  const r = await fetch(`https://api.themoviedb.org/3${ruta}${ruta.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=${tmdbIdioma()}`)
   if (!r.ok) throw new Error('tmdb ' + r.status)
   return r.json()
 }
@@ -311,17 +318,18 @@ try {
   }
 } catch {}
 async function cargaTmdb(itemId) {
-  if (tmdbMem[itemId]) return tmdbMem[itemId]
+  const k = tmdbPref() + itemId
+  if (tmdbMem[k]) return tmdbMem[k]
   const m = TMDB[itemId]
   if (!m) return null
   // v9: guarda los proveedores de los seis países de Ajustes, no solo España
   // v10: loki2 pedía la temporada 1 de TMDB (fotogramas y sinopsis de Loki T1)
   // v11: provPais pasó de 6 a 19 países — una entrada v10 no trae los nuevos
   // y la ficha caía a los proveedores de España bajo «Hoy en Bolivia»
-  const claveLS = 'maraton-marvel-tmdb-v11:' + itemId
+  const claveLS = 'maraton-marvel-tmdb-v11:' + k
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
-    if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[itemId] = g.d; return g.d }
+    if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[k] = g.d; return g.d }
   } catch {}
   const [tid, tipo] = m
   const base = await tmdbJson(`/${tipo}/${tid}?append_to_response=videos,watch/providers,${tipo === 'tv' ? 'aggregate_credits' : 'credits'}`)
@@ -368,17 +376,20 @@ async function cargaTmdb(itemId) {
       } catch {}
     }
   }
-  tmdbMem[itemId] = d
+  tmdbMem[k] = d
   try { localStorage.setItem(claveLS, JSON.stringify({ t: Date.now(), d })) } catch {}
   return d
 }
-function useTmdb(item) {
-  const [extra, setExtra] = useState(() => tmdbMem[item.id] || null)
+function useTmdb(item, idioma) {
+  const [extra, setExtra] = useState(() => tmdbMem[tmdbPref() + item.id] || null)
   useEffect(() => {
     let vivo = true
+    // al cambiar de idioma se enseña lo cacheado en ese idioma (o nada)
+    // mientras llega lo nuevo, nunca la mezcla
+    setExtra(tmdbMem[tmdbPref() + item.id] || null)
     cargaTmdb(item.id).then(d => { if (vivo && d) setExtra(d) }).catch(() => {})
     return () => { vivo = false }
-  }, [item.id])
+  }, [item.id, idioma])
   return extra
 }
 
@@ -607,18 +618,19 @@ const fmtFecha = f => f
   ? new Date(f + 'T00:00:00').toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' })
   : null
 
-function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, itemActualId, tituloActual }) {
-  const [datos, setDatos] = useState(() => (tmdbId && personaMem[tmdbId]) || null)
+function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTitulo, itemActualId, tituloActual }) {
+  const [datos, setDatos] = useState(() => (tmdbId && personaMem[tmdbPref() + tmdbId]) || null)
   const [fallo, setFallo] = useState(false)
   const [masBio, setMasBio] = useState(false)
   useEffect(() => {
     let vivo = true
     setFallo(false)
+    setDatos((tmdbId && personaMem[tmdbPref() + tmdbId]) || null)
     if (tmdbId) cargaPersona(tmdbId)
       .then(d => { if (vivo) setDatos(d) })
       .catch(() => { if (vivo) setFallo(true) })
     return () => { vivo = false }
-  }, [tmdbId])
+  }, [tmdbId, idioma])
 
   // Lo que ninguna web tiene: dónde más sale dentro de TU maratón
   const tambienEn = useMemo(() => {
@@ -987,7 +999,7 @@ function aplicaTitulos(pais, idioma = IDIOMA_ACTUAL) {
       era.items.forEach(it => {
         it.t = titulo(it.id, s.saga)
         TITULOS[it.id] = it.t
-        traduce(it, ['res', 'n', 'pcn'], pasa)
+        traduce(it, ['res', 'n', 'pc', 'pcn'], pasa)
       })
     })
   })
@@ -2300,9 +2312,9 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, pais, onLeer, lectura, onOlvida, onBiblioteca }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca }) {
   const { item, c, esComic } = d
-  const extra = useTmdb(item)
+  const extra = useTmdb(item, idioma)
   const [verTrailer, setVerTrailer] = useState(false)
   const [sinAbierta, setSinAbierta] = useState(null)
   const [desveladas, setDesveladas] = useState({})
@@ -2502,7 +2514,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
           </button>
         </div>
         {persona ? (
-          <FichaPersona {...persona} itemActualId={item.id} tituloActual={item.t}
+          <FichaPersona {...persona} idioma={idioma} itemActualId={item.id} tituloActual={item.t}
             onVolver={() => setPersona(null)}
             onAbrirTitulo={d => { setPersona(null); onIrA && onIrA(d) }} />
         ) : (
@@ -2719,6 +2731,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               }}>{tr('Compartir…', 'Share…')}</button>
             )}
           </div>
+          {onNav && (
+            <div className="nav-ficha-pie">
+              <button className="ghost" onClick={() => onNav(-1)}>{tr('‹ Anterior', '‹ Previous')}</button>
+              <button className="ghost" onClick={() => onNav(1)}>{tr('Siguiente ›', 'Next ›')}</button>
+            </div>
+          )}
         </div>
         )}
       </div>
@@ -4851,7 +4869,7 @@ export default function App() {
       )}
 
       {detalle && (
-        <Detalle d={detalle} vista={!!vistas[detalle.item.id]} pais={pais}
+        <Detalle d={detalle} vista={!!vistas[detalle.item.id]} pais={pais} idioma={idioma}
           onLeer={(item, registro) => setLector({ item, registro })} lectura={lecturas[detalle.item.id]}
           onOlvida={id => setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c })}
           onBiblioteca={recargaBiblioteca}

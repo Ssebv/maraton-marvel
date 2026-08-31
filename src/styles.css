@@ -1896,6 +1896,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .hor-que{color:var(--ink)}
 .hor-cola{margin: var(--e-3) 0 0; font-size: var(--t-s); color:var(--ink3)}
 .bienvenida-pais{display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-2)}
+.bienvenida-idioma{display:inline-flex; gap: var(--e-2)}
 .bienvenida-pais-label{font-size: var(--t-m); font-weight:600; color:var(--ink2)}
 .bienvenida-pais-pista{flex-basis:100%; margin:0; font-size: var(--t-s); color:var(--ink3)}
 .bienvenida-acciones{display:flex; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-3)}
@@ -1934,11 +1935,13 @@ a.prov-chip:hover{border-color:var(--ink3)}
   .nav-ficha.izq{left:calc(8px + env(safe-area-inset-left, 0px))}
   .nav-ficha.der{right:calc(8px + env(safe-area-inset-right, 0px))}
 }
+/* En móvil las flechas flotantes tapaban el carril del reparto (la ‹ pisaba
+   al primer miembro); el deslizar ya navega, y la afordancia visible pasa a
+   un par de botones al FINAL de la ficha, donde no tapan contenido. */
+.nav-ficha-pie{display:none}
 @media (max-width:720px){
-  /* por encima del indicador de inicio del iPhone, como el dock */
-  .nav-ficha{top:auto; bottom:calc(14px + env(safe-area-inset-bottom, 0px)); transform:none; width:44px; height:44px}
-  .nav-ficha.izq{left:calc(14px + env(safe-area-inset-left, 0px))}
-  .nav-ficha.der{right:calc(14px + env(safe-area-inset-right, 0px))}
+  .nav-ficha{display:none}
+  .nav-ficha-pie{display:flex; gap: var(--e-3); justify-content:space-between; margin-top: var(--e-6)}
 }
 /* Un iPhone apaisado tiene 390 px de alto y la barra pegajosa, con sus tres
    grupos partidos en filas, medía 170: casi la mitad de la pantalla clavada

@@ -4,6 +4,10 @@
 // cuando el idioma elegido en Ajustes es English. Un texto sin entrada se
 // enseña en español: al añadir textos nuevos a data.js hay que traerlos aquí.
 export const EN_TEXTOS = {
+  "2 (mitad y final)": "2 (mid- and post-credits)",
+  "1 al final": "1 at the end",
+  "1 a mitad": "1 mid-credits",
+  "5 escenas": "5 scenes",
   "Saga X-Men (Fox)": "X-Men Saga (Fox)",
   "Universo Cinematográfico de Marvel": "Marvel Cinematic Universe",
   "Cómics esenciales": "Essential comics",
