@@ -14,7 +14,7 @@ Guía interactiva para ver **todo Marvel y X-Men en orden cronológico de la his
 - **Cuenta con Google (apagada hasta configurarla)**: `src/nube.js` lleva el acceso con Google (botón oficial GIS + Firebase Auth por REST, sin SDK) y el progreso por cuenta en `usuarios/{uid}` de un proyecto Firebase central. Con `NUBE = null` la app no enseña nada; las instrucciones para encenderla (5 minutos, una vez) están en el propio archivo.
 - **Vistas**: cronológica a dos columnas, por estreno, cómics, listas propias, galería de pósters, línea temporal 1845→∞, modo cine para la tele, y el **multiverso** en tres modos (sistema solar animado, mapa de conexiones canónicas y tarjetas con Tierras enterables).
 - **Social sin backend propio**: perfil compartible de solo lectura (todo va codificado en la URL), modo duelo (foto fija o EN VIVO), y club de maratón con ranking, medallas y comentarios por título — sobre una base de Firebase RTDB propia.
-- **Sincronización entre dispositivos** (Firebase REST) y estadísticas con logros, racha y mapa de calor.
+- **Sincronización entre dispositivos** (Firebase REST) y estadísticas con logros, racha, mapa de calor y **calendario del maratón**: un mes de pared navegable donde cada día se enciende según cuánto viste, y al tocarlo lista qué exactamente (películas, episodios por serie, cómics, con su hora) con salto a la ficha.
 
 ## Estructura
 

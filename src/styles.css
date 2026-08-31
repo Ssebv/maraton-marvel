@@ -1881,7 +1881,22 @@ a.prov-chip:hover{border-color:var(--ink3)}
 /* el botón lo pinta Google en un iframe; que no desborde el modal */
 .cuenta-google{max-width:100%; overflow:hidden; border-radius:var(--r-s)}
 
-/* ── Horario de maratón ── */
+/* ── Calendario del maratón ── */
+.cal-cab{display:flex; align-items:center; gap: var(--e-3); margin: var(--e-4) 0}
+.cal-mes{font-size: var(--t-m); font-weight:600; color:var(--ink); min-width:150px; text-align:center}
+.cal-grid{display:grid; grid-template-columns:repeat(7, 1fr); gap: var(--e-1); max-width:420px}
+.cal-dn{font-size: var(--t-xs); font-weight:600; color:var(--ink3); text-align:center; padding-bottom: var(--e-1)}
+.cal-dia{
+  aspect-ratio:1; border:none; border-radius:var(--r-s); background:var(--panel2);
+  font-size: var(--t-s); font-family:inherit; color:var(--ink2); cursor:pointer; min-height:34px;
+}
+.cal-dia:disabled{cursor:default; color:var(--ink3); opacity:.55}
+/* con marcas encima va texto sobre el rojo mezclado: tinta plena y peso */
+.cal-dia.con{color:var(--ink); font-weight:700}
+.cal-dia.hoy{color:var(--red); font-weight:700}
+.cal-dia.con.hoy{color:var(--ink)}
+.cal-dia[aria-pressed="true"]{outline:2px solid var(--blue); outline-offset:1px}
+.cal-detalle{margin-top: var(--e-5)}
 .hor-campos{display:flex; flex-direction:column; gap: var(--e-4); margin-top: var(--e-2)}
 .hor-dias{display:flex; gap: var(--e-2); flex-wrap:wrap}
 .hor-dia{min-width:38px; text-align:center}

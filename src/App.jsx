@@ -793,6 +793,117 @@ function CuentaAtras({ meta, horario, sesionHoy, onHorario }) {
   )
 }
 
+// ── Calendario del maratón: qué viste cada día, mes a mes ──
+// Cada marca (título, episodio, cómic) guarda su fecha; esto las coloca en un
+// calendario de pared navegable. El día se pinta con la intensidad del mapa
+// de calor y, al tocarlo, abajo sale la lista de ese día con su hora.
+const diaClave = ts => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` }
+function Calendario({ vistas, eps, indice, onAbrir, idioma }) {
+  const dias = useMemo(() => {
+    const m = new Map()
+    const de = ts => {
+      // las marcas antiguas valen 1 (sin fecha): esas no pueden ir al calendario
+      if (typeof ts !== 'number' || ts < 1e12) return null
+      const k = diaClave(ts)
+      if (!m.has(k)) m.set(k, { titulos: [], series: new Map(), n: 0 })
+      return m.get(k)
+    }
+    Object.entries(vistas).forEach(([id, ts]) => {
+      const d = de(ts)
+      if (d && indice[id]) { d.titulos.push({ id, ts }); d.n++ }
+    })
+    Object.entries(eps).forEach(([clave, ts]) => {
+      const d = de(ts)
+      if (!d) return
+      const sid = clave.split(':')[0]
+      if (!indice[sid]) return
+      const s = d.series.get(sid) || { n: 0, ts }
+      s.n++; if (ts < s.ts) s.ts = ts
+      d.series.set(sid, s); d.n++
+    })
+    return m
+  }, [vistas, eps])
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  const [mes, setMes] = useState(() => new Date(hoy.getFullYear(), hoy.getMonth(), 1))
+  const [sel, setSel] = useState(() => (dias.has(diaClave(hoy.getTime())) ? diaClave(hoy.getTime()) : null))
+  const primero = useMemo(() => {
+    let min = Infinity
+    const mira = ts => { if (typeof ts === 'number' && ts > 1e12 && ts < min) min = ts }
+    Object.values(vistas).forEach(mira)
+    Object.values(eps).forEach(mira)
+    return isFinite(min) ? new Date(new Date(min).getFullYear(), new Date(min).getMonth(), 1) : null
+  }, [vistas, eps])
+  if (!primero) return null
+  const mesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+  const puedeAtras = mes > primero
+  const puedeAlante = mes < mesActual
+  const mueve = dir => { setMes(m2 => new Date(m2.getFullYear(), m2.getMonth() + dir, 1)); setSel(null) }
+  const celdas = []
+  for (let i = 0; i < (new Date(mes).getDay() + 6) % 7; i++) celdas.push(null) // arranca en lunes
+  const nDias = new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate()
+  for (let d = 1; d <= nDias; d++) celdas.push(new Date(mes.getFullYear(), mes.getMonth(), d))
+  const max = Math.max(1, ...celdas.filter(Boolean).map(f => (dias.get(diaClave(f.getTime())) || { n: 0 }).n))
+  const tono = n => `color-mix(in srgb, var(--red) ${25 + 75 * n / max}%, var(--panel2))`
+  const etiquetaMes = (() => {
+    const t = mes.toLocaleDateString(LOC(), { month: 'long', year: 'numeric' })
+    return t.charAt(0).toUpperCase() + t.slice(1)
+  })()
+  const delSel = sel ? dias.get(sel) : null
+  const fechaSel = sel ? (() => { const [a, m2, d] = sel.split('-').map(Number); return new Date(a, m2, d) })() : null
+  const hora = ts => new Date(ts).toLocaleTimeString(LOC(), { hour: '2-digit', minute: '2-digit' })
+  const filasSel = delSel ? [
+    ...delSel.titulos.map(({ id, ts }) => ({ ts, d: indice[id], sub: indice[id].esComic ? tr('Leído', 'Read') : tr('Completa', 'In full') })),
+    ...[...delSel.series.entries()].map(([sid, s]) => ({ ts: s.ts, d: indice[sid], sub: s.n === 1 ? tr('1 episodio', '1 episode') : tr(`${s.n} episodios`, `${s.n} episodes`) })),
+  ].sort((a, b) => a.ts - b.ts) : []
+  return (
+    <section className="grafica">
+      <h3 className="grafica-titulo">{tr('Calendario del maratón', 'Marathon calendar')}</h3>
+      <div className="cal-cab">
+        <button className="ghost" onClick={() => mueve(-1)} disabled={!puedeAtras} aria-label={tr('Mes anterior', 'Previous month')}>‹</button>
+        <span className="cal-mes">{etiquetaMes}</span>
+        <button className="ghost" onClick={() => mueve(1)} disabled={!puedeAlante} aria-label={tr('Mes siguiente', 'Next month')}>›</button>
+      </div>
+      <div className="cal-grid" role="grid" aria-label={etiquetaMes}>
+        {DIAS_ORDEN.map(d => <span key={d} className="cal-dn" aria-hidden="true">{tr(DIA_LETRA[d], DIA_LETRA_EN[d])}</span>)}
+        {celdas.map((f, i) => {
+          if (!f) return <span key={'v' + i} aria-hidden="true" />
+          const k = diaClave(f.getTime())
+          const dd = dias.get(k)
+          const esHoy = f.getTime() === hoy.getTime()
+          return (
+            <button key={k} className={`cal-dia${dd ? ' con' : ''}${esHoy ? ' hoy' : ''}`}
+              style={dd ? { background: tono(dd.n) } : undefined}
+              aria-pressed={sel === k} disabled={!dd}
+              aria-label={`${f.toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}: ${dd ? tr(`${dd.n} marca${dd.n === 1 ? '' : 's'}`, `${dd.n} check-off${dd.n === 1 ? '' : 's'}`) : tr('sin marcas', 'nothing')}`}
+              onClick={() => setSel(s => (s === k ? null : k))}>
+              {f.getDate()}
+            </button>
+          )
+        })}
+      </div>
+      {delSel && fechaSel && (
+        <div className="cal-detalle">
+          <p className="grafica-sub">
+            {fechaSel.toLocaleDateString(LOC(), { weekday: 'long', day: 'numeric', month: 'long' })}
+            {' · '}{tr(`${delSel.n} marca${delSel.n === 1 ? '' : 's'}`, `${delSel.n} check-off${delSel.n === 1 ? '' : 's'}`)}
+          </p>
+          <div className="plan-lista">
+            {filasSel.map(({ ts, d, sub }, i) => (
+              <button key={d.item.id + i} className="ep plan-fila" onClick={() => onAbrir(d)}>
+                <span className="plan-cover"><Portada item={d.item} c={d.c} esComic={d.esComic} /></span>
+                <span className="ep-info">
+                  <span className="ep-titulo">{d.item.t}</span>
+                  <span className="ep-fecha">{sub} · {hora(ts)}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function Diario({ vistas, notas, pais, idioma }) {
   const marcas = useMemo(() => (
     Object.entries(vistas)
@@ -4372,6 +4483,9 @@ export default function App() {
             onSalir={() => guardaClub(null)} onInvitar={() => setClubInvitar(true)} />}
 
           <Actividad vistas={vistas} eps={eps} />
+
+          <Calendario vistas={vistas} eps={eps} indice={indice} idioma={idioma}
+            onAbrir={d => setDetalle(d)} />
 
           <Diario vistas={vistas} notas={notas} pais={pais} idioma={idioma} />
 
