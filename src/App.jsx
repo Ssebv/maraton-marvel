@@ -702,7 +702,7 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
   )
 }
 
-function CuentaAtras({ meta, horario, onHorario }) {
+function CuentaAtras({ meta, horario, sesionHoy, onHorario }) {
   const [ahora, setAhora] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setAhora(Date.now()), 1000)
@@ -766,10 +766,20 @@ function CuentaAtras({ meta, horario, onHorario }) {
             const esHoy = horario.dias.includes(hoyD)
             let prox = (hoyD + 1) % 7
             while (!horario.dias.includes(prox)) prox = (prox + 1) % 7
+            // el chip no solo dice cuándo: dice QUÉ toca (el primer título de
+            // la sesión de hoy, y cuántos más caen detrás)
+            const que = sesionHoy && (() => {
+              const t0 = sesionHoy.trozos[0]
+              const resto = sesionHoy.trozos.length - 1
+              const nombre = t0.txt ? `${t0.item.t} (${t0.txt})` : t0.item.t
+              return resto > 0 ? tr(`${nombre} y ${resto} más`, `${nombre} and ${resto} more`) : nombre
+            })()
             return (
               <span className="objetivo-chip neutro">
                 {esHoy
-                  ? tr(`Hoy hay sesión a las ${horario.hora} · ${fmtDur(horario.min)}`, `Session today at ${horario.hora} · ${fmtDur(horario.min)}`)
+                  ? (que
+                    ? tr(`Hoy a las ${horario.hora}: ${que} · ~${fmtDur(sesionHoy.min)}`, `Today at ${horario.hora}: ${que} · ~${fmtDur(sesionHoy.min)}`)
+                    : tr(`Hoy hay sesión a las ${horario.hora} · ${fmtDur(horario.min)}`, `Session today at ${horario.hora} · ${fmtDur(horario.min)}`))
                   : tr(`Próxima sesión: ${DIA_LARGO[prox]} a las ${horario.hora}`, `Next session: ${DIA_LARGO_EN[prox]} at ${horario.hora}`)}
               </span>
             )
@@ -973,6 +983,15 @@ function traduce(obj, campos, pasa) {
 let IDIOMA_ACTUAL = 'es'
 const leeIdiomaGuardado = () => {
   try {
+    // ?lang=en en el enlace: para publicar la app en una comunidad en inglés
+    // sin pedirle a nadie que toque Ajustes. Manda sobre lo guardado (quien
+    // abre ese enlace eligió ese idioma) y se persiste como si lo eligiera;
+    // el efecto de la URL lo limpia al montar, como al ?ir=.
+    const p = new URLSearchParams(window.location.search).get('lang')
+    if (p === 'en' || p === 'es') {
+      try { localStorage.setItem(KEY_IDIOMA, p) } catch {}
+      return p
+    }
     const g = localStorage.getItem(KEY_IDIOMA)
     if (g === 'en' || g === 'es') return g
     if ((navigator.language || '').toLowerCase().startsWith('en')) return 'en'
@@ -3089,9 +3108,14 @@ export default function App() {
   const [pais, setPais] = useState(() => {
     let p = 'ES'
     try {
+      // ?pais=CL en el enlace: mismo trato que ?lang — manda y se persiste
+      const url = (new URLSearchParams(window.location.search).get('pais') || '').toUpperCase()
       const g = localStorage.getItem('maraton-marvel-pais-v1')
       const region = (navigator.language || '').split('-')[1]
-      if (g && PAISES.some(x => x.id === g)) p = g
+      if (url && PAISES.some(x => x.id === url)) {
+        p = url
+        try { localStorage.setItem('maraton-marvel-pais-v1', p) } catch {}
+      } else if (g && PAISES.some(x => x.id === g)) p = g
       else if (region && PAISES.some(x => x.id === region.toUpperCase())) p = region.toUpperCase()
     } catch {}
     aplicaTitulos(p, leeIdiomaGuardado())
@@ -3700,6 +3724,17 @@ export default function App() {
     return { dias, restante, necesario, ritmo, alDia: restante === 0 || ritmo >= necesario }
   }, [vistas, eps, indice])
 
+  // Qué toca HOY según el horario: la primera sesión simulada, solo si cae
+  // hoy. Vive aquí abajo y no junto a su estado porque usa `vistas` y `eps`,
+  // que en el orden de App se declaran después (zona muerta temporal).
+  const sesionHoy = useMemo(() => {
+    if (!horario) return null
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+    if (!horario.dias.includes(hoy.getDay())) return null
+    const s = simulaHorario(horario, vistas, eps, 1).sesiones[0]
+    return s && s.trozos.length && s.fecha.getTime() === hoy.getTime() ? s : null
+  }, [horario, vistas, eps])
+
   const plan = useMemo(() => {
     if (!planModal) return null
     let restante = planHoras * 60
@@ -3895,7 +3930,7 @@ export default function App() {
         </div>
         <Proximos />
         </div>
-        <CuentaAtras meta={objetivo} horario={horario} onHorario={() => setHorarioModal(true)} />
+        <CuentaAtras meta={objetivo} horario={horario} sesionHoy={sesionHoy} onHorario={() => setHorarioModal(true)} />
       </div>
       {panelAbierto && (
         <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>{tr('Ocultar panel', 'Hide panel')}</button>
@@ -5238,6 +5273,11 @@ function Footer({ onAjustes }) {
           </div>
         </div>
       )}
+      <p className="nota-pie">
+        <a href="https://github.com/Ssebv/maraton-marvel/issues" target="_blank" rel="noopener noreferrer">
+          {tr('¿Un fallo o una idea? Cuéntalo en GitHub', 'Found a bug or have an idea? Tell me on GitHub')}
+        </a>
+      </p>
       <p className="nota-pie nota-creditos">
         {tr(<>Carátulas, fotogramas, tráilers y reparto de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a>;
         este producto usa su API pero no está avalado ni certificado por TMDB.
