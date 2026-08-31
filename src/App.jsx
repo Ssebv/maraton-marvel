@@ -983,8 +983,8 @@ function AvisosBtn() {
     } catch {}
   }
   return estado === 'on'
-    ? <span className="aviso-on">{tr('Te avisaré cuando algo se estrene', 'I’ll ping you when something premieres')}</span>
-    : <button className="chip-btn aviso-btn" onClick={activar}>{tr('Avisarme de estrenos', 'Notify me of premieres')}</button>
+    ? <span className="aviso-on">{tr('Te avisaré de estrenos y de tus sesiones', 'I’ll ping you about premieres and your sessions')}</span>
+    : <button className="chip-btn aviso-btn" onClick={activar}>{tr('Avisarme de estrenos y sesiones', 'Notify me of premieres and sessions')}</button>
 }
 
 // El gesto de volver atrás (borde en iOS, botón en Android) cierra la capa de
@@ -2455,7 +2455,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca }) {
   const { item, c, esComic } = d
   const extra = useTmdb(item, idioma)
   const [verTrailer, setVerTrailer] = useState(false)
@@ -2781,15 +2781,32 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             const lista = EPISODES[item.id]
             const temporadas = [...new Set(lista.map(e => e.s))]
             const hechos = lista.filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length
+            // el botón de tanda: marca lo que falte de la temporada, o la
+            // vacía si ya está entera — 76 toques menos en X-Men TAS
+            const tanda = t => {
+              const de = lista.filter(e => e.s === t)
+              const faltan = de.some(e => !eps[`${item.id}:${e.s}:${e.n}`])
+              return (
+                <button className="chip-btn" onClick={() => marcaTemporada(item.id, t, faltan)}>
+                  {faltan ? tr('Marcar todos', 'Mark all') : tr('Quitar todos', 'Clear all')}
+                </button>
+              )
+            }
             return (
               <div className="episodios">
                 <div className="episodios-head">
                   <h3>{tr('Episodios', 'Episodes')}</h3>
                   <span className="episodios-count">{hechos}/{lista.length}</span>
+                  {temporadas.length === 1 && tanda(temporadas[0])}
                 </div>
                 {temporadas.map(t => (
                   <div key={t}>
-                    {temporadas.length > 1 && <div className="temporada">{tr('Temporada', 'Season')} {t}</div>}
+                    {temporadas.length > 1 && (
+                      <div className="temporada">
+                        <span>{tr('Temporada', 'Season')} {t}</span>
+                        {tanda(t)}
+                      </div>
+                    )}
                     <div className="ep-lista">
                       {lista.filter(e => e.s === t).map(e => {
                         const clave = `${item.id}:${e.s}:${e.n}`
@@ -3608,6 +3625,18 @@ export default function App() {
     localStorage.removeItem(KEY_SYNC)
   }
 
+  // toda una temporada de un golpe: marca lo pendiente o la vacía entera
+  const marcaTemporada = (id, s, marcar) => setEps(prev => {
+    const next = { ...prev }
+    ;(EPISODES[id] || []).filter(e => e.s === s).forEach(e => {
+      const k = `${id}:${e.s}:${e.n}`
+      if (marcar) { if (!next[k]) next[k] = Date.now() } else delete next[k]
+    })
+    try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
+    if (marcar) suenaPop()
+    return next
+  })
+
   const toggleEp = clave => setEps(prev => {
     const next = { ...prev }
     if (next[clave]) delete next[clave]; else { next[clave] = Date.now(); suenaPop() }
@@ -3696,11 +3725,21 @@ export default function App() {
   // cada tarjeta rompía el memo de las 134 al marcar un solo episodio
   const epHechosDe = item => (item.tipo === 'serie' && EPISODES[item.id])
     ? EPISODES[item.id].reduce((n, e) => n + (eps[`${item.id}:${e.s}:${e.n}`] ? 1 : 0), 0) : 0
+  // El pajar de cada tarjeta, UNA vez por idioma/país en vez de reconstruido
+  // por tarjeta en cada filtrado: los tres nombres del título («Lobezno»,
+  // «Wolverine»…), reparto, dirección, año — y TODOS sus títulos de episodio,
+  // así «Propósito glorioso» (o «Glorious Purpose») encuentra a Loki.
+  const pajares = useMemo(() => {
+    const m = {}
+    DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
+      m[it.id] = norm([it.t, T_ES[it.id] || '', TITULOS_LATAM[it.id] || '', TITULOS_EN[it.id] || '', it.en || '', it.dir || '', ...(it.cast || []), String(it.r),
+        ...(EPISODES[it.id] || []).map(e => e.t)].join(' '))
+    })))
+    return m
+  }, [pais, idioma])
   const pasaFiltro = (item, esComic) => {
     if (buscaLenta) {
-      // se busca por los dos títulos: «Lobezno» y «Wolverine» abren la misma ficha
-      const pajar = norm([item.t, T_ES[item.id] || '', TITULOS_LATAM[item.id] || '', TITULOS_EN[item.id] || '', item.en || '', item.dir || '', ...(item.cast || []), String(item.r)].join(' '))
-      if (!pajar.includes(norm(buscaLenta))) return false
+      if (!(pajares[item.id] || '').includes(norm(buscaLenta))) return false
     }
     if (filtros.series && item.tipo === 'serie') return false
     if (filtros.opc && item.opt) return false
@@ -3851,6 +3890,16 @@ export default function App() {
     const ritmo = Math.round(visto14 / 14)
     return { dias, restante, necesario, ritmo, alDia: restante === 0 || ritmo >= necesario }
   }, [vistas, eps, indice])
+
+  // El service worker no ve localStorage: el horario se espeja en Cache
+  // Storage (con el idioma, para el texto del aviso) y el periodicsync de
+  // los estrenos avisa también el día que hay sesión.
+  useEffect(() => {
+    if (!('caches' in window)) return
+    caches.open('maraton-marvel-horario').then(c => (horario
+      ? c.put('config', new Response(JSON.stringify({ ...horario, idioma })))
+      : c.delete('config'))).catch(() => {})
+  }, [horario, idioma])
 
   // La simulación del horario con el progreso real: da la sesión de HOY para
   // el chip y la fecha de fin para la proyección del panel. Vive aquí abajo y
@@ -4110,7 +4159,7 @@ export default function App() {
               setDetalle({ item: e.item, c: e.c, esComic: false })
             }
           }}>{tr('Sorpréndeme', 'Surprise me')}</button>
-          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, actor, director o año', 'Title, actor, director or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, actor, director o año — atajo: /', 'Search by title, actor, director or year — shortcut: /')} value={busca} spellCheck={false}
+          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio, actor o año', 'Title, episode, actor or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajo: /', 'Search by title, episode, actor, director or year — shortcut: /')} value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')} />
           <button className="chip-btn" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
           {/* El estado de sincronización es estado, no un botón: solo se
@@ -5043,7 +5092,7 @@ export default function App() {
           onBiblioteca={recargaBiblioteca}
           onToggle={() => toggle(detalle.item.id)}
           onClose={() => setDetalle(null)}
-          eps={eps} toggleEp={toggleEp}
+          eps={eps} toggleEp={toggleEp} marcaTemporada={marcaTemporada}
           nota={notas[detalle.item.id] || {}}
           ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)}
           listas={listas} toggleEnLista={toggleEnLista} club={club} onNav={navegaDetalle}

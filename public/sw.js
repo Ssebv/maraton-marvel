@@ -77,8 +77,36 @@ async function revisaEstrenos() {
     })
   } catch {}
 }
+// La app espeja el horario de visionado en la caché 'maraton-marvel-horario'
+// (el service worker no ve localStorage). El día que toca sesión, un aviso
+// por la mañana — una sola vez por día y nunca después de la hora.
+async function revisaSesion() {
+  try {
+    const c = await caches.open('maraton-marvel-horario')
+    const hit = await c.match('config')
+    if (!hit) return
+    const h = await hit.json()
+    if (!h || !Array.isArray(h.dias)) return
+    const ahora = new Date()
+    if (!h.dias.includes(ahora.getDay())) return
+    const [hh, mm] = String(h.hora || '21:00').split(':').map(Number)
+    const sesion = new Date(ahora)
+    sesion.setHours(hh || 21, mm || 0, 0, 0)
+    if (ahora > sesion) return
+    const clave = 'sesion' + ahora.toISOString().slice(0, 10)
+    const marca = await leeMarca()
+    if (marca.includes(clave)) return
+    await guardaMarca(marca + '|' + clave)
+    await self.registration.showNotification('🍿 Maratón Marvel', {
+      body: h.idioma === 'en'
+        ? `Marathon session today at ${h.hora}`
+        : `Hoy hay sesión de maratón a las ${h.hora}`,
+      icon: 'icon-192.png', badge: 'icon-192.png', tag: 'sesion',
+    })
+  } catch {}
+}
 self.addEventListener('periodicsync', e => {
-  if (e.tag === 'estrenos') e.waitUntil(revisaEstrenos())
+  if (e.tag === 'estrenos') e.waitUntil(Promise.all([revisaEstrenos(), revisaSesion()]))
 })
 self.addEventListener('notificationclick', e => {
   e.notification.close()

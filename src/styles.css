@@ -919,7 +919,11 @@ h3{
 .temporada{
   font-size: var(--t-xs); font-weight:700; letter-spacing:.1em; text-transform:uppercase;
   color:var(--ink3); margin: var(--e-4) 0 var(--e-3);
+  display:flex; align-items:center; justify-content:space-between; gap: var(--e-3);
 }
+/* el botón de tanda no hereda el rótulo en versalitas */
+.temporada .chip-btn, .episodios-head .chip-btn{letter-spacing:normal; text-transform:none; font-size: var(--t-s)}
+.episodios-head .chip-btn{margin-left:auto}
 .ep-lista{display:grid; grid-template-columns:1fr 1fr; gap: var(--e-3)}
 .ep{
   display:flex; align-items:center; gap: var(--e-4); text-align:left;
