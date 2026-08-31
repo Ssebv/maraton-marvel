@@ -702,7 +702,7 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
   )
 }
 
-function CuentaAtras({ meta, horario, sesionHoy, onHorario }) {
+function CuentaAtras({ meta, horario, sesionHoy, sim, onHorario }) {
   const [ahora, setAhora] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setAhora(Date.now()), 1000)
@@ -758,6 +758,16 @@ function CuentaAtras({ meta, horario, sesionHoy, onHorario }) {
               <span className="proyeccion">
                 {tr('A tu ritmo acabarías la ruta express el ', 'At your pace you’d finish the express route on ')}<b>{fin.toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}</b>
                 {llega ? tr(' — llegas al estreno', ' — you make the premiere') : tr(' — después del estreno, aprieta un poco', ' — after the premiere; push a little')}
+              </span>
+            )
+          })()}
+          {horario && sim && sim.seAcaba && sim.fin && (() => {
+            const llega = sim.fin <= new Date(objetivo.fecha + 'T00:00:00')
+            return (
+              <span className="proyeccion">
+                {tr('Con tu horario terminas el ', 'On your schedule you finish ')}
+                <b>{sim.fin.toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}</b>
+                {llega ? tr(' — llegas al estreno', ' — in time for the premiere') : tr(' — después del estreno: añade días o alarga la sesión', ' — after the premiere: add days or stretch the session')}
               </span>
             )
           })()}
@@ -843,7 +853,10 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma }) {
   const nDias = new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate()
   for (let d = 1; d <= nDias; d++) celdas.push(new Date(mes.getFullYear(), mes.getMonth(), d))
   const max = Math.max(1, ...celdas.filter(Boolean).map(f => (dias.get(diaClave(f.getTime())) || { n: 0 }).n))
-  const tono = n => `color-mix(in srgb, var(--red) ${25 + 75 * n / max}%, var(--panel2))`
+  // A diferencia del mapa de calor, AQUÍ hay texto encima (el número del día):
+  // con la mezcla al 100 % la tinta sobre el rojo pleno caía a 2,5:1 en claro.
+  // Capada al 45 % el número aguanta los 4,5:1 en los dos temas (medido).
+  const tono = n => `color-mix(in srgb, var(--red) ${10 + 35 * n / max}%, var(--panel2))`
   const etiquetaMes = (() => {
     const t = mes.toLocaleDateString(LOC(), { month: 'long', year: 'numeric' })
     return t.charAt(0).toUpperCase() + t.slice(1)
@@ -3124,7 +3137,11 @@ export default function App() {
   const [planHoras, setPlanHoras] = useState(2)
   const [planExpress, setPlanExpress] = useState(true)
   const [horario, setHorario] = useState(() => leeGuardado(KEY_HORARIO, saneaHorario, null))
-  const [horarioModal, setHorarioModal] = useState(false)
+  // ?ir=horario: el atajo del icono de la app abre el horario directamente
+  // (leído en el inicializador, como ?ir=siguiente; el efecto de la URL limpia)
+  const [horarioModal, setHorarioModal] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('ir') === 'horario' } catch { return false }
+  })
   const guardaHorario = h => {
     setHorario(h)
     try { h ? localStorage.setItem(KEY_HORARIO, JSON.stringify(h)) : localStorage.removeItem(KEY_HORARIO) } catch {}
@@ -3835,16 +3852,18 @@ export default function App() {
     return { dias, restante, necesario, ritmo, alDia: restante === 0 || ritmo >= necesario }
   }, [vistas, eps, indice])
 
-  // Qué toca HOY según el horario: la primera sesión simulada, solo si cae
-  // hoy. Vive aquí abajo y no junto a su estado porque usa `vistas` y `eps`,
-  // que en el orden de App se declaran después (zona muerta temporal).
+  // La simulación del horario con el progreso real: da la sesión de HOY para
+  // el chip y la fecha de fin para la proyección del panel. Vive aquí abajo y
+  // no junto a su estado porque usa `vistas` y `eps`, que en el orden de App
+  // se declaran después (zona muerta temporal).
+  const simHorario = useMemo(() => (horario ? simulaHorario(horario, vistas, eps, 1) : null), [horario, vistas, eps])
   const sesionHoy = useMemo(() => {
-    if (!horario) return null
+    if (!simHorario) return null
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
     if (!horario.dias.includes(hoy.getDay())) return null
-    const s = simulaHorario(horario, vistas, eps, 1).sesiones[0]
+    const s = simHorario.sesiones[0]
     return s && s.trozos.length && s.fecha.getTime() === hoy.getTime() ? s : null
-  }, [horario, vistas, eps])
+  }, [simHorario, horario])
 
   const plan = useMemo(() => {
     if (!planModal) return null
@@ -4041,7 +4060,7 @@ export default function App() {
         </div>
         <Proximos />
         </div>
-        <CuentaAtras meta={objetivo} horario={horario} sesionHoy={sesionHoy} onHorario={() => setHorarioModal(true)} />
+        <CuentaAtras meta={objetivo} horario={horario} sesionHoy={sesionHoy} sim={simHorario} onHorario={() => setHorarioModal(true)} />
       </div>
       {panelAbierto && (
         <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>{tr('Ocultar panel', 'Hide panel')}</button>

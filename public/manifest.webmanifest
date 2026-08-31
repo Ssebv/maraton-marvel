@@ -27,6 +27,13 @@
       "description": "El calendario de estrenos y la cuenta atrás",
       "url": "/maraton-marvel/#estreno",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Horario de maratón",
+      "short_name": "Horario",
+      "description": "Qué toca en la sesión de hoy y cuándo terminas",
+      "url": "/maraton-marvel/?ir=horario",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }
