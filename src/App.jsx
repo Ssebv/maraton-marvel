@@ -1450,6 +1450,39 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
   )
 }
 
+// Lo nuevo de la app no se anuncia solo: el idioma vive en Ajustes, el
+// horario es un chip más en la barra y la bienvenida solo sale la primera
+// visita. Quien ya usaba la app ve UNA vez este aviso, con el camino directo.
+// Al cambiar AVISO_VERSION en una jornada futura, el aviso vuelve a salir.
+const AVISO_VERSION = '2026-08-31'
+function AvisoNuevo({ onHorario, onAjustes }) {
+  const [visible, setVisible] = useState(() => {
+    try {
+      // solo veteranos: quien aún no cerró la bienvenida se entera por ella
+      return !!localStorage.getItem('maraton-marvel-bienvenida-v1')
+        && localStorage.getItem('maraton-marvel-aviso-v1') !== AVISO_VERSION
+    } catch { return false }
+  })
+  const cierra = () => {
+    setVisible(false)
+    try { localStorage.setItem('maraton-marvel-aviso-v1', AVISO_VERSION) } catch {}
+  }
+  if (!visible) return null
+  return (
+    <div className="aviso info novedades" role="status">
+      <span>
+        <b>{tr('Nuevo en la app:', 'New in the app:')}</b>{' '}
+        {tr('Horario de maratón (elige tus días y te digo qué toca cada sesión y cuándo terminas), la interfaz en English y 19 países.', 'Marathon schedule (pick your days and I’ll tell you what each session covers and when you finish), interfaz en español, and 19 countries.')}
+      </span>
+      <span className="aviso-acciones">
+        <button className="chip-btn destacado" aria-pressed="false" onClick={() => { cierra(); onHorario() }}>{tr('Ponerme un horario', 'Set a schedule')}</button>
+        <button className="chip-btn" onClick={() => { cierra(); onAjustes() }}>{tr('Idioma y país', 'Language and country')}</button>
+      </span>
+      <button className="cerrar" onClick={cierra} aria-label={tr('Cerrar aviso', 'Dismiss')}>✕</button>
+    </div>
+  )
+}
+
 function Novedades({ eps }) {
   const [lista, setLista] = useState([])
   const [cerrado, setCerrado] = useState(false)
@@ -3746,6 +3779,7 @@ export default function App() {
         </div>
       </section>
 
+      <AvisoNuevo onHorario={() => setHorarioModal(true)} onAjustes={() => setAjustes(true)} />
       <Novedades eps={eps} />
       {!panelAbierto && (
         <button className="panel-resumen" aria-expanded="false" onClick={alternaPanel}>

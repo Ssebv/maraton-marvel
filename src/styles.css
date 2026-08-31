@@ -1689,6 +1689,11 @@ main.crono, main.comics, main.estreno{animation:none}
   gap: var(--e-4); margin-top: var(--e-5); font-size: var(--t-m);
 }
 .novedades .cerrar{position:static; flex:none}
+/* el aviso de novedades de la app lleva además botones: en pantallas
+   estrechas la fila se parte y las acciones bajan enteras */
+.novedades{flex-wrap:wrap}
+.novedades > span:first-child{flex:1 1 260px; line-height:1.5}
+.novedades .aviso-acciones{flex:none}
 .aviso-btn{align-self:flex-start; font-size: var(--t-s)}
 .aviso-on{font-size: var(--t-s); color:var(--doom); font-weight:600}
 /* ── Duelo de maratones ── */
