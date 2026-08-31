@@ -7,8 +7,11 @@ import { TMDB, TMDB_KEY, DESPLAZA_TEMPORADA } from './tmdb.js'
 import { ORDEN_CONGELADO } from './orden.js'
 import { PLATAFORMAS, PAISES } from './plataformas.js'
 import { TITULOS_LATAM } from './titulos.js'
+import { TITULOS_EN } from './titulos-en.js'
 import { latiniza } from './latam.js'
 import { EPISODIOS_LATAM } from './episodios-latam.js'
+import { EPISODIOS_EN } from './episodios-en.js'
+import { EN_TEXTOS } from './en-textos.js'
 import { clasifica, guardaArchivo, leeArchivo, borraArchivo, metaArchivo, abreComic, fmtTam, listaArchivos, persistencia, pidePersistencia, espacio } from './lector.js'
 import { NUBE, cargaGis, entraConGoogle, refrescaToken } from './nube.js'
 
@@ -26,6 +29,8 @@ const KEY_LECTOR = 'maraton-marvel-lector-v1'
 const KEY_HORARIO = 'maraton-marvel-horario-v1'
 // sesión de la cuenta de Google: { uid, rt, nombre, email, foto }
 const KEY_CUENTA = 'maraton-marvel-cuenta-v1'
+// idioma de la app: 'es' (con el matiz del país) o 'en'
+const KEY_IDIOMA = 'maraton-marvel-idioma-v1'
 
 // Pósters propios (public/mini, 200 px) para el fondo del encabezado y las franjas de saga
 const MURO = ['avengers1', 'endgame', 'logan', 'deadpool1', 'cap1', 'blackpanther',
@@ -34,9 +39,9 @@ const MURO = ['avengers1', 'endgame', 'logan', 'deadpool1', 'cap1', 'blackpanthe
 // banda daba fragmentos sueltos que parecían un error de maquetación.
 const FRANJA = ['xmen', 'ucm', 'comics', 'animacion']
 const FONDOS = [
-  { id: 'banner', nombre: 'Banner' },
-  { id: 'muro', nombre: 'Muro' },
-  { id: 'no', nombre: 'Sin fondo' },
+  { id: 'banner', nombre: 'Banner', en: 'Banner' },
+  { id: 'muro', nombre: 'Muro', en: 'Wall' },
+  { id: 'no', nombre: 'Sin fondo', en: 'No background' },
 ]
 
 // El código de sincronización lo escribe cualquiera y trae la URL a la que la
@@ -398,11 +403,11 @@ function suenaPop() {
 
 // Temas de acento por universo (alias sobre los tokens existentes, ya adaptados a claro/oscuro)
 const ACENTOS = [
-  { id: '616', nombre: 'Tierra-616' },
+  { id: '616', nombre: 'Tierra-616', en: 'Earth-616' },
   { id: 'xmen', nombre: 'X-Men' },
-  { id: 'tva', nombre: 'La TVA' },
-  { id: 'zombi', nombre: 'Zombi' },
-  { id: '828', nombre: '4 Fantásticos' },
+  { id: 'tva', nombre: 'La TVA', en: 'The TVA' },
+  { id: 'zombi', nombre: 'Zombi', en: 'Zombie' },
+  { id: '828', nombre: '4 Fantásticos', en: 'Fantastic Four' },
 ]
 
 // Nueve pestañas eran nueve destinos planos, pero seis de ellas son formas
@@ -410,9 +415,9 @@ const ACENTOS = [
 // selector dentro de cada uno. Los ids de vista y el hash no cambian: los
 // enlaces antiguos siguen abriendo lo que abrían.
 const DESTINOS = [
-  { id: 'maraton', label: 'Maratón', vistas: ['crono', 'estreno', 'comics', 'animacion', 'galeria', 'tiempo'] },
-  { id: 'mio', label: 'Mío', vistas: ['listas', 'stats'] },
-  { id: 'multiverso', label: 'Multiverso', vistas: ['multiverso'] },
+  { id: 'maraton', label: 'Maratón', en: 'Marathon', vistas: ['crono', 'estreno', 'comics', 'animacion', 'galeria', 'tiempo'] },
+  { id: 'mio', label: 'Mío', en: 'Mine', vistas: ['listas', 'stats'] },
+  { id: 'multiverso', label: 'Multiverso', en: 'Multiverse', vistas: ['multiverso'] },
 ]
 const destinoDe = v => (DESTINOS.find(d => d.vistas.includes(v)) || DESTINOS[0]).id
 
@@ -435,15 +440,15 @@ function fmtDur(d) {
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
 const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo']
 const PESTANAS = [
-  { id: 'crono', label: 'Cronológico' },
-  { id: 'estreno', label: 'Por estreno' },
-  { id: 'comics', label: 'Cómics' },
-  { id: 'animacion', label: 'Animación' },
-  { id: 'listas', label: 'Listas' },
-  { id: 'galeria', label: 'Galería' },
-  { id: 'multiverso', label: 'Multiverso' },
-  { id: 'tiempo', label: 'Línea temporal' },
-  { id: 'stats', label: 'Estadísticas' },
+  { id: 'crono', label: 'Cronológico', en: 'Chronological' },
+  { id: 'estreno', label: 'Por estreno', en: 'By release' },
+  { id: 'comics', label: 'Cómics', en: 'Comics' },
+  { id: 'animacion', label: 'Animación', en: 'Animation' },
+  { id: 'listas', label: 'Listas', en: 'Lists' },
+  { id: 'galeria', label: 'Galería', en: 'Gallery' },
+  { id: 'multiverso', label: 'Multiverso', en: 'Multiverse' },
+  { id: 'tiempo', label: 'Línea temporal', en: 'Timeline' },
+  { id: 'stats', label: 'Estadísticas', en: 'Stats' },
 ]
 // Dúos y casos que el split por " y "/" & " rompería
 const DUOS = {
@@ -455,15 +460,17 @@ const DUOS = {
   'Tancharoen y Whedon': ['Tancharoen y Whedon'],
   'Schwartz y Savage': ['Schwartz y Savage'],
 }
-const urlTrailer = t => `https://www.youtube.com/results?search_query=${encodeURIComponent(t + ' tráiler español')}`
+const urlTrailer = t => `https://www.youtube.com/results?search_query=${encodeURIComponent(t + tr(' tráiler español', ' trailer'))}`
 const urlImdb = t => `https://www.imdb.com/find/?q=${encodeURIComponent(t)}`
 const urlPersona = n => `https://www.imdb.com/find/?q=${encodeURIComponent(limpiaNombre(n))}&s=nm`
+
+const tipoSello = (item, esComic) => (esComic ? tr('CÓMIC', 'COMIC') : item.tipo === 'serie' ? tr('SERIE', 'SERIES') : item.tipo === 'esp' ? tr('ESPECIAL', 'SPECIAL') : tr('PELÍCULA', 'MOVIE'))
 
 function Cover({ item, c, esComic }) {
   const [c1, c2] = c
   const gid = `g-${item.id}`
   return (
-    <svg className="cover" viewBox="0 0 120 180" role="img" aria-label={`Carátula de ${item.t}`}>
+    <svg className="cover" viewBox="0 0 120 180" role="img" aria-label={tr(`Carátula de ${item.t}`, `Cover of ${item.t}`)}>
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1.2">
           <stop offset="0" stopColor={c1} />
@@ -488,7 +495,7 @@ function Cover({ item, c, esComic }) {
       </text>
       <text x="60" y="172" textAnchor="middle" fill="#fff" opacity="0.55"
         fontFamily="system-ui,sans-serif" fontWeight="700" fontSize="8" letterSpacing="2">
-        {esComic ? 'CÓMIC' : item.tipo === 'serie' ? 'SERIE' : item.tipo === 'esp' ? 'ESPECIAL' : 'PELÍCULA'}
+        {tipoSello(item, esComic)}
       </text>
       <rect width="120" height="180" rx="10" fill="none" stroke="#fff" strokeOpacity="0.25" />
     </svg>
@@ -503,29 +510,25 @@ function Portada({ item, c, esComic }) {
   if (ancha) {
     if (ancha === 'logo') {
       return (
-        <div className="cover logo-cover" role="img" aria-label={`Carátula de ${item.t}`}
+        <div className="cover logo-cover" role="img" aria-label={tr(`Carátula de ${item.t}`, `Cover of ${item.t}`)}
           style={{ background: `linear-gradient(160deg, ${c[0]}, ${c[1]})` }}>
           <img src={src} alt="" onError={() => setErr(true)} />
           <span className="lc-year">{item.r}</span>
-          <span className="lc-tipo">
-            {esComic ? 'CÓMIC' : item.tipo === 'serie' ? 'SERIE' : item.tipo === 'esp' ? 'ESPECIAL' : 'PELÍCULA'}
-          </span>
+          <span className="lc-tipo">{tipoSello(item, esComic)}</span>
         </div>
       )
     }
     return (
-      <div className="cover keyart" role="img" aria-label={`Carátula de ${item.t}`}>
+      <div className="cover keyart" role="img" aria-label={tr(`Carátula de ${item.t}`, `Cover of ${item.t}`)}>
         <img src={src} alt="" onError={() => setErr(true)} />
         <span className="ka-sombra" style={{ '--ka': c[0] }} />
         <span className="lc-year">{item.r}</span>
-        <span className="lc-tipo">
-          {item.tipo === 'serie' ? 'SERIE' : item.tipo === 'esp' ? 'ESPECIAL' : 'PELÍCULA'}
-        </span>
+        <span className="lc-tipo">{tipoSello(item, false)}</span>
       </div>
     )
   }
   return (
-    <img className="cover foto" src={src} alt={`Póster de ${item.t}`}
+    <img className="cover foto" src={src} alt={tr(`Póster de ${item.t}`, `Poster of ${item.t}`)}
       loading="lazy" decoding="async"
       onLoad={e => {
         const img = e.target
@@ -599,7 +602,7 @@ function Avatar({ nombre, grande, foto }) {
 }
 
 const fmtFecha = f => f
-  ? new Date(f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+  ? new Date(f + 'T00:00:00').toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' })
   : null
 
 function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, itemActualId, tituloActual }) {
@@ -638,18 +641,18 @@ function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, ite
   return (
     <div className="persona-ficha">
       <button className="volver-ficha" onClick={onVolver}>
-        <IcoAtras />{tituloActual ? `Volver a ${tituloActual}` : 'Volver a la ficha'}
+        <IcoAtras />{tituloActual ? tr(`Volver a ${tituloActual}`, `Back to ${tituloActual}`) : tr('Volver a la ficha', 'Back to the title')}
       </button>
       <div className="pf-cabecera">
         <Avatar nombre={nombre} grande />
         <div className="pf-titulos">
           <h3 className="pf-nombre">{nombre}</h3>
           {papel
-            ? <p className="pf-papel">Interpreta a <b>{papel}</b></p>
+            ? <p className="pf-papel">{tr('Interpreta a', 'Plays')} <b>{papel}</b></p>
             : <p className="pf-papel pf-papel-rol">{rol}</p>}
           {datos && (datos.nacimiento || datos.lugar) && (
             <p className="pf-datos">
-              {datos.nacimiento ? new Date(datos.nacimiento + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+              {datos.nacimiento ? new Date(datos.nacimiento + 'T00:00:00').toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
               {datos.nacimiento && datos.lugar ? ' · ' : ''}{datos.lugar || ''}
             </p>
           )}
@@ -658,18 +661,18 @@ function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, ite
 
       {bioCorta
         ? <p className="pf-bio">{bioCorta}{bio.length > 420 && (
-            <button className="pf-mas" onClick={() => setMasBio(v => !v)}>{masBio ? 'Menos' : 'Leer más'}</button>
+            <button className="pf-mas" onClick={() => setMasBio(v => !v)}>{masBio ? tr('Menos', 'Less') : tr('Leer más', 'Read more')}</button>
           )}</p>
         : <p className="pf-bio pf-vacia">
-            {!tmdbId ? 'No hay ficha de esta persona en TMDB.'
-              : fallo ? 'No se pudo cargar su biografía. Comprueba tu conexión.'
-              : datos ? 'TMDB no tiene biografía en español de esta persona.'
-              : 'Cargando su biografía…'}
+            {!tmdbId ? tr('No hay ficha de esta persona en TMDB.', 'TMDB has no page for this person.')
+              : fallo ? tr('No se pudo cargar su biografía. Comprueba tu conexión.', 'Could not load their biography. Check your connection.')
+              : datos ? tr('TMDB no tiene biografía en español de esta persona.', 'TMDB has no biography for this person.')
+              : tr('Cargando su biografía…', 'Loading their biography…')}
           </p>}
 
       {tambienEn.length > 0 && (
         <div className="pf-tambien">
-          <h4 className="pf-sub">También en tu maratón ({tambienEn.length})</h4>
+          <h4 className="pf-sub">{tr('También en tu maratón', 'Also in your marathon')} ({tambienEn.length})</h4>
           <div className="pf-lista">
             {tambienEn.map(({ item, c, esComic }) => (
               <button className="pf-item" key={item.id} onClick={() => onAbrirTitulo({ item, c, esComic })}>
@@ -705,33 +708,33 @@ function CuentaAtras({ meta, horario, onHorario }) {
   return (
     <div className="cuenta">
           <div className="cuenta-info">
-            <span className="cuenta-label">Próximo gran estreno</span>
+            <span className="cuenta-label">{tr('Próximo gran estreno', 'Next big premiere')}</span>
             <span className="cuenta-titulo">{objetivo.t}</span>
             <span className="cuenta-fecha">{fmtFecha(objetivo.fecha)} · {objetivo.tipo}</span>
           </div>
       <div className="cuenta-reloj" role="timer">
-        <span className="cr-bloque"><b>{cuenta.dias}</b><small>días</small></span>
+        <span className="cr-bloque"><b>{cuenta.dias}</b><small>{tr('días', 'days')}</small></span>
         <span className="cr-sep">:</span>
-        <span className="cr-bloque"><b>{cuenta.hh}</b><small>horas</small></span>
+        <span className="cr-bloque"><b>{cuenta.hh}</b><small>{tr('horas', 'hours')}</small></span>
         <span className="cr-sep">:</span>
         <span className="cr-bloque"><b>{cuenta.mm}</b><small>min</small></span>
         <span className="cr-sep">:</span>
-        <span className="cr-bloque"><b>{cuenta.ss}</b><small>seg</small></span>
+        <span className="cr-bloque"><b>{cuenta.ss}</b><small>{tr('seg', 'sec')}</small></span>
       </div>
       {meta && (
         <div className="objetivo">
           <span className="objetivo-linea">
-            Ruta express: {meta.restante > 0
-              ? <>quedan <b>{fmtDur(meta.restante)}</b> · necesitas <b>{meta.necesario} min/día</b></>
-              : <b>¡completada! Llegas de sobra al estreno</b>}
+            {tr('Ruta express: ', 'Express route: ')}{meta.restante > 0
+              ? <>{tr('quedan ', '')}<b>{fmtDur(meta.restante)}</b>{tr(' · necesitas ', ' left · you need ')}<b>{meta.necesario} {tr('min/día', 'min/day')}</b></>
+              : <b>{tr('¡completada! Llegas de sobra al estreno', 'complete! You’ll make the premiere with room to spare')}</b>}
           </span>
           {meta.restante > 0 && (
             <span className={`objetivo-chip ${meta.ritmo === 0 ? 'neutro' : meta.alDia ? 'ok' : 'tarde'}`}>
               {meta.ritmo === 0
-                ? 'Sin ritmo todavía · marca algo y aquí verás si llegas'
+                ? tr('Sin ritmo todavía · marca algo y aquí verás si llegas', 'No pace yet · check something off and you’ll see if you make it')
                 : meta.alDia
-                  ? `Vas al día · ${meta.ritmo} min/día en las últimas 2 semanas`
-                  : `Acelera · llevas ${meta.ritmo} min/día en las últimas 2 semanas`}
+                  ? tr(`Vas al día · ${meta.ritmo} min/día en las últimas 2 semanas`, `On track · ${meta.ritmo} min/day over the last 2 weeks`)
+                  : tr(`Acelera · llevas ${meta.ritmo} min/día en las últimas 2 semanas`, `Speed up · you’re at ${meta.ritmo} min/day over the last 2 weeks`)}
             </span>
           )}
           {meta.restante > 0 && meta.ritmo > 0 && (() => {
@@ -739,8 +742,8 @@ function CuentaAtras({ meta, horario, onHorario }) {
             const llega = fin <= new Date(objetivo.fecha + 'T00:00:00')
             return (
               <span className="proyeccion">
-                A tu ritmo acabarías la ruta express el <b>{fin.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</b>
-                {llega ? ' — llegas al estreno' : ' — después del estreno, aprieta un poco'}
+                {tr('A tu ritmo acabarías la ruta express el ', 'At your pace you’d finish the express route on ')}<b>{fin.toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}</b>
+                {llega ? tr(' — llegas al estreno', ' — you make the premiere') : tr(' — después del estreno, aprieta un poco', ' — after the premiere; push a little')}
               </span>
             )
           })()}
@@ -752,13 +755,13 @@ function CuentaAtras({ meta, horario, onHorario }) {
             return (
               <span className="objetivo-chip neutro">
                 {esHoy
-                  ? `Hoy hay sesión a las ${horario.hora} · ${fmtDur(horario.min)}`
-                  : `Próxima sesión: ${DIA_LARGO[prox]} a las ${horario.hora}`}
+                  ? tr(`Hoy hay sesión a las ${horario.hora} · ${fmtDur(horario.min)}`, `Session today at ${horario.hora} · ${fmtDur(horario.min)}`)
+                  : tr(`Próxima sesión: ${DIA_LARGO[prox]} a las ${horario.hora}`, `Next session: ${DIA_LARGO_EN[prox]} at ${horario.hora}`)}
               </span>
             )
           })()}
-          <button className="chip-btn aviso-btn" onClick={onHorario}>{horario ? 'Horario' : 'Ponerme un horario'}</button>
-          <button className="chip-btn aviso-btn" onClick={() => descargaIcs(objetivo)}>Al calendario</button>
+          <button className="chip-btn aviso-btn" onClick={onHorario}>{horario ? tr('Horario', 'Schedule') : tr('Ponerme un horario', 'Set a schedule')}</button>
+          <button className="chip-btn aviso-btn" onClick={() => descargaIcs(objetivo)}>{tr('Al calendario', 'Add to calendar')}</button>
           <AvisosBtn />
         </div>
       )}
@@ -766,27 +769,27 @@ function CuentaAtras({ meta, horario, onHorario }) {
   )
 }
 
-function Diario({ vistas, notas, pais }) {
+function Diario({ vistas, notas, pais, idioma }) {
   const marcas = useMemo(() => (
     Object.entries(vistas)
       .filter(([id, ts]) => typeof ts === 'number' && ts > 1e12 && TITULOS[id])
       .sort((a, b) => b[1] - a[1])
       .slice(0, 30)
-  ), [vistas, pais])
+  ), [vistas, pais, idioma])
   if (!marcas.length) return null
   return (
     <section className="grafica diario">
-      <h3 className="grafica-titulo">Diario del maratón</h3>
+      <h3 className="grafica-titulo">{tr('Diario del maratón', 'Marathon diary')}</h3>
       <div className="diario-lista">
         {marcas.map(([id, ts]) => (
           <div className="diario-fila" key={id}>
-            <span className="diario-fecha">{new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+            <span className="diario-fecha">{new Date(ts).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' })}</span>
             <span className="diario-titulo">{TITULOS[id]}</span>
             {notas[id] && notas[id].p ? <span className="diario-estrellas">{'★'.repeat(notas[id].p)}</span> : null}
           </div>
         ))}
       </div>
-      {Object.keys(vistas).length > 30 && <p className="diario-mas">Se muestran tus últimas 30 marcas.</p>}
+      {Object.keys(vistas).length > 30 && <p className="diario-mas">{tr('Se muestran tus últimas 30 marcas.', 'Showing your last 30 check-offs.')}</p>}
     </section>
   )
 }
@@ -832,8 +835,8 @@ function AvisosBtn() {
     } catch {}
   }
   return estado === 'on'
-    ? <span className="aviso-on">Te avisaré cuando algo se estrene</span>
-    : <button className="chip-btn aviso-btn" onClick={activar}>Avisarme de estrenos</button>
+    ? <span className="aviso-on">{tr('Te avisaré cuando algo se estrene', 'I’ll ping you when something premieres')}</span>
+    : <button className="chip-btn aviso-btn" onClick={activar}>{tr('Avisarme de estrenos', 'Notify me of premieres')}</button>
 }
 
 // El gesto de volver atrás (borde en iOS, botón en Android) cierra la capa de
@@ -941,43 +944,88 @@ const T_ES = { ...TITULOS }
 const EP_ES = Object.fromEntries(Object.entries(EPISODES).map(([id, eps]) => [id, eps.map(e => e.t)]))
 const E_ES = ESTRENOS.map(e => e.t)
 const ORIGINALES = new WeakMap()
-function traduce(obj, campos, latino) {
+// pasa: la función del modo activo — identidad (España), latiniza (América en
+// español) o el diccionario EN_TEXTOS (English, con caída al español si un
+// texto nuevo aún no está traducido)
+function traduce(obj, campos, pasa) {
   if (!obj) return
   let orig = ORIGINALES.get(obj)
   if (!orig) { orig = {}; campos.forEach(c => { orig[c] = obj[c] }); ORIGINALES.set(obj, orig) }
-  campos.forEach(c => { if (typeof orig[c] === 'string') obj[c] = latino ? latiniza(orig[c]) : orig[c] })
+  campos.forEach(c => { if (typeof orig[c] === 'string') obj[c] = pasa(orig[c]) })
 }
-function aplicaTitulos(pais) {
-  const latino = pais !== 'ES'
+// El idioma vivo, a nivel de módulo: lo fija aplicaTitulos antes de cada
+// render que lo cambia, y lo leen tr() y ui(). Los componentes memoizados
+// deben recibir `idioma` como prop o no se enteran del cambio.
+let IDIOMA_ACTUAL = 'es'
+const leeIdiomaGuardado = () => {
+  try {
+    const g = localStorage.getItem(KEY_IDIOMA)
+    if (g === 'en' || g === 'es') return g
+    if ((navigator.language || '').toLowerCase().startsWith('en')) return 'en'
+  } catch {}
+  return 'es'
+}
+function aplicaTitulos(pais, idioma = IDIOMA_ACTUAL) {
+  IDIOMA_ACTUAL = idioma
+  const en = idioma === 'en'
+  const latino = !en && pais !== 'ES'
+  const pasa = en
+    ? s => (EN_TEXTOS[s] !== undefined ? EN_TEXTOS[s] : s)
+    : latino ? latiniza : s => s
+  const titulo = (id, saga) => {
+    if (en) return TITULOS_EN[id] || E_TITULO_EN[id] || T_ES[id]
+    if (latino && TITULOS_LATAM[id]) return TITULOS_LATAM[id]
+    return latino && saga === 'comics' ? latiniza(T_ES[id]) : T_ES[id]
+  }
   DATA.forEach(s => {
-    traduce(s, ['desc'], latino)
-    ;(s.guia || []).forEach(g => traduce(g, ['t', 'p'], latino))
+    traduce(s, ['titulo', 'desc'], pasa)
+    ;(s.guia || []).forEach(g => traduce(g, ['t', 'p'], pasa))
     s.eras.forEach(era => {
-      traduce(era, ['era'], latino)
+      traduce(era, ['era'], pasa)
       era.items.forEach(it => {
-        it.t = (latino && TITULOS_LATAM[it.id]) || (latino && s.saga === 'comics' ? latiniza(T_ES[it.id]) : T_ES[it.id])
+        it.t = titulo(it.id, s.saga)
         TITULOS[it.id] = it.t
-        traduce(it, ['res', 'n', 'pcn'], latino)
+        traduce(it, ['res', 'n', 'pcn'], pasa)
       })
     })
   })
   ESTRENOS.forEach((e, i) => {
     const id = Object.keys(T_ES).find(k => T_ES[k] === E_ES[i])
-    e.t = (id && latino && TITULOS_LATAM[id]) || E_ES[i]
-    traduce(e, ['n'], latino)
+    e.t = (id && (en ? TITULOS_EN[id] : latino && TITULOS_LATAM[id])) || E_ES[i]
+    traduce(e, ['n', 'tipo', 'aprox'], pasa)
   })
-  MULTIVERSO.forEach(u => traduce(u, ['nombre', 'estado', 'desc'], latino))
-  LOGROS.forEach(l => traduce(l, ['t', 'd'], latino))
-  MAPA_ARISTAS.forEach(a => traduce(a, ['t'], latino))
+  MULTIVERSO.forEach(u => traduce(u, ['nombre', 'estado', 'desc'], pasa))
+  LOGROS.forEach(l => traduce(l, ['t', 'd'], pasa))
+  MAPA_ARISTAS.forEach(a => traduce(a, ['t'], pasa))
   Object.entries(EPISODES).forEach(([id, eps]) => {
     const lat = latino && EPISODIOS_LATAM[id]
-    eps.forEach((e, i) => { e.t = (lat && lat[`${e.s}:${e.n}`]) || (latino ? latiniza(EP_ES[id][i]) : EP_ES[id][i]) })
+    const ing = en && EPISODIOS_EN[id]
+    eps.forEach((e, i) => {
+      e.t = en
+        ? (ing && ing[`${e.s}:${e.n}`]) || EP_ES[id][i]
+        : (lat && lat[`${e.s}:${e.n}`]) || (latino ? latiniza(EP_ES[id][i]) : EP_ES[id][i])
+    })
   })
 }
+// título inglés de los cómics: el campo `en` que data.js ya traía para la
+// búsqueda de Marvel Unlimited
+const E_TITULO_EN = (() => {
+  const m = {}
+  DATA.forEach(s => s.eras.forEach(e => e.items.forEach(it => { if (it.en) m[it.id] = it.en })))
+  return m
+})()
+
+// tr: un literal de interfaz en los dos idiomas, elegido por el idioma vivo.
+// Los componentes que lo usan se re-renderizan al cambiar (App entera cambia
+// de estado), salvo los memoizados, que deben recibir `idioma` como prop.
+const tr = (es, en) => (IDIOMA_ACTUAL === 'en' ? en : es)
+// fechas y números: cada idioma con su formato
+const LOC = () => (IDIOMA_ACTUAL === 'en' ? 'en-US' : 'es-ES')
 
 // Textos de la interfaz que dicen «móvil» u «ordenador»: fuera de España pasan
-// por el mismo diccionario que la prosa («celular», «computadora»)
-const ui = (pais, texto) => (pais === 'ES' ? texto : latiniza(texto))
+// por el mismo diccionario que la prosa («celular», «computadora»); con la
+// interfaz en inglés gana el tercer argumento
+const ui = (pais, texto, en) => (IDIOMA_ACTUAL === 'en' && en !== undefined ? en : pais === 'ES' || IDIOMA_ACTUAL === 'en' ? texto : latiniza(texto))
 
 // Ajustes › Cuenta: entrar con Google para que el progreso siga a la persona.
 // Solo existe si el proyecto central (NUBE) está configurado; sin él la app
@@ -1002,25 +1050,25 @@ function CuentaAjuste({ cuenta, estado, onCredencial, onSalir }) {
   return (
     <div className="ajuste">
       <div className="ajuste-cab">
-        <h3 className="ajuste-titulo">Cuenta</h3>
+        <h3 className="ajuste-titulo">{tr('Cuenta', 'Account')}</h3>
         <p className="ajuste-pista">
           {cuenta
             ? (estado === 'error'
-              ? 'Dentro, pero ahora mismo sin conexión. Se reintenta al volver a la app.'
-              : 'Dentro. Tu progreso, notas, listas y horario te siguen a cualquier dispositivo donde entres.')
-            : 'Entra con Google y tu progreso te sigue a cualquier dispositivo. Sin cuenta, todo se guarda igual en este navegador.'}
+              ? tr('Dentro, pero ahora mismo sin conexión. Se reintenta al volver a la app.', 'Signed in, but offline right now. It retries when you come back.')
+              : tr('Dentro. Tu progreso, notas, listas y horario te siguen a cualquier dispositivo donde entres.', 'Signed in. Your progress, notes, lists and schedule follow you to any device you sign into.'))
+            : tr('Entra con Google y tu progreso te sigue a cualquier dispositivo. Sin cuenta, todo se guarda igual en este navegador.', 'Sign in with Google and your progress follows you to any device. Without an account, everything still saves in this browser.')}
         </p>
       </div>
       {cuenta ? (
         <div className="ajuste-ops cuenta-fila">
           {cuenta.foto && <img className="cuenta-foto" src={cuenta.foto} alt="" referrerPolicy="no-referrer" />}
           <span className="cuenta-nombre">{cuenta.nombre || cuenta.email}</span>
-          <button className="ghost" onClick={onSalir}>Salir</button>
+          <button className="ghost" onClick={onSalir}>{tr('Salir', 'Sign out')}</button>
         </div>
       ) : (
         <div className="ajuste-ops">
           <div ref={ref} className="cuenta-google" />
-          {falloGis && <span className="import-error">No se pudo cargar el acceso de Google. Prueba a recargar.</span>}
+          {falloGis && <span className="import-error">{tr('No se pudo cargar el acceso de Google. Prueba a recargar.', 'Could not load Google sign-in. Try reloading.')}</span>}
         </div>
       )}
     </div>
@@ -1041,16 +1089,16 @@ function Biblioteca({ archivos, onQuitar }) {
   return (
     <div className="ajuste">
       <div className="ajuste-cab">
-        <h3 className="ajuste-titulo">Biblioteca</h3>
+        <h3 className="ajuste-titulo">{tr('Biblioteca', 'Library')}</h3>
         <p className="ajuste-pista">
-          {ids.length === 1 ? 'Un cómic guardado' : `${ids.length} cómics guardados`} en este navegador, {fmtTam(total)}
-          {uso && uso.cuota ? ` (el navegador deja hasta ${fmtTam(uso.cuota)})` : ''}.
+          {ids.length === 1 ? tr('Un cómic guardado', 'One comic stored') : tr(`${ids.length} cómics guardados`, `${ids.length} comics stored`)}{tr(' en este navegador, ', ' in this browser, ')}{fmtTam(total)}
+          {uso && uso.cuota ? tr(` (el navegador deja hasta ${fmtTam(uso.cuota)})`, ` (the browser allows up to ${fmtTam(uso.cuota)})`) : ''}.
           {persistente === true
-            ? ' El navegador ha prometido no borrarlos.'
+            ? tr(' El navegador ha prometido no borrarlos.', ' The browser has promised not to delete them.')
             : ES_IOS && !YA_INSTALADA
-              ? ' Ojo: Safari borra lo guardado por una web que no abres en 7 días; instalada como app (Compartir → Añadir a pantalla de inicio) no lo hace.'
+              ? tr(' Ojo: Safari borra lo guardado por una web que no abres en 7 días; instalada como app (Compartir → Añadir a pantalla de inicio) no lo hace.', ' Heads up: Safari wipes what a site stores if you don’t open it for 7 days; installed as an app (Share → Add to Home Screen) it doesn’t.')
               : persistente === false
-                ? ' El navegador podría borrarlos si se queda sin espacio.'
+                ? tr(' El navegador podría borrarlos si se queda sin espacio.', ' The browser might delete them if it runs out of space.')
                 : ''}
         </p>
       </div>
@@ -1063,51 +1111,55 @@ function Biblioteca({ archivos, onQuitar }) {
               <span className="biblio-meta">{archivos[id].nombre} · {fmtTam(archivos[id].tam)}</span>
               {confirma === id
                 ? <span className="biblio-confirma">
-                    <button className="chip-btn peligro" onClick={() => { setConfirma(null); onQuitar(id) }}>¿Seguro? Sí</button>
-                    <button className="ghost" onClick={() => setConfirma(null)}>Cancelar</button>
+                    <button className="chip-btn peligro" onClick={() => { setConfirma(null); onQuitar(id) }}>{tr('¿Seguro? Sí', 'Sure? Yes')}</button>
+                    <button className="ghost" onClick={() => setConfirma(null)}>{tr('Cancelar', 'Cancel')}</button>
                   </span>
-                : <button className="ghost" onClick={() => setConfirma(id)}>Quitar</button>}
+                : <button className="ghost" onClick={() => setConfirma(id)}>{tr('Quitar', 'Remove')}</button>}
             </li>
           )
         })}
       </ul>
       {persistente === false && !ES_IOS && (
-        <div className="ajuste-ops"><button className="chip-btn" onClick={pedir}>Pedir al navegador que no los borre</button></div>
+        <div className="ajuste-ops"><button className="chip-btn" onClick={pedir}>{tr('Pedir al navegador que no los borre', 'Ask the browser not to delete them')}</button></div>
       )}
     </div>
   )
 }
 
-function Bienvenida({ onCerrar, onExpress, pais, onPais }) {
+function Bienvenida({ onCerrar, onExpress, pais, onPais, idioma, onIdioma }) {
   const ref = useRef(null)
   useDialogo(ref, onCerrar)
   return (
     <div className="overlay" ref={ref} tabIndex={-1} onClick={onCerrar}
-      role="dialog" aria-modal="true" aria-label="Bienvenida">
+      role="dialog" aria-modal="true" aria-label={tr('Bienvenida', 'Welcome')}>
       <div className="modal modal-sync bienvenida" onClick={e => e.stopPropagation()}>
-        <button className="cerrar" onClick={onCerrar} aria-label="Cerrar">✕</button>
+        <button className="cerrar" onClick={onCerrar} aria-label={tr('Cerrar', 'Close')}>✕</button>
         <div className="modal-info">
-          <span className="hero-eyebrow">Guía de maratón</span>
-          <h2 className="modal-titulo">Todo Marvel y X-Men, en orden</h2>
+          <span className="hero-eyebrow">{tr('Guía de maratón', 'Marathon guide')}</span>
+          <h2 className="modal-titulo">{tr('Todo Marvel y X-Men, en orden', 'All of Marvel and X-Men, in order')}</h2>
           <ol className="bienvenida-pasos">
-            <li><b>117 títulos en orden cronológico</b> de la historia: la saga X-Men a un lado, el UCM al otro, los cómics en su pestaña — y una bóveda de animación aparte.</li>
-            <li><b>Marca lo visto</b> con la casilla redonda de cada tarjeta — o entra en la ficha para episodios, tráiler, sinopsis y escenas post-créditos.</li>
-            <li><b>La cuenta atrás de Doomsday</b> te dice el ritmo que necesitas; el Plan de sesión te propone qué ver hoy.</li>
+            <li>{tr(<><b>117 títulos en orden cronológico</b> de la historia: la saga X-Men a un lado, el UCM al otro, los cómics en su pestaña — y una bóveda de animación aparte.</>, <><b>117 titles in chronological story order</b>: the X-Men saga on one side, the MCU on the other, comics in their own tab — plus a separate animation vault.</>)}</li>
+            <li>{tr(<><b>Marca lo visto</b> con la casilla redonda de cada tarjeta — o entra en la ficha para episodios, tráiler, sinopsis y escenas post-créditos.</>, <><b>Check off what you’ve watched</b> with the round box on each card — or open the title for episodes, trailer, synopsis and post-credit scenes.</>)}</li>
+            <li>{tr(<><b>La cuenta atrás de Doomsday</b> te dice el ritmo que necesitas; el Plan de sesión te propone qué ver hoy.</>, <><b>The Doomsday countdown</b> tells you the pace you need; the Session plan suggests what to watch today.</>)}</li>
           </ol>
           <div className="bienvenida-pais">
-            <label className="bienvenida-pais-label" htmlFor="bienvenida-pais">Tu país</label>
+            <label className="bienvenida-pais-label" htmlFor="bienvenida-pais">{tr('Tu país', 'Your country')}</label>
             <span className="sel-envuelto">
               <select id="bienvenida-pais" className="selector" value={pais} onChange={e => onPais(e.target.value)}>
-                {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                {PAISES.map(p => <option key={p.id} value={p.id}>{tr(p.nombre, PAIS_EN[p.id] || p.nombre)}</option>)}
               </select>
             </span>
-            <p className="bienvenida-pais-pista">Decide en qué plataforma ves cada título y cómo se nombran las obras. Se cambia cuando quieras en Ajustes.</p>
+            <span className="bienvenida-idioma" role="group" aria-label={tr('Idioma', 'Language')}>
+              <button className="chip-btn" aria-pressed={idioma === 'es'} onClick={() => onIdioma('es')}>Español</button>
+              <button className="chip-btn" aria-pressed={idioma === 'en'} onClick={() => onIdioma('en')}>English</button>
+            </span>
+            <p className="bienvenida-pais-pista">{tr('Decide en qué plataforma ves cada título y cómo se nombran las obras. Se cambia cuando quieras en Ajustes.', 'Sets which platform each title shows and how things are named. Change it any time in Settings.')}</p>
           </div>
           <div className="bienvenida-acciones">
-            <button className="accion-principal" onClick={onCerrar}>Empezar por el principio</button>
-            <button className="chip-btn" onClick={onExpress}>Solo lo esencial para Doomsday</button>
+            <button className="accion-principal" onClick={onCerrar}>{tr('Empezar por el principio', 'Start from the beginning')}</button>
+            <button className="chip-btn" onClick={onExpress}>{tr('Solo lo esencial para Doomsday', 'Just the essentials for Doomsday')}</button>
           </div>
-          <p className="bienvenida-nota">{ui(pais, 'Consejo: desde el móvil puedes instalarla como app (menú del navegador → «Añadir a pantalla de inicio»).')}</p>
+          <p className="bienvenida-nota">{ui(pais, 'Consejo: desde el móvil puedes instalarla como app (menú del navegador → «Añadir a pantalla de inicio»).', 'Tip: on your phone you can install it as an app (browser menu → "Add to Home Screen").')}</p>
         </div>
       </div>
     </div>
@@ -1200,7 +1252,7 @@ function MapaMultiverso({ onAbrir }) {
         <div className="mapa-leyenda">
           <div className="mapa-leyenda-cab">
             <b>{buscaItem(sel).item.t}</b>
-            <button className="chip-btn" onClick={() => onAbrir(buscaItem(sel))}>Ver ficha</button>
+            <button className="chip-btn" onClick={() => onAbrir(buscaItem(sel))}>{tr('Ver ficha', 'Open title')}</button>
             <button className="chip-btn" onClick={() => setSel(null)}>✕</button>
           </div>
           {conectadas.map((e, i) => {
@@ -1215,7 +1267,7 @@ function MapaMultiverso({ onAbrir }) {
           })}
         </div>
       ) : (
-        <p className="mapa-ayuda">Pulsa un título para iluminar sus conexiones con el resto del multiverso.<span className="solo-movil"> Desliza para recorrer el mapa entero.</span></p>
+        <p className="mapa-ayuda">{tr('Pulsa un título para iluminar sus conexiones con el resto del multiverso.', 'Tap a title to light up its connections with the rest of the multiverse.')}<span className="solo-movil"> {tr('Desliza para recorrer el mapa entero.', 'Swipe to travel the whole map.')}</span></p>
       )}
     </div>
   )
@@ -1259,22 +1311,22 @@ function Club({ club, vistas, eps, onSalir, onInvitar }) {
   return (
     <section className="duelo club">
       <div className="duelo-cab">
-        <h2>Club de maratón <span className="club-sala">· sala {club.sala}</span></h2>
-        <button className="chip-btn" onClick={onInvitar}>Invitar</button>
-        <button className="chip-btn" onClick={onSalir}>Salir</button>
+        <h2>{tr('Club de maratón', 'Marathon club')} <span className="club-sala">· {tr('sala', 'room')} {club.sala}</span></h2>
+        <button className="chip-btn" onClick={onInvitar}>{tr('Invitar', 'Invite')}</button>
+        <button className="chip-btn" onClick={onSalir}>{tr('Salir', 'Leave')}</button>
       </div>
       {filas.map((f, i) => (
         <div className={`duelo-fila${f.yo ? ' yo' : ''}`} key={f.alias}>
-          <span className="duelo-nombre">{medallas[i] || `${i + 1}º`} {f.alias}{f.yo ? ' (tú)' : ''}</span>
+          <span className="duelo-nombre">{medallas[i] || `${i + 1}º`} {f.alias}{f.yo ? tr(' (tú)', ' (you)') : ''}</span>
           <div className="duelo-barra"><i style={{ width: `${Math.round(f.n / total * 100)}%` }} /></div>
           <span className="duelo-datos">{f.n}/{total} · {fmtDur(f.min)}</span>
         </div>
       ))}
       <p className="duelo-veredicto">
-        Media del club: <b>{media}/{total}</b> títulos.
-        {filas.length < 2 && ' Aún estás solo: pulsa Invitar y comparte el código.'}
+        {tr('Media del club: ', 'Club average: ')}<b>{media}/{total}</b>{tr(' títulos.', ' titles.')}
+        {filas.length < 2 && tr(' Aún estás solo: pulsa Invitar y comparte el código.', ' You’re alone so far: hit Invite and share the code.')}
       </p>
-      <p className="duelo-fecha">Cada miembro publica su avance al marcar; el ranking se refresca solo.</p>
+      <p className="duelo-fecha">{tr('Cada miembro publica su avance al marcar; el ranking se refresca solo.', 'Each member publishes their progress as they check things off; the ranking refreshes itself.')}</p>
     </section>
   )
 }
@@ -1310,22 +1362,22 @@ function ComentariosClub({ club, item, vista }) {
   const oculto = !vista && !desvelado && lista.length > 0
   return (
     <div className="club-coments">
-      <span className="valoracion-label">Club · {lista.length === 1 ? '1 comentario' : `${lista.length} comentarios`}</span>
+      <span className="valoracion-label">Club · {lista.length === 1 ? tr('1 comentario', '1 comment') : tr(`${lista.length} comentarios`, `${lista.length} comments`)}</span>
       {oculto ? (
         <button className="club-velo" onClick={() => setDesvelado(true)}>
-          Aún no lo has visto: pulsa para leer los comentarios del club
+          {tr('Aún no lo has visto: pulsa para leer los comentarios del club', 'You haven’t watched this yet: tap to read the club’s comments')}
         </button>
       ) : lista.map((c, i) => (
         <p className="club-coment" key={i}>
           <b>{c.n}</b> {c.t}
-          {c.f > 0 && <span className="club-coment-f">{new Date(c.f).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>}
+          {c.f > 0 && <span className="club-coment-f">{new Date(c.f).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' })}</span>}
         </p>
       ))}
       <div className="club-coment-envio">
-        <input className="busca" placeholder="Comenta para el club (sin spoilers gordos 😉)…" autoComplete="off"
+        <input className="busca" placeholder={tr('Comenta para el club (sin spoilers gordos 😉)…', 'Comment for the club (no big spoilers 😉)…')} autoComplete="off"
           value={txt} maxLength={280} onChange={e => setTxt(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') envia() }} />
-        <button className="chip-btn" onClick={envia}>Enviar</button>
+        <button className="chip-btn" onClick={envia}>{tr('Enviar', 'Send')}</button>
       </div>
     </div>
   )
@@ -1364,10 +1416,10 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
   return (
     <section className="duelo">
       <div className="duelo-cab">
-        <h2>Duelo de maratones{esLive && <span className="duelo-live">EN VIVO</span>}</h2>
-        <button className="chip-btn" onClick={onQuitar}>Quitar rival</button>
+        <h2>{tr('Duelo de maratones', 'Marathon duel')}{esLive && <span className="duelo-live">{tr('EN VIVO', 'LIVE')}</span>}</h2>
+        <button className="chip-btn" onClick={onQuitar}>{tr('Quitar rival', 'Remove rival')}</button>
       </div>
-      {[['Tú', datos.yo], [amigo.n, datos.el]].map(([quien, r]) => (
+      {[[tr('Tú', 'You'), datos.yo], [amigo.n, datos.el]].map(([quien, r]) => (
         <div className="duelo-fila" key={quien}>
           <span className="duelo-nombre">{quien}</span>
           <div className="duelo-barra"><i style={{ width: `${Math.round(r.n / total * 100)}%` }} /></div>
@@ -1376,23 +1428,24 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
       ))}
       <p className="duelo-veredicto">
         {dif === 0
-          ? 'Empate técnico: vais exactamente igual.'
+          ? tr('Empate técnico: vais exactamente igual.', 'Dead heat: you’re exactly level.')
           : dif > 0
-            ? <>Vas <b>{dif} título{dif > 1 ? 's' : ''}</b> por delante. 🏆</>
-            : <>{amigo.n} te saca <b>{-dif} título{dif < -1 ? 's' : ''}</b>: toca acelerar.</>}
-        {' '}Habéis visto <b>{datos.comunes}</b> en común.
+            ? tr(<>Vas <b>{dif} título{dif > 1 ? 's' : ''}</b> por delante. 🏆</>, <>You’re <b>{dif} title{dif > 1 ? 's' : ''}</b> ahead. 🏆</>)
+            : tr(<>{amigo.n} te saca <b>{-dif} título{dif < -1 ? 's' : ''}</b>: toca acelerar.</>, <>{amigo.n} is <b>{-dif} title{dif < -1 ? 's' : ''}</b> ahead of you: time to speed up.</>)}
+        {' '}{tr('Habéis visto', 'You’ve both watched')} <b>{datos.comunes}</b>{tr(' en común.', ' in common.')}
       </p>
       {datos.soloEl.length > 0 && (
         <p className="duelo-pista">
-          {amigo.n} ya vio y tú no: {datos.soloEl.slice(0, 3).map(id => TITULOS[id]).join(' · ')}
-          {datos.soloEl.length > 3 ? ` y ${datos.soloEl.length - 3} más` : ''}
+          {amigo.n}{tr(' ya vio y tú no: ', ' has watched these and you haven’t: ')}{datos.soloEl.slice(0, 3).map(id => TITULOS[id]).join(' · ')}
+          {datos.soloEl.length > 3 ? tr(` y ${datos.soloEl.length - 3} más`, ` and ${datos.soloEl.length - 3} more`) : ''}
         </p>
       )}
       {esLive
         ? <p className="duelo-fecha">{remoto
-            ? `Conectado a su sincronización — actualizado ${remoto.t ? 'el ' + new Date(remoto.t).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'ahora'}. Se refresca solo.`
-            : 'Conectando con su sincronización…'}</p>
-        : amigo.t && <p className="duelo-fecha">Su maratón a fecha de {fmtFecha(new Date(amigo.t).toISOString().slice(0, 10))} — pídele un enlace nuevo para actualizarlo.</p>}
+            ? tr(`Conectado a su sincronización — actualizado ${remoto.t ? 'el ' + new Date(remoto.t).toLocaleString(LOC(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'ahora'}. Se refresca solo.`,
+                 `Connected to their sync — updated ${remoto.t ? new Date(remoto.t).toLocaleString(LOC(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'just now'}. Refreshes itself.`)
+            : tr('Conectando con su sincronización…', 'Connecting to their sync…')}</p>
+        : amigo.t && <p className="duelo-fecha">{tr('Su maratón a fecha de ', 'Their marathon as of ')}{fmtFecha(new Date(amigo.t).toISOString().slice(0, 10))}{tr(' — pídele un enlace nuevo para actualizarlo.', ' — ask them for a fresh link to update it.')}</p>}
     </section>
   )
 }
@@ -1410,12 +1463,12 @@ function Novedades({ eps }) {
       const seguidas = new Set(Object.keys(eps).map(k => k.split(':')[0]))
       const out = []
       for (const e of ESTRENOS) {
-        if (e.fecha && e.fecha > antes && e.fecha <= hoy) out.push(`${e.t} ya se estrenó`)
+        if (e.fecha && e.fecha > antes && e.fecha <= hoy) out.push(tr(`${e.t} ya se estrenó`, `${e.t} is out now`))
       }
       for (const [id, caps] of Object.entries(EPISODES)) {
         if (!seguidas.has(id)) continue
         const nuevos = caps.filter(ep => ep.f && ep.f > antes && ep.f <= hoy).length
-        if (nuevos) out.push(`${TITULOS[id] || id}: ${nuevos} episodio${nuevos > 1 ? 's' : ''} nuevo${nuevos > 1 ? 's' : ''}`)
+        if (nuevos) out.push(tr(`${TITULOS[id] || id}: ${nuevos} episodio${nuevos > 1 ? 's' : ''} nuevo${nuevos > 1 ? 's' : ''}`, `${TITULOS[id] || id}: ${nuevos} new episode${nuevos > 1 ? 's' : ''}`))
       }
       setLista(out.slice(0, 4))
     } catch {}
@@ -1423,8 +1476,8 @@ function Novedades({ eps }) {
   if (!lista.length || cerrado) return null
   return (
     <div className="aviso info novedades" role="status">
-      <span><b>Desde tu última visita:</b> {lista.join(' · ')}</span>
-      <button className="cerrar" onClick={() => setCerrado(true)} aria-label="Cerrar aviso">✕</button>
+      <span><b>{tr('Desde tu última visita:', 'Since your last visit:')}</b> {lista.join(' · ')}</span>
+      <button className="cerrar" onClick={() => setCerrado(true)} aria-label={tr('Cerrar aviso', 'Dismiss')}>✕</button>
     </div>
   )
 }
@@ -1471,11 +1524,11 @@ function bajaIcs(nombre, titulo, veventLineas) {
 function descargaIcs(e) {
   const dia = e.fecha.replace(/-/g, '')
   const fin = new Date(new Date(e.fecha + 'T00:00:00Z').getTime() + 864e5).toISOString().slice(0, 10).replace(/-/g, '')
-  bajaIcs(`estreno-${e.t.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '')}.ics`, 'Estreno: ' + e.t, [
+  bajaIcs(`estreno-${e.t.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '')}.ics`, tr('Estreno: ', 'Premiere: ') + e.t, [
     `UID:${dia}-${e.t.replace(/[^\w]/g, '').slice(0, 24)}@maraton-marvel`,
     `DTSTART;VALUE=DATE:${dia}`,
     `DTEND;VALUE=DATE:${fin}`,
-    `SUMMARY:${icsEsc('Estreno: ' + e.t)}`,
+    `SUMMARY:${icsEsc(tr('Estreno: ', 'Premiere: ') + e.t)}`,
     `DESCRIPTION:${icsEsc((e.tipo ? e.tipo + '. ' : '') + (e.n || ''))}`,
   ])
 }
@@ -1486,20 +1539,22 @@ function descargaIcsHorario(h, sim) {
   if (!sim.sesiones.length || !sim.fin) return
   const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA']
   const fmt = d => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
-  bajaIcs('horario-maraton.ics', 'Horario del maratón', [
+  bajaIcs('horario-maraton.ics', tr('Horario del maratón', 'Marathon schedule'), [
     `UID:horario-${fmt(sim.sesiones[0].fecha)}@maraton-marvel`,
     `DTSTART:${fmt(sim.sesiones[0].fecha)}T${h.hora.replace(':', '')}00`,
     `DURATION:PT${h.min}M`,
     `RRULE:FREQ=WEEKLY;BYDAY=${h.dias.map(d => BYDAY[d]).join(',')};UNTIL=${fmt(sim.fin)}T235959`,
-    `SUMMARY:${icsEsc('Sesión de maratón Marvel')}`,
-    `DESCRIPTION:${icsEsc(`${fmtDur(h.min)} siguiendo el orden del maratón. La app dice qué toca cada día.`)}`,
+    `SUMMARY:${icsEsc(tr('Sesión de maratón Marvel', 'Marvel marathon session'))}`,
+    `DESCRIPTION:${icsEsc(tr(`${fmtDur(h.min)} siguiendo el orden del maratón. La app dice qué toca cada día.`, `${fmtDur(h.min)} following the marathon order. The app says what’s up each day.`))}`,
   ])
 }
 
 // ── Horario de visionado: qué días ves, cuánto rato, y cuándo terminas ──
 const DIAS_ORDEN = [1, 2, 3, 4, 5, 6, 0] // lunes primero; getDay() cuenta desde domingo
 const DIA_LETRA = { 1: 'L', 2: 'M', 3: 'X', 4: 'J', 5: 'V', 6: 'S', 0: 'D' }
+const DIA_LETRA_EN = { 1: 'Mo', 2: 'Tu', 3: 'We', 4: 'Th', 5: 'Fr', 6: 'Sa', 0: 'Su' }
 const DIA_LARGO = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+const DIA_LARGO_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 // Recorre el calendario por los días elegidos y consume lo pendiente en el
 // orden del maratón: las series por tandas de episodios que quepan en la
@@ -1574,19 +1629,19 @@ function HorarioModal({ horario, onGuardar, vistas, eps, onClose }) {
     return n ? Math.ceil(sim.totalMin / n) : null
   }, [borr, sim, estreno])
   const llega = estreno && sim.fin && sim.seAcaba && sim.fin <= new Date(estreno.fecha + 'T00:00:00')
-  const fmtF = d => d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+  const fmtF = d => d.toLocaleDateString(LOC(), { weekday: 'short', day: 'numeric', month: 'short' })
   return (
-    <div className="overlay" ref={ref} tabIndex={-1} onClick={onClose} role="dialog" aria-modal="true" aria-label="Horario de maratón">
+    <div className="overlay" ref={ref} tabIndex={-1} onClick={onClose} role="dialog" aria-modal="true" aria-label={tr('Horario de maratón', 'Marathon schedule')}>
       <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
-        <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
+        <button className="cerrar" onClick={onClose} aria-label={tr('Cerrar', 'Close')}>✕</button>
         <div className="modal-info">
-          <h2 className="modal-titulo">Horario de maratón</h2>
-          <p className="modal-res">Elige qué días ves y cuánto rato: la app te dice qué toca cada sesión y cuándo terminas.</p>
+          <h2 className="modal-titulo">{tr('Horario de maratón', 'Marathon schedule')}</h2>
+          <p className="modal-res">{tr('Elige qué días ves y cuánto rato: la app te dice qué toca cada sesión y cuándo terminas.', 'Pick which days you watch and for how long: the app tells you what each session covers and when you finish.')}</p>
           <div className="hor-campos">
-            <div className="hor-dias" role="group" aria-label="Días de la semana">
+            <div className="hor-dias" role="group" aria-label={tr('Días de la semana', 'Days of the week')}>
               {DIAS_ORDEN.map(d => (
                 <button key={d} className="chip-btn hor-dia" aria-pressed={borr.dias.includes(d)}
-                  aria-label={DIA_LARGO[d]} onClick={() => toggleDia(d)}>{DIA_LETRA[d]}</button>
+                  aria-label={tr(DIA_LARGO[d], DIA_LARGO_EN[d])} onClick={() => toggleDia(d)}>{tr(DIA_LETRA[d], DIA_LETRA_EN[d])}</button>
               ))}
             </div>
             <div className="hor-fila">
@@ -1594,31 +1649,30 @@ function HorarioModal({ horario, onGuardar, vistas, eps, onClose }) {
                 <button key={m} className="chip-btn" aria-pressed={borr.min === m}
                   onClick={() => setBorr(b => ({ ...b, min: m }))}>{fmtDur(m)}</button>
               ))}
-              <label className="hor-hora-label">a las{' '}
+              <label className="hor-hora-label">{tr('a las', 'at')}{' '}
                 <input className="busca hor-hora" type="time" value={borr.hora}
                   onChange={e => { const v = e.target.value; if (v) setBorr(b => ({ ...b, hora: v })) }} />
               </label>
               <button className="chip-btn destacado" aria-pressed={borr.exp}
-                onClick={() => setBorr(b => ({ ...b, exp: !b.exp }))}>Solo ruta express</button>
+                onClick={() => setBorr(b => ({ ...b, exp: !b.exp }))}>{tr('Solo ruta express', 'Express route only')}</button>
             </div>
           </div>
           {sim.totalMin === 0 ? (
-            <p className="modal-res">No queda nada pendiente{borr.exp ? ' en la ruta express. Quita el filtro para planificar el maratón completo.' : '. ¡Maratón terminado!'}</p>
+            <p className="modal-res">{tr('No queda nada pendiente', 'Nothing left to watch')}{borr.exp ? tr(' en la ruta express. Quita el filtro para planificar el maratón completo.', ' on the express route. Remove the filter to plan the full marathon.') : tr('. ¡Maratón terminado!', '. Marathon complete!')}</p>
           ) : (
             <>
               <p className="hor-resumen">
-                {borr.dias.length === 1 ? 'Una sesión' : `${borr.dias.length} sesiones`} de {fmtDur(borr.min)} a la semana ·
-                quedan <b>{fmtDur(sim.totalMin)}</b> {borr.exp ? 'de la ruta express' : 'del maratón (sin cómics ni bóveda)'}
+                {borr.dias.length === 1 ? tr('Una sesión', 'One session') : tr(`${borr.dias.length} sesiones`, `${borr.dias.length} sessions`)}{tr(' de ', ' of ')}{fmtDur(borr.min)}{tr(' a la semana · quedan ', ' a week · ')}<b>{fmtDur(sim.totalMin)}</b> {borr.exp ? tr('de la ruta express', 'left on the express route') : tr('del maratón (sin cómics ni bóveda)', 'left in the marathon (comics and vault aside)')}
               </p>
               {sim.seAcaba && sim.fin ? (
                 <p className="hor-veredicto">
-                  Terminarías el <b>{sim.fin.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</b>, en {sim.nSesiones} sesiones
+                  {tr('Terminarías el ', 'You’d finish on ')}<b>{sim.fin.toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' })}</b>{tr(`, en ${sim.nSesiones} sesiones`, `, over ${sim.nSesiones} sessions`)}
                   {estreno && (llega
-                    ? <> — <b>llegas</b> al estreno de {estreno.t} ({fmtFecha(estreno.fecha)})</>
-                    : <> — después del estreno de {estreno.t}{necesario ? <>; con sesiones de <b>~{fmtDur(necesario)}</b> llegarías</> : ''}</>)}
+                    ? tr(<> — <b>llegas</b> al estreno de {estreno.t} ({fmtFecha(estreno.fecha)})</>, <> — <b>in time</b> for the premiere of {estreno.t} ({fmtFecha(estreno.fecha)})</>)
+                    : tr(<> — después del estreno de {estreno.t}{necesario ? <>; con sesiones de <b>~{fmtDur(necesario)}</b> llegarías</> : ''}</>, <> — after the premiere of {estreno.t}{necesario ? <>; sessions of <b>~{fmtDur(necesario)}</b> would get you there</> : ''}</>))}
                 </p>
               ) : (
-                <p className="hor-veredicto">Con ese horario no se acaba ni en dos años: añade días o alarga la sesión.</p>
+                <p className="hor-veredicto">{tr('Con ese horario no se acaba ni en dos años: añade días o alarga la sesión.', 'That schedule doesn’t finish even in two years: add days or stretch the session.')}</p>
               )}
               <ul className="hor-sesiones">
                 {sim.sesiones.map((s, i) => (
@@ -1631,16 +1685,16 @@ function HorarioModal({ horario, onGuardar, vistas, eps, onClose }) {
                 ))}
               </ul>
               {sim.nSesiones > sim.sesiones.length && (
-                <p className="hor-cola">…y {sim.nSesiones - sim.sesiones.length} sesiones más, siempre con lo que toque entonces.</p>
+                <p className="hor-cola">{tr(`…y ${sim.nSesiones - sim.sesiones.length} sesiones más, siempre con lo que toque entonces.`, `…and ${sim.nSesiones - sim.sesiones.length} more sessions, always with whatever is next.`)}</p>
               )}
             </>
           )}
           <div className="bienvenida-acciones">
-            <button className="accion-principal" onClick={() => { onGuardar(borr); onClose() }}>Guardar horario</button>
+            <button className="accion-principal" onClick={() => { onGuardar(borr); onClose() }}>{tr('Guardar horario', 'Save schedule')}</button>
             {sim.totalMin > 0 && sim.seAcaba && (
-              <button className="chip-btn" onClick={() => descargaIcsHorario(borr, sim)}>Al calendario</button>
+              <button className="chip-btn" onClick={() => descargaIcsHorario(borr, sim)}>{tr('Al calendario', 'Add to calendar')}</button>
             )}
-            {horario && <button className="ghost" onClick={() => { onGuardar(null); onClose() }}>Quitar horario</button>}
+            {horario && <button className="ghost" onClick={() => { onGuardar(null); onClose() }}>{tr('Quitar horario', 'Remove schedule')}</button>}
           </div>
         </div>
       </div>
@@ -1658,7 +1712,7 @@ function Proximos() {
           <span className="proximo-titulo">{e.t}</span>
           <span className="proximo-tipo">{e.tipo}</span>
           <span className="proximo-nota">{e.n}</span>
-          {e.fecha && <button className="proximo-cal" onClick={() => descargaIcs(e)}>Al calendario</button>}
+          {e.fecha && <button className="proximo-cal" onClick={() => descargaIcs(e)}>{tr('Al calendario', 'Add to calendar')}</button>}
         </div>
       ))}
     </div>
@@ -1739,37 +1793,37 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
     <div className="wrap">
       <section className="hero">
         <div className="hero-titulo">
-          <p className="hero-eyebrow">Perfil compartido · solo lectura</p>
-          <h1>El maratón de <span className="rojo">{nombre}</span></h1>
+          <p className="hero-eyebrow">{tr('Perfil compartido · solo lectura', 'Shared profile · read-only')}</p>
+          <h1>{tr('El maratón de', 'The marathon of')} <span className="rojo">{nombre}</span></h1>
         </div>
         <div className="stats">
           <div className="stat">
-            <span className="stat-label">Horas vistas</span>
+            <span className="stat-label">{tr('Horas vistas', 'Hours watched')}</span>
             <span className="stat-num"><Cifra n={Math.round(est.vistoMin / 60)} /><small> / {Math.round(est.totMin / 60)} h</small></span>
             <div className="barra"><i style={{ width: `${pct}%` }} /></div>
-            <span className="stat-foot">{pct}% del maratón</span>
+            <span className="stat-foot">{pct}{tr('% del maratón', '% of the marathon')}</span>
           </div>
           <div className="stat">
-            <span className="stat-label">Títulos vistos</span>
+            <span className="stat-label">{tr('Títulos vistos', 'Titles watched')}</span>
             <span className="stat-num"><Cifra n={est.titulosVistos} /><small> / {est.titulosTot}</small></span>
-            <span className="stat-foot">películas, series y especiales</span>
+            <span className="stat-foot">{tr('películas, series y especiales', 'movies, series and specials')}</span>
           </div>
           <div className="stat">
-            <span className="stat-label">Cómics leídos</span>
+            <span className="stat-label">{tr('Cómics leídos', 'Comics read')}</span>
             <span className="stat-num"><Cifra n={est.comicsVistos} /><small> / {est.comicsTot}</small></span>
-            <span className="stat-foot">lecturas esenciales</span>
+            <span className="stat-foot">{tr('lecturas esenciales', 'essential reads')}</span>
           </div>
           <div className="stat">
-            <span className="stat-label">Bóveda de animación</span>
+            <span className="stat-label">{tr('Bóveda de animación', 'Animation vault')}</span>
             <span className="stat-num"><Cifra n={est.bovedaVistos} /><small> / {est.bovedaTot}</small></span>
-            <span className="stat-foot">episodios de las 17 series</span>
+            <span className="stat-foot">{tr('episodios de las 17 series', 'episodes across the 17 series')}</span>
           </div>
         </div>
-        <div className="mapa" aria-label="Mapa de progreso">
+        <div className="mapa" aria-label={tr('Mapa de progreso', 'Progress map')}>
           {est.sagas.map(sg => (
             <div className="mapa-fila" key={sg.saga}>
               <span className="mapa-label">
-                {sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? 'UCM' : sg.saga === 'animacion' ? 'Anim.' : 'Cómics'}
+                {sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? tr('UCM', 'MCU') : sg.saga === 'animacion' ? 'Anim.' : tr('Cómics', 'Comics')}
               </span>
               <div className="mapa-dots">
                 {sg.items.map(({ item, c }) => (
@@ -1786,7 +1840,7 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
         <Logros ctx={ctx} />
         {est.valoradas.length > 0 && (
           <section className="grafica">
-            <h3 className="grafica-titulo">Sus valoraciones</h3>
+            <h3 className="grafica-titulo">{tr('Sus valoraciones', 'Their ratings')}</h3>
             <div className="galeria-grid perfil-valoradas">
               {est.valoradas.map(({ item, c, punt, esComic }) => (
                 <div key={item.id} className="galeria-item perfil-item" title={item.t}>
@@ -1799,9 +1853,9 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
         )}
       </main>
       <footer>
-        <p className="nota-pie">Esta página es una instantánea de solo lectura del progreso de {nombre}.</p>
+        <p className="nota-pie">{tr(`Esta página es una instantánea de solo lectura del progreso de ${nombre}.`, `This page is a read-only snapshot of ${nombre}’s progress.`)}</p>
         <div className="reset">
-          <a className="accion-principal" href={window.location.pathname}>Crea tu propio maratón →</a>
+          <a className="accion-principal" href={window.location.pathname}>{tr('Crea tu propio maratón →', 'Start your own marathon →')}</a>
         </div>
       </footer>
     </div>
@@ -1825,10 +1879,10 @@ function CrearLista({ onCrear }) {
   const enviar = () => { const n = nombre.trim(); if (n) { onCrear(n); setNombre('') } }
   return (
     <div className="crear-lista">
-      <input className="busca sync-input" placeholder="Nombre de la lista (p. ej. Maratón con mi pareja)" autoComplete="off"
+      <input className="busca sync-input" placeholder={tr('Nombre de la lista (p. ej. Maratón con mi pareja)', 'List name (e.g. Marathon with my partner)')} autoComplete="off"
         value={nombre} maxLength={40} onChange={e => setNombre(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') enviar() }} aria-label="Nombre de la lista" />
-      <button className="accion-principal" onClick={enviar} disabled={!nombre.trim()}>Crear lista</button>
+        onKeyDown={e => { if (e.key === 'Enter') enviar() }} aria-label={tr('Nombre de la lista', 'List name')} />
+      <button className="accion-principal" onClick={enviar} disabled={!nombre.trim()}>{tr('Crear lista', 'Create list')}</button>
     </div>
   )
 }
@@ -1842,8 +1896,8 @@ function AgregarALista({ indice, idOrden, enLista, onAgregar }) {
       .slice(0, 6)
   return (
     <div className="agregar-lista">
-      <input className="busca sync-input" placeholder="Buscar título para añadir a la lista…" autoComplete="off" value={q}
-        onChange={e => setQ(e.target.value)} aria-label="Añadir título a la lista"
+      <input className="busca sync-input" placeholder={tr('Buscar título para añadir a la lista…', 'Search a title to add to the list…')} autoComplete="off" value={q}
+        onChange={e => setQ(e.target.value)} aria-label={tr('Añadir título a la lista', 'Add a title to the list')}
         spellCheck={false} autoComplete="off" />
       {resultados.length > 0 && (
         <div className="sugerencias">
@@ -1863,8 +1917,8 @@ function BorrarLista({ onBorrar }) {
   const [conf, setConf] = useState(false)
   return (
     <div className="borrar-lista">
-      <button className="chip-btn" onClick={() => setConf(c => !c)}>{conf ? 'Cancelar' : 'Eliminar esta lista'}</button>
-      {conf && <button className="chip-btn peligro" onClick={onBorrar}>¿Seguro? Sí, eliminar</button>}
+      <button className="chip-btn" onClick={() => setConf(c => !c)}>{conf ? tr('Cancelar', 'Cancel') : tr('Eliminar esta lista', 'Delete this list')}</button>
+      {conf && <button className="chip-btn peligro" onClick={onBorrar}>{tr('¿Seguro? Sí, eliminar', 'Sure? Yes, delete')}</button>}
     </div>
   )
 }
@@ -1896,7 +1950,7 @@ function Estrellas() {
 // MUTA los textos de `item` sin cambiar su identidad.
 const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, epHechos, miNota, lectura }) {
   let epProg = null
-  if (esComic && lectura && lectura.t > 1 && !vista) epProg = `pág. ${lectura.p + 1}/${lectura.t}`
+  if (esComic && lectura && lectura.t > 1 && !vista) epProg = tr(`pág. ${lectura.p + 1}/${lectura.t}`, `p. ${lectura.p + 1}/${lectura.t}`)
   if (item.tipo === 'serie' && EPISODES[item.id]) {
     const total = EPISODES[item.id].length
     const hechos = epHechos || 0
@@ -1906,30 +1960,30 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
     <article className={`card${vista ? ' vista' : ''}`} id={`card-${item.id}`}
       style={{ animationDelay: `${delay}ms`, '--glow': c[0] }}>
       <button className="checkbox" aria-pressed={vista} onClick={onToggle}
-        title={vista ? 'Vista — pulsa para marcar pendiente' : 'Pendiente — pulsa para marcar vista'}>
+        title={vista ? tr('Vista — pulsa para marcar pendiente', 'Watched — tap to mark as pending') : tr('Pendiente — pulsa para marcar vista', 'Pending — tap to mark as watched')}>
         <CheckIcon />
-        <span className="checkbox-label">{vista ? 'Vista' : ''}</span>
+        <span className="checkbox-label">{vista ? tr('Vista', 'Seen') : ''}</span>
       </button>
-      <button className="abrir" onClick={onAbrir} title="Ver ficha">
+      <button className="abrir" onClick={onAbrir} title={tr('Ver ficha', 'Open title')}>
         <span className="cover-wrap">
           <Portada item={item} c={c} esComic={esComic} />
           {item.s != null && !esComic && <span className="rating-badge">★ {item.s.toFixed(1)}</span>}
-          {vista && <span className="sello sello-mini" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
+          {vista && <span className="sello sello-mini" aria-hidden="true">{esComic ? tr('LEÍDO', 'READ') : tr('VISTA', 'SEEN')}</span>}
         </span>
         <span className="info">
           <span className="fila-titulo"><span className="num">{num}</span><span className="titulo">{item.t}</span></span>
           <span className="meta">
             {esComic
               ? <><span className="hist">{item.a}</span> · {item.r}</>
-              : <><span className="hist">{item.h}</span> · estreno {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
+              : <><span className="hist">{item.h}</span> · {tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
             {epProg && <span className="ep-prog"> · {epProg}</span>}
-            {miNota && <span className="mi-nota"> · Tú: ★{miNota}</span>}
+            {miNota && <span className="mi-nota"> · {tr('Tú', 'You')}: ★{miNota}</span>}
           </span>
           {item.res && <span className="res">{item.res}</span>}
           {(item.dir || item.cast) && (
             <span className="credits">
               {item.dir && <>Dir. {item.dir}</>}
-              {item.cast && <> · Con {item.cast.map(limpiaNombre).join(', ')}</>}
+              {item.cast && <> · {tr('Con', 'With')} {item.cast.map(limpiaNombre).join(', ')}</>}
             </span>
           )}
         </span>
@@ -1938,9 +1992,9 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
         {(item.opt || item.tipo === 'esp' || item.tipo === 'serie') && (
           <div className="chips">
             {item.opt
-              ? <span className="tipo opc">Opcional</span>
-              : item.tipo === 'esp' ? <span className="tipo esp">Especial</span>
-              : <span className="tipo serie">Serie</span>}
+              ? <span className="tipo opc">{tr('Opcional', 'Optional')}</span>
+              : item.tipo === 'esp' ? <span className="tipo esp">{tr('Especial', 'Special')}</span>
+              : <span className="tipo serie">{tr('Serie', 'Series')}</span>}
           </div>
         )}
       </div>
@@ -1959,6 +2013,13 @@ const platDe = (pais, item) => {
   return (PLATAFORMAS[pais] && PLATAFORMAS[pais][item.id]) || item.plat
 }
 const nombrePais = pais => (PAISES.find(p => p.id === pais) || PAISES[0]).nombre
+// nombre inglés de cada país (el generado trae solo el español); «the» donde
+// la gramática lo pide («Today in the United States»)
+const PAIS_EN = { ES: 'Spain', AR: 'Argentina', BO: 'Bolivia', CL: 'Chile', CO: 'Colombia', CR: 'Costa Rica', EC: 'Ecuador', SV: 'El Salvador', US: 'United States', GT: 'Guatemala', HN: 'Honduras', MX: 'Mexico', NI: 'Nicaragua', PA: 'Panama', PY: 'Paraguay', PE: 'Peru', DO: 'Dominican Republic', UY: 'Uruguay', VE: 'Venezuela' }
+const nombrePaisIdioma = pais => (IDIOMA_ACTUAL === 'en' ? PAIS_EN[pais] || nombrePais(pais) : nombrePais(pais))
+const nombrePaisTr = pais => (IDIOMA_ACTUAL === 'en'
+  ? ((pais === 'US' || pais === 'DO') ? 'the ' : '') + (PAIS_EN[pais] || nombrePais(pais))
+  : nombrePais(pais))
 // Dónde leer un cómic, de verdad y por país: Marvel Unlimited (todo el catálogo,
 // en inglés, suscripción), la tienda de Panini del país (edición en español, en
 // papel; Colombia y Perú no tienen tienda propia) y Kindle (Panini digital).
@@ -1975,14 +2036,14 @@ function DondeLeer({ item, pais }) {
   const amazon = pais === 'ES' ? 'https://www.amazon.es' : 'https://www.amazon.com'
   return (
     <div className="prov leer">
-      <span className="prov-label">Dónde leerlo</span>
+      <span className="prov-label">{tr('Dónde leerlo', 'Where to read it')}</span>
       <div className="prov-lista">
         <a className="prov-chip" href={`https://www.marvel.com/search?content_type=comics&query=${encodeURIComponent(item.en || item.t)}`}
           target="_blank" rel="noopener noreferrer">Marvel Unlimited</a>
-        {panini && <a className="prov-chip" href={panini + q} target="_blank" rel="noopener noreferrer">Panini {nombrePais(pais)}</a>}
+        {panini && <a className="prov-chip" href={panini + q} target="_blank" rel="noopener noreferrer">Panini {nombrePaisIdioma(pais)}</a>}
         <a className="prov-chip" href={`${amazon}/s?k=${q}+panini&i=digital-text`} target="_blank" rel="noopener noreferrer">Kindle</a>
       </div>
-      <p className="prov-nota">Marvel Unlimited tiene los 26 de esta lista (en inglés, por suscripción). Panini los edita en español, en papel y en Kindle; los enlaces abren la búsqueda del título.</p>
+      <p className="prov-nota">{tr('Marvel Unlimited tiene los 26 de esta lista (en inglés, por suscripción). Panini los edita en español, en papel y en Kindle; los enlaces abren la búsqueda del título.', 'Marvel Unlimited has all 26 on this list (subscription). Panini publishes them in Spanish, in print and on Kindle; the links open a search for the title.')}</p>
     </div>
   )
 }
@@ -2017,9 +2078,9 @@ function TuArchivo({ item, lectura, onLeer, onOlvida, onBiblioteca }) {
       setMeta(m)
       const reg = await leeArchivo(item.id)
       if (reg) onLeer(item, reg)
-      else setError('Se guardó pero no se pudo volver a leer: prueba a elegirlo otra vez')
+      else setError(tr('Se guardó pero no se pudo volver a leer: prueba a elegirlo otra vez', 'Saved but could not be read back: try picking it again'))
     } catch (x) {
-      setError('No se pudo guardar el archivo' + (x && x.message ? ': ' + x.message : ''))
+      setError(tr('No se pudo guardar el archivo', 'Could not save the file') + (x && x.message ? ': ' + x.message : ''))
     } finally { setOcupado(false) }
   }
   const abrir = async () => {
@@ -2028,32 +2089,32 @@ function TuArchivo({ item, lectura, onLeer, onOlvida, onBiblioteca }) {
     try {
       const reg = await leeArchivo(item.id)
       if (reg) onLeer(item, reg)
-      else { setMeta(null); setError('El archivo ya no está en este navegador: elígelo otra vez') }
-    } catch (x) { setError('No se pudo abrir' + (x && x.message ? ': ' + x.message : '')) }
+      else { setMeta(null); setError(tr('El archivo ya no está en este navegador: elígelo otra vez', 'The file is no longer in this browser: pick it again')) }
+    } catch (x) { setError(tr('No se pudo abrir', 'Could not open') + (x && x.message ? ': ' + x.message : '')) }
     finally { setOcupado(false) }
   }
   const quitar = async () => { gen.current++; setConfirmaQuitar(false); try { await borraArchivo(item.id) } catch {} setMeta(null); onOlvida(item.id); onBiblioteca() }
   useEffect(() => { setConfirmaQuitar(false) }, [item.id, meta])
   return (
     <div className="prov leer-aqui">
-      <span className="prov-label">Leer aquí</span>
+      <span className="prov-label">{tr('Leer aquí', 'Read here')}</span>
       <input ref={inputRef} type="file" hidden accept=".cbz,.cbr,.zip,.rar,.pdf,image/*" multiple onChange={elegir} />
       <div className="modal-acciones">
         {meta
           ? <>
               <button className="ghost" onClick={abrir} disabled={ocupado}>
-                {lectura && lectura.t > 1 ? `Seguir leyendo · pág. ${lectura.p + 1} de ${lectura.t}` : 'Abrir'}
+                {lectura && lectura.t > 1 ? tr(`Seguir leyendo · pág. ${lectura.p + 1} de ${lectura.t}`, `Keep reading · p. ${lectura.p + 1} of ${lectura.t}`) : tr('Abrir', 'Open')}
               </button>
-              <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>Cambiar archivo</button>
-              <button className="ghost" onClick={() => setConfirmaQuitar(v => !v)} disabled={ocupado} aria-expanded={confirmaQuitar}>{confirmaQuitar ? 'Cancelar' : 'Quitar'}</button>
-              {confirmaQuitar && <button className="chip-btn peligro" onClick={quitar} disabled={ocupado}>¿Seguro? Sí, quitar el archivo</button>}
+              <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>{tr('Cambiar archivo', 'Change file')}</button>
+              <button className="ghost" onClick={() => setConfirmaQuitar(v => !v)} disabled={ocupado} aria-expanded={confirmaQuitar}>{confirmaQuitar ? tr('Cancelar', 'Cancel') : tr('Quitar', 'Remove')}</button>
+              {confirmaQuitar && <button className="chip-btn peligro" onClick={quitar} disabled={ocupado}>{tr('¿Seguro? Sí, quitar el archivo', 'Sure? Yes, remove the file')}</button>}
             </>
           : meta === null
-            ? <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>Elegir mi archivo (CBZ, CBR, PDF o imágenes)</button>
+            ? <button className="ghost" onClick={() => inputRef.current && inputRef.current.click()} disabled={ocupado}>{tr('Elegir mi archivo (CBZ, CBR, PDF o imágenes)', 'Pick my file (CBZ, CBR, PDF or images)')}</button>
             : null}
       </div>
-      {meta && <p className="prov-nota">{meta.nombre} · {fmtTam(meta.tam)} · guardado en este navegador</p>}
-      {meta === null && <p className="prov-nota">Se lee dentro de la app y el archivo se queda en este navegador: no se sube a ningún sitio. Vale un CBZ o un CBR (pasan página a página; el CBR carga la primera vez un descompresor de 250 kB), las páginas como imágenes, o un PDF, que se abre con el visor del navegador (en iPhone solo enseña bien la primera página: allí mejor CBZ o CBR).</p>}
+      {meta && <p className="prov-nota">{meta.nombre} · {fmtTam(meta.tam)} · {tr('guardado en este navegador', 'stored in this browser')}</p>}
+      {meta === null && <p className="prov-nota">{tr('Se lee dentro de la app y el archivo se queda en este navegador: no se sube a ningún sitio. Vale un CBZ o un CBR (pasan página a página; el CBR carga la primera vez un descompresor de 250 kB), las páginas como imágenes, o un PDF, que se abre con el visor del navegador (en iPhone solo enseña bien la primera página: allí mejor CBZ o CBR).', 'It opens inside the app and the file stays in this browser: nothing gets uploaded. A CBZ or CBR works (page by page; CBR loads a 250 kB decompressor the first time), pages as images, or a PDF, which opens in the browser viewer (on iPhone only the first page shows well: prefer CBZ or CBR there).')}</p>}
       {error && <div className="aviso peligro">{error}</div>}
     </div>
   )
@@ -2103,14 +2164,14 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
     setError('')
     Promise.all(paginas.map(i => comic.pagina(i)))
       .then(u => { if (vivo) { setSrcs(u); if (pagRef.current) pagRef.current.scrollTop = 0 } })
-      .catch(e => { if (vivo) setError(e && e.message ? e.message : 'No se pudo leer la página') })
+      .catch(e => { if (vivo) setError(e && e.message ? e.message : tr('No se pudo leer la página', 'Could not read the page')) })
     return () => { vivo = false }
   }, [clavePags, comic])
   useEffect(() => {
     let c = null, vivo = true
     abreComic(registro)
       .then(x => { if (!vivo) { x.cierra(); return } c = x; setComic(x); setPag(p => Math.max(0, Math.min(p, x.tot - 1))) })
-      .catch(e => { if (vivo) setError(e && e.message ? e.message : 'No se pudo abrir') })
+      .catch(e => { if (vivo) setError(e && e.message ? e.message : tr('No se pudo abrir', 'Could not open')) })
     return () => { vivo = false; if (c) c.cierra() }
   }, [registro])
   useEffect(() => { if (comic && comic.tipo === 'imagenes') onPagina(pag, comic.tot) }, [pag, comic])
@@ -2167,31 +2228,31 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   }
   const ultima = comic && comic.tipo === 'imagenes' && paginas[paginas.length - 1] === tot - 1
   return (
-    <div className={`lector${ancho ? ' ancho' : ''}${controles ? '' : ' sin-controles'}`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Leyendo ${item.t}`}>
-      <button className="cerrar lector-cerrar" onClick={onCerrar} aria-label="Cerrar el lector">✕</button>
+    <div className={`lector${ancho ? ' ancho' : ''}${controles ? '' : ' sin-controles'}`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr(`Leyendo ${item.t}`, `Reading ${item.t}`)}>
+      <button className="cerrar lector-cerrar" onClick={onCerrar} aria-label={tr('Cerrar el lector', 'Close the reader')}>✕</button>
       {error
         ? <div className="lector-centro"><div className="aviso peligro centrado">{error}</div></div>
         : !comic
-          ? <div className="lector-centro"><p className="lector-estado">Abriendo {item.t}…</p></div>
+          ? <div className="lector-centro"><p className="lector-estado">{tr(`Abriendo ${item.t}…`, `Opening ${item.t}…`)}</p></div>
           : comic.tipo === 'pdf'
-            ? <iframe className="lector-pdf" src={comic.url} title={`Leyendo ${item.t}`} />
+            ? <iframe className="lector-pdf" src={comic.url} title={tr(`Leyendo ${item.t}`, `Reading ${item.t}`)} />
             : <div className={`lector-pag${enDoble ? ' doble' : ''}`} ref={pagRef} onTouchStart={onTS} onTouchEnd={onTE} onClick={onClickPag}>
-                {paginas.map((i, k) => srcs[k] && <img key={k} src={srcs[k]} alt={`Página ${i + 1} de ${tot}`} draggable={false} />)}
+                {paginas.map((i, k) => srcs[k] && <img key={k} src={srcs[k]} alt={tr(`Página ${i + 1} de ${tot}`, `Page ${i + 1} of ${tot}`)} draggable={false} />)}
               </div>}
       {comic && comic.tipo === 'imagenes' && pista && controles && (
-        <p className="lector-pista" role="status">Toca los lados o desliza para pasar página · toca el centro para esconder los controles</p>
+        <p className="lector-pista" role="status">{tr('Toca los lados o desliza para pasar página · toca el centro para esconder los controles', 'Tap the sides or swipe to turn the page · tap the middle to hide the controls')}</p>
       )}
       {comic && comic.tipo === 'imagenes' && controles && (
         <div className="lector-progreso" aria-hidden="true"><span style={{ width: `${Math.round(100 * (paginas[paginas.length - 1] + 1) / tot)}%` }} /></div>
       )}
       {comic && comic.tipo === 'imagenes' && controles && (
         <div className="lector-barra">
-          <button className="ghost lector-flecha" onClick={ant} disabled={pag === 0} aria-label="Página anterior">‹</button>
+          <button className="ghost lector-flecha" onClick={ant} disabled={pag === 0} aria-label={tr('Página anterior', 'Previous page')}>‹</button>
           <span className="lector-contador"><b>{paginas.length > 1 ? `${paginas[0] + 1}–${paginas[paginas.length - 1] + 1}` : pag + 1}</b> / {tot}<span className="lector-titulo"> · {item.t}</span></span>
-          <button className="ghost lector-flecha" onClick={sig} disabled={pag >= tot - 1} aria-label="Página siguiente">›</button>
-          <button className="ghost" aria-pressed={ancho} onClick={() => ponAncho(!ancho)}>{ancho ? 'Ver entera' : 'Ajustar al ancho'}</button>
-          {apaisado && !ancho && tot > 1 && <button className="ghost" aria-pressed={doble} onClick={() => ponDoble(!doble)}>{doble ? 'Una página' : 'Doble página'}</button>}
-          {ultima && !leido && <button className="accion-principal lector-fin" onClick={onLeido}>Marcar como leído</button>}
+          <button className="ghost lector-flecha" onClick={sig} disabled={pag >= tot - 1} aria-label={tr('Página siguiente', 'Next page')}>›</button>
+          <button className="ghost" aria-pressed={ancho} onClick={() => ponAncho(!ancho)}>{ancho ? tr('Ver entera', 'Fit page') : tr('Ajustar al ancho', 'Fit width')}</button>
+          {apaisado && !ancho && tot > 1 && <button className="ghost" aria-pressed={doble} onClick={() => ponDoble(!doble)}>{doble ? tr('Una página', 'Single page') : tr('Doble página', 'Two-page spread')}</button>}
+          {ultima && !leido && <button className="accion-principal lector-fin" onClick={onLeido}>{tr('Marcar como leído', 'Mark as read')}</button>}
         </div>
       )}
     </div>
@@ -2378,8 +2439,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
       {/* fuera de .modal: dentro quedaban recortadas por su overflow y le añadían scroll */}
       {onNav && (
         <>
-          <button className="nav-ficha izq" onClick={e => { e.stopPropagation(); onNav(-1) }} aria-label="Título anterior" title="Anterior (←)">‹</button>
-          <button className="nav-ficha der" onClick={e => { e.stopPropagation(); onNav(1) }} aria-label="Título siguiente" title="Siguiente (→)">›</button>
+          <button className="nav-ficha izq" onClick={e => { e.stopPropagation(); onNav(-1) }} aria-label={tr('Título anterior', 'Previous title')} title={tr('Anterior (←)', 'Previous (←)')}>‹</button>
+          <button className="nav-ficha der" onClick={e => { e.stopPropagation(); onNav(1) }} aria-label={tr('Título siguiente', 'Next title')} title={tr('Siguiente (→)', 'Next (→)')}>›</button>
         </>
       )}
       <div className="modal" ref={refModal} onClick={e => e.stopPropagation()}>
@@ -2389,14 +2450,14 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             <span className="mf-velo" />
           </div>
         )}
-        <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
+        <button className="cerrar" onClick={onClose} aria-label={tr('Cerrar', 'Close')}>✕</button>
         <div className="modal-cover">
           <div className="modal-portada" ref={refPortada}>
             <Portada item={item} c={c} esComic={esComic} />
-            {vista && <span className="sello" aria-hidden="true">{esComic ? 'LEÍDO' : 'VISTA'}</span>}
+            {vista && <span className="sello" aria-hidden="true">{esComic ? tr('LEÍDO', 'READ') : tr('VISTA', 'SEEN')}</span>}
           </div>
           <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
-            {vista ? '✓ Vista — marcar pendiente' : esComic ? 'Marcar como leído' : 'Marcar como vista'}
+            {vista ? tr('✓ Vista — marcar pendiente', '✓ Watched — mark pending') : esComic ? tr('Marcar como leído', 'Mark as read') : tr('Marcar como vista', 'Mark as watched')}
           </button>
         </div>
         {persona ? (
@@ -2407,39 +2468,39 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
         <div className={cambios ? 'modal-info modal-cambio' : 'modal-info'} key={cambios}>
           <div className="modal-chips">
             {item.uni && <span className="tipo uni">{item.uni}</span>}
-            {item.tipo === 'serie' && <span className="tipo serie">Serie</span>}
-            {item.tipo === 'esp' && <span className="tipo esp">Especial</span>}
-            {item.opt && <span className="tipo opc">Opcional</span>}
+            {item.tipo === 'serie' && <span className="tipo serie">{tr('Serie', 'Series')}</span>}
+            {item.tipo === 'esp' && <span className="tipo esp">{tr('Especial', 'Special')}</span>}
+            {item.opt && <span className="tipo opc">{tr('Opcional', 'Optional')}</span>}
             {platDe(pais, item) && <span className="tipo plat">{platDe(pais, item)}</span>}
           </div>
           <h2 className="modal-titulo">{item.t}</h2>
           <p className="modal-meta">
-            {item.s != null && <span className="star">★ {item.s.toFixed(1)} en IMDb · </span>}
+            {item.s != null && <span className="star">★ {item.s.toFixed(1)} {tr('en IMDb', 'on IMDb')} · </span>}
             {esComic
               ? <>{item.a} · {item.r}</>
-              : <><span className="hist">{item.h}</span> · estreno {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
+              : <><span className="hist">{item.h}</span> · {tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
           </p>
           {item.res && <p className="modal-res">{item.res}</p>}
           {item.n && <p className="modal-nota">{item.n}</p>}
           {item.pc != null && (
             <p className={`modal-pc${item.pc === '0' ? ' sin' : ''}`}>
               {item.pc === '0'
-                ? <>Sin escenas post-créditos{item.pcn ? ` — ${item.pcn}` : ' — puedes saltarte los créditos'}</>
-                : <>Escenas en los créditos: <b>{item.pc}</b>{item.pcn ? ` · ${item.pcn}` : ''}</>}
+                ? <>{tr('Sin escenas post-créditos', 'No post-credit scenes')}{item.pcn ? ` — ${item.pcn}` : tr(' — puedes saltarte los créditos', ' — you can skip the credits')}</>
+                : <>{tr('Escenas en los créditos: ', 'Scenes in the credits: ')}<b>{item.pc}</b>{item.pcn ? ` · ${item.pcn}` : ''}</>}
             </p>
           )}
           {(directores.length > 0 || item.cast) && (
             <section className="reparto">
-              <h3 className="reparto-titulo">Dirección y reparto</h3>
+              <h3 className="reparto-titulo">{tr('Dirección y reparto', 'Direction and cast')}</h3>
               <div className="carril-personas">
               {directores.map(p => (
                 <button className="persona" key={p}
-                  onClick={() => setPersona({ nombre: p, rol: 'Dirección',
+                  onClick={() => setPersona({ nombre: p, rol: tr('Dirección', 'Direction'),
                     tmdbId: extra && extra.reparto && extra.reparto[clave(p)] && extra.reparto[clave(p)].id })}
-                  title={`Ver a ${p} en tu maratón`}>
+                  title={tr(`Ver a ${p} en tu maratón`, `See ${p} in your marathon`)}>
                   <Avatar nombre={p} />
                   <span className="persona-nombre">{p}</span>
-                  <span className="persona-rol">Dirección</span>
+                  <span className="persona-rol">{tr('Dirección', 'Direction')}</span>
                 </button>
               ))}
               {(() => {
@@ -2457,11 +2518,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                   const papel = typeof c.p === 'string' && c.p ? c.p : null
                   return (
                     <button className="persona" key={c.n + i}
-                      onClick={() => setPersona({ nombre: c.n, rol: 'Reparto', papel, tmdbId: c.id })}
-                      title={papel ? `${c.n} — ${papel}` : `Ver a ${c.n} en tu maratón`}>
+                      onClick={() => setPersona({ nombre: c.n, rol: tr('Reparto', 'Cast'), papel, tmdbId: c.id })}
+                      title={papel ? `${c.n} — ${papel}` : tr(`Ver a ${c.n} en tu maratón`, `See ${c.n} in your marathon`)}>
                       <Avatar nombre={c.n} foto={c.f} />
                       <span className="persona-nombre">{c.n}</span>
-                      <span className="persona-rol">{papel || 'Reparto'}</span>
+                      <span className="persona-rol">{papel || tr('Reparto', 'Cast')}</span>
                     </button>
                   )
                 })
@@ -2475,7 +2536,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             const provs = (extra.provPais && Array.isArray(extra.provPais[pais])) ? extra.provPais[pais] : (Array.isArray(extra.prov) ? extra.prov : [])
             return provs.length > 0 && (
             <div className="prov">
-              <span className="prov-label">Hoy en {nombrePais(pais)}</span>
+              <span className="prov-label">{tr('Hoy en ', 'Today in ')}{nombrePaisTr(pais)}</span>
               <div className="prov-lista">
                 {provs.map((pv, i) => {
                   // la caché vieja guardaba texto suelto: se acepta la forma antigua
@@ -2496,20 +2557,20 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             )
           })()}
           <div className="valoracion">
-            <span className="valoracion-label">Tu valoración</span>
-            <span className="estrellas" role="radiogroup" aria-label="Tu valoración">
+            <span className="valoracion-label">{tr('Tu valoración', 'Your rating')}</span>
+            <span className="estrellas" role="radiogroup" aria-label={tr('Tu valoración', 'Your rating')}>
               {[1, 2, 3, 4, 5].map(p => (
                 <button key={p} className={`estrella${nota.p >= p ? ' on' : ''}`}
-                  aria-label={`${p} estrellas`} onClick={() => ponNota('p', p)}>{nota.p >= p ? '★' : '☆'}</button>
+                  aria-label={tr(`${p} estrellas`, `${p} stars`)} onClick={() => ponNota('p', p)}>{nota.p >= p ? '★' : '☆'}</button>
               ))}
             </span>
-            <input className="busca nota-input" placeholder="Tus notas (solo tuyas)…" autoComplete="off"
+            <input className="busca nota-input" placeholder={tr('Tus notas (solo tuyas)…', 'Your notes (yours only)…')} autoComplete="off"
               value={nota.txt || ''} maxLength={280} spellCheck={true}
-              onChange={e => ponNota('txt', e.target.value)} aria-label="Tus notas" />
+              onChange={e => ponNota('txt', e.target.value)} aria-label={tr('Tus notas', 'Your notes')} />
           </div>
           {listas && listas.length > 0 && (
             <div className="valoracion">
-              <span className="valoracion-label">Listas</span>
+              <span className="valoracion-label">{tr('Listas', 'Lists')}</span>
               <span className="detalle-listas">
                 {listas.map(l => (
                   <button key={l.id} className="chip-btn" aria-pressed={l.items.includes(item.id)}
@@ -2527,12 +2588,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
             return (
               <div className="episodios">
                 <div className="episodios-head">
-                  <h3>Episodios</h3>
+                  <h3>{tr('Episodios', 'Episodes')}</h3>
                   <span className="episodios-count">{hechos}/{lista.length}</span>
                 </div>
                 {temporadas.map(t => (
                   <div key={t}>
-                    {temporadas.length > 1 && <div className="temporada">Temporada {t}</div>}
+                    {temporadas.length > 1 && <div className="temporada">{tr('Temporada', 'Season')} {t}</div>}
                     <div className="ep-lista">
                       {lista.filter(e => e.s === t).map(e => {
                         const clave = `${item.id}:${e.s}:${e.n}`
@@ -2544,7 +2605,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                           <div key={clave} className={`ep${hecho ? ' hecho' : ''}`}>
                             <button className="ep-toggle"
                               onClick={() => toggleEp(clave)}
-                              title={hecho ? 'Marcar pendiente' : 'Marcar visto'}>
+                              title={hecho ? tr('Marcar pendiente', 'Mark pending') : tr('Marcar visto', 'Mark watched')}>
                               <span className="ep-thumb" style={{ background: `linear-gradient(135deg, ${c[0]}, ${c[1]})` }}>
                                 {tm && tm.im
                                   ? <img className="ep-img real" src={TMDB_IMG + 'w300' + tm.im} alt="" loading="lazy" />
@@ -2556,11 +2617,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                                 {/* el título va recortado con puntos suspensivos cuando no cabe
                                     —una de cada diez filas—, así que el completo se deja a mano */}
                                 <span className="ep-titulo" title={e.t}>{e.t}</span>
-                                {e.f && <span className="ep-fecha">{new Date(e.f + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                                {e.f && <span className="ep-fecha">{new Date(e.f + 'T00:00:00').toLocaleDateString(LOC(), { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                               </span>
                             </button>
                             {sinopsis && (
-                              <button className={`ep-sin-btn${abierta ? ' on' : ''}`} aria-label="Sinopsis del episodio"
+                              <button className={`ep-sin-btn${abierta ? ' on' : ''}`} aria-label={tr('Sinopsis del episodio', 'Episode synopsis')}
                                 onClick={() => setSinAbierta(abierta ? null : clave)}>ⓘ</button>
                             )}
                             {abierta && sinopsis && (
@@ -2569,7 +2630,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                                 : <p className="ep-sinopsis velada" role="button" tabIndex={0}
                                     onClick={() => setDesveladas(v => ({ ...v, [clave]: true }))}
                                     onKeyDown={ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setDesveladas(v => ({ ...v, [clave]: true })) } }}>
-                                    <span className="ep-sin-aviso">Aún no lo has visto: pulsa para desvelar la sinopsis</span>
+                                    <span className="ep-sin-aviso">{tr('Aún no lo has visto: pulsa para desvelar la sinopsis', 'You haven’t watched it yet: tap to reveal the synopsis')}</span>
                                     <span className="ep-sin-borroso" aria-hidden="true">{sinopsis}</span>
                                   </p>
                             )}
@@ -2586,7 +2647,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
           {verTrailer && extra && extra.trailer && (
             <div className="trailer-caja">
               <iframe src={`https://www.youtube-nocookie.com/embed/${extra.trailer}?autoplay=1`}
-                title={`Tráiler de ${item.t}`} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+                title={tr(`Tráiler de ${item.t}`, `Trailer for ${item.t}`)} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
             </div>
           )}
           <div className="modal-acciones">
@@ -2594,9 +2655,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
               <>
                 {extra && extra.trailer
                   ? <button className="ghost" aria-pressed={verTrailer} onClick={() => setVerTrailer(v => !v)}>
-                      {verTrailer ? <><IcoCerrar />Cerrar tráiler</> : <><IcoPlay />Tráiler</>}
+                      {verTrailer ? <><IcoCerrar />{tr('Cerrar tráiler', 'Close trailer')}</> : <><IcoPlay />{tr('Tráiler', 'Trailer')}</>}
                     </button>
-                  : <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer"><IcoPlay />Tráiler</a>}
+                  : <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer"><IcoPlay />{tr('Tráiler', 'Trailer')}</a>}
                 <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb<IcoFuera /></a>
                 {!item.tipo && (
                   <a className="ghost" href={`https://letterboxd.com/search/films/${encodeURIComponent(item.t)}/`}
@@ -2610,11 +2671,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, nota, ponNota, li
                 setEnlaceCopiado(true)
                 setTimeout(() => setEnlaceCopiado(false), 2000)
               } catch {}
-            }}>{enlaceCopiado ? '✓ Copiado' : <><IcoEnlace />Enlace</>}</button>
+            }}>{enlaceCopiado ? tr('✓ Copiado', '✓ Copied') : <><IcoEnlace />{tr('Enlace', 'Link')}</>}</button>
             {!!navigator.share && (
               <button className="ghost" onClick={() => {
                 navigator.share({ url: `${window.location.origin}${window.location.pathname}?t=${item.id}`, title: item.t }).catch(() => {})
-              }}>Compartir…</button>
+              }}>{tr('Compartir…', 'Share…')}</button>
             )}
           </div>
         </div>
@@ -2648,17 +2709,17 @@ function Actividad({ vistas, eps }) {
   const tono = n => `color-mix(in srgb, var(--red) ${25 + 75 * n / max}%, var(--panel2))`
   // El title de cada celda no existe con el dedo: los valores viven también en
   // texto (resumen y escala), y el diario de abajo es la tabla gemela.
-  const resumen = `${total} marcas en ${diasActivos} día${diasActivos === 1 ? '' : 's'} de los últimos 140` + (max > 1 ? ` · máximo ${max} en un día` : '')
+  const resumen = tr(`${total} marcas en ${diasActivos} día${diasActivos === 1 ? '' : 's'} de los últimos 140`, `${total} check-offs on ${diasActivos} day${diasActivos === 1 ? '' : 's'} of the last 140`) + (max > 1 ? tr(` · máximo ${max} en un día`, ` · at most ${max} in one day`) : '')
   return (
     <section className="grafica">
-      <h3 className="grafica-titulo">Actividad del maratón</h3>
+      <h3 className="grafica-titulo">{tr('Actividad del maratón', 'Marathon activity')}</h3>
       <p className="grafica-sub">
-        Últimas 20 semanas · {resumen}{racha > 0 ? ` · 🔥 racha de ${racha} día${racha > 1 ? 's' : ''}` : ''}
+        {tr('Últimas 20 semanas', 'Last 20 weeks')} · {resumen}{racha > 0 ? tr(` · 🔥 racha de ${racha} día${racha > 1 ? 's' : ''}`, ` · 🔥 ${racha}-day streak`) : ''}
       </p>
-      <div className="heatmap" role="img" aria-label={`Calendario de actividad: ${resumen}`}>
+      <div className="heatmap" role="img" aria-label={tr(`Calendario de actividad: ${resumen}`, `Activity calendar: ${resumen}`)}>
         {celdas.map(c => (
           <span key={c.t} className="hm-celda"
-            title={`${c.f.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}: ${c.n} marca${c.n === 1 ? '' : 's'}`}
+            title={`${c.f.toLocaleDateString(LOC(), { day: 'numeric', month: 'short' })}: ${tr(`${c.n} marca${c.n === 1 ? '' : 's'}`, `${c.n} check-off${c.n === 1 ? '' : 's'}`)}`}
             style={c.n ? { background: tono(c.n) } : undefined} />
         ))}
       </div>
@@ -2667,7 +2728,7 @@ function Actividad({ vistas, eps }) {
         <i />
         {[1, 2, 3].filter(n => n <= max).map(n => <i key={n} style={{ background: tono(n) }} />)}
         {max > 3 && <i style={{ background: tono(max) }} />}
-        <span>{max > 1 ? `${max} marcas` : '1 marca'}</span>
+        <span>{max > 1 ? tr(`${max} marcas`, `${max} check-offs`) : tr('1 marca', '1 check-off')}</span>
       </div>
     </section>
   )
@@ -2690,8 +2751,8 @@ function Logros({ ctx }) {
   const desbloqueados = LOGROS.filter(l => l.f(ctx)).length
   return (
     <section className="grafica">
-      <h3 className="grafica-titulo">Logros</h3>
-      <p className="grafica-sub">{desbloqueados} de {LOGROS.length} desbloqueados</p>
+      <h3 className="grafica-titulo">{tr('Logros', 'Achievements')}</h3>
+      <p className="grafica-sub">{desbloqueados} {tr('de', 'of')} {LOGROS.length} {tr('desbloqueados', 'unlocked')}</p>
       <div className="logros">
         {LOGROS.map(l => {
           const ok = l.f(ctx)
@@ -2726,15 +2787,15 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   x.save(); x.translate(80, 84); x.transform(1, 0, -0.14, 1, 0, 0)
   x.fillStyle = '#E5484D'; x.fillRect(0, 0, 470, 46); x.restore()
   x.fillStyle = '#fff'; x.font = '700 21px Archivo, sans-serif'
-  x.fillText('GUÍA DE MARATÓN · MI PROGRESO', 100, 115)
+  x.fillText(tr('GUÍA DE MARATÓN · MI PROGRESO', 'MARATHON GUIDE · MY PROGRESS'), 100, 115)
 
   // Título
   const g1 = x.createLinearGradient(80, 0, 980, 0)
   g1.addColorStop(0, '#F2EFE6'); g1.addColorStop(.45, '#E5484D'); g1.addColorStop(1, '#F5B822')
   x.fillStyle = g1
   x.font = '400 88px "Archivo Black", Archivo, sans-serif'
-  x.fillText('MARATÓN', 80, 246)
-  x.fillText('MARVEL & X-MEN', 80, 340)
+  x.fillText(tr('MARATÓN', 'MARVEL & X-MEN'), 80, 246)
+  x.fillText(tr('MARVEL & X-MEN', 'MARATHON'), 80, 340)
 
   // Porcentaje gigante
   const pct = est.totMin ? Math.round(100 * est.vistoMin / est.totMin) : 0
@@ -2744,7 +2805,7 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   x.font = '400 230px "Archivo Black", Archivo, sans-serif'
   x.fillText(pct + '%', 74, 650)
   x.fillStyle = '#A39F92'; x.font = '500 34px Archivo, sans-serif'
-  x.fillText(`${est.titulosVistos} de ${est.titulosTot} títulos · ${Math.round(est.vistoMin / 60)} de ${Math.round(est.totMin / 60)} horas vistas`, 80, 716)
+  x.fillText(tr(`${est.titulosVistos} de ${est.titulosTot} títulos · ${Math.round(est.vistoMin / 60)} de ${Math.round(est.totMin / 60)} horas vistas`, `${est.titulosVistos} of ${est.titulosTot} titles · ${Math.round(est.vistoMin / 60)} of ${Math.round(est.totMin / 60)} hours watched`), 80, 716)
 
   // Barras por saga
   const filas = []
@@ -2753,9 +2814,9 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   const suma = fs => fs.reduce((a, f) => [a[0] + f.visto, a[1] + f.tot, a[2] + f.vistos, a[3] + f.items], [0, 0, 0, 0])
   const [xv, xt, xvi, xit] = suma(fx)
   const [uv, ut, uvi, uit] = suma(fu)
-  filas.push(['SAGA X-MEN', xvi, xit, xt ? xv / xt : 0, '#F5B822'])
-  filas.push(['UCM', uvi, uit, ut ? uv / ut : 0, '#E5484D'])
-  filas.push(['CÓMICS', comicsVistos, comicsTot, comicsTot ? comicsVistos / comicsTot : 0, '#9B7BD8'])
+  filas.push([tr('SAGA X-MEN', 'X-MEN SAGA'), xvi, xit, xt ? xv / xt : 0, '#F5B822'])
+  filas.push([tr('UCM', 'MCU'), uvi, uit, ut ? uv / ut : 0, '#E5484D'])
+  filas.push([tr('CÓMICS', 'COMICS'), comicsVistos, comicsTot, comicsTot ? comicsVistos / comicsTot : 0, '#9B7BD8'])
   let y = 800
   filas.forEach(([nombre, v, n, frac, color]) => {
     x.fillStyle = '#F2EFE6'; x.font = '700 26px Archivo, sans-serif'
@@ -2778,9 +2839,9 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
     x.strokeStyle = '#2E7D32'; x.lineWidth = 3
     x.beginPath(); x.roundRect(80, y + 10, 920, 110, 14); x.stroke()
     x.fillStyle = '#5FD068'; x.font = '700 24px Archivo, sans-serif'
-    x.fillText('PRÓXIMO GRAN ESTRENO', 116, y + 56)
+    x.fillText(tr('PRÓXIMO GRAN ESTRENO', 'NEXT BIG PREMIERE'), 116, y + 56)
     x.fillStyle = '#F2EFE6'; x.font = '400 34px "Archivo Black", Archivo, sans-serif'
-    x.fillText(`${objetivo.t.toUpperCase()} · FALTAN ${dias} DÍAS`, 116, y + 100)
+    x.fillText(tr(`${objetivo.t.toUpperCase()} · FALTAN ${dias} DÍAS`, `${objetivo.t.toUpperCase()} · ${dias} DAYS TO GO`), 116, y + 100)
   }
 
   // Pie
@@ -2790,7 +2851,7 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   const blob = await new Promise(res => cv.toBlob(res, 'image/png'))
   const archivo = new File([blob], 'maraton-marvel.png', { type: 'image/png' })
   if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-    try { await navigator.share({ files: [archivo], title: 'Mi maratón Marvel' }); return } catch {}
+    try { await navigator.share({ files: [archivo], title: tr('Mi maratón Marvel', 'My Marvel marathon') }); return } catch {}
   }
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob); a.download = 'maraton-marvel.png'
@@ -2812,7 +2873,7 @@ export default function App() {
       if (!j || typeof j !== 'object') return null
       const notas = Array.isArray(j.r) ? j.r : []
       return {
-        nombre: typeof j.n === 'string' && j.n.trim() ? j.n.trim().slice(0, 40) : 'Alguien',
+        nombre: typeof j.n === 'string' && j.n.trim() ? j.n.trim().slice(0, 40) : tr('Alguien', 'Someone'),
         vistasP: deBits(typeof j.v === 'string' ? j.v : '', ORDEN_IDS),
         epsP: deBits(typeof j.e === 'string' ? j.e : '', ORDEN_EPS),
         notasP: Object.fromEntries(notas
@@ -2974,13 +3035,19 @@ export default function App() {
       if (g && PAISES.some(x => x.id === g)) p = g
       else if (region && PAISES.some(x => x.id === region.toUpperCase())) p = region.toUpperCase()
     } catch {}
-    aplicaTitulos(p)
+    aplicaTitulos(p, leeIdiomaGuardado())
     return p
   })
+  const [idioma, setIdioma] = useState(leeIdiomaGuardado)
   const ponPais = id => {
-    aplicaTitulos(id)
+    aplicaTitulos(id, idioma)
     setPais(id)
     try { localStorage.setItem('maraton-marvel-pais-v1', id) } catch {}
+  }
+  const ponIdioma = id => {
+    aplicaTitulos(pais, id)
+    setIdioma(id)
+    try { localStorage.setItem(KEY_IDIOMA, id) } catch {}
   }
   const [instalable, setInstalable] = useState(null)
   useEffect(() => {
@@ -3371,7 +3438,7 @@ export default function App() {
   const pasaFiltro = (item, esComic) => {
     if (buscaLenta) {
       // se busca por los dos títulos: «Lobezno» y «Wolverine» abren la misma ficha
-      const pajar = norm([item.t, T_ES[item.id] || '', TITULOS_LATAM[item.id] || '', item.dir || '', ...(item.cast || []), String(item.r)].join(' '))
+      const pajar = norm([item.t, T_ES[item.id] || '', TITULOS_LATAM[item.id] || '', TITULOS_EN[item.id] || '', item.en || '', item.dir || '', ...(item.cast || []), String(item.r)].join(' '))
       if (!pajar.includes(norm(buscaLenta))) return false
     }
     if (filtros.series && item.tipo === 'serie') return false
@@ -3409,7 +3476,7 @@ export default function App() {
       if (!extra) { totV += v; totN += n; mins += m }
     })
     return { totV, totN, mins, siguiente, porSaga }
-  }, [vistas, filtros, pais])
+  }, [vistas, filtros, pais, idioma])
 
   const estadisticas = useMemo(() => {
     const minutosVistos = item => {
@@ -3423,7 +3490,7 @@ export default function App() {
     }
     const fases = []
     let totMin = 0, vistoMin = 0, titulosVistos = 0, titulosTot = 0
-    const tipos = { peli: { t: 'Películas', tot: 0, visto: 0 }, serie: { t: 'Series', tot: 0, visto: 0 }, esp: { t: 'Especiales', tot: 0, visto: 0 } }
+    const tipos = { peli: { t: tr('Películas', 'Movies'), tot: 0, visto: 0 }, serie: { t: tr('Series', 'Series'), tot: 0, visto: 0 }, esp: { t: tr('Especiales', 'Specials'), tot: 0, visto: 0 } }
     DATA.forEach(saga => {
       if (saga.saga === 'comics' || saga.saga === 'animacion') return
       saga.eras.forEach(era => {
@@ -3455,7 +3522,7 @@ export default function App() {
     const comicsTot = comics.eras.reduce((a, e) => a + e.items.length, 0)
     const comicsVistos = comics.eras.reduce((a, e) => a + e.items.filter(i => vistas[i.id]).length, 0)
     return { fases, totMin, vistoMin, titulosVistos, titulosTot, tipos: Object.values(tipos), epVistos, epTot, bovedaEpVistos, bovedaEpTot, comicsTot, comicsVistos }
-  }, [vistas, eps, pais])
+  }, [vistas, eps, pais, idioma])
 
   const indice = useMemo(() => {
     const m = {}
@@ -3572,7 +3639,7 @@ export default function App() {
       grupos.get(it.r).push(it)
     })
     return [...grupos.entries()]
-  }, [filtros, pais])
+  }, [filtros, pais, idioma])
 
   const oculto = (item, esComic) => filtros.vistas && vistas[item.id] && pasaFiltro(item, esComic)
 
@@ -3588,7 +3655,7 @@ export default function App() {
       if (pasaFiltro(it, esComic) && !(filtros.vistas && vistas[it.id])) vis++
     })))
     return { activos, tot, vis }
-  }, [filtros, buscaLenta, vistas, pais])
+  }, [filtros, buscaLenta, vistas, pais, idioma])
   const limpiaFiltros = () => {
     setFiltros(sinFiltros())
     setBusca('')
@@ -3615,17 +3682,17 @@ export default function App() {
   // el título de la pestaña sigue a lo que estás mirando: historial y
   // enlaces compartidos dejan de llamarse todos igual
   useEffect(() => {
-    const base = 'Maratón Marvel & X-Men'
+    const base = tr('Maratón Marvel & X-Men', 'Marvel & X-Men Marathon')
     if (detalle) { document.title = `${detalle.item.t} · ${base}`; return }
     const p = PESTANAS.find(x => x.id === vista)
-    document.title = (!p || vista === 'crono') ? base : `${p.label} · ${base}`
-  }, [vista, detalle])
+    document.title = (!p || vista === 'crono') ? base : `${tr(p.label, p.en || p.label)} · ${base}`
+  }, [vista, detalle, idioma])
 
   if (perfil) return <PerfilView {...perfil} />
 
   return (
     <div className="wrap">
-      <a className="saltar" href="#contenido">Saltar al contenido</a>
+      <a className="saltar" href="#contenido">{tr('Saltar al contenido', 'Skip to content')}</a>
       {fondo === 'banner' && proxEstreno?.img && (
         <div className="fondo-hero fh-banner" aria-hidden="true">
           <img src={proxEstreno.img} alt="" decoding="async"
@@ -3644,23 +3711,23 @@ export default function App() {
       )}
       <section className="hero">
         <div className="hero-titulo">
-          <p className="hero-eyebrow">Guía de maratón · cronología completa</p>
-          <h1>Maratón <span className="rojo">Marvel</span> &amp; X-Men</h1>
+          <p className="hero-eyebrow">{tr('Guía de maratón · cronología completa', 'Marathon guide · the full chronology')}</p>
+          <h1>{tr(<>Maratón <span className="rojo">Marvel</span> &amp; X-Men</>, <><span className="rojo">Marvel</span> &amp; X-Men Marathon</>)}</h1>
         </div>
         <div className="stats">
           <div className="stat">
-            <span className="stat-label">Completados</span>
+            <span className="stat-label">{tr('Completados', 'Completed')}</span>
             <span className="stat-num"><Cifra n={stats.totV} /><small> / {stats.totN}</small></span>
             <div className="barra"><i style={{ width: `${pct}%` }} /></div>
-            <span className="stat-foot">{pct}% del maratón</span>
+            <span className="stat-foot">{pct}{tr('% del maratón', '% of the marathon')}</span>
           </div>
           <div className="stat">
-            <span className="stat-label">Te quedan</span>
+            <span className="stat-label">{tr('Te quedan', 'Left to watch')}</span>
             <span className="stat-num">{Math.round(stats.mins / 60)}<small> h</small></span>
-            <span className="stat-foot">de películas y series</span>
+            <span className="stat-foot">{tr('de películas y series', 'of movies and series')}</span>
           </div>
           {stats.siguiente && (
-            <button className="stat siguiente-stat" title="Ir a la tarjeta" onClick={() => {
+            <button className="stat siguiente-stat" title={tr('Ir a la tarjeta', 'Go to the card')} onClick={() => {
               if (vista !== 'crono') setVista('crono')
               setTimeout(() => {
                 const el = document.getElementById('card-' + stats.siguiente.id)
@@ -3671,7 +3738,7 @@ export default function App() {
                 }
               }, vista !== 'crono' ? 120 : 0)
             }}>
-              <span className="stat-label">Siguiente</span>
+              <span className="stat-label">{tr('Siguiente', 'Up next')}</span>
               <span className="stat-sig">{stats.siguiente.t}</span>
               <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>
             </button>
@@ -3685,24 +3752,24 @@ export default function App() {
           <span className="pr-datos">
             {proxEstreno && objetivo
               ? <>
-                  <b>{proxEstreno.t.replace(/^(Vengadores|Avengers): /, '')}</b> en <b className="pr-dias">{objetivo.dias} días</b>
-                  {objetivo.restante > 0 && <span className="pr-extra"> · ruta express: {objetivo.necesario} min/día</span>}
+                  <b>{proxEstreno.t.replace(/^(Vengadores|Avengers): /, '')}</b>{tr(' en ', ' in ')}<b className="pr-dias">{objetivo.dias} {tr('días', 'days')}</b>
+                  {objetivo.restante > 0 && <span className="pr-extra"> · {tr('ruta express: ', 'express route: ')}{objetivo.necesario} {tr('min/día', 'min/day')}</span>}
                 </>
-              : <>Mapa de progreso, próximos estrenos y cuenta atrás</>}
+              : <>{tr('Mapa de progreso, próximos estrenos y cuenta atrás', 'Progress map, upcoming premieres and countdown')}</>}
           </span>
-          <span className="pr-abrir">Panel completo</span>
+          <span className="pr-abrir">{tr('Panel completo', 'Full panel')}</span>
         </button>
       )}
       <div className="panel-superior" hidden={!panelAbierto}>
         <div className="panel-izq">
-        <div className="mapa" aria-label="Mapa de progreso">
+        <div className="mapa" aria-label={tr('Mapa de progreso', 'Progress map')}>
           {DATA.map(saga => {
             const items = saga.eras.flatMap(era => era.items.map(item => ({ item, c: era.c })))
             const v = items.filter(({ item }) => vistas[item.id]).length
             return (
               <div className="mapa-fila" key={saga.saga}>
                 <span className="mapa-label">
-                  {saga.saga === 'xmen' ? 'X-Men' : saga.saga === 'ucm' ? 'UCM' : saga.saga === 'animacion' ? 'Anim.' : 'Cómics'}
+                  {saga.saga === 'xmen' ? 'X-Men' : saga.saga === 'ucm' ? tr('UCM', 'MCU') : saga.saga === 'animacion' ? 'Anim.' : tr('Cómics', 'Comics')}
                 </span>
                 <div className="mapa-dots">
                   {items.map(({ item, c }) => (
@@ -3721,12 +3788,12 @@ export default function App() {
         <CuentaAtras meta={objetivo} horario={horario} onHorario={() => setHorarioModal(true)} />
       </div>
       {panelAbierto && (
-        <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>Ocultar panel</button>
+        <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>{tr('Ocultar panel', 'Hide panel')}</button>
       )}
 
       <header className="toolbar">
-        <div className="controles" role="group" aria-label="Vista y filtros">
-          <nav className="tabs" aria-label="Secciones" style={{ '--tab': Math.max(0, DESTINOS.findIndex(d => d.id === destinoDe(vista))) }}>
+        <div className="controles" role="group" aria-label={tr('Vista y filtros', 'View and filters')}>
+          <nav className="tabs" aria-label={tr('Secciones', 'Sections')} style={{ '--tab': Math.max(0, DESTINOS.findIndex(d => d.id === destinoDe(vista))) }}>
             {DESTINOS.map(d => {
               // volver a un destino te devuelve donde lo dejaste
               const destino = ultimaVista[d.id] || d.vistas[0]
@@ -3738,25 +3805,25 @@ export default function App() {
                     e.preventDefault()
                     setVista(destino)
                   }}>
-                  {d.label}
+                  {tr(d.label, d.en || d.label)}
                 </a>
               )
             })}
           </nav>
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
-          <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>Ruta express</button>
-          <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>Sin series</button>
-          <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>Sin opcionales</button>
-          <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>Solo pendientes</button>
-          <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>Joyas ★7,5+</button>
-          <button className="chip-btn" aria-pressed={filtros.disney} onClick={() => setF('disney')}>En Disney+</button>
+          <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>{tr('Ruta express', 'Express route')}</button>
+          <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>{tr('Sin series', 'No series')}</button>
+          <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>{tr('Sin opcionales', 'No optionals')}</button>
+          <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>{tr('Solo pendientes', 'Pending only')}</button>
+          <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>{tr('Joyas ★7,5+', 'Gems ★7.5+')}</button>
+          <button className="chip-btn" aria-pressed={filtros.disney} onClick={() => setF('disney')}>{tr('En Disney+', 'On Disney+')}</button>
           </div>
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
-          <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>Plan de sesión</button>
-          <button className="chip-btn" aria-pressed={horarioModal} onClick={() => setHorarioModal(true)}>Horario</button>
-          <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>Modo cine</button>
+          <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>{tr('Plan de sesión', 'Session plan')}</button>
+          <button className="chip-btn" aria-pressed={horarioModal} onClick={() => setHorarioModal(true)}>{tr('Horario', 'Schedule')}</button>
+          <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>{tr('Modo cine', 'Cinema mode')}</button>
           <button className="chip-btn" onClick={() => {
             const pendientes = []
             DATA.forEach(saga => { if (saga.saga === 'comics' || saga.saga === 'animacion') return
@@ -3767,15 +3834,15 @@ export default function App() {
               const e = pendientes[Math.floor(Math.random() * pendientes.length)]
               setDetalle({ item: e.item, c: e.c, esComic: false })
             }
-          }}>Sorpréndeme</button>
-          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? 'Título, actor, director o año' : 'Buscar… ( / )'} title="Busca por título, actor, director o año — atajo: /" value={busca} spellCheck={false}
-            autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label="Buscar título" />
-          <button className="chip-btn" aria-pressed={ajustes} onClick={() => setAjustes(true)}>Ajustes</button>
+          }}>{tr('Sorpréndeme', 'Surprise me')}</button>
+          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, actor, director o año', 'Title, actor, director or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, actor, director o año — atajo: /', 'Search by title, actor, director or year — shortcut: /')} value={busca} spellCheck={false}
+            autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')} />
+          <button className="chip-btn" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
           {/* El estado de sincronización es estado, no un botón: solo se
               muestra cuando hay algo que mirar. */}
           {syncEstado === 'error' && (
             <button className="chip-btn sync-btn error" aria-live="polite" onClick={() => setSyncModal(true)}>
-              Sin conexión
+              {tr('Sin conexión', 'Offline')}
             </button>
           )}
           </div>
@@ -3792,7 +3859,7 @@ export default function App() {
         const d = DESTINOS.find(x => x.id === destinoDe(vista))
         if (!d || d.vistas.length < 2) return null
         return (
-          <nav className="subvistas" aria-label={`Cómo ver ${d.label}`}>
+          <nav className="subvistas" aria-label={tr(`Cómo ver ${d.label}`, `How to view ${d.en || d.label}`)}>
             {d.vistas.map(v => {
               const p = PESTANAS.find(x => x.id === v)
               return (
@@ -3802,7 +3869,7 @@ export default function App() {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
                     setVista(v)
-                  }}>{p ? p.label : v}</a>
+                  }}>{p ? tr(p.label, p.en || p.label) : v}</a>
               )
             })}
           </nav>
@@ -3813,9 +3880,9 @@ export default function App() {
 
       {resumenFiltros && (
         <p className="filtros-resumen" role="status">
-          Ves <b>{resumenFiltros.vis}</b> de {resumenFiltros.tot}
-          {' · '}{resumenFiltros.activos === 1 ? '1 filtro activo' : `${resumenFiltros.activos} filtros activos`}
-          <button className="filtros-quitar" onClick={limpiaFiltros}>Quitar</button>
+          {tr('Ves ', 'Showing ')}<b>{resumenFiltros.vis}</b>{tr(' de ', ' of ')}{resumenFiltros.tot}
+          {' · '}{resumenFiltros.activos === 1 ? tr('1 filtro activo', '1 active filter') : tr(`${resumenFiltros.activos} filtros activos`, `${resumenFiltros.activos} active filters`)}
+          <button className="filtros-quitar" onClick={limpiaFiltros}>{tr('Quitar', 'Clear')}</button>
         </p>
       )}
 
@@ -3823,8 +3890,10 @@ export default function App() {
       {vista === 'tiempo' ? (
         <main className="tiempo">
           <p className="saga-desc mv-intro">
-            Cada título colocado en el año en que <b>ocurre su historia</b>, no en el que se estrenó:
-            X-Men a la izquierda en dorado, UCM a la derecha en rojo. Pulsa cualquier tarjeta para abrir su ficha.
+            {tr(<>Cada título colocado en el año en que <b>ocurre su historia</b>, no en el que se estrenó:
+            X-Men a la izquierda en dorado, UCM a la derecha en rojo. Pulsa cualquier tarjeta para abrir su ficha.</>,
+            <>Every title placed in the year <b>its story happens</b>, not when it was released:
+            X-Men on the left in gold, MCU on the right in red. Tap any card to open it.</>)}
           </p>
           {(() => {
             const años = new Map()
@@ -3850,7 +3919,7 @@ export default function App() {
                   const grupo = años.get(año)
                   return (
                     <div key={año}>
-                      {salto > 0 && <div className="tl-salto">⋯ {salto} años después ⋯</div>}
+                      {salto > 0 && <div className="tl-salto">⋯ {tr(`${salto} años después`, `${salto} years later`)} ⋯</div>}
                       <section className="tl-fila">
                         <div className="tl-lado izq">
                           {grupo.filter(g => g.saga === 'xmen').map(g => (
@@ -3871,7 +3940,7 @@ export default function App() {
                 })}
                 {fuera.length > 0 && (
                   <div>
-                    <div className="tl-salto">∞ fuera del tiempo ∞</div>
+                    <div className="tl-salto">∞ {tr('fuera del tiempo', 'outside of time')} ∞</div>
                     <section className="tl-fila">
                       <div className="tl-lado izq">
                         {fuera.filter(g => g.saga === 'xmen').map(g => (
@@ -3904,20 +3973,20 @@ export default function App() {
               const v = itemsOrdenados.filter(({ item }) => l.prog[item.id]).length
               return (
                 <div>
-                  <button className="chip-btn" onClick={() => setListaActiva(null)}>← Mis listas</button>
+                  <button className="chip-btn" onClick={() => setListaActiva(null)}>{tr('← Mis listas', '← My lists')}</button>
                   <header className="lista-hero">
                     <h2 className="lista-nombre">{l.nombre}</h2>
-                    <span className="stat-foot">{v} / {itemsOrdenados.length} vistos en esta lista · progreso independiente del maratón</span>
+                    <span className="stat-foot">{v} / {itemsOrdenados.length} {tr('vistos en esta lista · progreso independiente del maratón', 'watched on this list · progress independent from the marathon')}</span>
                     <div className="barra"><i style={{ width: `${itemsOrdenados.length ? 100 * v / itemsOrdenados.length : 0}%` }} /></div>
                     <AgregarALista indice={indice} idOrden={idOrden} enLista={l.items}
                       onAgregar={id => toggleEnLista(l.id, id)} />
                   </header>
                   {itemsOrdenados.length === 0 && (
-                    <p className="saga-desc">La lista está vacía: busca títulos arriba o añádelos desde cualquier ficha.</p>
+                    <p className="saga-desc">{tr('La lista está vacía: busca títulos arriba o añádelos desde cualquier ficha.', 'The list is empty: search for titles above or add them from any title page.')}</p>
                   )}
                   <div className="grid tierra-grid">
                     {itemsOrdenados.map(({ item, c, esComic }, i) => (
-                      <Card key={item.id} pais={pais} item={item} num={i + 1} c={c} esComic={esComic} lectura={esComic ? lecturas[item.id] : null}
+                      <Card key={item.id} pais={pais} idioma={idioma} item={item} num={i + 1} c={c} esComic={esComic} lectura={esComic ? lecturas[item.id] : null}
                         vista={!!l.prog[item.id]}
                         onToggle={() => toggleProgLista(l.id, item.id)}
                         onAbrir={() => setDetalle({ item, c, esComic })}
@@ -3932,15 +4001,14 @@ export default function App() {
             return (
               <>
                 <p className="saga-desc mv-intro">
-                  Rutas personalizadas con su propio progreso, independiente del maratón principal — perfectas para re-ver con alguien o armar sesiones temáticas.
+                  {tr('Rutas personalizadas con su propio progreso, independiente del maratón principal — perfectas para re-ver con alguien o armar sesiones temáticas.', 'Custom routes with their own progress, independent from the main marathon — perfect for rewatching with someone or building themed sessions.')}
                 </p>
                 <CrearLista onCrear={crearLista} />
                 {listas.length === 0 ? (
                   <div className="aviso centrado">
-                    <p className="sr-titulo">Todavía no tienes listas</p>
+                    <p className="sr-titulo">{tr('Todavía no tienes listas', 'No lists yet')}</p>
                     <p className="sr-detalle">
-                      Ponle nombre arriba y créala: podrás añadirle títulos desde su ficha,
-                      y llevará su propio progreso al margen del maratón.
+                      {tr('Ponle nombre arriba y créala: podrás añadirle títulos desde su ficha, y llevará su propio progreso al margen del maratón.', 'Name it above and create it: you can add titles from their pages, and it keeps its own progress apart from the marathon.')}
                     </p>
                   </div>
                 ) : (
@@ -3954,8 +4022,8 @@ export default function App() {
                           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setListaActiva(l.id) } }}>
                           <h2 className="mv-nombre">{l.nombre}</h2>
                           <div className="barra"><i style={{ width: `${total ? 100 * v / total : 0}%` }} /></div>
-                          <span className="stat-foot">{v} / {total} títulos vistos</span>
-                          <span className="mv-entrar">Abrir lista →</span>
+                          <span className="stat-foot">{v} / {total} {tr('títulos vistos', 'titles watched')}</span>
+                          <span className="mv-entrar">{tr('Abrir lista →', 'Open list →')}</span>
                         </article>
                       )
                     })}
@@ -3978,7 +4046,7 @@ export default function App() {
             const v = items.filter(({ item }) => vistas[item.id]).length
             return (
               <div className="tierra" style={{ '--tc': u.c }}>
-                <button className="chip-btn" onClick={() => setTierra(null)}>← Volver al multiverso</button>
+                <button className="chip-btn" onClick={() => setTierra(null)}>{tr('← Volver al multiverso', '← Back to the multiverse')}</button>
                 <header className="tierra-hero">
                   <span className="planeta planeta-grande" aria-hidden="true" />
                   <span className="mv-num tierra-num">{u.num}</span>
@@ -3988,11 +4056,11 @@ export default function App() {
                   <div className="barra tierra-barra">
                     <i style={{ width: `${items.length ? 100 * v / items.length : 0}%` }} />
                   </div>
-                  <span className="tierra-count">{v} / {items.length} completados en este universo</span>
+                  <span className="tierra-count">{v} / {items.length} {tr('completados en este universo', 'completed in this universe')}</span>
                 </header>
                 <div className="grid tierra-grid">
                   {items.map(({ item, c }, i) => (
-                    <Card key={item.id} pais={pais} item={item} num={i + 1} c={c} lectura={item.id.startsWith('c-') ? lecturas[item.id] : null}
+                    <Card key={item.id} pais={pais} idioma={idioma} item={item} num={i + 1} c={c} lectura={item.id.startsWith('c-') ? lecturas[item.id] : null}
                       esComic={item.id.startsWith('c-')}
                       vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
@@ -4007,12 +4075,12 @@ export default function App() {
             <>
               <div className="mv-cabecera">
                 <p className="saga-desc mv-intro">
-                  Los universos que hay que conocer antes de {TITULOS.doomsday}. Entra en cada Tierra para ver y marcar todo lo que ocurre en ella.
+                  {tr(`Los universos que hay que conocer antes de ${TITULOS.doomsday}. Entra en cada Tierra para ver y marcar todo lo que ocurre en ella.`, `The universes you should know before ${TITULOS.doomsday}. Enter each Earth to see and check off everything that happens there.`)}
                 </p>
                 <div className="tabs mv-modos">
-                  <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>Sistema</button>
-                  <button className="tab" aria-pressed={mvModo === 'mapa'} onClick={() => setMvModo('mapa')}>Mapa</button>
-                  <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>Tarjetas</button>
+                  <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>{tr('Sistema', 'System')}</button>
+                  <button className="tab" aria-pressed={mvModo === 'mapa'} onClick={() => setMvModo('mapa')}>{tr('Mapa', 'Map')}</button>
+                  <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>{tr('Tarjetas', 'Cards')}</button>
                 </div>
               </div>
               {mvModo === 'mapa' && <MapaMultiverso onAbrir={d => setDetalle(d)} />}
@@ -4066,7 +4134,7 @@ export default function App() {
                     <h2 className="mv-nombre">{u.nombre}</h2>
                     <p className="mv-desc">{u.desc}</p>
                     <span className="mv-estado">{u.estado}</span>
-                    <span className="mv-entrar">Entrar en esta Tierra →</span>
+                    <span className="mv-entrar">{tr('Entrar en esta Tierra →', 'Enter this Earth →')}</span>
                   </article>
                 ))}
               </div>
@@ -4102,55 +4170,54 @@ export default function App() {
         <main className="stats-vista">
           <div className="stats-tiles">
             <div className="stat">
-              <span className="stat-label">Horas vistas</span>
+              <span className="stat-label">{tr('Horas vistas', 'Hours watched')}</span>
               <span className="stat-num">{Math.round(estadisticas.vistoMin / 60)}<small> / {Math.round(estadisticas.totMin / 60)} h</small></span>
               <div className="barra"><i style={{ width: `${estadisticas.totMin ? 100 * estadisticas.vistoMin / estadisticas.totMin : 0}%` }} /></div>
-              <span className="stat-foot">{estadisticas.totMin ? Math.round(100 * estadisticas.vistoMin / estadisticas.totMin) : 0}% del tiempo total</span>
+              <span className="stat-foot">{estadisticas.totMin ? Math.round(100 * estadisticas.vistoMin / estadisticas.totMin) : 0}{tr('% del tiempo total', '% of the total time')}</span>
             </div>
             <div className="stat">
-              <span className="stat-label">Títulos vistos</span>
+              <span className="stat-label">{tr('Títulos vistos', 'Titles watched')}</span>
               <span className="stat-num">{estadisticas.titulosVistos}<small> / {estadisticas.titulosTot}</small></span>
-              <span className="stat-foot">películas, series y especiales</span>
+              <span className="stat-foot">{tr('películas, series y especiales', 'movies, series and specials')}</span>
             </div>
             <div className="stat">
-              <span className="stat-label">Episodios vistos</span>
+              <span className="stat-label">{tr('Episodios vistos', 'Episodes watched')}</span>
               <span className="stat-num">{estadisticas.epVistos}<small> / {estadisticas.epTot}</small></span>
-              <span className="stat-foot">de las series con lista</span>
+              <span className="stat-foot">{tr('de las series con lista', 'from series with episode lists')}</span>
             </div>
             <div className="stat">
-              <span className="stat-label">Cómics leídos</span>
+              <span className="stat-label">{tr('Cómics leídos', 'Comics read')}</span>
               <span className="stat-num">{estadisticas.comicsVistos}<small> / {estadisticas.comicsTot}</small></span>
-              <span className="stat-foot">lecturas esenciales</span>
+              <span className="stat-foot">{tr('lecturas esenciales', 'essential reads')}</span>
             </div>
             <div className="stat">
-              <span className="stat-label">Bóveda de animación</span>
+              <span className="stat-label">{tr('Bóveda de animación', 'Animation vault')}</span>
               <span className="stat-num">{estadisticas.bovedaEpVistos}<small> / {estadisticas.bovedaEpTot}</small></span>
-              <span className="stat-foot">episodios de las 17 series</span>
+              <span className="stat-foot">{tr('episodios de las 17 series', 'episodes across the 17 series')}</span>
             </div>
           </div>
 
           {estadisticas.titulosVistos === 0 && (
             <p className="aviso info stats-vacio">
-              Aún está todo por estrenar: en cuanto marques tu primera película, aquí aparecerán
-              tus horas, tu racha, tus logros y el mapa de calor. 🍿
+              {tr('Aún está todo por estrenar: en cuanto marques tu primera película, aquí aparecerán tus horas, tu racha, tus logros y el mapa de calor. 🍿', 'It’s all still ahead of you: as soon as you check off your first movie, your hours, streak, achievements and heatmap will show up here. 🍿')}
             </p>
           )}
           <div className="stats-acciones">
             <button className="accion-principal compartir"
               onClick={() => compartirImagen(estadisticas, estadisticas.comicsVistos, estadisticas.comicsTot)}>
-              Compartir como imagen
+              {tr('Compartir como imagen', 'Share as an image')}
             </button>
             <button className="chip-btn" onClick={() => { setPerfilUrl(''); setPerfilCopiado(false); setPerfilModal(true) }}>
-              Perfil compartible
+              {tr('Perfil compartible', 'Shareable profile')}
             </button>
             {!amigo && (
               <button className="chip-btn" onClick={() => { setDueloInput(''); setDueloNombre(''); setDueloError(''); setDueloModal(true) }}>
-                Modo duelo
+                {tr('Modo duelo', 'Duel mode')}
               </button>
             )}
             {!club && (
               <button className="chip-btn" onClick={() => { setClubCod(''); setClubAlias(''); setClubError(''); setClubModal(true) }}>
-                Club de maratón
+                {tr('Club de maratón', 'Marathon club')}
               </button>
             )}
           </div>
@@ -4161,7 +4228,7 @@ export default function App() {
 
           <Actividad vistas={vistas} eps={eps} />
 
-          <Diario vistas={vistas} notas={notas} pais={pais} />
+          <Diario vistas={vistas} notas={notas} pais={pais} idioma={idioma} />
 
           <Logros ctx={{
             vistas,
@@ -4174,16 +4241,16 @@ export default function App() {
           }} />
 
           <section className="grafica">
-            <h3 className="grafica-titulo">Horas por fase y era</h3>
-            <p className="grafica-sub">La barra tenue es la duración total de cada era; el relleno, lo que ya has visto.</p>
+            <h3 className="grafica-titulo">{tr('Horas por fase y era', 'Hours by phase and era')}</h3>
+            <p className="grafica-sub">{tr('La barra tenue es la duración total de cada era; el relleno, lo que ya has visto.', 'The faint bar is each era’s total runtime; the fill, what you’ve already watched.')}</p>
             {['xmen', 'ucm'].map(sg => (
               <div key={sg} className="grafica-grupo">
-                <div className="grafica-grupo-nombre">{sg === 'xmen' ? 'Saga X-Men' : 'UCM'}</div>
+                <div className="grafica-grupo-nombre">{sg === 'xmen' ? tr('Saga X-Men', 'X-Men saga') : tr('UCM', 'MCU')}</div>
                 {estadisticas.fases.filter(f => f.saga === sg).map((f, i) => {
                   const pct = f.tot ? 100 * f.visto / f.tot : 0
                   return (
                     <div className="gbar" key={i}
-                      title={`${f.era}: ${Math.round(f.visto / 60)} h de ${Math.round(f.tot / 60)} h · ${f.vistos}/${f.items} títulos`}>
+                      title={tr(`${f.era}: ${Math.round(f.visto / 60)} h de ${Math.round(f.tot / 60)} h · ${f.vistos}/${f.items} títulos`, `${f.era}: ${Math.round(f.visto / 60)} h of ${Math.round(f.tot / 60)} h · ${f.vistos}/${f.items} titles`)}>
                       <span className="gbar-label">{f.era} <em>{f.rango}</em></span>
                       <span className="gbar-pista">
                         <i style={{ width: `${pct}%`, background: f.c[0] }} />
@@ -4197,11 +4264,11 @@ export default function App() {
           </section>
 
           <section className="grafica">
-            <h3 className="grafica-titulo">Avance por tipo</h3>
+            <h3 className="grafica-titulo">{tr('Avance por tipo', 'Progress by type')}</h3>
             {estadisticas.tipos.map(t => {
               const pct = t.tot ? 100 * t.visto / t.tot : 0
               return (
-                <div className="gbar" key={t.t} title={`${t.t}: ${Math.round(t.visto / 60)} h de ${Math.round(t.tot / 60)} h`}>
+                <div className="gbar" key={t.t} title={tr(`${t.t}: ${Math.round(t.visto / 60)} h de ${Math.round(t.tot / 60)} h`, `${t.t}: ${Math.round(t.visto / 60)} h of ${Math.round(t.tot / 60)} h`)}>
                   <span className="gbar-label">{t.t}</span>
                   <span className="gbar-pista"><i style={{ width: `${pct}%`, background: 'var(--red)' }} /></span>
                   <span className="gbar-valor">{Math.round(t.visto / 60)} / {Math.round(t.tot / 60)} h</span>
@@ -4214,27 +4281,27 @@ export default function App() {
         <main className={((vista === 'comics' || vista === 'animacion') ? 'comics' : 'crono') + (compacto ? ' compacto' : '')}>
           {!hayResultados && (
             <div className="aviso centrado">
-              <p className="sr-titulo">Nada coincide con lo que buscas</p>
+              <p className="sr-titulo">{tr('Nada coincide con lo que buscas', 'Nothing matches your search')}</p>
               <p className="sr-detalle">
                 {buscaLenta.trim()
-                  ? <>No hay ningún título con «<b>{buscaLenta.trim()}</b>»{filtrosActivos > 0 ? ' entre los filtros que tienes puestos' : ''}.</>
-                  : <>Los filtros que tienes puestos no dejan ningún título.</>}
+                  ? tr(<>No hay ningún título con «<b>{buscaLenta.trim()}</b>»{filtrosActivos > 0 ? ' entre los filtros que tienes puestos' : ''}.</>, <>No title matches "<b>{buscaLenta.trim()}</b>"{filtrosActivos > 0 ? ' within your active filters' : ''}.</>)
+                  : tr('Los filtros que tienes puestos no dejan ningún título.', 'Your active filters leave no titles to show.')}
               </p>
               <button className="chip-btn destacado" aria-pressed="false" onClick={limpiaTodo}>
-                Quitar filtros y búsqueda
+                {tr('Quitar filtros y búsqueda', 'Clear filters and search')}
               </button>
             </div>
           )}
           {vista === 'comics' && enCurso.length > 0 && (
-            <section className="seguir" aria-label="Seguir leyendo">
-              <h2 className="seguir-titulo">Seguir leyendo</h2>
+            <section className="seguir" aria-label={tr('Seguir leyendo', 'Keep reading')}>
+              <h2 className="seguir-titulo">{tr('Seguir leyendo', 'Keep reading')}</h2>
               <div className="seguir-lista">
                 {enCurso.map(({ id, d, l }) => (
                   <button key={id} className="seguir-item" onClick={() => abreLector(id)}>
                     <span className="seguir-cara"><Portada item={d.item} c={d.c} esComic /></span>
                     <span className="seguir-info">
                       <span className="seguir-nombre">{d.item.t}</span>
-                      <span className="seguir-pag">{l && l.t > 1 ? `pág. ${l.p + 1} de ${l.t}` : 'Sin empezar'}</span>
+                      <span className="seguir-pag">{l && l.t > 1 ? tr(`pág. ${l.p + 1} de ${l.t}`, `p. ${l.p + 1} of ${l.t}`) : tr('Sin empezar', 'Not started')}</span>
                       {l && l.t > 1 && <span className="seguir-barra" aria-hidden="true"><span style={{ width: `${Math.round(100 * (l.p + 1) / l.t)}%` }} /></span>}
                     </span>
                   </button>
@@ -4263,13 +4330,13 @@ export default function App() {
                   <h2>{saga.titulo}</h2>
                   <span className="uni-chip">{saga.uni}</span>
                   <span className="saga-count">
-                    {s.v} / {s.n}{s.m ? ` · quedan ${fmtDur(s.m)}` : ''}
+                    {s.v} / {s.n}{s.m ? tr(` · quedan ${fmtDur(s.m)}`, ` · ${fmtDur(s.m)} left`) : ''}
                   </span>
                 </div>
                 <DescPlegable texto={saga.desc} />
                 {saga.guia && (
                   <details className="saga-guia">
-                    <summary>Cómo entender la saga</summary>
+                    <summary>{tr('Cómo entender la saga', 'How to make sense of the saga')}</summary>
                     {saga.guia.map((g, i) => <p key={i}><b>{g.t}.</b> {g.p}</p>)}
                   </details>
                 )}
@@ -4300,7 +4367,7 @@ export default function App() {
                         <div className="grid">
                           {numerados.map((item, i) =>
                             visibles.includes(item) && (
-                              <Card key={item.id} pais={pais} item={item} num={base + i + 1} c={era.c}
+                              <Card key={item.id} pais={pais} idioma={idioma} item={item} num={base + i + 1} c={era.c}
                                 esComic={esComic} vista={!!vistas[item.id]}
                                 onToggle={() => toggle(item.id)}
                                 onAbrir={() => setDetalle({ item, c: era.c, esComic })}
@@ -4331,7 +4398,7 @@ export default function App() {
                 </div>
                 <div className="grid">
                   {visibles.map((item, i) => (
-                    <Card key={item.id} pais={pais} item={item} num={i + 1} c={item.c}
+                    <Card key={item.id} pais={pais} idioma={idioma} item={item} num={i + 1} c={item.c}
                       esComic={false} vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
                       onAbrir={() => setDetalle({ item, c: item.c, esComic: false })}
@@ -4342,7 +4409,7 @@ export default function App() {
             )
           })}
           <p className="saga-desc" style={{ marginTop: 24 }}>
-            La vista por estreno ordena películas y series por su año de salida (los cómics solo aparecen en su pestaña).
+            {tr('La vista por estreno ordena películas y series por su año de salida (los cómics solo aparecen en su pestaña).', 'The release view orders movies and series by the year they came out (comics only appear in their own tab).')}
           </p>
         </main>
       )}
@@ -4356,15 +4423,15 @@ export default function App() {
         const idx = Math.min(cineIdx, cineLista.length - 1)
         const { item, c } = cineLista[idx]
         return (
-          <div className="cine" ref={refCine} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Modo cine">
-            <button className="cerrar cine-cerrar" onClick={() => setCine(false)} aria-label="Salir">✕</button>
+          <div className="cine" ref={refCine} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Modo cine', 'Cinema mode')}>
+            <button className="cerrar cine-cerrar" onClick={() => setCine(false)} aria-label={tr('Salir', 'Exit')}>✕</button>
             <div className="cine-centro">
               <button className="cine-flecha" onClick={() => setCineIdx(i => Math.max(0, i - 1))}
-                disabled={idx === 0} aria-label="Anterior">‹</button>
+                disabled={idx === 0} aria-label={tr('Anterior', 'Previous')}>‹</button>
               <div className="cine-panel" style={{ '--glow': c[0] }}>
                 <div className="cine-poster"><Portada item={item} c={c} esComic={false} /></div>
                 <div className="cine-info">
-                  <span className="cine-contador">{idx + 1} de {cineLista.length} pendientes · orden del maratón</span>
+                  <span className="cine-contador">{idx + 1} {tr('de', 'of')} {cineLista.length} {tr('pendientes · orden del maratón', 'pending · marathon order')}</span>
                   <h2 className="cine-titulo">{item.t}</h2>
                   <p className="cine-meta">
                     {item.s != null && <span className="star">★ {item.s.toFixed(1)} · </span>}
@@ -4372,129 +4439,134 @@ export default function App() {
                   </p>
                   {item.res && <p className="cine-res">{item.res}</p>}
                   <div className="modal-acciones">
-                    <button className="accion-principal" onClick={() => toggle(item.id)}>✓ La veo — marcar vista</button>
-                    <button className="ghost" onClick={() => setDetalle({ item, c, esComic: false })}>Ver ficha</button>
+                    <button className="accion-principal" onClick={() => toggle(item.id)}>{tr('✓ La veo — marcar vista', '✓ Watching it — mark as seen')}</button>
+                    <button className="ghost" onClick={() => setDetalle({ item, c, esComic: false })}>{tr('Ver ficha', 'Open title')}</button>
                   </div>
                 </div>
               </div>
               <button className="cine-flecha" onClick={() => setCineIdx(i => Math.min(cineLista.length - 1, i + 1))}
-                disabled={idx === cineLista.length - 1} aria-label="Siguiente">›</button>
+                disabled={idx === cineLista.length - 1} aria-label={tr('Siguiente', 'Next')}>›</button>
             </div>
-            <p className="cine-ayuda">← → navegar · Enter marcar vista · Esc salir</p>
+            <p className="cine-ayuda">{tr('← → navegar · Enter marcar vista · Esc salir', '← → navigate · Enter mark seen · Esc exit')}</p>
           </div>
         )
       })()}
 
       {dueloModal && (
-        <div className="overlay" onClick={() => setDueloModal(false)} role="dialog" aria-modal="true" aria-label="Modo duelo">
+        <div className="overlay" onClick={() => setDueloModal(false)} role="dialog" aria-modal="true" aria-label={tr('Modo duelo', 'Duel mode')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
-            <button className="cerrar" onClick={() => setDueloModal(false)} aria-label="Cerrar">✕</button>
+            <button className="cerrar" onClick={() => setDueloModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">Modo duelo</h2>
+              <h2 className="modal-titulo">{tr('Modo duelo', 'Duel mode')}</h2>
               <p className="modal-res">
-                Pega el enlace de <b>Perfil compartible</b> de la otra persona (botón «Perfil compartible» en sus Estadísticas)
+                {tr(<>Pega el enlace de <b>Perfil compartible</b> de la otra persona (botón «Perfil compartible» en sus Estadísticas)
                 para una foto fija, o su <b>código de sincronización</b> (botón «Sincronizar») para un duelo
-                <b> en vivo</b> que se actualiza solo. Todo queda en este navegador.
+                <b> en vivo</b> que se actualiza solo. Todo queda en este navegador.</>,
+                <>Paste the other person’s <b>shareable profile</b> link (the "Shareable profile" button in their Stats)
+                for a fixed snapshot, or their <b>sync code</b> (the "Sync" button) for a <b>live</b> duel
+                that updates itself. Everything stays in this browser.</>)}
               </p>
-              <input className="busca duelo-input" placeholder="Enlace de perfil o código de sincronización" autoComplete="off" spellCheck={false}
+              <input className="busca duelo-input" placeholder={tr('Enlace de perfil o código de sincronización', 'Profile link or sync code')} autoComplete="off" spellCheck={false}
                 value={dueloInput} onChange={e => { setDueloInput(e.target.value); setDueloError('') }} />
-              <input className="busca duelo-input" placeholder="Nombre de tu rival (opcional)"
+              <input className="busca duelo-input" placeholder={tr('Nombre de tu rival (opcional)', 'Your rival’s name (optional)')}
                 value={dueloNombre} onChange={e => setDueloNombre(e.target.value)} maxLength={24} />
               {dueloError && <p className="duelo-error">{dueloError}</p>}
               <button className="accion-principal" onClick={() => {
                 const p = parsePerfilCod(dueloInput)
                 if (p) { guardaAmigo(dueloNombre.trim() ? { ...p, n: dueloNombre.trim() } : p); setDueloModal(false); return }
                 const sc = decodificaSync(dueloInput)
-                if (sc) { guardaAmigo({ tipo: 'live', n: dueloNombre.trim() || 'Tu rival', url: sc.url, room: sc.room }); setDueloModal(false); return }
-                setDueloError('Eso no parece ni un enlace de perfil ni un código de sincronización: revisa que esté completo.')
+                if (sc) { guardaAmigo({ tipo: 'live', n: dueloNombre.trim() || tr('Tu rival', 'Your rival'), url: sc.url, room: sc.room }); setDueloModal(false); return }
+                setDueloError(tr('Eso no parece ni un enlace de perfil ni un código de sincronización: revisa que esté completo.', 'That doesn’t look like a profile link or a sync code: check that it’s complete.'))
               }}>
-                Empezar el duelo
+                {tr('Empezar el duelo', 'Start the duel')}
               </button>
             </div>
           </div>
         </div>
       )}
       {bienvenida && !perfil && (
-        <Bienvenida pais={pais} onPais={ponPais} onCerrar={cierraBienvenida}
+        <Bienvenida pais={pais} onPais={ponPais} idioma={idioma} onIdioma={ponIdioma} onCerrar={cierraBienvenida}
           onExpress={() => { if (!filtros.express) setF('express'); cierraBienvenida() }} />
       )}
       {clubModal && (
-        <div className="overlay" onClick={() => setClubModal(false)} role="dialog" aria-modal="true" aria-label="Club de maratón">
+        <div className="overlay" onClick={() => setClubModal(false)} role="dialog" aria-modal="true" aria-label={tr('Club de maratón', 'Marathon club')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
-            <button className="cerrar" onClick={() => setClubModal(false)} aria-label="Cerrar">✕</button>
+            <button className="cerrar" onClick={() => setClubModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">Club de maratón</h2>
+              <h2 className="modal-titulo">{tr('Club de maratón', 'Marathon club')}</h2>
               <p className="modal-res">
-                Un ranking en vivo para 2 o más personas, con comentarios por título.
-                {sync ? ' Puedes crear un club con tu Firebase o unirte con un código.' : ' Para crear un club necesitas configurar antes Sincronizar; para unirte basta un código.'}
+                {tr('Un ranking en vivo para 2 o más personas, con comentarios por título.', 'A live ranking for 2 or more people, with comments per title.')}
+                {sync ? tr(' Puedes crear un club con tu Firebase o unirte con un código.', ' You can create a club with your Firebase or join with a code.') : tr(' Para crear un club necesitas configurar antes Sincronizar; para unirte basta un código.', ' To create a club, set up Sync first; to join, a code is enough.')}
               </p>
-              <input className="busca duelo-input" placeholder="Código del club (déjalo vacío para crear uno)"
+              <input className="busca duelo-input" placeholder={tr('Código del club (déjalo vacío para crear uno)', 'Club code (leave empty to create one)')}
                 value={clubCod} onChange={e => { setClubCod(e.target.value); setClubError('') }} />
-              <input className="busca duelo-input" placeholder="Tu nombre en el club"
+              <input className="busca duelo-input" placeholder={tr('Tu nombre en el club', 'Your name in the club')}
                 value={clubAlias} onChange={e => { setClubAlias(e.target.value); setClubError('') }} maxLength={20} />
               {clubError && <p className="duelo-error">{clubError}</p>}
               <button className="accion-principal" onClick={() => {
                 const alias = clubAlias.trim()
-                if (!alias) { setClubError('Ponte un nombre para el ranking.'); return }
+                if (!alias) { setClubError(tr('Ponte un nombre para el ranking.', 'Pick a name for the ranking.')); return }
                 if (clubCod.trim()) {
                   const sc = decodificaSync(clubCod)
-                  if (!sc) { setClubError('Ese código no parece válido: revisa que esté completo.'); return }
+                  if (!sc) { setClubError(tr('Ese código no parece válido: revisa que esté completo.', 'That code doesn’t look valid: check that it’s complete.')); return }
                   guardaClub({ url: sc.url, sala: sc.room, alias }); setClubModal(false); setClubInvitar(true); return
                 }
-                if (!sync) { setClubError('Para crear un club, configura primero Sincronizar (arriba) o pide un código.'); return }
+                if (!sync) { setClubError(tr('Para crear un club, configura primero Sincronizar (arriba) o pide un código.', 'To create a club, set up Sync first (above) or ask for a code.')); return }
                 const sala = 'club-' + Math.random().toString(36).slice(2, 8)
                 guardaClub({ url: sync.url, sala, alias }); setClubModal(false); setClubInvitar(true)
               }}>
-                {clubCod.trim() ? 'Unirme al club' : 'Crear club'}
+                {clubCod.trim() ? tr('Unirme al club', 'Join the club') : tr('Crear club', 'Create club')}
               </button>
             </div>
           </div>
         </div>
       )}
       {clubInvitar && club && (
-        <div className="overlay" onClick={() => setClubInvitar(false)} role="dialog" aria-modal="true" aria-label="Invitar al club">
+        <div className="overlay" onClick={() => setClubInvitar(false)} role="dialog" aria-modal="true" aria-label={tr('Invitar al club', 'Invite to the club')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
-            <button className="cerrar" onClick={() => setClubInvitar(false)} aria-label="Cerrar">✕</button>
+            <button className="cerrar" onClick={() => setClubInvitar(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">Invita a tu club</h2>
-              <p className="modal-res">Comparte este código: quien lo pegue en Club de maratón entrará en tu sala.</p>
+              <h2 className="modal-titulo">{tr('Invita a tu club', 'Invite to your club')}</h2>
+              <p className="modal-res">{tr('Comparte este código: quien lo pegue en Club de maratón entrará en tu sala.', 'Share this code: whoever pastes it in Marathon club joins your room.')}</p>
               <code className="club-codigo">{codigoSync(club.url, club.sala)}</code>
               <button className="accion-principal" onClick={() => {
                 try { navigator.clipboard.writeText(codigoSync(club.url, club.sala)) } catch {}
-              }}>Copiar código</button>
+              }}>{tr('Copiar código', 'Copy code')}</button>
             </div>
           </div>
         </div>
       )}
       {perfilModal && (
-        <div className="overlay" onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label="Perfil compartible">
+        <div className="overlay" onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label={tr('Perfil compartible', 'Shareable profile')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
-            <button className="cerrar" onClick={() => setPerfilModal(false)} aria-label="Cerrar">✕</button>
+            <button className="cerrar" onClick={() => setPerfilModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">Perfil compartible</h2>
+              <h2 className="modal-titulo">{tr('Perfil compartible', 'Shareable profile')}</h2>
               <p className="modal-res">
-                Genera una página de <b>solo lectura</b> con tu progreso, logros y valoraciones.
-                Todo va dentro del propio enlace: quien lo reciba no puede tocar tu maratón (tus notas de texto no se incluyen).
+                {tr(<>Genera una página de <b>solo lectura</b> con tu progreso, logros y valoraciones.
+                Todo va dentro del propio enlace: quien lo reciba no puede tocar tu maratón (tus notas de texto no se incluyen).</>,
+                <>Generates a <b>read-only</b> page with your progress, achievements and ratings.
+                Everything lives inside the link itself: whoever gets it can’t touch your marathon (your text notes are not included).</>)}
               </p>
-              <input className="busca sync-input" placeholder="Tu nombre para el perfil" autoComplete="off" value={perfilNombre}
-                maxLength={30} onChange={e => setPerfilNombre(e.target.value)} aria-label="Tu nombre" />
+              <input className="busca sync-input" placeholder={tr('Tu nombre para el perfil', 'Your name for the profile')} autoComplete="off" value={perfilNombre}
+                maxLength={30} onChange={e => setPerfilNombre(e.target.value)} aria-label={tr('Tu nombre', 'Your name')} />
               <div className="modal-acciones">
                 <button className="accion-principal" onClick={() => {
-                  const n = perfilNombre.trim() || 'Alguien'
+                  const n = perfilNombre.trim() || tr('Alguien', 'Someone')
                   setPerfilUrl(generarPerfil(n))
                   setPerfilCopiado(false)
-                }}>Generar enlace</button>
+                }}>{tr('Generar enlace', 'Generate link')}</button>
                 {perfilUrl && (
                   <button className="chip-btn" onClick={() => {
                     navigator.clipboard.writeText(perfilUrl).then(() => {
                       setPerfilCopiado(true); setTimeout(() => setPerfilCopiado(false), 2500)
                     })
-                  }}>{perfilCopiado ? '¡Copiado!' : 'Copiar enlace'}</button>
+                  }}>{perfilCopiado ? tr('¡Copiado!', 'Copied!') : tr('Copiar enlace', 'Copy link')}</button>
                 )}
                 {perfilUrl && !!navigator.share && (
                   <button className="chip-btn" onClick={() => {
-                    navigator.share({ url: perfilUrl, title: 'Mi maratón Marvel' }).catch(() => {})
-                  }}>Compartir…</button>
+                    navigator.share({ url: perfilUrl, title: tr('Mi maratón Marvel', 'My Marvel marathon') }).catch(() => {})
+                  }}>{tr('Compartir…', 'Share…')}</button>
                 )}
               </div>
               {perfilUrl && (
@@ -4508,33 +4580,33 @@ export default function App() {
       )}
 
       {ajustes && (
-        <div className="overlay" onClick={() => setAjustes(false)} role="dialog" aria-modal="true" aria-label="Ajustes">
+        <div className="overlay" onClick={() => setAjustes(false)} role="dialog" aria-modal="true" aria-label={tr('Ajustes', 'Settings')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
-            <button className="cerrar" onClick={() => setAjustes(false)} aria-label="Cerrar">✕</button>
+            <button className="cerrar" onClick={() => setAjustes(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">Ajustes</h2>
-              <p className="modal-res">Se guardan en este navegador. Lo que cambies aquí no afecta a tu progreso.</p>
+              <h2 className="modal-titulo">{tr('Ajustes', 'Settings')}</h2>
+              <p className="modal-res">{tr('Se guardan en este navegador. Lo que cambies aquí no afecta a tu progreso.', 'Saved in this browser. Nothing you change here touches your progress.')}</p>
 
               <CuentaAjuste cuenta={cuenta} estado={syncEstado} onCredencial={entrarCuenta} onSalir={salirCuenta} />
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">Densidad</h3>
-                  <p className="ajuste-pista">El modo compacto esconde carátulas y sinopsis: cabe el triple de títulos en pantalla.</p>
+                  <h3 className="ajuste-titulo">{tr('Densidad', 'Density')}</h3>
+                  <p className="ajuste-pista">{tr('El modo compacto esconde carátulas y sinopsis: cabe el triple de títulos en pantalla.', 'Compact mode hides covers and synopses: three times as many titles fit on screen.')}</p>
                 </div>
                 <div className="ajuste-ops">
-                  <button className="chip-btn" aria-pressed={!compacto} onClick={() => { if (compacto) alternaCompacto() }}>Completa</button>
-                  <button className="chip-btn" aria-pressed={compacto} onClick={() => { if (!compacto) alternaCompacto() }}>Compacta</button>
+                  <button className="chip-btn" aria-pressed={!compacto} onClick={() => { if (compacto) alternaCompacto() }}>{tr('Completa', 'Full')}</button>
+                  <button className="chip-btn" aria-pressed={compacto} onClick={() => { if (!compacto) alternaCompacto() }}>{tr('Compacta', 'Compact')}</button>
                 </div>
               </div>
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">Orden</h3>
-                  <p className="ajuste-pista">Dentro de cada era. El cronológico es el orden del maratón; los otros dos reordenan por nota.</p>
+                  <h3 className="ajuste-titulo">{tr('Orden', 'Order')}</h3>
+                  <p className="ajuste-pista">{tr('Dentro de cada era. El cronológico es el orden del maratón; los otros dos reordenan por nota.', 'Within each era. Chronological is the marathon order; the other two sort by rating.')}</p>
                 </div>
                 <div className="ajuste-ops">
-                  {[['crono', 'Cronológico'], ['imdb', 'Nota IMDb'], ['nota', 'Tu nota']].map(([id, nombre]) => (
+                  {[['crono', tr('Cronológico', 'Chronological')], ['imdb', tr('Nota IMDb', 'IMDb rating')], ['nota', tr('Tu nota', 'Your rating')]].map(([id, nombre]) => (
                     <button key={id} className="chip-btn" aria-pressed={orden === id} onClick={() => setOrden(id)}>{nombre}</button>
                   ))}
                 </div>
@@ -4542,42 +4614,42 @@ export default function App() {
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">Fondo del encabezado</h3>
-                  <p className="ajuste-pista">El banner usa el fotograma del próximo estreno, así que se renueva solo. El muro son tus carátulas.</p>
+                  <h3 className="ajuste-titulo">{tr('Fondo del encabezado', 'Header background')}</h3>
+                  <p className="ajuste-pista">{tr('El banner usa el fotograma del próximo estreno, así que se renueva solo. El muro son tus carátulas.', 'The banner uses the next premiere’s still, so it refreshes itself. The wall is your covers.')}</p>
                 </div>
                 <div className="ajuste-ops">
                   {FONDOS.map(f => (
-                    <button key={f.id} className="chip-btn" aria-pressed={fondo === f.id} onClick={() => ponFondo(f.id)}>{f.nombre}</button>
+                    <button key={f.id} className="chip-btn" aria-pressed={fondo === f.id} onClick={() => ponFondo(f.id)}>{tr(f.nombre, f.en || f.nombre)}</button>
                   ))}
                 </div>
               </div>
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">Color de acento</h3>
-                  <p className="ajuste-pista">Cambia el color que la app usa para destacar. No cambia el modo claro u oscuro, que lo decide tu sistema.</p>
+                  <h3 className="ajuste-titulo">{tr('Color de acento', 'Accent color')}</h3>
+                  <p className="ajuste-pista">{tr('Cambia el color que la app usa para destacar. No cambia el modo claro u oscuro, que lo decide tu sistema.', 'Changes the color the app uses for highlights. It doesn’t change light or dark mode, which your system decides.')}</p>
                 </div>
                 <div className="ajuste-ops">
                   {ACENTOS.map(a => (
-                    <button key={a.id} className="chip-btn" aria-pressed={acento === a.id} onClick={() => setAcento(a.id)}>{a.nombre}</button>
+                    <button key={a.id} className="chip-btn" aria-pressed={acento === a.id} onClick={() => setAcento(a.id)}>{tr(a.nombre, a.en || a.nombre)}</button>
                   ))}
                 </div>
               </div>
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">Sincronización entre dispositivos</h3>
+                  <h3 className="ajuste-titulo">{tr('Sincronización entre dispositivos', 'Sync between devices')}</h3>
                   <p className="ajuste-pista">
-                    {cuenta ? 'Tu cuenta de Google ya se encarga de esto. Esta opción queda como alternativa sin cuenta, con tu propia base de datos.'
-                      : syncEstado === 'ok' ? ui(pais, 'Activa y al día. Tu progreso viaja entre el móvil y el ordenador.')
-                      : syncEstado === 'syncing' ? 'Guardando cambios…'
-                      : syncEstado === 'error' ? 'Activa, pero ahora mismo sin conexión. Se reintenta al volver a la app.'
-                      : 'Apagada. Tu progreso vive solo en este navegador.'}
+                    {cuenta ? tr('Tu cuenta de Google ya se encarga de esto. Esta opción queda como alternativa sin cuenta, con tu propia base de datos.', 'Your Google account already handles this. This option remains as the no-account alternative, with your own database.')
+                      : syncEstado === 'ok' ? ui(pais, 'Activa y al día. Tu progreso viaja entre el móvil y el ordenador.', 'On and up to date. Your progress travels between your phone and your computer.')
+                      : syncEstado === 'syncing' ? tr('Guardando cambios…', 'Saving changes…')
+                      : syncEstado === 'error' ? tr('Activa, pero ahora mismo sin conexión. Se reintenta al volver a la app.', 'On, but offline right now. It retries when you come back.')
+                      : tr('Apagada. Tu progreso vive solo en este navegador.', 'Off. Your progress lives only in this browser.')}
                   </p>
                 </div>
                 <div className="ajuste-ops">
                   <button className={`chip-btn sync-btn ${syncEstado}`} onClick={() => { setAjustes(false); setSyncModal(true) }}>
-                    {sync ? 'Configurar' : 'Activar'}
+                    {sync ? tr('Configurar', 'Configure') : tr('Activar', 'Turn on')}
                   </button>
                 </div>
               </div>
@@ -4586,13 +4658,24 @@ export default function App() {
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">País</h3>
-                  <p className="ajuste-pista">Decide en qué plataforma aparece cada título, el filtro «En Disney+» y cómo se nombran las obras y sus personajes: como en España o como en Latinoamérica («Lobezno inmortal» o «Wolverine: Inmortal», «el Lapso» o «el Blip»). Los catálogos cambian cada mes y se revisan con la app.</p>
+                  <h3 className="ajuste-titulo">{tr('Idioma', 'Language')}</h3>
+                  <p className="ajuste-pista">{tr('La interfaz, los títulos y los textos. En español, el país decide además el matiz («Lobezno» o «Wolverine»).', 'Interface, titles and texts. In Spanish, your country also picks the regional flavor ("Lobezno" vs "Wolverine").')}</p>
+                </div>
+                <div className="ajuste-ops">
+                  <button className="chip-btn" aria-pressed={idioma === 'es'} onClick={() => ponIdioma('es')}>Español</button>
+                  <button className="chip-btn" aria-pressed={idioma === 'en'} onClick={() => ponIdioma('en')}>English</button>
+                </div>
+              </div>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">{tr('País', 'Country')}</h3>
+                  <p className="ajuste-pista">{tr('Decide en qué plataforma aparece cada título, el filtro «En Disney+» y cómo se nombran las obras y sus personajes: como en España o como en Latinoamérica («Lobezno inmortal» o «Wolverine: Inmortal», «el Lapso» o «el Blip»). Los catálogos cambian cada mes y se revisan con la app.', 'Sets which platform each title shows, the “On Disney+” filter and, in Spanish, how works and characters are named. Catalogs change monthly and refresh with the app.')}</p>
                 </div>
                 <div className="ajuste-ops">
                   <span className="sel-envuelto">
-                    <select className="selector" value={pais} aria-label="País" onChange={e => ponPais(e.target.value)}>
-                      {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    <select className="selector" value={pais} aria-label={tr('País', 'Country')} onChange={e => ponPais(e.target.value)}>
+                      {PAISES.map(p => <option key={p.id} value={p.id}>{tr(p.nombre, PAIS_EN[p.id] || p.nombre)}</option>)}
                     </select>
                   </span>
                 </div>
@@ -4602,16 +4685,16 @@ export default function App() {
               {!YA_INSTALADA && (ES_IOS || instalable) && (
                 <div className="ajuste">
                   <div className="ajuste-cab">
-                    <h3 className="ajuste-titulo">Como app</h3>
+                    <h3 className="ajuste-titulo">{tr('Como app', 'As an app')}</h3>
                     <p className="ajuste-pista">
                       {ES_IOS
-                        ? 'En Safari: botón Compartir y «Añadir a pantalla de inicio». La guía queda a pantalla completa, con su icono.'
-                        : 'Instálala y la guía tendrá su propia ventana y su icono, sin el navegador alrededor.'}
+                        ? tr('En Safari: botón Compartir y «Añadir a pantalla de inicio». La guía queda a pantalla completa, con su icono.', 'In Safari: Share button, then “Add to Home Screen”. The guide goes full screen, with its own icon.')
+                        : tr('Instálala y la guía tendrá su propia ventana y su icono, sin el navegador alrededor.', 'Install it and the guide gets its own window and icon, without the browser around it.')}
                     </p>
                   </div>
                   {!ES_IOS && (
                     <div className="ajuste-ops">
-                      <button className="chip-btn" onClick={instalar}>Instalar</button>
+                      <button className="chip-btn" onClick={instalar}>{tr('Instalar', 'Install')}</button>
                     </div>
                   )}
                 </div>
@@ -4622,22 +4705,22 @@ export default function App() {
         </div>
       )}
       {planModal && plan && (
-        <div className="overlay" onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label="Plan de sesión">
+        <div className="overlay" onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label={tr('Plan de sesión', 'Session plan')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
-            <button className="cerrar" onClick={() => setPlanModal(false)} aria-label="Cerrar">✕</button>
+            <button className="cerrar" onClick={() => setPlanModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
-              <h2 className="modal-titulo">Plan de sesión</h2>
-              <p className="modal-res">¿Cuánto tiempo tienes hoy? Te propongo qué ver siguiendo el orden del maratón.</p>
+              <h2 className="modal-titulo">{tr('Plan de sesión', 'Session plan')}</h2>
+              <p className="modal-res">{tr('¿Cuánto tiempo tienes hoy? Te propongo qué ver siguiendo el orden del maratón.', 'How much time do you have today? I’ll suggest what to watch following the marathon order.')}</p>
               <div className="plan-controles">
                 {[1, 2, 3, 4].map(h => (
                   <button key={h} className="chip-btn" aria-pressed={planHoras === h}
                     onClick={() => setPlanHoras(h)}>{h} h</button>
                 ))}
                 <button className="chip-btn destacado" aria-pressed={planExpress}
-                  onClick={() => setPlanExpress(x => !x)}>Solo ruta express</button>
+                  onClick={() => setPlanExpress(x => !x)}>{tr('Solo ruta express', 'Express route only')}</button>
               </div>
               {plan.items.length === 0 ? (
-                <p className="modal-res">Nada pendiente encaja en ese tiempo{planExpress ? ' dentro de la ruta express' : ''}. Prueba con más horas o quita el filtro.</p>
+                <p className="modal-res">{tr('Nada pendiente encaja en ese tiempo', 'Nothing pending fits in that time')}{planExpress ? tr(' dentro de la ruta express', ' within the express route') : ''}{tr('. Prueba con más horas o quita el filtro.', '. Try more hours or remove the filter.')}</p>
               ) : (
                 <div className="plan-lista">
                   {plan.items.map(({ item, c, nEps, min, desde }) => (
@@ -4648,8 +4731,8 @@ export default function App() {
                         <span className="ep-titulo">{item.t}</span>
                         <span className="ep-fecha">
                           {nEps
-                            ? `${nEps} capítulo${nEps > 1 ? 's' : ''} desde T${desde.s}·E${desde.n} · ~${fmtDur(min)}`
-                            : `Completa · ${fmtDur(min)}`}
+                            ? tr(`${nEps} capítulo${nEps > 1 ? 's' : ''} desde T${desde.s}·E${desde.n} · ~${fmtDur(min)}`, `${nEps} episode${nEps > 1 ? 's' : ''} from S${desde.s}·E${desde.n} · ~${fmtDur(min)}`)
+                            : tr(`Completa · ${fmtDur(min)}`, `In full · ${fmtDur(min)}`)}
                         </span>
                       </span>
                     </button>
@@ -4657,7 +4740,7 @@ export default function App() {
                 </div>
               )}
               {plan.items.length > 0 && (
-                <p className="plan-total">Total del plan: <b>{fmtDur(plan.total)}</b> de {planHoras} h disponibles</p>
+                <p className="plan-total">{tr('Total del plan: ', 'Plan total: ')}<b>{fmtDur(plan.total)}</b>{tr(` de ${planHoras} h disponibles`, ` of ${planHoras} h available`)}</p>
               )}
             </div>
           </div>
@@ -4707,19 +4790,19 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais }) {
   }, [onClose])
   const crear = async () => {
     const u = normalizaDbUrl(url)
-    if (!u) { setError('Esa URL no parece de Firebase (debe terminar en firebaseio.com o firebasedatabase.app).'); return }
+    if (!u) { setError(tr('Esa URL no parece de Firebase (debe terminar en firebaseio.com o firebasedatabase.app).', 'That URL doesn’t look like Firebase (it must end in firebaseio.com or firebasedatabase.app).')); return }
     setError('')
     const ok = await onActivar(u, null)
     if (ok) setModo('activo')
-    else setError('No se pudo escribir en la base de datos. Revisa que las reglas permitan lectura y escritura.')
+    else setError(tr('No se pudo escribir en la base de datos. Revisa que las reglas permitan lectura y escritura.', 'Could not write to the database. Check that the rules allow read and write.'))
   }
   const unirse = async () => {
     const conf = decodificaSync(codigo)
-    if (!conf) { setError('Código no válido.'); return }
+    if (!conf) { setError(tr('Código no válido.', 'Invalid code.')); return }
     setError('')
     const ok = await onActivar(conf.url, conf.room)
     if (ok) setModo('activo')
-    else setError('No se pudo conectar con ese código.')
+    else setError(tr('No se pudo conectar con ese código.', 'Could not connect with that code.'))
   }
   const copiarCodigo = () => {
     if (!sync) return
@@ -4728,64 +4811,62 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais }) {
     })
   }
   return (
-    <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Sincronización">
+    <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={tr('Sincronización', 'Sync')}>
       <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
-        <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
+        <button className="cerrar" onClick={onClose} aria-label={tr('Cerrar', 'Close')}>✕</button>
         <div className="modal-info">
-          <h2 className="modal-titulo">Sincronización entre dispositivos</h2>
+          <h2 className="modal-titulo">{tr('Sincronización entre dispositivos', 'Sync between devices')}</h2>
           {modo === 'activo' && sync ? (
             <>
               <p className="modal-res">
-                Tu progreso se guarda en tu base de datos de Firebase y se actualiza solo
-                (al momento en este dispositivo; cada pocos segundos en los demás).
-                Estado: <b>{estado === 'ok' ? 'conectado' : estado === 'error' ? 'sin conexión' : 'guardando…'}</b>
+                {tr('Tu progreso se guarda en tu base de datos de Firebase y se actualiza solo (al momento en este dispositivo; cada pocos segundos en los demás). Estado: ', 'Your progress is saved in your Firebase database and updates itself (instantly on this device; every few seconds on the others). Status: ')}
+                <b>{estado === 'ok' ? tr('conectado', 'connected') : estado === 'error' ? tr('sin conexión', 'offline') : tr('guardando…', 'saving…')}</b>
               </p>
-              <p className="modal-res">{ui(pais, 'Para conectar otro dispositivo (el móvil, por ejemplo), abre allí la web, pulsa Sincronizar → «Conectar con un código» y pega este código:')}</p>
+              <p className="modal-res">{ui(pais, 'Para conectar otro dispositivo (el móvil, por ejemplo), abre allí la web, pulsa Sincronizar → «Conectar con un código» y pega este código:', 'To connect another device (your phone, say), open the site there, hit Sync → “Connect with a code” and paste this code:')}</p>
               <div className="sync-codigo">
                 <code>{codigoSync(sync.url, sync.room)}</code>
-                <button className="chip-btn" onClick={copiarCodigo}>{copiado ? '¡Copiado!' : 'Copiar'}</button>
+                <button className="chip-btn" onClick={copiarCodigo}>{copiado ? tr('¡Copiado!', 'Copied!') : tr('Copiar', 'Copy')}</button>
               </div>
               <div className="modal-acciones">
                 <button className="chip-btn peligro" onClick={() => { onDesactivar(); setModo('menu') }}>
-                  Desconectar este dispositivo
+                  {tr('Desconectar este dispositivo', 'Disconnect this device')}
                 </button>
               </div>
             </>
           ) : modo === 'crear' ? (
             <>
-              <p className="modal-res">Necesitas una base de datos gratuita de Firebase (2 minutos, una sola vez):</p>
+              <p className="modal-res">{tr('Necesitas una base de datos gratuita de Firebase (2 minutos, una sola vez):', 'You need a free Firebase database (2 minutes, once):')}</p>
               <ol className="sync-pasos">
-                <li>Entra en <b>console.firebase.google.com</b> con tu cuenta de Google y crea un proyecto (el nombre da igual).</li>
-                <li>En el menú: <b>Compilación → Realtime Database → Crear base de datos</b>, elige la zona y el <b>modo de prueba</b>.</li>
-                <li>En la pestaña <b>Reglas</b>, deja lectura y escritura en <code>true</code> y publica.</li>
-                <li>Copia la <b>URL</b> que aparece arriba de la pestaña Datos (algo como <code>https://tu-proyecto-default-rtdb.europe-west1.firebasedatabase.app</code>) y pégala aquí:</li>
+                <li>{tr(<>Entra en <b>console.firebase.google.com</b> con tu cuenta de Google y crea un proyecto (el nombre da igual).</>, <>Go to <b>console.firebase.google.com</b> with your Google account and create a project (the name doesn’t matter).</>)}</li>
+                <li>{tr(<>En el menú: <b>Compilación → Realtime Database → Crear base de datos</b>, elige la zona y el <b>modo de prueba</b>.</>, <>In the menu: <b>Build → Realtime Database → Create database</b>, pick a region and <b>test mode</b>.</>)}</li>
+                <li>{tr(<>En la pestaña <b>Reglas</b>, deja lectura y escritura en <code>true</code> y publica.</>, <>In the <b>Rules</b> tab, leave read and write as <code>true</code> and publish.</>)}</li>
+                <li>{tr(<>Copia la <b>URL</b> que aparece arriba de la pestaña Datos (algo como <code>https://tu-proyecto-default-rtdb.europe-west1.firebasedatabase.app</code>) y pégala aquí:</>, <>Copy the <b>URL</b> shown above the Data tab (something like <code>https://your-project-default-rtdb.europe-west1.firebasedatabase.app</code>) and paste it here:</>)}</li>
               </ol>
               <input className="busca sync-input" type="url" name="dburl" placeholder="https://…firebasedatabase.app" spellCheck={false}
-                autoComplete="off" aria-label="URL de la base de datos" value={url} onChange={e => setUrl(e.target.value)} />
+                autoComplete="off" aria-label={tr('URL de la base de datos', 'Database URL')} value={url} onChange={e => setUrl(e.target.value)} />
               {error && <p className="import-error">{error}</p>}
               <div className="modal-acciones">
-                <button className="accion-principal" onClick={crear}>Activar sincronización</button>
-                <button className="chip-btn" onClick={() => { setModo('menu'); setError('') }}>Volver</button>
+                <button className="accion-principal" onClick={crear}>{tr('Activar sincronización', 'Turn on sync')}</button>
+                <button className="chip-btn" onClick={() => { setModo('menu'); setError('') }}>{tr('Volver', 'Back')}</button>
               </div>
             </>
           ) : modo === 'unir' ? (
             <>
-              <p className="modal-res">Pega el código que te dio tu otro dispositivo:</p>
-              <input className="busca sync-input" name="codigo" placeholder="Código de sincronización" spellCheck={false}
-                autoComplete="off" aria-label="Código de sincronización" value={codigo} onChange={e => setCodigo(e.target.value)} />
+              <p className="modal-res">{tr('Pega el código que te dio tu otro dispositivo:', 'Paste the code your other device gave you:')}</p>
+              <input className="busca sync-input" name="codigo" placeholder={tr('Código de sincronización', 'Sync code')} spellCheck={false}
+                autoComplete="off" aria-label={tr('Código de sincronización', 'Sync code')} value={codigo} onChange={e => setCodigo(e.target.value)} />
               {error && <p className="import-error">{error}</p>}
               <div className="modal-acciones">
-                <button className="accion-principal" onClick={unirse}>Conectar</button>
-                <button className="chip-btn" onClick={() => { setModo('menu'); setError('') }}>Volver</button>
+                <button className="accion-principal" onClick={unirse}>{tr('Conectar', 'Connect')}</button>
+                <button className="chip-btn" onClick={() => { setModo('menu'); setError('') }}>{tr('Volver', 'Back')}</button>
               </div>
             </>
           ) : (
             <>
-              <p className="modal-res">Conecta tus dispositivos para que el progreso se comparta solo,
-                usando tu propia base de datos gratuita de Firebase (tus datos son solo tuyos).</p>
+              <p className="modal-res">{tr('Conecta tus dispositivos para que el progreso se comparta solo, usando tu propia base de datos gratuita de Firebase (tus datos son solo tuyos).', 'Connect your devices so progress shares itself, using your own free Firebase database (your data stays yours).')}</p>
               <div className="modal-acciones">
-                <button className="accion-principal" onClick={() => setModo('crear')}>Soy el primer dispositivo</button>
-                <button className="chip-btn" onClick={() => setModo('unir')}>Conectar con un código</button>
+                <button className="accion-principal" onClick={() => setModo('crear')}>{tr('Soy el primer dispositivo', 'This is my first device')}</button>
+                <button className="chip-btn" onClick={() => setModo('unir')}>{tr('Conectar con un código', 'Connect with a code')}</button>
               </div>
             </>
           )}
@@ -4818,7 +4899,7 @@ function DescPlegable({ texto }) {
     <div className={`saga-desc-wrap${abierta ? ' abierta' : ''}${larga || abierta ? ' larga' : ''}`}>
       <p className="saga-desc" ref={ref}>{texto}</p>
       <button type="button" className="leer-mas" aria-expanded={abierta} onClick={() => setAbierta(a => !a)}>
-        {abierta ? 'Leer menos' : 'Leer más'}
+        {abierta ? tr('Leer menos', 'Read less') : tr('Leer más', 'Read more')}
       </button>
     </div>
   )
@@ -4859,9 +4940,9 @@ function Datos({ onReset }) {
     let datos
     try {
       datos = JSON.parse(decodeURIComponent(escape(atob(codigo.trim()))))
-    } catch { setMsgImport('Código no válido'); return }
+    } catch { setMsgImport(tr('Código no válido', 'Invalid code')); return }
     if (!datos || typeof datos !== 'object' || (!datos.v && !datos.e && !datos.n && !datos.l)) {
-      setMsgImport('Código no válido'); return
+      setMsgImport(tr('Código no válido', 'Invalid code')); return
     }
     // cargar un código REEMPLAZA el progreso: si hay algo que perder, se avisa
     let tengo = 0
@@ -4905,7 +4986,7 @@ function Datos({ onReset }) {
         })
         window.location.reload()
       } catch {
-        setMsgImport('Ese archivo no parece una copia de la app')
+        setMsgImport(tr('Ese archivo no parece una copia de la app', 'That file doesn’t look like a backup from this app'))
         setImportando(true)
       }
     }
@@ -4915,11 +4996,11 @@ function Datos({ onReset }) {
     <>
       <div className="ajuste">
         <div className="ajuste-cab">
-          <h3 className="ajuste-titulo">Sonido</h3>
-          <p className="ajuste-pista">Un toque breve al marcar un título como visto.</p>
+          <h3 className="ajuste-titulo">{tr('Sonido', 'Sound')}</h3>
+          <p className="ajuste-pista">{tr('Un toque breve al marcar un título como visto.', 'A short pop when you mark a title as watched.')}</p>
         </div>
         <div className="ajuste-ops">
-          {[[true, 'Sí'], [false, 'No']].map(([v, t]) => (
+          {[[true, tr('Sí', 'Yes')], [false, 'No']].map(([v, t]) => (
             <button key={t} className="chip-btn" aria-pressed={sonido === v} onClick={() => {
               if (sonido === v) return
               setSonido(v)
@@ -4932,43 +5013,45 @@ function Datos({ onReset }) {
 
       <div className="ajuste">
         <div className="ajuste-cab">
-          <h3 className="ajuste-titulo">Tu progreso</h3>
-          <p className="ajuste-pista">Un código para llevar lo visto a otro navegador, o una copia completa en archivo: progreso, episodios, notas, listas y lecturas.</p>
+          <h3 className="ajuste-titulo">{tr('Tu progreso', 'Your progress')}</h3>
+          <p className="ajuste-pista">{tr('Un código para llevar lo visto a otro navegador, o una copia completa en archivo: progreso, episodios, notas, listas y lecturas.', 'A code to carry your progress to another browser, or a full backup file: progress, episodes, notes, lists and readings.')}</p>
         </div>
         <div className="ajuste-ops">
           <button className="chip-btn" onClick={exportar}>
-            {copiado ? '¡Copiado!' : 'Copiar código'}
+            {copiado ? tr('¡Copiado!', 'Copied!') : tr('Copiar código', 'Copy code')}
           </button>
           <button className="chip-btn" onClick={() => { setImportando(i => !i); setMsgImport('') }}>
-            {importando ? 'Cancelar' : 'Cargar código'}
+            {importando ? tr('Cancelar', 'Cancel') : tr('Cargar código', 'Load code')}
           </button>
-          <button className="chip-btn" onClick={descargaCopia}>Descargar copia</button>
+          <button className="chip-btn" onClick={descargaCopia}>{tr('Descargar copia', 'Download backup')}</button>
           <label className="chip-btn restaurar">
-            Restaurar copia
-            <input type="file" accept="application/json,.json" onChange={restauraCopia} aria-label="Restaurar copia de seguridad" />
+            {tr('Restaurar copia', 'Restore backup')}
+            <input type="file" accept="application/json,.json" onChange={restauraCopia} aria-label={tr('Restaurar copia de seguridad', 'Restore backup')} />
           </label>
         </div>
         {importando && (
           <span className="importar">
-            <input className="busca" name="codigo-progreso" placeholder="Pega el código aquí" spellCheck={false} autoComplete="off"
-              aria-label="Código de progreso" value={codigo} onChange={e => setCodigo(e.target.value)} />
-            <button className="chip-btn" onClick={importar}>Cargar</button>
+            <input className="busca" name="codigo-progreso" placeholder={tr('Pega el código aquí', 'Paste the code here')} spellCheck={false} autoComplete="off"
+              aria-label={tr('Código de progreso', 'Progress code')} value={codigo} onChange={e => setCodigo(e.target.value)} />
+            <button className="chip-btn" onClick={importar}>{tr('Cargar', 'Load')}</button>
             {msgImport && <span className="import-error">{msgImport}</span>}
           </span>
         )}
         {confirmaImport && (
-          <div className="aviso peligro" role="alertdialog" aria-label="Confirmar carga de progreso">
+          <div className="aviso peligro" role="alertdialog" aria-label={tr('Confirmar carga de progreso', 'Confirm loading progress')}>
             <p className="aviso-texto">
-              Cargar este código <b>sustituye</b> tu progreso: pasarías de{' '}
+              {tr(<>Cargar este código <b>sustituye</b> tu progreso: pasarías de{' '}
               <b>{confirmaImport.tengo} título{confirmaImport.tengo === 1 ? '' : 's'}</b> a{' '}
-              <b>{confirmaImport.traen} título{confirmaImport.traen === 1 ? '' : 's'}</b>.
-              {confirmaImport.traen < confirmaImport.tengo && ' Esto no se puede deshacer: descarga antes una copia si quieres conservarlo.'}
+              <b>{confirmaImport.traen} título{confirmaImport.traen === 1 ? '' : 's'}</b>.</>, <>Loading this code <b>replaces</b> your progress: you’d go from{' '}
+              <b>{confirmaImport.tengo} title{confirmaImport.tengo === 1 ? '' : 's'}</b> to{' '}
+              <b>{confirmaImport.traen} title{confirmaImport.traen === 1 ? '' : 's'}</b>.</>)}
+              {confirmaImport.traen < confirmaImport.tengo && tr(' Esto no se puede deshacer: descarga antes una copia si quieres conservarlo.', ' This can’t be undone: download a backup first if you want to keep it.')}
             </p>
             <div className="aviso-acciones">
               <button className="chip-btn peligro" onClick={() => aplicaImport(confirmaImport.datos)}>
-                Sí, sustituir mi progreso
+                {tr('Sí, sustituir mi progreso', 'Yes, replace my progress')}
               </button>
-              <button className="chip-btn" onClick={() => setConfirmaImport(null)}>Cancelar</button>
+              <button className="chip-btn" onClick={() => setConfirmaImport(null)}>{tr('Cancelar', 'Cancel')}</button>
             </div>
           </div>
         )}
@@ -4976,16 +5059,16 @@ function Datos({ onReset }) {
 
       <div className="ajuste">
         <div className="ajuste-cab">
-          <h3 className="ajuste-titulo">Empezar de cero</h3>
-          <p className="ajuste-pista">Borra lo visto y las lecturas de este navegador. Las notas, las listas y los ajustes se quedan.</p>
+          <h3 className="ajuste-titulo">{tr('Empezar de cero', 'Start over')}</h3>
+          <p className="ajuste-pista">{tr('Borra lo visto y las lecturas de este navegador. Las notas, las listas y los ajustes se quedan.', 'Erases watched titles and readings from this browser. Notes, lists and settings stay.')}</p>
         </div>
         <div className="ajuste-ops">
           <button className="chip-btn" onClick={() => setConfirmando(c => !c)}>
-            {confirmando ? 'Cancelar' : 'Reiniciar progreso'}
+            {confirmando ? tr('Cancelar', 'Cancel') : tr('Reiniciar progreso', 'Reset progress')}
           </button>
           {confirmando && (
             <button className="chip-btn peligro" onClick={() => { onReset(); setConfirmando(false) }}>
-              ¿Seguro? Sí, borrar todo
+              {tr('¿Seguro? Sí, borrar todo', 'Sure? Yes, erase it all')}
             </button>
           )}
         </div>
@@ -5007,17 +5090,18 @@ function Footer({ onAjustes }) {
   return (
     <footer>
       <p className="nota-pie">
-        Pulsa una tarjeta para ver su ficha completa; la casilla redonda marca vista o pendiente y se guarda en este navegador.
-        Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas.
-        La Ruta express deja solo lo imprescindible para llegar a {TITULOS.doomsday}.
+        {tr(`Pulsa una tarjeta para ver su ficha completa; la casilla redonda marca vista o pendiente y se guarda en este navegador. Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas. La Ruta express deja solo lo imprescindible para llegar a ${TITULOS.doomsday}.`,
+        `Tap a card for its full page; the round box marks watched or pending and saves in this browser. Stars are the IMDb rating and series runtimes are approximate. The Express route keeps only what’s essential to reach ${TITULOS.doomsday}.`)}
       </p>
-      <button className="chip-btn pie-ajustes" onClick={onAjustes}>Copia de seguridad y código</button>
+      <button className="chip-btn pie-ajustes" onClick={onAjustes}>{tr('Copia de seguridad y código', 'Backup and code')}</button>
       {rescate && Object.keys(rescate.v || {}).length > 0 && (
         <div className="aviso info en-pie" role="status">
           <p className="aviso-texto">
-            La sincronización dejó tu progreso a cero y antes tenías{' '}
+            {tr(<>La sincronización dejó tu progreso a cero y antes tenías{' '}
             <b>{Object.keys(rescate.v).length} título{Object.keys(rescate.v).length === 1 ? '' : 's'}</b>.
-            Se guardó una copia por si fue un accidente.
+            Se guardó una copia por si fue un accidente.</>, <>Sync left your progress at zero and you had{' '}
+            <b>{Object.keys(rescate.v).length} title{Object.keys(rescate.v).length === 1 ? '' : 's'}</b> before.
+            A copy was saved in case it was an accident.</>)}
           </p>
           <div className="aviso-acciones">
             <button className="chip-btn destacado" aria-pressed="false" onClick={() => {
@@ -5029,18 +5113,20 @@ function Footer({ onAjustes }) {
                 localStorage.removeItem(KEY_RESCATE)
               } catch {}
               window.location.reload()
-            }}>Recuperar ese progreso</button>
+            }}>{tr('Recuperar ese progreso', 'Recover that progress')}</button>
             <button className="chip-btn" onClick={() => {
               try { localStorage.removeItem(KEY_RESCATE) } catch {}
               setRescate(null)
-            }}>Descartar</button>
+            }}>{tr('Descartar', 'Dismiss')}</button>
           </div>
         </div>
       )}
       <p className="nota-pie nota-creditos">
-        Carátulas, fotogramas, tráilers y reparto de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a>;
+        {tr(<>Carátulas, fotogramas, tráilers y reparto de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a>;
         este producto usa su API pero no está avalado ni certificado por TMDB.
-        La disponibilidad por plataforma y sus logos vienen de <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> a través de TMDB.
+        La disponibilidad por plataforma y sus logos vienen de <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> a través de TMDB.</>, <>Covers, stills, trailers and cast from <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a>;
+        this product uses their API but is not endorsed or certified by TMDB.
+        Platform availability and logos come from <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> via TMDB.</>)}
       </p>
     </footer>
   )

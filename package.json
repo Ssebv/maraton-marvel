@@ -8,9 +8,11 @@
     "build": "node scripts/verifica.mjs && node scripts/webp.mjs && node scripts/gen-novedades.mjs && vite build",
     "desplegar": "npm run build && rm -rf docs && cp -R dist docs && node scripts/verifica.mjs",
     "contrato": "node scripts/contrato.mjs",
-    "plataformas": "node scripts/plataformas.mjs; node scripts/paises.mjs; node scripts/titulos.mjs; node scripts/episodios.mjs",
+    "plataformas": "node scripts/plataformas.mjs; node scripts/paises.mjs; node scripts/titulos.mjs; node scripts/titulos-en.mjs; node scripts/episodios.mjs; node scripts/episodios-en.mjs",
     "titulos": "node scripts/titulos.mjs",
+    "titulos-en": "node scripts/titulos-en.mjs",
     "episodios": "node scripts/episodios.mjs",
+    "episodios-en": "node scripts/episodios-en.mjs",
     "webp": "node scripts/webp.mjs"
   },
   "keywords": [],
