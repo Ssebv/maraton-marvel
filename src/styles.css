@@ -1869,6 +1869,20 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .sello-mini{font-size: var(--t-xs); border-width:2px; padding: var(--e-1) var(--e-3); letter-spacing:.09em}
 .cover-wrap{position:relative}
 .bienvenida-pasos{margin: var(--e-2) 0 0; padding-left: var(--e-6); display:flex; flex-direction:column; gap: var(--e-4); font-size: var(--t-b); line-height:1.55}
+/* ── Horario de maratón ── */
+.hor-campos{display:flex; flex-direction:column; gap: var(--e-4); margin-top: var(--e-2)}
+.hor-dias{display:flex; gap: var(--e-2); flex-wrap:wrap}
+.hor-dia{min-width:38px; text-align:center}
+.hor-fila{display:flex; gap: var(--e-2); flex-wrap:wrap; align-items:center}
+.hor-hora-label{font-size: var(--t-m); color:var(--ink2); display:inline-flex; align-items:center; gap: var(--e-2)}
+.hor-hora{width:auto; padding: var(--e-2) var(--e-3)}
+.hor-resumen{margin: var(--e-4) 0 0; font-size: var(--t-m); color:var(--ink2)}
+.hor-veredicto{margin: var(--e-2) 0 0; font-size: var(--t-m); color:var(--ink2); line-height:1.5}
+.hor-sesiones{list-style:none; margin: var(--e-4) 0 0; padding:0; display:flex; flex-direction:column; gap: var(--e-3)}
+.hor-sesion{display:flex; gap: var(--e-4); font-size: var(--t-m); line-height:1.45}
+.hor-fecha{flex:0 0 88px; font-weight:600; color:var(--ink2)}
+.hor-que{color:var(--ink)}
+.hor-cola{margin: var(--e-3) 0 0; font-size: var(--t-s); color:var(--ink3)}
 .bienvenida-pais{display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-2)}
 .bienvenida-pais-label{font-size: var(--t-m); font-weight:600; color:var(--ink2)}
 .bienvenida-pais-pista{flex-basis:100%; margin:0; font-size: var(--t-s); color:var(--ink3)}

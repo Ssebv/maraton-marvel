@@ -21,6 +21,8 @@ const KEY_FONDO = 'maraton-marvel-fondo-v1'
 const KEY_RESCATE = 'maraton-marvel-rescate-v1'
 // página por la que va cada cómic leído en la app: { id: { p, t } }
 const KEY_LECTOR = 'maraton-marvel-lector-v1'
+// horario de visionado: { dias: [0-6], min, hora: 'HH:MM', exp }
+const KEY_HORARIO = 'maraton-marvel-horario-v1'
 
 // Pósters propios (public/mini, 200 px) para el fondo del encabezado y las franjas de saga
 const MURO = ['avengers1', 'endgame', 'logan', 'deadpool1', 'cap1', 'blackpanther',
@@ -110,6 +112,17 @@ const saneaListas = x => {
     items: Array.isArray(l.items) ? l.items.filter(i => typeof i === 'string') : [],
     prog: saneaMarcas(l.prog) || {},
   }))
+}
+// { dias: [días de la semana como los cuenta getDay()], min: por sesión,
+//   hora: 'HH:MM', exp: solo ruta express }. Sin días o sin minutos no hay
+//   horario: se descarta entero.
+const saneaHorario = x => {
+  if (!esObj(x)) return null
+  const dias = Array.isArray(x.dias) ? [...new Set(x.dias.filter(d => Number.isInteger(d) && d >= 0 && d <= 6))] : []
+  if (!dias.length) return null
+  if (typeof x.min !== 'number' || !isFinite(x.min) || x.min < 15 || x.min > 600) return null
+  const hora = typeof x.hora === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x.hora) ? x.hora : '21:00'
+  return { dias, min: Math.round(x.min), hora, exp: x.exp !== false }
 }
 // La vista que estás mirando —búsqueda y filtros— vive en la URL: así se puede
 // compartir «los pendientes de X-Men que son joyas» y, de paso, sobrevive a una
@@ -658,7 +671,7 @@ function FichaPersona({ nombre, rol, papel, tmdbId, onVolver, onAbrirTitulo, ite
   )
 }
 
-function CuentaAtras({ meta }) {
+function CuentaAtras({ meta, horario, onHorario }) {
   const [ahora, setAhora] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setAhora(Date.now()), 1000)
@@ -717,6 +730,20 @@ function CuentaAtras({ meta }) {
               </span>
             )
           })()}
+          {horario && (() => {
+            const hoyD = new Date().getDay()
+            const esHoy = horario.dias.includes(hoyD)
+            let prox = (hoyD + 1) % 7
+            while (!horario.dias.includes(prox)) prox = (prox + 1) % 7
+            return (
+              <span className="objetivo-chip neutro">
+                {esHoy
+                  ? `Hoy hay sesión a las ${horario.hora} · ${fmtDur(horario.min)}`
+                  : `Próxima sesión: ${DIA_LARGO[prox]} a las ${horario.hora}`}
+              </span>
+            )
+          })()}
+          <button className="chip-btn aviso-btn" onClick={onHorario}>{horario ? 'Horario' : 'Ponerme un horario'}</button>
           <button className="chip-btn aviso-btn" onClick={() => descargaIcs(objetivo)}>Al calendario</button>
           <AvisosBtn />
         </div>
@@ -1342,38 +1369,32 @@ function Novedades({ eps }) {
 
 // Un .ics de un evento de día completo: el calendario del sistema lo abre tal
 // cual, en iOS y Android igual, sin servidor de por medio.
-function descargaIcs(e) {
-  const dia = e.fecha.replace(/-/g, '')
-  const fin = new Date(new Date(e.fecha + 'T00:00:00Z').getTime() + 864e5).toISOString().slice(0, 10).replace(/-/g, '')
-  // un salto de línea en una nota partiría el evento en dos propiedades
-  const esc = s => String(s || '').replace(/\r?\n/g, ' ').replace(/([,;\\])/g, '\\$1')
-  // iCalendar parte las líneas a 75 octetos (no caracteres: las tildes pesan 2)
-  const pliega = linea => {
-    const out = []; let actual = '', bytes = 0
-    for (const ch of linea) {
-      const b = new TextEncoder().encode(ch).length
-      if (bytes + b > 74) { out.push(actual); actual = ' ' + ch; bytes = 1 + b } else { actual += ch; bytes += b }
-    }
-    out.push(actual)
-    return out.join('\r\n')
+// un salto de línea en una nota partiría el evento en dos propiedades
+const icsEsc = s => String(s || '').replace(/\r?\n/g, ' ').replace(/([,;\\])/g, '\\$1')
+// iCalendar parte las líneas a 75 octetos (no caracteres: las tildes pesan 2)
+const icsPliega = linea => {
+  const out = []; let actual = '', bytes = 0
+  for (const ch of linea) {
+    const b = new TextEncoder().encode(ch).length
+    if (bytes + b > 74) { out.push(actual); actual = ' ' + ch; bytes = 1 + b } else { actual += ch; bytes += b }
   }
+  out.push(actual)
+  return out.join('\r\n')
+}
+// Envuelve un VEVENT y lo entrega: hoja de compartir con el dedo (en la app
+// instalada de iOS una descarga por <a download> puede no hacer nada, y sin
+// aviso), descarga normal con el ratón.
+function bajaIcs(nombre, titulo, veventLineas) {
   const ics = [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//maraton-marvel//ES', 'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT',
-    `UID:${dia}-${e.t.replace(/[^\w]/g, '').slice(0, 24)}@maraton-marvel`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
-    `DTSTART;VALUE=DATE:${dia}`,
-    `DTEND;VALUE=DATE:${fin}`,
-    `SUMMARY:${esc('Estreno: ' + e.t)}`,
-    `DESCRIPTION:${esc((e.tipo ? e.tipo + '. ' : '') + (e.n || ''))}`,
+    ...veventLineas,
     'END:VEVENT', 'END:VCALENDAR',
-  ].map(pliega).join('\r\n')
-  const nombre = `estreno-${e.t.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '')}.ics`
-  // Con el dedo va por la hoja de compartir del sistema: en la app instalada
-  // de iOS una descarga por <a download> puede no hacer nada, y sin aviso.
+  ].map(icsPliega).join('\r\n')
   const archivo = new File([ics], nombre, { type: 'text/calendar' })
   if (ES_TACTIL && navigator.canShare && navigator.canShare({ files: [archivo] })) {
-    navigator.share({ files: [archivo], title: 'Estreno: ' + e.t }).catch(() => {})
+    navigator.share({ files: [archivo], title: titulo }).catch(() => {})
     return
   }
   const url = URL.createObjectURL(archivo)
@@ -1384,6 +1405,185 @@ function descargaIcs(e) {
   a.click()
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 4000)
+}
+function descargaIcs(e) {
+  const dia = e.fecha.replace(/-/g, '')
+  const fin = new Date(new Date(e.fecha + 'T00:00:00Z').getTime() + 864e5).toISOString().slice(0, 10).replace(/-/g, '')
+  bajaIcs(`estreno-${e.t.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '')}.ics`, 'Estreno: ' + e.t, [
+    `UID:${dia}-${e.t.replace(/[^\w]/g, '').slice(0, 24)}@maraton-marvel`,
+    `DTSTART;VALUE=DATE:${dia}`,
+    `DTEND;VALUE=DATE:${fin}`,
+    `SUMMARY:${icsEsc('Estreno: ' + e.t)}`,
+    `DESCRIPTION:${icsEsc((e.tipo ? e.tipo + '. ' : '') + (e.n || ''))}`,
+  ])
+}
+// El horario entero cabe en UN evento semanal: los días elegidos como BYDAY y
+// la fecha fin como UNTIL. DTSTART va en hora local flotante y el RFC pide
+// entonces que UNTIL también lo vaya.
+function descargaIcsHorario(h, sim) {
+  if (!sim.sesiones.length || !sim.fin) return
+  const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA']
+  const fmt = d => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+  bajaIcs('horario-maraton.ics', 'Horario del maratón', [
+    `UID:horario-${fmt(sim.sesiones[0].fecha)}@maraton-marvel`,
+    `DTSTART:${fmt(sim.sesiones[0].fecha)}T${h.hora.replace(':', '')}00`,
+    `DURATION:PT${h.min}M`,
+    `RRULE:FREQ=WEEKLY;BYDAY=${h.dias.map(d => BYDAY[d]).join(',')};UNTIL=${fmt(sim.fin)}T235959`,
+    `SUMMARY:${icsEsc('Sesión de maratón Marvel')}`,
+    `DESCRIPTION:${icsEsc(`${fmtDur(h.min)} siguiendo el orden del maratón. La app dice qué toca cada día.`)}`,
+  ])
+}
+
+// ── Horario de visionado: qué días ves, cuánto rato, y cuándo terminas ──
+const DIAS_ORDEN = [1, 2, 3, 4, 5, 6, 0] // lunes primero; getDay() cuenta desde domingo
+const DIA_LETRA = { 1: 'L', 2: 'M', 3: 'X', 4: 'J', 5: 'V', 6: 'S', 0: 'D' }
+const DIA_LARGO = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+
+// Recorre el calendario por los días elegidos y consume lo pendiente en el
+// orden del maratón: las series por tandas de episodios que quepan en la
+// sesión, las películas enteras (una más larga que la sesión se ve igual,
+// pasándose). Devuelve las primeras sesiones con su contenido, cuántas hacen
+// falta en total y la fecha en que se acaba.
+function simulaHorario(h, vistas, eps, detalladas = 5) {
+  const cola = []
+  DATA.forEach(sg => {
+    if (sg.saga === 'comics' || sg.saga === 'animacion') return
+    sg.eras.forEach(era => era.items.forEach(it => {
+      if (vistas[it.id] || !it.d) return
+      if (h.exp && !it.exp) return
+      if (it.tipo === 'serie' && EPISODES[it.id]) {
+        const pend = EPISODES[it.id].filter(e => !eps[`${it.id}:${e.s}:${e.n}`])
+        if (pend.length) cola.push({ item: it, eps: pend, porEp: it.d / EPISODES[it.id].length })
+      } else cola.push({ item: it, min: it.d })
+    }))
+  })
+  const totalMin = Math.round(cola.reduce((s, u) => s + (u.min || u.eps.length * u.porEp), 0))
+  const sesiones = []
+  let nSesiones = 0, fin = null
+  const f = new Date(); f.setHours(0, 0, 0, 0)
+  // dos años de tope: si ni así se acaba, con ese horario no se acaba
+  for (let paso = 0; paso < 740 && cola.length; paso++, f.setDate(f.getDate() + 1)) {
+    if (!h.dias.includes(f.getDay())) continue
+    let resto = h.min
+    const trozos = []
+    while (cola.length && resto > 0) {
+      const u = cola[0]
+      if (u.eps) {
+        const caben = Math.min(u.eps.length, Math.floor(resto / u.porEp))
+        // en una sesión aún vacía siempre cae al menos un episodio
+        const n = trozos.length ? caben : Math.max(1, caben)
+        if (n < 1) break
+        const desde = u.eps[0], hasta = u.eps[n - 1]
+        trozos.push({ item: u.item, txt: n === 1 ? `T${desde.s}·E${desde.n}` : `T${desde.s}·E${desde.n}–T${hasta.s}·E${hasta.n}` })
+        resto -= n * u.porEp
+        u.eps = u.eps.slice(n)
+        if (!u.eps.length) cola.shift()
+      } else {
+        if (u.min > resto && trozos.length) break
+        trozos.push({ item: u.item })
+        resto -= u.min
+        cola.shift()
+      }
+    }
+    nSesiones++
+    fin = new Date(f)
+    if (sesiones.length < detalladas) sesiones.push({ fecha: new Date(f), trozos, min: Math.round(h.min - resto) })
+  }
+  return { totalMin, sesiones, nSesiones, fin, seAcaba: !cola.length }
+}
+
+function HorarioModal({ horario, onGuardar, vistas, eps, onClose }) {
+  const ref = useRef(null)
+  useDialogo(ref, onClose)
+  const [borr, setBorr] = useState(() => horario || { dias: [5, 6], min: 90, hora: '21:00', exp: true })
+  const toggleDia = d => setBorr(b => {
+    const dias = b.dias.includes(d) ? b.dias.filter(x => x !== d) : [...b.dias, d]
+    return dias.length ? { ...b, dias } : b // sin días no hay horario: el último no se suelta
+  })
+  const sim = useMemo(() => simulaHorario(borr, vistas, eps), [borr, vistas, eps])
+  const estreno = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
+  // cuántos minutos tendría que durar cada sesión para acabar antes del estreno
+  const necesario = useMemo(() => {
+    if (!estreno) return null
+    const tope = new Date(estreno.fecha + 'T00:00:00')
+    let n = 0
+    const f = new Date(); f.setHours(0, 0, 0, 0)
+    for (; f < tope; f.setDate(f.getDate() + 1)) if (borr.dias.includes(f.getDay())) n++
+    return n ? Math.ceil(sim.totalMin / n) : null
+  }, [borr, sim, estreno])
+  const llega = estreno && sim.fin && sim.seAcaba && sim.fin <= new Date(estreno.fecha + 'T00:00:00')
+  const fmtF = d => d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+  return (
+    <div className="overlay" ref={ref} tabIndex={-1} onClick={onClose} role="dialog" aria-modal="true" aria-label="Horario de maratón">
+      <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+        <button className="cerrar" onClick={onClose} aria-label="Cerrar">✕</button>
+        <div className="modal-info">
+          <h2 className="modal-titulo">Horario de maratón</h2>
+          <p className="modal-res">Elige qué días ves y cuánto rato: la app te dice qué toca cada sesión y cuándo terminas.</p>
+          <div className="hor-campos">
+            <div className="hor-dias" role="group" aria-label="Días de la semana">
+              {DIAS_ORDEN.map(d => (
+                <button key={d} className="chip-btn hor-dia" aria-pressed={borr.dias.includes(d)}
+                  aria-label={DIA_LARGO[d]} onClick={() => toggleDia(d)}>{DIA_LETRA[d]}</button>
+              ))}
+            </div>
+            <div className="hor-fila">
+              {[60, 90, 120, 180].map(m => (
+                <button key={m} className="chip-btn" aria-pressed={borr.min === m}
+                  onClick={() => setBorr(b => ({ ...b, min: m }))}>{fmtDur(m)}</button>
+              ))}
+              <label className="hor-hora-label">a las{' '}
+                <input className="busca hor-hora" type="time" value={borr.hora}
+                  onChange={e => { const v = e.target.value; if (v) setBorr(b => ({ ...b, hora: v })) }} />
+              </label>
+              <button className="chip-btn destacado" aria-pressed={borr.exp}
+                onClick={() => setBorr(b => ({ ...b, exp: !b.exp }))}>Solo ruta express</button>
+            </div>
+          </div>
+          {sim.totalMin === 0 ? (
+            <p className="modal-res">No queda nada pendiente{borr.exp ? ' en la ruta express. Quita el filtro para planificar el maratón completo.' : '. ¡Maratón terminado!'}</p>
+          ) : (
+            <>
+              <p className="hor-resumen">
+                {borr.dias.length === 1 ? 'Una sesión' : `${borr.dias.length} sesiones`} de {fmtDur(borr.min)} a la semana ·
+                quedan <b>{fmtDur(sim.totalMin)}</b> {borr.exp ? 'de la ruta express' : 'del maratón (sin cómics ni bóveda)'}
+              </p>
+              {sim.seAcaba && sim.fin ? (
+                <p className="hor-veredicto">
+                  Terminarías el <b>{sim.fin.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</b>, en {sim.nSesiones} sesiones
+                  {estreno && (llega
+                    ? <> — <b>llegas</b> al estreno de {estreno.t} ({fmtFecha(estreno.fecha)})</>
+                    : <> — después del estreno de {estreno.t}{necesario ? <>; con sesiones de <b>~{fmtDur(necesario)}</b> llegarías</> : ''}</>)}
+                </p>
+              ) : (
+                <p className="hor-veredicto">Con ese horario no se acaba ni en dos años: añade días o alarga la sesión.</p>
+              )}
+              <ul className="hor-sesiones">
+                {sim.sesiones.map((s, i) => (
+                  <li className="hor-sesion" key={i}>
+                    <span className="hor-fecha">{fmtF(s.fecha)}</span>
+                    <span className="hor-que">
+                      {s.trozos.map(t => t.txt ? `${t.item.t} (${t.txt})` : t.item.t).join(' + ')} · ~{fmtDur(s.min)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {sim.nSesiones > sim.sesiones.length && (
+                <p className="hor-cola">…y {sim.nSesiones - sim.sesiones.length} sesiones más, siempre con lo que toque entonces.</p>
+              )}
+            </>
+          )}
+          <div className="bienvenida-acciones">
+            <button className="accion-principal" onClick={() => { onGuardar(borr); onClose() }}>Guardar horario</button>
+            {sim.totalMin > 0 && sim.seAcaba && (
+              <button className="chip-btn" onClick={() => descargaIcsHorario(borr, sim)}>Al calendario</button>
+            )}
+            {horario && <button className="ghost" onClick={() => { onGuardar(null); onClose() }}>Quitar horario</button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function Proximos() {
@@ -2611,6 +2811,12 @@ export default function App() {
   const [planModal, setPlanModal] = useState(false)
   const [planHoras, setPlanHoras] = useState(2)
   const [planExpress, setPlanExpress] = useState(true)
+  const [horario, setHorario] = useState(() => leeGuardado(KEY_HORARIO, saneaHorario, null))
+  const [horarioModal, setHorarioModal] = useState(false)
+  const guardaHorario = h => {
+    setHorario(h)
+    try { h ? localStorage.setItem(KEY_HORARIO, JSON.stringify(h)) : localStorage.removeItem(KEY_HORARIO) } catch {}
+  }
   const [orden, setOrden] = useState('crono')
   const [listas, setListas] = useState(() => leeGuardado(KEY_LISTAS, saneaListas, []))
   const [listaActiva, setListaActiva] = useState(null)
@@ -2788,6 +2994,7 @@ export default function App() {
   useVolverCierra(!!lector, () => setLector(null))
   useVolverCierra(ajustes, () => setAjustes(false))
   useVolverCierra(planModal, () => setPlanModal(false))
+  useVolverCierra(horarioModal, () => setHorarioModal(false))
   useVolverCierra(perfilModal, () => setPerfilModal(false))
   useVolverCierra(syncModal, () => setSyncModal(false))
   useVolverCierra(dueloModal, () => setDueloModal(false))
@@ -2810,7 +3017,7 @@ export default function App() {
   }, [club, vistas, eps, perfil])
   useEffect(() => {
     const onKey = e => {
-      if (e.key === 'Escape') { setPlanModal(false); setPerfilModal(false); setSyncModal(false); setDueloModal(false); setClubModal(false); setClubInvitar(false) }
+      if (e.key === 'Escape') { setPlanModal(false); setHorarioModal(false); setPerfilModal(false); setSyncModal(false); setDueloModal(false); setClubModal(false); setClubInvitar(false) }
       if (e.key === '/' && !/INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) {
         const campo = document.querySelector('input[name="busqueda"]')
         if (campo) { e.preventDefault(); campo.focus() }
@@ -3369,7 +3576,7 @@ export default function App() {
         </div>
         <Proximos />
         </div>
-        <CuentaAtras meta={objetivo} />
+        <CuentaAtras meta={objetivo} horario={horario} onHorario={() => setHorarioModal(true)} />
       </div>
       {panelAbierto && (
         <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>Ocultar panel</button>
@@ -3406,6 +3613,7 @@ export default function App() {
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
           <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>Plan de sesión</button>
+          <button className="chip-btn" aria-pressed={horarioModal} onClick={() => setHorarioModal(true)}>Horario</button>
           <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>Modo cine</button>
           <button className="chip-btn" onClick={() => {
             const pendientes = []
@@ -4311,6 +4519,11 @@ export default function App() {
         </div>
       )}
 
+      {horarioModal && (
+        <HorarioModal horario={horario} onGuardar={guardaHorario}
+          vistas={vistas} eps={eps} onClose={() => setHorarioModal(false)} />
+      )}
+
       {syncModal && (
         <SyncModal pais={pais} sync={sync} estado={syncEstado}
           onActivar={activarSync} onDesactivar={desactivarSync}
@@ -4515,7 +4728,7 @@ function Datos({ onReset }) {
   const descargaCopia = () => {
     try {
       const datos = {}
-      const claves = [KEY, KEY_EPS, KEY_NOTAS, KEY_LISTAS, KEY_LECTOR, 'maraton-marvel-sync-v1', 'maraton-marvel-amigo-v1', 'maraton-marvel-club-v1']
+      const claves = [KEY, KEY_EPS, KEY_NOTAS, KEY_LISTAS, KEY_LECTOR, KEY_HORARIO, 'maraton-marvel-sync-v1', 'maraton-marvel-amigo-v1', 'maraton-marvel-club-v1']
       // y lo que se haya apartado por venir roto o por un rescate: es justo lo
       // que no se puede perder. La caché de TMDB no entra, que son megas y se
       // vuelve a bajar sola.
