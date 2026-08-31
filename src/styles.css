@@ -1897,8 +1897,10 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .cal-dia:disabled{cursor:default; color:var(--ink3); opacity:.55}
 /* con marcas encima va texto sobre el rojo mezclado: tinta plena y peso */
 .cal-dia.con{color:var(--ink); font-weight:700}
-.cal-dia.hoy{color:var(--red); font-weight:700}
-.cal-dia.con.hoy{color:var(--ink)}
+/* «hoy» se señala con subrayado, no con el rojo del tema: el --red oscuro
+   sobre --panel2 se queda en 4,34:1 con un número de 12 px (el criterio pide
+   4,5), y el subrayado no depende del color */
+.cal-dia.hoy{color:var(--ink); font-weight:700; text-decoration:underline; text-underline-offset:2px; text-decoration-thickness:1.5px}
 .cal-dia[aria-pressed="true"]{outline:2px solid var(--blue); outline-offset:1px}
 .cal-detalle{margin-top: var(--e-5)}
 .hor-campos{display:flex; flex-direction:column; gap: var(--e-4); margin-top: var(--e-2)}
@@ -1916,6 +1918,8 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .hor-cola{margin: var(--e-3) 0 0; font-size: var(--t-s); color:var(--ink3)}
 .bienvenida-pais{display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-2)}
 .bienvenida-idioma{display:inline-flex; gap: var(--e-2)}
+/* «X-Men» no se parte por su guion en el titular inglés */
+.sinparto{white-space:nowrap}
 .bienvenida-pais-label{font-size: var(--t-m); font-weight:600; color:var(--ink2)}
 .bienvenida-pais-pista{flex-basis:100%; margin:0; font-size: var(--t-s); color:var(--ink3)}
 .bienvenida-acciones{display:flex; gap: var(--e-4); flex-wrap:wrap; margin-top: var(--e-3)}

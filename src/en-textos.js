@@ -4,6 +4,8 @@
 // cuando el idioma elegido en Ajustes es English. Un texto sin entrada se
 // enseña en español: al añadir textos nuevos a data.js hay que traerlos aquí.
 export const EN_TEXTOS = {
+  "Multiverso": "Multiverse",
+  "Papel": "Print",
   "2 (mitad y final)": "2 (mid- and post-credits)",
   "1 al final": "1 at the end",
   "1 a mitad": "1 mid-credits",

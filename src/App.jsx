@@ -269,14 +269,15 @@ const clave = n => (n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').to
 
 const personaMem = {}
 async function cargaPersona(tmdbId) {
-  const k = tmdbPref() + tmdbId
+  const idi = tmdbIdioma()
+  const k = (idi === 'en-US' ? 'en:' : '') + tmdbId
   if (personaMem[k]) return personaMem[k]
   const ls = 'maraton-marvel-persona-v3:' + k
   try {
     const g = JSON.parse(localStorage.getItem(ls))
     if (g && Date.now() - g.t < 30 * 864e5) { personaMem[k] = g.d; return g.d }
   } catch {}
-  const j = await tmdbJson(`/person/${tmdbId}?append_to_response=combined_credits`)
+  const j = await tmdbJson(`/person/${tmdbId}?append_to_response=combined_credits`, idi)
   const d = {
     bio: typeof j.biography === 'string' ? j.biography.trim() : '',
     nacimiento: typeof j.birthday === 'string' ? j.birthday : null,
@@ -305,8 +306,12 @@ async function cargaPersona(tmdbId) {
 // para que cambiar de idioma no enseñe la mezcla ni pise la otra.
 const tmdbIdioma = () => (IDIOMA_ACTUAL === 'en' ? 'en-US' : 'es-ES')
 const tmdbPref = () => (IDIOMA_ACTUAL === 'en' ? 'en:' : '')
-async function tmdbJson(ruta) {
-  const r = await fetch(`https://api.themoviedb.org/3${ruta}${ruta.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=${tmdbIdioma()}`)
+// el idioma viaja como argumento: una carga con varias peticiones (base +
+// temporadas) lo congela AL ENTRAR — si se leyera en cada petición, cambiar
+// de idioma a mitad guardaba un objeto mezclado bajo la clave del idioma
+// viejo durante 7 días
+async function tmdbJson(ruta, idi = tmdbIdioma()) {
+  const r = await fetch(`https://api.themoviedb.org/3${ruta}${ruta.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=${idi}`)
   if (!r.ok) throw new Error('tmdb ' + r.status)
   return r.json()
 }
@@ -318,7 +323,8 @@ try {
   }
 } catch {}
 async function cargaTmdb(itemId) {
-  const k = tmdbPref() + itemId
+  const idi = tmdbIdioma()
+  const k = (idi === 'en-US' ? 'en:' : '') + itemId
   if (tmdbMem[k]) return tmdbMem[k]
   const m = TMDB[itemId]
   if (!m) return null
@@ -332,7 +338,7 @@ async function cargaTmdb(itemId) {
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[k] = g.d; return g.d }
   } catch {}
   const [tid, tipo] = m
-  const base = await tmdbJson(`/${tipo}/${tid}?append_to_response=videos,watch/providers,${tipo === 'tv' ? 'aggregate_credits' : 'credits'}`)
+  const base = await tmdbJson(`/${tipo}/${tid}?append_to_response=videos,watch/providers,${tipo === 'tv' ? 'aggregate_credits' : 'credits'}`, idi)
   const vids = (base.videos && base.videos.results) || []
   const tr = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official)
     || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer')
@@ -369,7 +375,7 @@ async function cargaTmdb(itemId) {
     const temporadas = [...new Set(EPISODES[itemId].map(e => e.s))]
     for (const t of temporadas) {
       try {
-        const sd = await tmdbJson(`/tv/${tid}/season/${t + (DESPLAZA_TEMPORADA[itemId] || 0)}`)
+        const sd = await tmdbJson(`/tv/${tid}/season/${t + (DESPLAZA_TEMPORADA[itemId] || 0)}`, idi)
         ;(sd.episodes || []).forEach(ep => {
           d.eps[`${t}:${ep.episode_number}`] = { im: ep.still_path || null, o: ep.overview || null }
         })
@@ -1110,8 +1116,11 @@ const leeIdiomaGuardado = () => {
     // ?lang=en en el enlace: para publicar la app en una comunidad en inglés
     // sin pedirle a nadie que toque Ajustes. Manda sobre lo guardado (quien
     // abre ese enlace eligió ese idioma) y se persiste como si lo eligiera;
-    // el efecto de la URL lo limpia al montar, como al ?ir=.
-    const p = new URLSearchParams(window.location.search).get('lang')
+    // el efecto de la URL lo limpia al montar, como al ?ir=. En un enlace de
+    // PERFIL no: ahí el efecto no limpia y un perfil compartido con ?lang
+    // reprogramaría el idioma del que lo mira en cada apertura.
+    const params = new URLSearchParams(window.location.search)
+    const p = params.get('perfil') ? null : params.get('lang')
     if (p === 'en' || p === 'es') {
       try { localStorage.setItem(KEY_IDIOMA, p) } catch {}
       return p
@@ -1135,14 +1144,14 @@ function aplicaTitulos(pais, idioma = IDIOMA_ACTUAL) {
     return latino && saga === 'comics' ? latiniza(T_ES[id]) : T_ES[id]
   }
   DATA.forEach(s => {
-    traduce(s, ['titulo', 'desc'], pasa)
+    traduce(s, ['titulo', 'desc', 'uni'], pasa)
     ;(s.guia || []).forEach(g => traduce(g, ['t', 'p'], pasa))
     s.eras.forEach(era => {
       traduce(era, ['era'], pasa)
       era.items.forEach(it => {
         it.t = titulo(it.id, s.saga)
         TITULOS[it.id] = it.t
-        traduce(it, ['res', 'n', 'pc', 'pcn'], pasa)
+        traduce(it, ['res', 'n', 'pc', 'pcn', 'uni'], pasa)
       })
     })
   })
@@ -3253,8 +3262,10 @@ export default function App() {
   const [pais, setPais] = useState(() => {
     let p = 'ES'
     try {
-      // ?pais=CL en el enlace: mismo trato que ?lang — manda y se persiste
-      const url = (new URLSearchParams(window.location.search).get('pais') || '').toUpperCase()
+      // ?pais=CL en el enlace: mismo trato que ?lang — manda y se persiste,
+      // salvo en un enlace de perfil (ver leeIdiomaGuardado)
+      const params = new URLSearchParams(window.location.search)
+      const url = (params.get('perfil') ? '' : params.get('pais') || '').toUpperCase()
       const g = localStorage.getItem('maraton-marvel-pais-v1')
       const region = (navigator.language || '').split('-')[1]
       if (url && PAISES.some(x => x.id === url)) {
@@ -3733,7 +3744,10 @@ export default function App() {
     const m = {}
     DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
       m[it.id] = norm([it.t, T_ES[it.id] || '', TITULOS_LATAM[it.id] || '', TITULOS_EN[it.id] || '', it.en || '', it.dir || '', ...(it.cast || []), String(it.r),
-        ...(EPISODES[it.id] || []).map(e => e.t)].join(' '))
+        // los episodios también en sus tres idiomas, como los títulos
+        ...(EP_ES[it.id] || []),
+        ...Object.values(EPISODIOS_LATAM[it.id] || {}),
+        ...Object.values(EPISODIOS_EN[it.id] || {})].join(' '))
     })))
     return m
   }, [pais, idioma])
@@ -3905,7 +3919,14 @@ export default function App() {
   // el chip y la fecha de fin para la proyección del panel. Vive aquí abajo y
   // no junto a su estado porque usa `vistas` y `eps`, que en el orden de App
   // se declaran después (zona muerta temporal).
-  const simHorario = useMemo(() => (horario ? simulaHorario(horario, vistas, eps, 1) : null), [horario, vistas, eps])
+  // diaHoy solo cambia al cruzar la medianoche: sin él, una app abierta de
+  // madrugada seguía enseñando como «hoy» la sesión de ayer
+  const [diaHoy, setDiaHoy] = useState(() => new Date().getDate())
+  useEffect(() => {
+    const id = setInterval(() => setDiaHoy(d => { const n = new Date().getDate(); return n === d ? d : n }), 60000)
+    return () => clearInterval(id)
+  }, [])
+  const simHorario = useMemo(() => (horario ? simulaHorario(horario, vistas, eps, 1) : null), [horario, vistas, eps, diaHoy])
   const sesionHoy = useMemo(() => {
     if (!simHorario) return null
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
@@ -4035,7 +4056,7 @@ export default function App() {
       <section className="hero">
         <div className="hero-titulo">
           <p className="hero-eyebrow">{tr('Guía de maratón · cronología completa', 'Marathon guide · the full chronology')}</p>
-          <h1>{tr(<>Maratón <span className="rojo">Marvel</span> &amp; X-Men</>, <><span className="rojo">Marvel</span> &amp; X-Men Marathon</>)}</h1>
+          <h1>{tr(<>Maratón <span className="rojo">Marvel</span> &amp; X-Men</>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}</h1>
         </div>
         <div className="stats">
           <div className="stat">
