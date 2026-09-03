@@ -1039,23 +1039,35 @@ window.addEventListener('popstate', () => {
   }
   if (!capasAtras.length || !entradaAtras) return
   entradaAtras = false
-  const capa = capasAtras.pop()
-  capa.cierra()
-  conciliaAtras()
+  // No se saca del registro aquí: cerrar una capa que sigue abierta con otra
+  // clave (la pila de fichas al volver un título) la re-registra en su sitio
+  // y vuelve a pedir su entrada; si de verdad se cierra, su limpieza la quita
+  // y concilia. Sacarla a mano dejaba la pila sin entrada al segundo atrás.
+  capasAtras[capasAtras.length - 1].cierra()
 })
+// `abierto` puede ser una clave (la longitud de una pila): al cambiar sin
+// apagarse, la capa se vuelve a registrar EN EL MISMO SITIO, no encima de las
+// que se registraron en ese mismo commit (la biografía que se reabre al
+// volver un título tiene que quedar por encima de la pila que la devolvió).
 // `elemento` (opcional) devuelve el nodo que sigue al dedo en el gesto de
 // volver; sin él se usa el diálogo que se está tocando (ver gestosDeVolver).
-function useVolverCierra(abierto, onCerrar, elemento) {
+// `dentro` marca capas que viven dentro de una hoja (biografía, pila): el
+// asa de la hoja las salta y cierra la hoja entera.
+function useVolverCierra(abierto, onCerrar, elemento, dentro = false) {
   const cierra = useRef(onCerrar)
   cierra.current = onCerrar
   const el = useRef(elemento)
   el.current = elemento
+  const sitio = useRef(-1)
   useEffect(() => {
-    if (!abierto) return undefined
-    const capa = { cierra: () => cierra.current(), el: () => el.current && el.current() }
-    capasAtras.push(capa)
+    if (!abierto) { sitio.current = -1; return undefined }
+    const capa = { cierra: () => cierra.current(), el: () => el.current && el.current(), dentro }
+    if (sitio.current >= 0) capasAtras.splice(Math.min(sitio.current, capasAtras.length), 0, capa)
+    else capasAtras.push(capa)
+    sitio.current = -1
     conciliaAtras()
     return () => {
+      sitio.current = capasAtras.indexOf(capa)
       capasAtras = capasAtras.filter(c => c !== capa)
       conciliaAtras()
     }
@@ -1069,14 +1081,17 @@ function useVolverCierra(abierto, onCerrar, elemento) {
 //  · desde el borde izquierdo hacia la derecha = atrás: la capa de arriba
 //    sigue al dedo (la hoja entera, el lector, el cine, o solo la biografía
 //    dentro de la ficha) y, pasado el umbral o con un latigazo, se cierra;
-//  · desde el asa de una hoja móvil hacia abajo = cerrar, con el mismo
-//    seguimiento (antes solo lo hacía la ficha; ahora Ajustes, Plan…).
+//  · desde el asa de una hoja móvil hacia abajo = cerrar la hoja, con el
+//    mismo seguimiento (antes solo lo hacía la ficha; ahora Ajustes, Plan…).
+//    Cierra la hoja entera aunque encima haya biografía o pila (capas
+//    `dentro`): es el gesto de descartar, no el de volver.
 // El nodo que se mueve es el diálogo bajo el dedo (lo que se toca es lo que
 // está encima), salvo que la capa haya dicho otro. Cerrar pasa por la misma
 // función que el aspa o el botón atrás: el historial se concilia solo.
 // La franja del borde es exclusiva del gesto (se corta la propagación en
 // captura) para que pasar página en el lector o cambiar de título en la
-// ficha no se disparen a la vez.
+// ficha no se disparen a la vez. El touchmove no pasivo solo se escucha
+// mientras hay gesto armado: no se le quita el scroll pasivo a toda la app.
 const BORDE_ATRAS = 24
 const movimientoReducido = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 function gestosDeVolver() {
@@ -1091,28 +1106,46 @@ function gestosDeVolver() {
     return (dialogo.classList.contains('overlay') && dialogo.querySelector(':scope > .modal')) || dialogo
   }
   const velo = el => el.parentElement && el.parentElement.classList.contains('overlay') ? el.parentElement : null
+  // la biografía y las vistas entran con una animación con fill:both cuyo
+  // último cuadro es transform:none, que pisa el transform en línea: mientras
+  // el nodo sigue al dedo se le quita el relleno (no reinicia la animación)
+  const agarra = el => {
+    // y si aún está entrando, se la lleva al final: mientras corre, el valor
+    // de la animación manda sobre el transform en línea
+    try { el.getAnimations().forEach(a => a.finish()) } catch {}
+    el.style.animationFillMode = 'none'; el.style.transition = 'none'
+  }
   const suelta = el => {
-    el.style.transition = ''; el.style.transform = ''
+    el.style.transition = ''; el.style.transform = ''; el.style.animationFillMode = ''
     const v = velo(el)
     if (v) { v.style.transition = ''; v.style.removeProperty('--arrastre') }
   }
+  const arma = () => window.addEventListener('touchmove', onMove, { passive: false })
+  const desarma = () => window.removeEventListener('touchmove', onMove)
   const onStart = e => {
     if (cerrando || g || e.touches.length !== 1 || !capasAtras.length) return
     const t = e.touches[0]
-    const capa = capasAtras[capasAtras.length - 1]
-    const el = nodoDe(capa, e.target)
-    if (!el) return
     if (t.clientX <= BORDE_ATRAS) {
+      const capa = capasAtras[capasAtras.length - 1]
+      const el = nodoDe(capa, e.target)
+      if (!el) return
       e.stopPropagation()
       g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: null }
+      arma()
       return
     }
-    // el asa: la franja superior de la hoja móvil, fuera de botones y campos
-    if (!hoja() || !el.classList.contains('modal') || !el.contains(e.target)) return
-    if (e.target.closest('button,a,input,textarea,select')) return
+    // el asa: la franja superior de la hoja móvil, fuera de botones y campos.
+    // La hoja es la que se toca, y la capa a cerrar la primera desde arriba
+    // que no viva dentro de ella
+    if (!hoja()) return
+    const el = e.target.closest && e.target.closest('.modal')
+    if (!el || e.target.closest('button,a,input,textarea,select')) return
     if (t.clientY - el.getBoundingClientRect().top > 44) return
+    const capa = [...capasAtras].reverse().find(c => !c.dentro)
+    if (!capa) return
     g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: 'y' }
-    el.style.transition = 'none'
+    agarra(el)
+    arma()
   }
   const onMove = e => {
     if (!g) return
@@ -1120,9 +1153,9 @@ function gestosDeVolver() {
     g.dx = t.clientX - g.x0; g.dy = t.clientY - g.y0
     if (!g.modo) {
       if (Math.abs(g.dx) < 10 && Math.abs(g.dy) < 10) return
-      if (g.dx <= 0 || g.dx < Math.abs(g.dy) * 1.2) { g = null; return }
+      if (g.dx <= 0 || g.dx < Math.abs(g.dy) * 1.2) { g = null; desarma(); return }
       g.modo = 'x'
-      g.el.style.transition = 'none'
+      agarra(g.el)
       const v = velo(g.el); if (v) v.style.transition = 'none'
     }
     e.preventDefault()
@@ -1132,25 +1165,29 @@ function gestosDeVolver() {
       const v = velo(g.el); if (v) v.style.setProperty('--arrastre', Math.min(1, dx / g.el.clientWidth).toFixed(3))
     } else g.el.style.transform = `translateY(${Math.max(0, g.dy)}px)`
   }
-  const onCancel = () => { if (!g) return; const { el } = g; g = null; suelta(el) }
+  const onCancel = () => { if (!g) return; const { el } = g; g = null; desarma(); suelta(el) }
+  // solo si la capa sigue registrada: un atrás del sistema durante los 240 ms
+  // de salida ya la habrá cerrado, y la pila de fichas no es idempotente
+  const cierraSiSigue = capa => { if (capasAtras.includes(capa)) capa.cierra() }
   const onEnd = e => {
     if (!g) return
     const { el, capa, modo, dx, dy, t0 } = g
     g = null
+    desarma()
     if (!modo) return
     const recorrido = modo === 'x' ? dx : dy
     const latigazo = recorrido > 24 && recorrido / Math.max(1, e.timeStamp - t0) > 0.11
     const umbral = modo === 'x' ? Math.min(140, el.clientWidth * 0.35) : 140
     const v = velo(el)
     if (recorrido > umbral || latigazo) {
-      if (reducido()) { capa.cierra(); requestAnimationFrame(() => suelta(el)); return }
+      if (reducido()) { cierraSiSigue(capa); requestAnimationFrame(() => suelta(el)); return }
       cerrando = true
       el.style.transition = 'transform var(--dur-media) var(--curva)'
       el.style.transform = modo === 'x' ? 'translateX(105%)' : 'translateY(105%)'
       if (v) { v.style.transition = 'background var(--dur-media)'; v.style.setProperty('--arrastre', '1') }
       // se cierra antes de recolocar: si el nodo sobrevive al cierre (la
       // biografía deja la ficha debajo) no se ve volver a su sitio un cuadro
-      setTimeout(() => { cerrando = false; capa.cierra(); requestAnimationFrame(() => suelta(el)) }, 240)
+      setTimeout(() => { cerrando = false; cierraSiSigue(capa); requestAnimationFrame(() => suelta(el)) }, 240)
     } else {
       el.style.transition = 'transform var(--dur-media) var(--curva)'
       el.style.transform = ''
@@ -1159,7 +1196,6 @@ function gestosDeVolver() {
     }
   }
   window.addEventListener('touchstart', onStart, { capture: true, passive: true })
-  window.addEventListener('touchmove', onMove, { passive: false })
   window.addEventListener('touchend', onEnd)
   window.addEventListener('touchcancel', onCancel)
 }
@@ -2590,7 +2626,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca }) {
   const { item, c, esComic } = d
   const extra = useTmdb(item, idioma)
   const [verTrailer, setVerTrailer] = useState(false)
@@ -2602,7 +2638,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   const refModal = useRef(null)
   // La biografía es una capa dentro de la ficha: atrás vuelve a la ficha, como
   // hace Escape, y no cierra las dos de golpe
-  useVolverCierra(!!persona, () => setPersona(null), () => refModal.current && refModal.current.querySelector('.persona-ficha'))
+  useVolverCierra(!!persona, () => setPersona(null), () => refModal.current && refModal.current.querySelector('.persona-ficha'), true)
   // El asa de la hoja móvil (arrastrar hacia abajo para cerrar) y el borde
   // (deslizar para volver) viven en gestosDeVolver, comunes a todas las capas.
   const refNav = useRef(onNav)
@@ -2694,10 +2730,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   const [cambios, setCambios] = useState(0)
   const montado = useRef(false)
   useEffect(() => {
-    // al volver por la pila de fichas se reabre la biografía de la que se salió
-    setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(d.personaInicial || null)
+    setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null)
     if (montado.current) setCambios(c => c + 1); else montado.current = true
   }, [item.id])
+  // al volver por la pila de fichas se reabre la biografía de la que se salió
+  // (después del efecto de arriba, que la apaga al cambiar de título)
+  useEffect(() => { if (personaPendiente) setPersona(personaPendiente.p) }, [personaPendiente])
   // Escape, atrapa-foco, bloqueo del scroll y devolución del foco: lo mismo que
   // hacen los otros diálogos, así que se usa el mismo hook en vez de una segunda
   // copia con su propia lista de selectores que mantener a mano.
@@ -3238,12 +3276,16 @@ export default function App() {
   // en vez de a la lista. El aspa cierra todo; atrás deshace de una en una.
   // Cinco como mucho. Las flechas ‹ › no apilan: son vecinos, no un salto.
   const [pilaFichas, setPilaFichas] = useState([])
+  // la biografía que se reabre al volver, como estado aparte (objeto nuevo
+  // cada vez: aunque el título sea el mismo —tras ‹ › de vuelta— se reabre)
+  const [personaPendiente, setPersonaPendiente] = useState(null)
   const abreDesdeFicha = (d, persona) => { setPilaFichas(p => [...p.slice(-4), { d: detalle, persona }]); setDetalle(d) }
-  const cierraFicha = () => { setDetalle(null); setPilaFichas([]) }
+  const cierraFicha = () => { setDetalle(null); setPilaFichas([]); setPersonaPendiente(null) }
   const vuelveFicha = () => {
     const ult = pilaFichas[pilaFichas.length - 1]
     if (!ult) return
-    setDetalle({ ...ult.d, personaInicial: ult.persona || null })
+    setDetalle(ult.d)
+    setPersonaPendiente(ult.persona ? { p: ult.persona } : null)
     setPilaFichas(p => p.slice(0, -1))
   }
   // Al cerrar la ficha tras pasar de título (‹ ›, deslizar, biografías), la
@@ -3472,7 +3514,7 @@ export default function App() {
   // navega entre títulos sin crear entradas nuevas: la capa es «hay ficha», no
   // «esta ficha».
   useVolverCierra(!!detalle, cierraFicha)
-  useVolverCierra(pilaFichas.length > 0, vuelveFicha)
+  useVolverCierra(pilaFichas.length, vuelveFicha, null, true)
   useVolverCierra(cine, () => setCine(false))
   useVolverCierra(!!lector, () => setLector(null))
   useVolverCierra(ajustes, () => setAjustes(false))
@@ -3804,18 +3846,21 @@ export default function App() {
   // bajo la barra) y se restaura por elemento —no por píxel— porque las
   // tarjetas fuera de pantalla (content-visibility) aún no tienen su alto real.
   // sembrado con la posición guardada: el efecto de abajo la restaura al montar
-  const posiciones = useRef(leePosicion(vista))
+  const [posiciones] = useState(() => ({ current: leePosicion(vista) }))
   const vistaRef = useRef(vista); vistaRef.current = vista
   useEffect(() => {
     let ultimo = 0, cola = 0
-    const guarda = () => {
+    const guarda = (final = false) => {
       const v = vistaRef.current, ahora = Date.now()
       const p = posiciones.current[v] || (posiciones.current[v] = {})
       p.y = window.scrollY
       // acelerado mientras se desplaza y, además, una muestra de cola al parar:
-      // sin ella el último tramo (el que cuenta) se quedaba sin ancla
-      clearTimeout(cola); cola = setTimeout(() => { ultimo = 0; guarda() }, 150)
-      if (ahora - ultimo > 200) {
+      // sin ella el último tramo (el que cuenta) se quedaba sin ancla. La de
+      // cola no se rearma (se rearmaba a sí misma y giraba cada 150 ms para
+      // siempre) y es la única que escribe en el almacenamiento
+      clearTimeout(cola)
+      if (!final) cola = setTimeout(() => { ultimo = 0; guarda(true) }, 150)
+      if (final || ahora - ultimo > 200) {
         ultimo = ahora
         // solo tarjetas con id: el ancestro con id más cercano de una cabecera
         // de era es la saga entera, y eso devolvía a su principio. Se muestrea
@@ -3833,11 +3878,15 @@ export default function App() {
         }
         p.id = con ? con.id : null
         p.dy = con ? con.getBoundingClientRect().top : 0
-        try { localStorage.setItem(KEY_POSICION, JSON.stringify({ v, id: p.id, dy: p.dy, y: p.y, t: Date.now() })) } catch {}
+        if (final) try { localStorage.setItem(KEY_POSICION, JSON.stringify({ v, id: p.id, dy: p.dy, y: p.y, t: Date.now() })) } catch {}
       }
     }
-    window.addEventListener('scroll', guarda, { passive: true })
-    return () => { clearTimeout(cola); window.removeEventListener('scroll', guarda) }
+    const onScroll = () => guarda(false)
+    // al pasar a segundo plano (iOS puede descargar la app ahí mismo) se guarda ya
+    const onOculta = () => { if (document.visibilityState === 'hidden') guarda(true) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    document.addEventListener('visibilitychange', onOculta)
+    return () => { clearTimeout(cola); window.removeEventListener('scroll', onScroll); document.removeEventListener('visibilitychange', onOculta) }
   }, [])
   // En móvil la tira de subvistas se desliza: al cambiar de vista (atrás,
   // enlace, pestaña) la activa se trae a la vista dentro de la tira, sin
@@ -5250,7 +5299,7 @@ export default function App() {
           nota={notas[detalle.item.id] || {}}
           ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)}
           listas={listas} toggleEnLista={toggleEnLista} club={club} onNav={navegaDetalle}
-          onIrA={abreDesdeFicha} />
+          onIrA={abreDesdeFicha} personaPendiente={personaPendiente} />
       )}
 
       <Footer onAjustes={() => setAjustes(true)} />

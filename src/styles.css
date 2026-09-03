@@ -1091,7 +1091,7 @@ h3{
 .nota-input{flex:1; min-width:180px; border-radius:var(--r-m)}
 .siguiente-stat{cursor:pointer; text-align:left; font:inherit; color:inherit}
 .siguiente-stat:hover{border-color:var(--red)}
-.card.destello{
+.card.destello, .tl-card.destello, .galeria-item.destello{
   border-color:var(--red);
   box-shadow:5px 6px 0 color-mix(in srgb, var(--red) 40%, transparent);
 }
