@@ -988,6 +988,17 @@ h3{
    están, que con el ratón el ::after ya da de sobra y así no se descuadra la
    barra. Un <input> nunca admite el truco del ::after. */
 @media (hover: none), (pointer: coarse){
+  /* Sensación de app, no de página: sin zoom por doble toque (el pellizco
+     sigue funcionando), y sin que la pulsación larga sobre una tarjeta, una
+     pestaña o un botón abra el globo de enlace, la vista previa de la imagen
+     o seleccione el texto. El texto de la ficha (sinopsis, notas) se puede
+     seguir seleccionando. */
+  body{touch-action:manipulation}
+  nav.tabs .tab, .subvista, .chip-btn, .checkbox, .card, .cover, .galeria-item, .tl-card,
+  .ep, .accion-principal, .ghost, .cerrar, .nav-ficha, .planeta-nav, .mv-card, .pf-item,
+  .persona, .estrella, .saga-guia summary, .stat, .cine-flecha, .lector-barra, .prov-chip{
+    -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
+  }
   /* 16px o iOS hace zoom a toda la página al enfocar el campo. Excepción
      consciente a la escala tipográfica, como el clamp() del hero. */
   .busca{min-height:44px; font-size:16px}

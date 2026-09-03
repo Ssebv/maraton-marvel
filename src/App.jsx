@@ -417,6 +417,27 @@ function useTmdb(item, idioma) {
 }
 
 // «Thwip» sutil al marcar (solo si el usuario lo activa en el pie)
+// Un toque háptico al marcar, como el conmutador nativo. En iOS no hay
+// navigator.vibrate: Safari (17.4+) solo vibra al cambiar un
+// <input type="checkbox" switch>, y lo hace también si se cambia con click()
+// dentro de un gesto del usuario. Se usa uno escondido fuera de pantalla
+// (con display:none no vibra). Donde no exista, no pasa nada.
+let interruptorTic = null
+function tic() {
+  if (!ES_TACTIL) return
+  try {
+    if (!interruptorTic) {
+      interruptorTic = document.createElement('input')
+      interruptorTic.type = 'checkbox'
+      interruptorTic.setAttribute('switch', '')
+      interruptorTic.tabIndex = -1
+      interruptorTic.setAttribute('aria-hidden', 'true')
+      interruptorTic.style.cssText = 'position:fixed;left:-99px;top:0;width:1px;height:1px;opacity:0;pointer-events:none'
+      document.body.appendChild(interruptorTic)
+    }
+    interruptorTic.click()
+  } catch {}
+}
 function suenaPop() {
   try {
     if (localStorage.getItem('maraton-marvel-sonido-v1') !== '1') return
@@ -548,7 +569,7 @@ function Portada({ item, c, esComic }) {
       return (
         <div className="cover logo-cover" role="img" aria-label={tr(`Carátula de ${item.t}`, `Cover of ${item.t}`)}
           style={{ background: `linear-gradient(160deg, ${c[0]}, ${c[1]})` }}>
-          <img src={src} alt="" onError={() => setErr(true)} />
+          <img src={src} alt="" loading="lazy" decoding="async" onError={() => setErr(true)} />
           <span className="lc-year">{item.r}</span>
           <span className="lc-tipo">{tipoSello(item, esComic)}</span>
         </div>
@@ -556,7 +577,7 @@ function Portada({ item, c, esComic }) {
     }
     return (
       <div className="cover keyart" role="img" aria-label={tr(`Carátula de ${item.t}`, `Cover of ${item.t}`)}>
-        <img src={src} alt="" onError={() => setErr(true)} />
+        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setErr(true)} />
         <span className="ka-sombra" style={{ '--ka': c[0] }} />
         <span className="lc-year">{item.r}</span>
         <span className="lc-tipo">{tipoSello(item, false)}</span>
@@ -1115,8 +1136,11 @@ function gestosDeVolver() {
     try { el.getAnimations().forEach(a => a.finish()) } catch {}
     el.style.animationFillMode = 'none'; el.style.transition = 'none'
   }
+  // capa propia desde que se apoya el dedo: sin ella iOS rasteriza el nodo
+  // en el primer touchmove y el arranque del arrastre da un tirón
+  const prepara = el => { el.style.willChange = 'transform' }
   const suelta = el => {
-    el.style.transition = ''; el.style.transform = ''; el.style.animationFillMode = ''
+    el.style.transition = ''; el.style.transform = ''; el.style.animationFillMode = ''; el.style.willChange = ''
     const v = velo(el)
     if (v) { v.style.transition = ''; v.style.removeProperty('--arrastre') }
   }
@@ -1131,6 +1155,7 @@ function gestosDeVolver() {
       if (!el) return
       e.stopPropagation()
       g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: null }
+      prepara(el)
       arma()
       return
     }
@@ -1144,7 +1169,7 @@ function gestosDeVolver() {
     const capa = [...capasAtras].reverse().find(c => !c.dentro)
     if (!capa) return
     g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: 'y' }
-    agarra(el)
+    prepara(el); agarra(el)
     arma()
   }
   const onMove = e => {
@@ -1153,7 +1178,7 @@ function gestosDeVolver() {
     g.dx = t.clientX - g.x0; g.dy = t.clientY - g.y0
     if (!g.modo) {
       if (Math.abs(g.dx) < 10 && Math.abs(g.dy) < 10) return
-      if (g.dx <= 0 || g.dx < Math.abs(g.dy) * 1.2) { g = null; desarma(); return }
+      if (g.dx <= 0 || g.dx < Math.abs(g.dy) * 1.2) { g.el.style.willChange = ''; g = null; desarma(); return }
       g.modo = 'x'
       agarra(g.el)
       const v = velo(g.el); if (v) v.style.transition = 'none'
@@ -1174,7 +1199,7 @@ function gestosDeVolver() {
     const { el, capa, modo, dx, dy, t0 } = g
     g = null
     desarma()
-    if (!modo) return
+    if (!modo) { el.style.willChange = ''; return }
     const recorrido = modo === 'x' ? dx : dy
     const latigazo = recorrido > 24 && recorrido / Math.max(1, e.timeStamp - t0) > 0.11
     const umbral = modo === 'x' ? Math.min(140, el.clientWidth * 0.35) : 140
@@ -3801,6 +3826,7 @@ export default function App() {
       if (marcar) { if (!next[k]) next[k] = Date.now() } else delete next[k]
     })
     try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
+    tic()
     if (marcar) suenaPop()
     return next
   })
@@ -3808,6 +3834,7 @@ export default function App() {
   const toggleEp = clave => setEps(prev => {
     const next = { ...prev }
     if (next[clave]) delete next[clave]; else { next[clave] = Date.now(); suenaPop() }
+    tic()
     try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
     return next
   })
@@ -3815,6 +3842,7 @@ export default function App() {
   const toggle = id => setVistas(prev => {
     const next = { ...prev }
     if (next[id]) delete next[id]; else { next[id] = Date.now(); suenaPop() }
+    tic()
     try { localStorage.setItem(KEY, JSON.stringify(next)) } catch {}
     return next
   })
