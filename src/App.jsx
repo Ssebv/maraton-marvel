@@ -1102,8 +1102,12 @@ function useVolverCierra(abierto, onCerrar, elemento, dentro = false) {
 //  · desde el borde izquierdo hacia la derecha = atrás: la capa de arriba
 //    sigue al dedo (la hoja entera, el lector, el cine, o solo la biografía
 //    dentro de la ficha) y, pasado el umbral o con un latigazo, se cierra;
-//  · desde el asa de una hoja móvil hacia abajo = cerrar la hoja, con el
-//    mismo seguimiento (antes solo lo hacía la ficha; ahora Ajustes, Plan…).
+//  · hacia abajo sobre una hoja móvil = cerrar la hoja, con el mismo
+//    seguimiento: desde el asa siempre, y desde cualquier punto cuando el
+//    contenido está arriba del todo (como las hojas de iOS: tirar hacia
+//    abajo con el scroll en cero descarta; hacia arriba, desplaza). Se decide
+//    en el primer movimiento y se corta el desplazamiento nativo en ese
+//    mismo evento, o Safari se queda con el gesto y ya no lo suelta.
 //    Cierra la hoja entera aunque encima haya biografía o pila (capas
 //    `dentro`): es el gesto de descartar, no el de volver.
 // El nodo que se mueve es el diálogo bajo el dedo (lo que se toca es lo que
@@ -1144,6 +1148,18 @@ function gestosDeVolver() {
     const v = velo(el)
     if (v) { v.style.transition = ''; v.style.removeProperty('--arrastre') }
   }
+  // ¿todo lo desplazable entre el dedo y la hoja (la propia hoja incluida)
+  // está en cero? Si algo va scrolleado, tirar hacia abajo es volver arriba
+  const arribaDelTodo = (desde, hasta) => {
+    for (let n = desde; n; n = n.parentElement) {
+      if (n.scrollTop > 0) {
+        const ov = getComputedStyle(n).overflowY
+        if (ov === 'auto' || ov === 'scroll') return false
+      }
+      if (n === hasta) break
+    }
+    return true
+  }
   const arma = () => window.addEventListener('touchmove', onMove, { passive: false })
   const desarma = () => window.removeEventListener('touchmove', onMove)
   const onStart = e => {
@@ -1159,23 +1175,33 @@ function gestosDeVolver() {
       arma()
       return
     }
-    // el asa: la franja superior de la hoja móvil, fuera de botones y campos.
-    // La hoja es la que se toca, y la capa a cerrar la primera desde arriba
-    // que no viva dentro de ella
+    // la hoja móvil: desde el asa (franja superior) se agarra ya; desde el
+    // resto solo si nada entre el dedo y la hoja está desplazado, y entonces
+    // el primer movimiento decide (abajo = hoja, arriba = scroll). La hoja es
+    // la que se toca, y la capa a cerrar la primera desde arriba que no viva
+    // dentro de ella
     if (!hoja()) return
     const el = e.target.closest && e.target.closest('.modal')
-    if (!el || e.target.closest('button,a,input,textarea,select')) return
-    if (t.clientY - el.getBoundingClientRect().top > 44) return
+    if (!el || e.target.closest('input,textarea,select')) return
     const capa = [...capasAtras].reverse().find(c => !c.dentro)
     if (!capa) return
-    g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: 'y' }
-    prepara(el); agarra(el)
+    const enAsa = t.clientY - el.getBoundingClientRect().top <= 44 && !e.target.closest('button,a')
+    if (!enAsa && !arribaDelTodo(e.target, el)) return
+    g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: enAsa ? 'y' : 'y?' }
+    prepara(el)
+    if (enAsa) agarra(el)
     arma()
   }
   const onMove = e => {
     if (!g) return
     const t = e.touches[0]
     g.dx = t.clientX - g.x0; g.dy = t.clientY - g.y0
+    if (g.modo === 'y?') {
+      // sin zona muerta: el primer movimiento decide y, si es hacia abajo, se
+      // cancela ya el desplazamiento nativo (después Safari no lo soltaría)
+      if (g.dy > 0 && g.dy >= Math.abs(g.dx)) { g.modo = 'y'; agarra(g.el) }
+      else { g.el.style.willChange = ''; g = null; desarma(); return }
+    }
     if (!g.modo) {
       if (Math.abs(g.dx) < 10 && Math.abs(g.dy) < 10) return
       if (g.dx <= 0 || g.dx < Math.abs(g.dy) * 1.2) { g.el.style.willChange = ''; g = null; desarma(); return }
@@ -1199,7 +1225,7 @@ function gestosDeVolver() {
     const { el, capa, modo, dx, dy, t0 } = g
     g = null
     desarma()
-    if (!modo) { el.style.willChange = ''; return }
+    if (!modo || modo === 'y?') { el.style.willChange = ''; return }
     const recorrido = modo === 'x' ? dx : dy
     const latigazo = recorrido > 24 && recorrido / Math.max(1, e.timeStamp - t0) > 0.11
     const umbral = modo === 'x' ? Math.min(140, el.clientWidth * 0.35) : 140
