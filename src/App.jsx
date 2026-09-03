@@ -4501,6 +4501,11 @@ export default function App() {
               )
             })}
           </nav>
+          {/* los filtros solo actúan sobre las listas del maratón (crono,
+              estreno, cómics, animación, galería, cine): en Mío y Multiverso
+              no cambian nada y solo estorbaban en el carril */}
+          {destinoDe(vista) === 'maraton' && (
+            <>
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
           <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>{tr('Ruta express', 'Express route')}</button>
@@ -4510,6 +4515,8 @@ export default function App() {
           <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>{tr('Joyas ★7,5+', 'Gems ★7.5+')}</button>
           <button className="chip-btn" aria-pressed={filtros.disney} onClick={() => setF('disney')}>{tr('En Disney+', 'On Disney+')}</button>
           </div>
+            </>
+          )}
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
           <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>{tr('Plan de sesión', 'Session plan')}</button>
