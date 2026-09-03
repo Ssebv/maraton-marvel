@@ -384,7 +384,7 @@ h1 .rojo{color:var(--red)}
   /* en la hoja móvil el póster iba centrado y tapaba el fotograma entero:
      baja para apoyarse sobre él y dejar la banda a la vista */
   .modal-fondo{height:210px}
-  .modal-cover{margin-top: var(--e-9)}
+  .modal.con-fondo .modal-cover{margin-top: var(--e-9)}
 }
 
 /* ── Ficha de una persona, dentro de la propia ficha del título ── */
@@ -1624,6 +1624,8 @@ main.crono, main.comics, main.estreno{animation:none}
   .abrir{gap: var(--e-4)}
   .rating-badge{font-size: var(--t-xs); padding: var(--e-1) var(--e-2)}
   .stats{grid-template-columns:1fr 1fr}
+  /* a dos columnas, la última tarjeta impar no se queda huérfana a medio ancho */
+  .stats > .stat:last-child:nth-child(odd), .stats-tiles > .stat:last-child:nth-child(odd){grid-column:1 / -1}
   .siguiente-stat{grid-column:1 / -1}
   .cover{width:88px; height:132px}
   /* Archivo Black a 19px parte los títulos en tres líneas dentro de los

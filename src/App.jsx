@@ -2874,7 +2874,10 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
           <button className="nav-ficha der" onClick={e => { e.stopPropagation(); onNav(1) }} aria-label={tr('Título siguiente', 'Next title')} title={tr('Siguiente (→)', 'Next (→)')}>›</button>
         </>
       )}
-      <div className="modal" ref={refModal} onClick={e => e.stopPropagation()}>
+      {/* el hueco sobre la carátula es para el fotograma: se reserva mientras
+          TMDB carga (o el contenido saltaría al llegar) y no existe para los
+          cómics ni cuando la respuesta viene sin fotograma */}
+      <div className={'modal' + ((extra ? !!extra.fondo : !d.esComic) ? ' con-fondo' : '')} ref={refModal} onClick={e => e.stopPropagation()}>
         {extra?.fondo && (
           <div className="modal-fondo" aria-hidden="true">
             <img src={`${TMDB_IMG}w780${extra.fondo}`} alt="" decoding="async" />
@@ -4013,9 +4016,24 @@ export default function App() {
     if (r.left < rt.left + margen) tira.scrollBy({ left: r.left - rt.left - margen, behavior: 'instant' })
     else if (r.right > rt.right - margen) tira.scrollBy({ left: r.right - rt.right + margen, behavior: 'instant' })
   }, [vista])
+  // Al cambiar de destino (Maratón → Mío → Multiverso) sin posición guardada,
+  // el contenido nuevo tiene que verse: en el móvil la portada (título,
+  // estadísticas, avisos) ocupa la primera pantalla entera y, tocando el dock
+  // desde arriba, solo cambiaba la píldora. Se lleva la barra al borde
+  // superior, donde se queda pegada, con el contenido justo debajo.
+  const destinoPrevio = useRef(destinoDe(vista))
   React.useLayoutEffect(() => {
     const p = posiciones.current[vista]
-    if (!p) return
+    const cambiaDestino = destinoDe(vista) !== destinoPrevio.current
+    destinoPrevio.current = destinoDe(vista)
+    if (!p) {
+      if (!cambiaDestino) return
+      const barra = document.querySelector('.toolbar')
+      if (!barra) return
+      const y = barra.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(barra).top) || 10)
+      if (window.scrollY < y - 1) window.scrollTo({ top: y, behavior: 'instant' })
+      return
+    }
     const el = p.id && document.getElementById(p.id)
     if (el) {
       el.scrollIntoView({ block: 'start', behavior: 'instant' })
