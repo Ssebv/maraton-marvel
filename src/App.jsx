@@ -4141,6 +4141,26 @@ export default function App() {
     return s && s.trozos.length && s.fecha.getTime() === hoy.getTime() ? s : null
   }, [simHorario, horario])
 
+  // Globo en el icono de la app instalada: hay sesión de horario hoy, o
+  // estreno hoy. iOS (16.4+) solo lo pinta si diste permiso de avisos (el
+  // mismo botón «Avisarme…»); en Android y escritorio no hace falta. Se
+  // recalcula al volver a primer plano (la app instalada vive días abierta)
+  // y se quita cuando no toca nada, para que el icono no mienta.
+  useEffect(() => {
+    if (!navigator.setAppBadge) return undefined
+    const pon = () => {
+      const d = new Date()
+      const hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const estrenos = ESTRENOS.filter(e => e.fecha === hoy).length
+      const n = (sesionHoy ? 1 : 0) + estrenos
+      try { (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {}) } catch {}
+    }
+    pon()
+    const onVisible = () => { if (document.visibilityState === 'visible') pon() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [sesionHoy])
+
   const plan = useMemo(() => {
     if (!planModal) return null
     let restante = planHoras * 60
