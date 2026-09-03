@@ -1670,6 +1670,25 @@ main.crono, main.comics, main.estreno{animation:none}
     transition:transform var(--dur-media) var(--curva);
   }
   nav.tabs .tab::after{content:""; position:absolute; inset:-3px 0}
+  /* Cristal en el dock (pedido el 3 sep 2026: excepción consciente y única a
+     la regla del 18 de agosto de no usar backdrop-filter como superficie).
+     Solo aquí: es una franja de 60 px que iOS desenfoca igual en sus barras.
+     Tinte al 80 % para que el rótulo aguante 4,5:1 sobre un póster (medido:
+     activo 8,3:1 y el inactivo, subido hacia --ink, 6,9:1 con blanco puro
+     debajo); sin brillos ni reflejos pintados. Opaco donde no hay
+     backdrop-filter o se pide reducir transparencia. */
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))){
+    nav.tabs{
+      background:color-mix(in srgb, var(--panel) 80%, transparent);
+      -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
+      border-color:color-mix(in srgb, var(--line) 75%, transparent);
+    }
+    nav.tabs .tab{color:color-mix(in srgb, var(--ink) 75%, var(--ink2))}
+    nav.tabs .tab[aria-current="page"]{color:var(--ink)}
+    @media (prefers-reduced-transparency: reduce){
+      nav.tabs{background:var(--panel); -webkit-backdrop-filter:none; backdrop-filter:none; border-color:var(--line)}
+    }
+  }
   /* Con el teclado en pantalla el dock flotaba justo encima de él y tapaba
      los primeros resultados: mientras se escribe en la barra se retira */
   nav.tabs{transition:transform var(--dur-media) var(--curva)}
