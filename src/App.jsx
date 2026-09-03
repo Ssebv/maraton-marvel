@@ -1842,6 +1842,41 @@ function AvisoNuevo({ onHorario, onAjustes }) {
   )
 }
 
+// Aviso de versión nueva. La app instalada puede vivir días abierta (iOS la
+// suspende y la recupera tal cual, sin recargar): al volver a primer plano se
+// consulta version.json sin caché y, si el sello no es el de esta compilación,
+// un botón ofrece recargar (la navegación va por red primero, así que la
+// recarga trae la nueva). Como mucho una consulta cada 10 minutos, y la
+// primera a los 8 s de arrancar para no competir con el arranque.
+const SELLO = typeof __BUILD__ === 'string' ? __BUILD__ : ''
+function VersionNueva() {
+  const [hay, setHay] = useState(false)
+  useEffect(() => {
+    if (!SELLO) return undefined
+    let ultimo = 0
+    const mira = async () => {
+      if (Date.now() - ultimo < 10 * 60 * 1000 || navigator.onLine === false) return
+      ultimo = Date.now()
+      try {
+        const r = await fetch('version.json?' + Date.now(), { cache: 'no-store' })
+        if (!r.ok) return
+        const j = await r.json()
+        if (j && typeof j.v === 'string' && j.v !== SELLO) setHay(true)
+      } catch {}
+    }
+    const t = setTimeout(mira, 8000)
+    const onVisible = () => { if (document.visibilityState === 'visible') mira() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { clearTimeout(t); document.removeEventListener('visibilitychange', onVisible) }
+  }, [])
+  if (!hay) return null
+  return (
+    <button className="version-nueva" onClick={() => window.location.reload()}>
+      {tr('Hay una versión nueva · Actualizar', 'New version available · Update')}
+    </button>
+  )
+}
+
 function Novedades({ eps }) {
   const [lista, setLista] = useState([])
   const [cerrado, setCerrado] = useState(false)
@@ -5351,6 +5386,7 @@ export default function App() {
       )}
 
       <Footer onAjustes={() => setAjustes(true)} />
+      <VersionNueva />
     </div>
   )
 }

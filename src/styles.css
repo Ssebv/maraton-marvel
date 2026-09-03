@@ -1724,6 +1724,17 @@ main.crono, main.comics, main.estreno{animation:none}
     background:color-mix(in srgb, var(--ink) 28%, transparent);
   }
 }
+/* ── Aviso de versión nueva: píldora fija abajo, sobre el dock en móvil ── */
+.version-nueva{
+  position:fixed; left:50%; transform:translateX(-50%); z-index:45;
+  bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+  padding: var(--e-3) var(--e-5); border-radius:var(--r-pill);
+  background:var(--panel); color:var(--ink); border:1px solid var(--line);
+  font:inherit; font-size: var(--t-m); font-weight:600; cursor:pointer;
+  box-shadow:var(--card-shadow-up); white-space:nowrap;
+  animation:fadeIn var(--dur-media) ease both;
+}
+@media (max-width:720px){ .version-nueva{bottom:calc(76px + env(safe-area-inset-bottom, 0px))} }
 /* ── Recordatorios de estreno ── */
 .novedades{
   flex-direction:row; align-items:center; justify-content:space-between;
