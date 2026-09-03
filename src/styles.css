@@ -1659,6 +1659,10 @@ main.crono, main.comics, main.estreno{animation:none}
     transition:transform var(--dur-media) var(--curva);
   }
   nav.tabs .tab::after{content:""; position:absolute; inset:-3px 0}
+  /* Con el teclado en pantalla el dock flotaba justo encima de él y tapaba
+     los primeros resultados: mientras se escribe en la barra se retira */
+  nav.tabs{transition:transform var(--dur-media) var(--curva)}
+  .toolbar:has(.busca:focus) nav.tabs{transform:translateY(calc(100% + 24px))}
 
   /* La barra ocupaba 399 px (5 filas de chips) al crecer el número de filtros.
      En móvil pasa a ser un carril de una sola fila que se desliza. */

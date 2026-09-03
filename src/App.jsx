@@ -27,6 +27,23 @@ const KEY_RESCATE = 'maraton-marvel-rescate-v1'
 const KEY_LECTOR = 'maraton-marvel-lector-v1'
 // horario de visionado: { dias: [0-6], min, hora: 'HH:MM', exp }
 const KEY_HORARIO = 'maraton-marvel-horario-v1'
+// Dónde ibas en la lista, para volver ahí al reabrir la app. En iPhone la app
+// instalada se descarga al cambiar a otra app un rato y vuelve a arrancar
+// desde arriba: se guarda el ancla (tarjeta bajo la barra) y se restaura si
+// hace menos de una hora y es la misma vista. Pasada la hora se empieza por
+// el principio, que es lo que espera quien abre la app un día nuevo.
+const KEY_POSICION = 'maraton-marvel-posicion-v1'
+const POSICION_VIVA = 60 * 60 * 1000
+// el navegador no restaura por píxel al recargar: con content-visibility las
+// tarjetas fuera de pantalla no tienen aún su alto y caía en cualquier sitio
+try { history.scrollRestoration = 'manual' } catch {}
+function leePosicion(vista) {
+  try {
+    const g = JSON.parse(localStorage.getItem(KEY_POSICION))
+    if (!g || g.v !== vista || typeof g.t !== 'number' || Date.now() - g.t > POSICION_VIVA) return {}
+    return { [vista]: { id: typeof g.id === 'string' ? g.id : null, dy: Number(g.dy) || 0, y: Number(g.y) || 0 } }
+  } catch { return {} }
+}
 // sesión de la cuenta de Google: { uid, rt, nombre, email, foto }
 const KEY_CUENTA = 'maraton-marvel-cuenta-v1'
 // idioma de la app: 'es' (con el matiz del país) o 'en'
@@ -3239,7 +3256,7 @@ export default function App() {
     const { origen, ultimo } = f
     f.origen = f.ultimo = null
     if (!origen || origen === ultimo) return
-    const el = document.getElementById('card-' + ultimo) || document.getElementById('tl-' + ultimo)
+    const el = document.getElementById('card-' + ultimo) || document.getElementById('tl-' + ultimo) || document.getElementById('gal-' + ultimo)
     if (!el) return
     const b = el.querySelector('.abrir') || el
     try { b.focus({ preventScroll: true }) } catch {}
@@ -3786,7 +3803,8 @@ export default function App() {
   // al desplazar (barato: un número y, cada 200 ms, el id del elemento que hay
   // bajo la barra) y se restaura por elemento —no por píxel— porque las
   // tarjetas fuera de pantalla (content-visibility) aún no tienen su alto real.
-  const posiciones = useRef({})
+  // sembrado con la posición guardada: el efecto de abajo la restaura al montar
+  const posiciones = useRef(leePosicion(vista))
   const vistaRef = useRef(vista); vistaRef.current = vista
   useEffect(() => {
     let ultimo = 0, cola = 0
@@ -3815,11 +3833,24 @@ export default function App() {
         }
         p.id = con ? con.id : null
         p.dy = con ? con.getBoundingClientRect().top : 0
+        try { localStorage.setItem(KEY_POSICION, JSON.stringify({ v, id: p.id, dy: p.dy, y: p.y, t: Date.now() })) } catch {}
       }
     }
     window.addEventListener('scroll', guarda, { passive: true })
     return () => { clearTimeout(cola); window.removeEventListener('scroll', guarda) }
   }, [])
+  // En móvil la tira de subvistas se desliza: al cambiar de vista (atrás,
+  // enlace, pestaña) la activa se trae a la vista dentro de la tira, sin
+  // mover la página (scrollIntoView con block:nearest también la movería)
+  useEffect(() => {
+    const el = document.querySelector('.subvista[aria-current="page"]')
+    const tira = el && el.parentElement
+    if (!tira || tira.scrollWidth <= tira.clientWidth) return
+    const r = el.getBoundingClientRect(), rt = tira.getBoundingClientRect()
+    const margen = 24
+    if (r.left < rt.left + margen) tira.scrollBy({ left: r.left - rt.left - margen, behavior: 'instant' })
+    else if (r.right > rt.right - margen) tira.scrollBy({ left: r.right - rt.right + margen, behavior: 'instant' })
+  }, [vista])
   React.useLayoutEffect(() => {
     const p = posiciones.current[vista]
     if (!p) return
@@ -4281,7 +4312,8 @@ export default function App() {
             }
           }}>{tr('Sorpréndeme', 'Surprise me')}</button>
           <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio, actor o año', 'Title, episode, actor or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajo: /', 'Search by title, episode, actor, director or year — shortcut: /')} value={busca} spellCheck={false}
-            autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')} />
+            autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
+            enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
           <button className="chip-btn" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
           {/* El estado de sincronización es estado, no un botón: solo se
               muestra cuando hay algo que mirar. */}
