@@ -815,6 +815,13 @@ h3{
   animation:fadeIn .2s ease both;
 }
 @keyframes fadeIn{from{opacity:0} to{opacity:1}}
+/* Salida de las capas: la mitad simétrica de la entrada. Keyframes solo con
+   `to` para arrancar desde donde esté el nodo (el gesto ya lo deja fuera y
+   no debe volver). Mientras sale no recibe toques. */
+.overlay.saliendo, .lector.saliendo, .cine.saliendo{animation:fueraVelo var(--dur-media) ease both; pointer-events:none}
+.overlay.saliendo .modal{animation:fueraHoja var(--dur-media) var(--curva) both}
+@keyframes fueraVelo{to{opacity:0}}
+@keyframes fueraHoja{to{opacity:0; transform:translateY(8px) scale(.98)}}
 .modal{
   position:relative; background:var(--panel); border:1px solid var(--line);
   border-radius:var(--r-l); max-width:900px; width:100%; max-height:88vh;
@@ -1504,10 +1511,23 @@ main.crono, main.comics, main.estreno{animation:none}
 .saga-guia[open] > p:nth-of-type(6){animation-delay:150ms}
 /* Todo lo pulsable responde al dedo igual: encoge un 4 % y vuelve en 160 ms.
    Los chips, la casilla, la tarjeta y el botón principal ya lo hacían. */
-.ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .estrella, .tab{transition:transform var(--dur-corta)}
+.ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .estrella, .tab,
+.galeria-item, .tl-card, .mv-card, .pf-item, .volver-ficha, .cine-flecha, .prov-chip, .aviso-btn, .persona .avatar{transition:transform var(--dur-corta)}
 .ep{transition:opacity var(--dur-corta), transform var(--dur-corta)}
 .ghost:active, .subvista:active, .siguiente-stat:active, .filtros-quitar:active, .proximo-cal:active,
-.saga-guia summary:active, .estrella:active, .tab:active, .cerrar:active, .ep:active{transform:scale(.96)}
+.saga-guia summary:active, .estrella:active, .tab:active, .cerrar:active, .ep:active,
+.galeria-item:active, .tl-card:active, .mv-card:active, .pf-item:active, .volver-ficha:active,
+.cine-flecha:active:not(:disabled), .prov-chip:active, .aviso-btn:active, .persona:active .avatar{transform:scale(.96)}
+/* los que se colocan con transform conservan el suyo al encoger */
+.version-nueva:active{transform:translateX(-50%) scale(.96)}
+.nav-ficha:active{transform:translateY(-50%) scale(.94)}
+.version-nueva, .nav-ficha{transition:transform var(--dur-corta)}
+/* la zona de abrir la ficha responde como una fila de iOS: se atenúa */
+.abrir{transition:opacity var(--dur-corta)}
+.abrir:active{opacity:.6}
+/* lo que aparece al tocar (día del calendario, sinopsis de episodio) entra
+   con el mismo fundido corto que el cambio de título */
+.cal-detalle, .ep-sinopsis{animation:entraVista var(--dur-corta) var(--curva) both}
 @media (prefers-reduced-motion: reduce){
   .ghost:active, .subvista:active, .siguiente-stat:active, .filtros-quitar:active, .proximo-cal:active,
   .saga-guia summary:active, .estrella:active, .tab:active, .cerrar:active, .ep:active{transform:none}
@@ -1543,9 +1563,13 @@ main.crono, main.comics, main.estreno{animation:none}
   .card:hover, .card:active, .mv-card:hover, .tl-card:hover, .galeria-item:hover,
   .pf-item:hover, .persona:hover .avatar, .dot:hover, .estrella:hover,
   .planeta-nav:hover, .cine-flecha:hover:not(:disabled), .chip-btn:active,
-  .checkbox:active, .accion-principal:active{
+  .checkbox:active, .accion-principal:active,
+  .galeria-item:active, .tl-card:active, .mv-card:active, .pf-item:active, .volver-ficha:active,
+  .cine-flecha:active, .prov-chip:active, .aviso-btn:active, .persona:active .avatar{
     transform:none !important;
   }
+  .version-nueva:active{transform:translateX(-50%) !important}
+  .nav-ficha:active{transform:translateY(-50%) !important}
   .nodo:hover, .sol:hover{transform:translate(-50%, -50%) !important}
 }
 
@@ -1718,6 +1742,8 @@ main.crono, main.comics, main.estreno{animation:none}
     padding-bottom:calc(20px + env(safe-area-inset-bottom));
     animation:sheetUp .38s var(--curva-hoja) both;
   }
+  .overlay.saliendo .modal{animation:fueraHojaMovil var(--dur-media) var(--curva-hoja) both}
+  @keyframes fueraHojaMovil{to{transform:translateY(105%)}}
   .modal::before{
     content:""; position:sticky; top:-18px; display:block; margin: calc(-1 * var(--e-4)) auto var(--e-3);
     width:38px; height:5px; border-radius:var(--r-s); flex:none;

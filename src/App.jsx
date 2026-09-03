@@ -1119,6 +1119,22 @@ function useVolverCierra(abierto, onCerrar, elemento, dentro = false) {
 // mientras hay gesto armado: no se le quita el scroll pasivo a toda la app.
 const BORDE_ATRAS = 24
 const movimientoReducido = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+// Desmontaje diferido: la capa sigue montada 240 ms después de cerrarse, con
+// la clase «saliendo», para salir animada por donde entró. Antes solo el gesto
+// animaba la salida; el aspa, Escape y atrás la quitaban de golpe. Devuelve
+// [montada, clase]; reabrir durante la salida la recupera sin más. Con
+// movimiento reducido se desmonta al instante, como el resto de la app.
+const DUR_SALIDA = 240
+function useSaliente(abierto) {
+  const [montada, setMontada] = useState(!!abierto)
+  useEffect(() => {
+    if (abierto) { setMontada(true); return undefined }
+    if (movimientoReducido()) { setMontada(false); return undefined }
+    const t = setTimeout(() => setMontada(false), DUR_SALIDA)
+    return () => clearTimeout(t)
+  }, [abierto])
+  return [montada || !!abierto, abierto ? '' : ' saliendo']
+}
 function gestosDeVolver() {
   let g = null, cerrando = false
   const hoja = () => window.matchMedia('(max-width:720px)').matches
@@ -1159,6 +1175,13 @@ function gestosDeVolver() {
       if (n === hasta) break
     }
     return true
+  }
+  // tras cerrar por gesto: si la capa está saliendo animada (desmontaje
+  // diferido) el nodo se queda donde el dedo lo dejó; recolocarlo lo haría
+  // volver y salir otra vez. Si sobrevive (biografía, vista), se recoloca.
+  const sueltaTrasCerrar = el => {
+    if (el.closest('.saliendo')) { el.style.transition = ''; el.style.willChange = ''; return }
+    suelta(el)
   }
   const arma = () => window.addEventListener('touchmove', onMove, { passive: false })
   const desarma = () => window.removeEventListener('touchmove', onMove)
@@ -1231,19 +1254,20 @@ function gestosDeVolver() {
     const umbral = modo === 'x' ? Math.min(140, el.clientWidth * 0.35) : 140
     const v = velo(el)
     if (recorrido > umbral || latigazo) {
-      if (reducido()) { cierraSiSigue(capa); requestAnimationFrame(() => suelta(el)); return }
+      if (reducido()) { cierraSiSigue(capa); requestAnimationFrame(() => sueltaTrasCerrar(el)); return }
       cerrando = true
       el.style.transition = 'transform var(--dur-media) var(--curva)'
       el.style.transform = modo === 'x' ? 'translateX(105%)' : 'translateY(105%)'
       if (v) { v.style.transition = 'background var(--dur-media)'; v.style.setProperty('--arrastre', '1') }
       // se cierra antes de recolocar: si el nodo sobrevive al cierre (la
       // biografía deja la ficha debajo) no se ve volver a su sitio un cuadro
-      setTimeout(() => { cerrando = false; cierraSiSigue(capa); requestAnimationFrame(() => suelta(el)) }, 240)
+      setTimeout(() => { cerrando = false; cierraSiSigue(capa); requestAnimationFrame(() => sueltaTrasCerrar(el)) }, 240)
     } else {
-      el.style.transition = 'transform var(--dur-media) var(--curva)'
+      // vuelve como un muelle: pasa unos píxeles de largo y asienta
+      el.style.transition = 'transform 280ms var(--curva-rebote)'
       el.style.transform = ''
       if (v) { v.style.transition = 'background var(--dur-media)'; v.style.setProperty('--arrastre', '0') }
-      setTimeout(() => { if (!g || g.el !== el) suelta(el) }, 260)
+      setTimeout(() => { if (!g || g.el !== el) suelta(el) }, 300)
     }
   }
   window.addEventListener('touchstart', onStart, { capture: true, passive: true })
@@ -1511,11 +1535,11 @@ function Biblioteca({ archivos, onQuitar }) {
   )
 }
 
-function Bienvenida({ onCerrar, onExpress, pais, onPais, idioma, onIdioma }) {
+function Bienvenida({ onCerrar, onExpress, pais, onPais, idioma, onIdioma, saliendo }) {
   const ref = useRef(null)
   useDialogo(ref, onCerrar)
   return (
-    <div className="overlay" ref={ref} tabIndex={-1} onClick={onCerrar}
+    <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onCerrar}
       role="dialog" aria-modal="true" aria-label={tr('Bienvenida', 'Welcome')}>
       <div className="modal modal-sync bienvenida" onClick={e => e.stopPropagation()}>
         <button className="cerrar" onClick={onCerrar} aria-label={tr('Cerrar', 'Close')}>✕</button>
@@ -2062,7 +2086,7 @@ function simulaHorario(h, vistas, eps, detalladas = 5) {
   return { totalMin, sesiones, nSesiones, fin, seAcaba: !cola.length }
 }
 
-function HorarioModal({ horario, onGuardar, vistas, eps, onClose }) {
+function HorarioModal({ horario, onGuardar, vistas, eps, onClose, saliendo }) {
   const ref = useRef(null)
   useDialogo(ref, onClose)
   const [borr, setBorr] = useState(() => horario || { dias: [5, 6], min: 90, hora: '21:00', exp: true })
@@ -2084,7 +2108,7 @@ function HorarioModal({ horario, onGuardar, vistas, eps, onClose }) {
   const llega = estreno && sim.fin && sim.seAcaba && sim.fin <= new Date(estreno.fecha + 'T00:00:00')
   const fmtF = d => d.toLocaleDateString(LOC(), { weekday: 'short', day: 'numeric', month: 'short' })
   return (
-    <div className="overlay" ref={ref} tabIndex={-1} onClick={onClose} role="dialog" aria-modal="true" aria-label={tr('Horario de maratón', 'Marathon schedule')}>
+    <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onClose} role="dialog" aria-modal="true" aria-label={tr('Horario de maratón', 'Marathon schedule')}>
       <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
         <button className="cerrar" onClick={onClose} aria-label={tr('Cerrar', 'Close')}>✕</button>
         <div className="modal-info">
@@ -2575,7 +2599,7 @@ function TuArchivo({ item, lectura, onLeer, onOlvida, onBiblioteca }) {
 
 // El lector a pantalla completa: una página, flechas, teclado, deslizar y
 // pulsar la mitad izquierda/derecha de la página. Recuerda por dónde vas.
-function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido }) {
+function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido, saliendo }) {
   const ref = useRef(null)
   useDialogo(ref, onCerrar)
   const [comic, setComic] = useState(null)
@@ -2681,7 +2705,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   }
   const ultima = comic && comic.tipo === 'imagenes' && paginas[paginas.length - 1] === tot - 1
   return (
-    <div className={`lector${ancho ? ' ancho' : ''}${controles ? '' : ' sin-controles'}`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr(`Leyendo ${item.t}`, `Reading ${item.t}`)}>
+    <div className={`lector${ancho ? ' ancho' : ''}${controles ? '' : ' sin-controles'}${saliendo || ''}`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr(`Leyendo ${item.t}`, `Reading ${item.t}`)}>
       <button className="cerrar lector-cerrar" onClick={onCerrar} aria-label={tr('Cerrar el lector', 'Close the reader')}>✕</button>
       {error
         ? <div className="lector-centro"><div className="aviso peligro centrado">{error}</div></div>
@@ -2712,7 +2736,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca, saliendo }) {
   const { item, c, esComic } = d
   const extra = useTmdb(item, idioma)
   const [verTrailer, setVerTrailer] = useState(false)
@@ -2841,7 +2865,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   const directores = DUOS[dirLimpio]
     || dirLimpio.split(/, | y | & /).map(s => s.trim()).filter(s => s && s !== 'otros')
   return (
-    <div className="overlay" ref={refOverlay} tabIndex={-1} onClick={onClose}
+    <div className={'overlay' + (saliendo || '')} ref={refOverlay} tabIndex={-1} onClick={onClose}
       role="dialog" aria-modal="true" aria-label={item.t}>
       {/* fuera de .modal: dentro quedaban recortadas por su overflow y le añadían scroll */}
       {onNav && (
@@ -4222,8 +4246,9 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [sesionHoy])
 
+  const [planMontado, planSale] = useSaliente(planModal)
   const plan = useMemo(() => {
-    if (!planModal) return null
+    if (!planMontado) return null
     let restante = planHoras * 60
     const items = []
     let corta = false
@@ -4253,7 +4278,7 @@ export default function App() {
       }
     }
     return { items, total: Math.round(planHoras * 60 - restante) }
-  }, [planModal, planHoras, planExpress, vistas, eps])
+  }, [planMontado, planHoras, planExpress, vistas, eps])
 
   const porAnio = useMemo(() => {
     const items = []
@@ -4319,6 +4344,20 @@ export default function App() {
     document.title = (!p || vista === 'crono') ? base : `${tr(p.label, p.en || p.label)} · ${base}`
   }, [vista, detalle, idioma])
 
+  // Cada capa sigue montada 240 ms tras cerrarse para salir animada
+  const [lectorMontado, lectorSale] = useSaliente(lector)
+  const ultimoLector = useRef(null); if (lector) ultimoLector.current = lector
+  const [cineMontado, cineSale] = useSaliente(cine)
+  const [dueloMontado, dueloSale] = useSaliente(dueloModal)
+  const [bienvenidaMontada, bienvenidaSale] = useSaliente(bienvenida && !perfil)
+  const [clubMontado, clubSale] = useSaliente(clubModal)
+  const [invitarMontado, invitarSale] = useSaliente(clubInvitar && club)
+  const [perfilMMontado, perfilMSale] = useSaliente(perfilModal)
+  const [ajustesMontado, ajustesSale] = useSaliente(ajustes)
+  const [horarioMontado, horarioSale] = useSaliente(horarioModal)
+  const [syncMontado, syncSale] = useSaliente(syncModal)
+  const [detalleMontado, detalleSale] = useSaliente(detalle)
+  const ultimoDetalle = useRef(null); if (detalle) ultimoDetalle.current = detalle
   if (perfil) return <PerfilView {...perfil} />
 
   return (
@@ -5053,16 +5092,16 @@ export default function App() {
         </main>
       )}
 
-      {lector && (
-        <Lector key={lector.item.id} item={lector.item} registro={lector.registro} pagInicial={(lecturas[lector.item.id] || {}).p || 0}
-          onPagina={(p, t) => setLecturas(l => (l[lector.item.id] && l[lector.item.id].p === p && l[lector.item.id].t === t) ? l : { ...l, [lector.item.id]: { p, t, f: Date.now() } })}
-          onCerrar={() => setLector(null)} leido={!!vistas[lector.item.id]} onLeido={() => { const id = lector.item.id; toggle(id); setLector(null); setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c }) }} />
+      {lectorMontado && (
+        <Lector key={ultimoLector.current.item.id} item={ultimoLector.current.item} registro={ultimoLector.current.registro} pagInicial={(lecturas[ultimoLector.current.item.id] || {}).p || 0}
+          onPagina={(p, t) => setLecturas(l => (l[ultimoLector.current.item.id] && l[ultimoLector.current.item.id].p === p && l[ultimoLector.current.item.id].t === t) ? l : { ...l, [ultimoLector.current.item.id]: { p, t, f: Date.now() } })}
+          onCerrar={() => setLector(null)} leido={!!vistas[ultimoLector.current.item.id]} onLeido={() => { const id = ultimoLector.current.item.id; toggle(id); setLector(null); setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c }) }} saliendo={lectorSale} />
       )}
-      {cine && cineLista.length > 0 && (() => {
+      {cineMontado && cineLista.length > 0 && (() => {
         const idx = Math.min(cineIdx, cineLista.length - 1)
         const { item, c } = cineLista[idx]
         return (
-          <div className="cine" ref={refCine} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Modo cine', 'Cinema mode')}>
+          <div className={'cine' + cineSale} ref={refCine} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Modo cine', 'Cinema mode')}>
             <button className="cerrar cine-cerrar" onClick={() => setCine(false)} aria-label={tr('Salir', 'Exit')}>✕</button>
             <div className="cine-centro">
               <button className="cine-flecha" onClick={() => setCineIdx(i => Math.max(0, i - 1))}
@@ -5091,8 +5130,8 @@ export default function App() {
         )
       })()}
 
-      {dueloModal && (
-        <div className="overlay" onClick={() => setDueloModal(false)} role="dialog" aria-modal="true" aria-label={tr('Modo duelo', 'Duel mode')}>
+      {dueloMontado && (
+        <div className={'overlay' + dueloSale} onClick={() => setDueloModal(false)} role="dialog" aria-modal="true" aria-label={tr('Modo duelo', 'Duel mode')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setDueloModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -5123,12 +5162,12 @@ export default function App() {
           </div>
         </div>
       )}
-      {bienvenida && !perfil && (
-        <Bienvenida pais={pais} onPais={ponPais} idioma={idioma} onIdioma={ponIdioma} onCerrar={cierraBienvenida}
+      {bienvenidaMontada && (
+        <Bienvenida saliendo={bienvenidaSale} pais={pais} onPais={ponPais} idioma={idioma} onIdioma={ponIdioma} onCerrar={cierraBienvenida}
           onExpress={() => { if (!filtros.express) setF('express'); cierraBienvenida() }} />
       )}
-      {clubModal && (
-        <div className="overlay" onClick={() => setClubModal(false)} role="dialog" aria-modal="true" aria-label={tr('Club de maratón', 'Marathon club')}>
+      {clubMontado && (
+        <div className={'overlay' + clubSale} onClick={() => setClubModal(false)} role="dialog" aria-modal="true" aria-label={tr('Club de maratón', 'Marathon club')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setClubModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -5160,8 +5199,8 @@ export default function App() {
           </div>
         </div>
       )}
-      {clubInvitar && club && (
-        <div className="overlay" onClick={() => setClubInvitar(false)} role="dialog" aria-modal="true" aria-label={tr('Invitar al club', 'Invite to the club')}>
+      {invitarMontado && (
+        <div className={'overlay' + invitarSale} onClick={() => setClubInvitar(false)} role="dialog" aria-modal="true" aria-label={tr('Invitar al club', 'Invite to the club')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setClubInvitar(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -5175,8 +5214,8 @@ export default function App() {
           </div>
         </div>
       )}
-      {perfilModal && (
-        <div className="overlay" onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label={tr('Perfil compartible', 'Shareable profile')}>
+      {perfilMMontado && (
+        <div className={'overlay' + perfilMSale} onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label={tr('Perfil compartible', 'Shareable profile')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setPerfilModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -5218,8 +5257,8 @@ export default function App() {
         </div>
       )}
 
-      {ajustes && (
-        <div className="overlay" onClick={() => setAjustes(false)} role="dialog" aria-modal="true" aria-label={tr('Ajustes', 'Settings')}>
+      {ajustesMontado && (
+        <div className={'overlay' + ajustesSale} onClick={() => setAjustes(false)} role="dialog" aria-modal="true" aria-label={tr('Ajustes', 'Settings')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setAjustes(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -5343,8 +5382,8 @@ export default function App() {
           </div>
         </div>
       )}
-      {planModal && plan && (
-        <div className="overlay" onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label={tr('Plan de sesión', 'Session plan')}>
+      {planMontado && plan && (
+        <div className={'overlay' + planSale} onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label={tr('Plan de sesión', 'Session plan')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setPlanModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -5386,29 +5425,29 @@ export default function App() {
         </div>
       )}
 
-      {horarioModal && (
-        <HorarioModal horario={horario} onGuardar={guardaHorario}
+      {horarioMontado && (
+        <HorarioModal saliendo={horarioSale} horario={horario} onGuardar={guardaHorario}
           vistas={vistas} eps={eps} onClose={() => setHorarioModal(false)} />
       )}
 
-      {syncModal && (
-        <SyncModal pais={pais} sync={sync} estado={syncEstado}
+      {syncMontado && (
+        <SyncModal saliendo={syncSale} pais={pais} sync={sync} estado={syncEstado}
           onActivar={activarSync} onDesactivar={desactivarSync}
           onClose={() => setSyncModal(false)} />
       )}
 
-      {detalle && (
-        <Detalle d={detalle} vista={!!vistas[detalle.item.id]} pais={pais} idioma={idioma}
-          onLeer={(item, registro) => setLector({ item, registro })} lectura={lecturas[detalle.item.id]}
+      {detalleMontado && (
+        <Detalle d={ultimoDetalle.current} vista={!!vistas[ultimoDetalle.current.item.id]} pais={pais} idioma={idioma}
+          onLeer={(item, registro) => setLector({ item, registro })} lectura={lecturas[ultimoDetalle.current.item.id]}
           onOlvida={id => setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c })}
           onBiblioteca={recargaBiblioteca}
-          onToggle={() => toggle(detalle.item.id)}
+          onToggle={() => toggle(ultimoDetalle.current.item.id)}
           onClose={cierraFicha}
           eps={eps} toggleEp={toggleEp} marcaTemporada={marcaTemporada}
-          nota={notas[detalle.item.id] || {}}
-          ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)}
+          nota={notas[ultimoDetalle.current.item.id] || {}}
+          ponNota={(campo, valor) => ponNota(ultimoDetalle.current.item.id, campo, valor)}
           listas={listas} toggleEnLista={toggleEnLista} club={club} onNav={navegaDetalle}
-          onIrA={abreDesdeFicha} personaPendiente={personaPendiente} />
+          onIrA={abreDesdeFicha} personaPendiente={personaPendiente} saliendo={detalleSale} />
       )}
 
       <Footer onAjustes={() => setAjustes(true)} />
@@ -5417,7 +5456,7 @@ export default function App() {
   )
 }
 
-function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais }) {
+function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais, saliendo }) {
   const [modo, setModo] = useState(sync ? 'activo' : 'menu')
   const [url, setUrl] = useState('')
   const [codigo, setCodigo] = useState('')
@@ -5451,7 +5490,7 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais }) {
     })
   }
   return (
-    <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={tr('Sincronización', 'Sync')}>
+    <div className={'overlay' + (saliendo || '')} onClick={onClose} role="dialog" aria-modal="true" aria-label={tr('Sincronización', 'Sync')}>
       <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
         <button className="cerrar" onClick={onClose} aria-label={tr('Cerrar', 'Close')}>✕</button>
         <div className="modal-info">
