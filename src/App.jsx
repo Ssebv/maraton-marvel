@@ -1061,10 +1061,11 @@ function useVolverCierra(abierto, onCerrar, elemento) {
 // captura) para que pasar página en el lector o cambiar de título en la
 // ficha no se disparen a la vez.
 const BORDE_ATRAS = 24
+const movimientoReducido = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 function gestosDeVolver() {
   let g = null, cerrando = false
   const hoja = () => window.matchMedia('(max-width:720px)').matches
-  const reducido = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reducido = movimientoReducido
   const nodoDe = (capa, objetivo) => {
     const propio = capa.el()
     if (propio) return propio
@@ -1183,7 +1184,9 @@ function useDialogo(ref, onEscape, activo = true) {
       clearTimeout(t)
       window.removeEventListener('keydown', onKey)
       liberaFondo()
-      try { previo && previo.focus() } catch {}
+      // sin desplazar: el fondo estuvo bloqueado, la lista sigue donde estaba, y
+      // al cerrar tras pasar de título es la app quien decide a qué tarjeta ir
+      try { previo && previo.focus({ preventScroll: true }) } catch {}
     }
   }, [ref, activo])
 }
@@ -2674,7 +2677,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   const [cambios, setCambios] = useState(0)
   const montado = useRef(false)
   useEffect(() => {
-    setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null)
+    // al volver por la pila de fichas se reabre la biografía de la que se salió
+    setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(d.personaInicial || null)
     if (montado.current) setCambios(c => c + 1); else montado.current = true
   }, [item.id])
   // Escape, atrapa-foco, bloqueo del scroll y devolución del foco: lo mismo que
@@ -2725,7 +2729,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
         {persona ? (
           <FichaPersona {...persona} idioma={idioma} itemActualId={item.id} tituloActual={item.t}
             onVolver={() => setPersona(null)}
-            onAbrirTitulo={d => { setPersona(null); onIrA && onIrA(d) }} />
+            onAbrirTitulo={d => { onIrA && onIrA(d, persona); setPersona(null) }} />
         ) : (
         <div className={cambios ? 'modal-info modal-cambio' : 'modal-info'} key={cambios}>
           <div className="modal-chips">
@@ -3192,6 +3196,11 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [perfil])
+  // Atrás entre destinos: desde Mío o Multiverso, atrás (borde en iPhone,
+  // botón en Android) vuelve a Maratón en vez de salir de la app, como en
+  // las apps con pestañas; solo desde Maratón se sale. La subvista en la que
+  // estabas se conserva (ultimaVista). El contenido sigue al dedo en el gesto.
+  useVolverCierra(!perfil && destinoDe(vista) !== 'maraton', () => setVista(ultimaVista.maraton || 'crono'), () => document.querySelector('main'))
   const [detalle, setDetalle] = useState(() => {
     try {
       const p = new URLSearchParams(window.location.search)
@@ -3207,6 +3216,37 @@ export default function App() {
       return null
     } catch { return null }
   })
+  // Pila de fichas: abrir un título desde la biografía de un actor apila el
+  // anterior (con su biografía) para que atrás vuelva a él, y a la biografía,
+  // en vez de a la lista. El aspa cierra todo; atrás deshace de una en una.
+  // Cinco como mucho. Las flechas ‹ › no apilan: son vecinos, no un salto.
+  const [pilaFichas, setPilaFichas] = useState([])
+  const abreDesdeFicha = (d, persona) => { setPilaFichas(p => [...p.slice(-4), { d: detalle, persona }]); setDetalle(d) }
+  const cierraFicha = () => { setDetalle(null); setPilaFichas([]) }
+  const vuelveFicha = () => {
+    const ult = pilaFichas[pilaFichas.length - 1]
+    if (!ult) return
+    setDetalle({ ...ult.d, personaInicial: ult.persona || null })
+    setPilaFichas(p => p.slice(0, -1))
+  }
+  // Al cerrar la ficha tras pasar de título (‹ ›, deslizar, biografías), la
+  // lista va a la última tarjeta vista: el foco volvía a la de origen, que
+  // podía quedar dos pantallas más arriba de lo que acababas de mirar.
+  const fichaIds = useRef({ origen: null, ultimo: null })
+  useEffect(() => {
+    const f = fichaIds.current
+    if (detalle) { if (!f.origen) f.origen = detalle.item.id; f.ultimo = detalle.item.id; return }
+    const { origen, ultimo } = f
+    f.origen = f.ultimo = null
+    if (!origen || origen === ultimo) return
+    const el = document.getElementById('card-' + ultimo) || document.getElementById('tl-' + ultimo)
+    if (!el) return
+    const b = el.querySelector('.abrir') || el
+    try { b.focus({ preventScroll: true }) } catch {}
+    el.scrollIntoView({ behavior: movimientoReducido() ? 'instant' : 'smooth', block: 'center' })
+    el.classList.add('destello')
+    setTimeout(() => el.classList.remove('destello'), 1600)
+  }, [detalle])
   const navegaDetalle = dir => setDetalle(d => {
     if (!d) return d
     // por la pantalla, no por los bits: aquí «siguiente» es el de al lado
@@ -3414,7 +3454,8 @@ export default function App() {
   // Cada capa que tapa la pantalla se apunta al gesto de volver atrás. La ficha
   // navega entre títulos sin crear entradas nuevas: la capa es «hay ficha», no
   // «esta ficha».
-  useVolverCierra(!!detalle, () => setDetalle(null))
+  useVolverCierra(!!detalle, cierraFicha)
+  useVolverCierra(pilaFichas.length > 0, vuelveFicha)
   useVolverCierra(cine, () => setCine(false))
   useVolverCierra(!!lector, () => setLector(null))
   useVolverCierra(ajustes, () => setAjustes(false))
@@ -4205,6 +4246,8 @@ export default function App() {
                   onClick={e => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
+                    // la pestaña en la que ya estás sube al principio, como en iOS
+                    if (destino === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
                     setVista(destino)
                   }}>
                   {tr(d.label, d.en || d.label)}
@@ -4270,6 +4313,7 @@ export default function App() {
                   onClick={e => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
+                    if (v === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
                     setVista(v)
                   }}>{p ? tr(p.label, p.en || p.label) : v}</a>
               )
@@ -5169,12 +5213,12 @@ export default function App() {
           onOlvida={id => setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c })}
           onBiblioteca={recargaBiblioteca}
           onToggle={() => toggle(detalle.item.id)}
-          onClose={() => setDetalle(null)}
+          onClose={cierraFicha}
           eps={eps} toggleEp={toggleEp} marcaTemporada={marcaTemporada}
           nota={notas[detalle.item.id] || {}}
           ponNota={(campo, valor) => ponNota(detalle.item.id, campo, valor)}
           listas={listas} toggleEnLista={toggleEnLista} club={club} onNav={navegaDetalle}
-          onIrA={d => setDetalle(d)} />
+          onIrA={abreDesdeFicha} />
       )}
 
       <Footer onAjustes={() => setAjustes(true)} />
