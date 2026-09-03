@@ -1233,6 +1233,12 @@ function gestosDeVolver() {
       const v = velo(g.el); if (v) v.style.transition = 'none'
     }
     e.preventDefault()
+    // un tic al cruzar el punto en que soltar cierra (y otro al volver atrás
+    // de él), como las hojas nativas: el dedo sabe dónde está sin mirar
+    const recorrido = g.modo === 'x' ? g.dx : g.dy
+    const umbral = g.modo === 'x' ? Math.min(140, g.el.clientWidth * 0.35) : 140
+    const fuera = recorrido > umbral
+    if (fuera !== !!g.cruzado) { g.cruzado = fuera; tic() }
     if (g.modo === 'x') {
       const dx = Math.max(0, g.dx)
       g.el.style.transform = `translateX(${dx}px)`
@@ -1863,8 +1869,8 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
 // horario es un chip más en la barra y la bienvenida solo sale la primera
 // visita. Quien ya usaba la app ve UNA vez este aviso, con el camino directo.
 // Al cambiar AVISO_VERSION en una jornada futura, el aviso vuelve a salir.
-const AVISO_VERSION = '2026-08-31'
-function AvisoNuevo({ onHorario, onAjustes }) {
+const AVISO_VERSION = '2026-09-03'
+function AvisoNuevo({ onProbar }) {
   const [visible, setVisible] = useState(() => {
     try {
       // solo veteranos: quien aún no cerró la bienvenida se entera por ella
@@ -1881,12 +1887,17 @@ function AvisoNuevo({ onHorario, onAjustes }) {
     <div className="aviso info novedades" role="status">
       <span>
         <b>{tr('Nuevo en la app:', 'New in the app:')}</b>{' '}
-        {tr('Horario de maratón (elige tus días y te digo qué toca cada sesión y cuándo terminas), la interfaz en English y 19 países.', 'Marathon schedule (pick your days and I’ll tell you what each session covers and when you finish), interfaz en español, and 19 countries.')}
+        {ES_TACTIL
+          ? tr('gestos de app. Desliza desde el borde izquierdo para volver, tira de cualquier ficha hacia abajo para cerrarla, y toca otra vez la pestaña en la que estás para subir. El icono avisa el día que tienes sesión.',
+              'app gestures. Swipe from the left edge to go back, pull any title sheet down to close it, and tap the tab you’re on again to scroll to the top. The icon badge shows the day you have a session.')
+          : tr('las capas entran y salen animadas, la app avisa cuando hay versión nueva, y en el iPhone instalada tiene gestos para volver y cerrar.',
+              'layers animate in and out, the app tells you when a new version is out, and installed on iPhone it has gestures to go back and close.')}
       </span>
-      <span className="aviso-acciones">
-        <button className="chip-btn destacado" aria-pressed="false" onClick={() => { cierra(); onHorario() }}>{tr('Ponerme un horario', 'Set a schedule')}</button>
-        <button className="chip-btn" onClick={() => { cierra(); onAjustes() }}>{tr('Idioma y país', 'Language and country')}</button>
-      </span>
+      {ES_TACTIL && onProbar && (
+        <span className="aviso-acciones">
+          <button className="chip-btn destacado" onClick={() => { cierra(); onProbar() }}>{tr('Probar con el siguiente', 'Try it on the next one')}</button>
+        </span>
+      )}
       <button className="cerrar" onClick={cierra} aria-label={tr('Cerrar aviso', 'Dismiss')}>✕</button>
     </div>
   )
@@ -4434,7 +4445,7 @@ export default function App() {
         </div>
       </section>
 
-      <AvisoNuevo onHorario={() => setHorarioModal(true)} onAjustes={() => setAjustes(true)} />
+      <AvisoNuevo onProbar={stats.siguiente ? () => { const d = buscaItem(stats.siguiente.id); if (d) setDetalle(d) } : null} />
       <Novedades eps={eps} />
       {!panelAbierto && (
         <button className="panel-resumen" aria-expanded="false" onClick={alternaPanel}>
