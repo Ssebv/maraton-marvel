@@ -1023,15 +1023,19 @@ window.addEventListener('popstate', () => {
   if (!capasAtras.length || !entradaAtras) return
   entradaAtras = false
   const capa = capasAtras.pop()
-  capa()
+  capa.cierra()
   conciliaAtras()
 })
-function useVolverCierra(abierto, onCerrar) {
+// `elemento` (opcional) devuelve el nodo que sigue al dedo en el gesto de
+// volver; sin él se usa el diálogo que se está tocando (ver gestosDeVolver).
+function useVolverCierra(abierto, onCerrar, elemento) {
   const cierra = useRef(onCerrar)
   cierra.current = onCerrar
+  const el = useRef(elemento)
+  el.current = elemento
   useEffect(() => {
     if (!abierto) return undefined
-    const capa = () => cierra.current()
+    const capa = { cierra: () => cierra.current(), el: () => el.current && el.current() }
     capasAtras.push(capa)
     conciliaAtras()
     return () => {
@@ -1040,6 +1044,108 @@ function useVolverCierra(abierto, onCerrar) {
     }
   }, [abierto])
 }
+
+// Gestos de dedo para volver. Instalada en iPhone la app no tiene barra de
+// Safari ni su deslizar desde el borde, y sin eso cada capa solo se cerraba
+// con el aspa. Aquí se hacen los dos gestos del sistema para TODAS las capas
+// que registran useVolverCierra, sin tocar cada una:
+//  · desde el borde izquierdo hacia la derecha = atrás: la capa de arriba
+//    sigue al dedo (la hoja entera, el lector, el cine, o solo la biografía
+//    dentro de la ficha) y, pasado el umbral o con un latigazo, se cierra;
+//  · desde el asa de una hoja móvil hacia abajo = cerrar, con el mismo
+//    seguimiento (antes solo lo hacía la ficha; ahora Ajustes, Plan…).
+// El nodo que se mueve es el diálogo bajo el dedo (lo que se toca es lo que
+// está encima), salvo que la capa haya dicho otro. Cerrar pasa por la misma
+// función que el aspa o el botón atrás: el historial se concilia solo.
+// La franja del borde es exclusiva del gesto (se corta la propagación en
+// captura) para que pasar página en el lector o cambiar de título en la
+// ficha no se disparen a la vez.
+const BORDE_ATRAS = 24
+function gestosDeVolver() {
+  let g = null, cerrando = false
+  const hoja = () => window.matchMedia('(max-width:720px)').matches
+  const reducido = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const nodoDe = (capa, objetivo) => {
+    const propio = capa.el()
+    if (propio) return propio
+    const dialogo = objetivo && objetivo.closest && objetivo.closest('[role="dialog"]')
+    if (!dialogo) return null
+    return (dialogo.classList.contains('overlay') && dialogo.querySelector(':scope > .modal')) || dialogo
+  }
+  const velo = el => el.parentElement && el.parentElement.classList.contains('overlay') ? el.parentElement : null
+  const suelta = el => {
+    el.style.transition = ''; el.style.transform = ''
+    const v = velo(el)
+    if (v) { v.style.transition = ''; v.style.removeProperty('--arrastre') }
+  }
+  const onStart = e => {
+    if (cerrando || g || e.touches.length !== 1 || !capasAtras.length) return
+    const t = e.touches[0]
+    const capa = capasAtras[capasAtras.length - 1]
+    const el = nodoDe(capa, e.target)
+    if (!el) return
+    if (t.clientX <= BORDE_ATRAS) {
+      e.stopPropagation()
+      g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: null }
+      return
+    }
+    // el asa: la franja superior de la hoja móvil, fuera de botones y campos
+    if (!hoja() || !el.classList.contains('modal') || !el.contains(e.target)) return
+    if (e.target.closest('button,a,input,textarea,select')) return
+    if (t.clientY - el.getBoundingClientRect().top > 44) return
+    g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: 'y' }
+    el.style.transition = 'none'
+  }
+  const onMove = e => {
+    if (!g) return
+    const t = e.touches[0]
+    g.dx = t.clientX - g.x0; g.dy = t.clientY - g.y0
+    if (!g.modo) {
+      if (Math.abs(g.dx) < 10 && Math.abs(g.dy) < 10) return
+      if (g.dx <= 0 || g.dx < Math.abs(g.dy) * 1.2) { g = null; return }
+      g.modo = 'x'
+      g.el.style.transition = 'none'
+      const v = velo(g.el); if (v) v.style.transition = 'none'
+    }
+    e.preventDefault()
+    if (g.modo === 'x') {
+      const dx = Math.max(0, g.dx)
+      g.el.style.transform = `translateX(${dx}px)`
+      const v = velo(g.el); if (v) v.style.setProperty('--arrastre', Math.min(1, dx / g.el.clientWidth).toFixed(3))
+    } else g.el.style.transform = `translateY(${Math.max(0, g.dy)}px)`
+  }
+  const onCancel = () => { if (!g) return; const { el } = g; g = null; suelta(el) }
+  const onEnd = e => {
+    if (!g) return
+    const { el, capa, modo, dx, dy, t0 } = g
+    g = null
+    if (!modo) return
+    const recorrido = modo === 'x' ? dx : dy
+    const latigazo = recorrido > 24 && recorrido / Math.max(1, e.timeStamp - t0) > 0.11
+    const umbral = modo === 'x' ? Math.min(140, el.clientWidth * 0.35) : 140
+    const v = velo(el)
+    if (recorrido > umbral || latigazo) {
+      if (reducido()) { capa.cierra(); requestAnimationFrame(() => suelta(el)); return }
+      cerrando = true
+      el.style.transition = 'transform var(--dur-media) var(--curva)'
+      el.style.transform = modo === 'x' ? 'translateX(105%)' : 'translateY(105%)'
+      if (v) { v.style.transition = 'background var(--dur-media)'; v.style.setProperty('--arrastre', '1') }
+      // se cierra antes de recolocar: si el nodo sobrevive al cierre (la
+      // biografía deja la ficha debajo) no se ve volver a su sitio un cuadro
+      setTimeout(() => { cerrando = false; capa.cierra(); requestAnimationFrame(() => suelta(el)) }, 240)
+    } else {
+      el.style.transition = 'transform var(--dur-media) var(--curva)'
+      el.style.transform = ''
+      if (v) { v.style.transition = 'background var(--dur-media)'; v.style.setProperty('--arrastre', '0') }
+      setTimeout(() => { if (!g || g.el !== el) suelta(el) }, 260)
+    }
+  }
+  window.addEventListener('touchstart', onStart, { capture: true, passive: true })
+  window.addEventListener('touchmove', onMove, { passive: false })
+  window.addEventListener('touchend', onEnd)
+  window.addEventListener('touchcancel', onCancel)
+}
+gestosDeVolver()
 
 // Lo que aria-modal promete: el foco entra, no se escapa con el tabulador
 // y vuelve a su sitio al cerrar. Escrito una vez para todos los diálogos.
@@ -2474,61 +2580,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   const [persona, setPersona] = useState(null)
   const refOverlay = useRef(null)
   const refModal = useRef(null)
-  const refCierra = useRef(onClose)
-  refCierra.current = onClose
   // La biografía es una capa dentro de la ficha: atrás vuelve a la ficha, como
   // hace Escape, y no cierra las dos de golpe
-  useVolverCierra(!!persona, () => setPersona(null))
-  // El asa de la hoja móvil arrastra de verdad: seguir al dedo desde la franja
-  // superior y, si el tirón pasa de umbral (o es un latigazo), cerrar. Si no,
-  // volver a su sitio. Solo toca transform, y solo existe donde hay hoja.
-  useEffect(() => {
-    const el = refModal.current
-    if (!el || !window.matchMedia('(max-width:720px)').matches) return undefined
-    let y0 = null, dy = 0, t0 = 0, cerrando = false
-    const onStart = e => {
-      if (cerrando || e.touches.length !== 1) return
-      if (e.target.closest('button,a,input,textarea')) return
-      const t = e.touches[0]
-      if (t.clientY - el.getBoundingClientRect().top > 44) return
-      y0 = t.clientY; dy = 0; t0 = e.timeStamp
-      el.style.transition = 'none'
-    }
-    const onMove = e => {
-      if (y0 == null) return
-      dy = Math.max(0, e.touches[0].clientY - y0)
-      e.preventDefault()
-      el.style.transform = `translateY(${dy}px)`
-    }
-    // mientras la hoja se va (240 ms) ni un toque nuevo ni un touchcancel la
-    // devuelven a su sitio: se cerraría de golpe sin salida
-    const suelta = () => { if (cerrando) return; y0 = null; el.style.transition = ''; el.style.transform = '' }
-    const onEnd = e => {
-      if (y0 == null) return
-      const latigazo = dy > 24 && e.timeStamp - t0 < 250
-      if (dy > 140 || latigazo) {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { suelta(); refCierra.current(); return }
-        cerrando = true
-        el.style.transition = 'transform var(--dur-media) var(--curva)'
-        el.style.transform = 'translateY(105%)'
-        setTimeout(() => { cerrando = false; suelta(); refCierra.current() }, 240)
-      } else {
-        el.style.transition = 'transform var(--dur-media) var(--curva)'
-        el.style.transform = ''
-      }
-      y0 = null
-    }
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
-    el.addEventListener('touchend', onEnd)
-    el.addEventListener('touchcancel', suelta)
-    return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
-      el.removeEventListener('touchend', onEnd)
-      el.removeEventListener('touchcancel', suelta)
-    }
-  }, [])
+  useVolverCierra(!!persona, () => setPersona(null), () => refModal.current && refModal.current.querySelector('.persona-ficha'))
+  // El asa de la hoja móvil (arrastrar hacia abajo para cerrar) y el borde
+  // (deslizar para volver) viven en gestosDeVolver, comunes a todas las capas.
   const refNav = useRef(onNav)
   refNav.current = onNav
   const refPersona = useRef(persona)
@@ -2536,8 +2592,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   // Deslizar en horizontal pasa de título, como las flechas ‹ ›. El eje se
   // decide con el primer tramo del movimiento: si domina la vertical, el
   // scroll sigue siendo del navegador y aquí no se toca nada. Quedan fuera el
-  // asa (que es del gesto de cerrar), el carril del reparto (que ya se desliza
-  // solo) y la ficha de persona (donde las flechas tampoco navegan).
+  // asa (que es del gesto de cerrar), el borde izquierdo (que es del gesto de
+  // volver y no deja llegar aquí su touchstart), el carril del reparto (que ya
+  // se desliza solo) y la ficha de persona (donde las flechas tampoco navegan).
   useEffect(() => {
     const el = refModal.current
     if (!el || !window.matchMedia('(max-width:720px)').matches) return undefined

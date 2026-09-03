@@ -806,7 +806,10 @@ h3{
 .overlay{
   position:fixed; inset:0; z-index:50;
   overscroll-behavior:contain;
-  background:rgba(8,10,14,.62);
+  /* --arrastre: cuánto va la hoja hacia el borde en el gesto de volver (0–1);
+     el velo se aclara con ella, como en iOS */
+  --arrastre:0;
+  background:rgba(8,10,14,calc(.62 * (1 - var(--arrastre))));
   -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
   display:grid; place-items:center; padding: var(--e-6);
   animation:fadeIn .2s ease both;
@@ -1674,7 +1677,7 @@ main.crono, main.comics, main.estreno{animation:none}
 
   /* Sin blur bajo la hoja: desenfocar una página llena de carátulas mientras
      la hoja sube era el tirón más visible del móvil. Un velo más oscuro cumple. */
-  .overlay{place-items:end center; padding: 0; -webkit-backdrop-filter:none; backdrop-filter:none; background:rgba(8,10,14,.74)}
+  .overlay{place-items:end center; padding: 0; -webkit-backdrop-filter:none; backdrop-filter:none; background:rgba(8,10,14,calc(.74 * (1 - var(--arrastre))))}
   .modal{
     max-width:none; width:100%; border-radius:var(--r-l) var(--r-l) 0 0; border-bottom:none;
     max-height:92vh; max-height:92dvh; padding-top: var(--e-6);
