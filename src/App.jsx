@@ -1582,26 +1582,29 @@ function Bienvenida({ onCerrar, onExpress, pais, onPais, idioma, onIdioma, salie
 }
 
 // ── Mapa del multiverso: conexiones canónicas título a título ──
+// Cada nodo lleva el color de su Tierra (data.js): el mapa y el sistema solar
+// pintan lo mismo con el mismo color.
+const COLOR_TIERRA = Object.fromEntries(MULTIVERSO.map(u => [u.num, u.c]))
 const MAPA_NODOS = [
-  { id: 'dofp', x: 140, y: 200, c: '#F5B822' },
-  { id: 'logan', x: 140, y: 360, c: '#F5B822' },
-  { id: 'deadpool2', x: 140, y: 500, c: '#F5B822' },
-  { id: 'deadpool3', x: 320, y: 560, c: '#F5B822' },
-  { id: 'avengers1', x: 500, y: 70, c: '#E5484D' },
-  { id: 'endgame', x: 500, y: 170, c: '#E5484D' },
-  { id: 'wandavision', x: 300, y: 200, c: '#E5484D' },
-  { id: 'loki1', x: 500, y: 270, c: '#8B5CF6' },
-  { id: 'loki2', x: 620, y: 340, c: '#8B5CF6' },
-  { id: 'quantumania', x: 380, y: 340, c: '#E5484D' },
-  { id: 'mom', x: 300, y: 420, c: '#6FA8DC' },
-  { id: 'nwh', x: 500, y: 470, c: '#E5484D' },
-  { id: 'sony', x: 500, y: 615, c: '#7A8090' },
-  { id: 'marvels', x: 680, y: 200, c: '#E5484D' },
-  { id: 'whatif', x: 820, y: 340, c: '#9B7BD8' },
-  { id: 'zombies', x: 820, y: 470, c: '#4FB57A' },
-  { id: 'ff', x: 680, y: 470, c: '#2E8C7A' },
-  { id: 'thunderbolts', x: 680, y: 580, c: '#E5484D' },
-  { id: 'doomsday', x: 820, y: 615, c: '#2E8C7A' },
+  { id: 'dofp', x: 140, y: 200, c: COLOR_TIERRA['Tierra-10005'] },
+  { id: 'logan', x: 140, y: 360, c: COLOR_TIERRA['Tierra-10005'] },
+  { id: 'deadpool2', x: 140, y: 500, c: COLOR_TIERRA['Tierra-10005'] },
+  { id: 'deadpool3', x: 320, y: 560, c: COLOR_TIERRA['Tierra-10005'] },
+  { id: 'avengers1', x: 500, y: 70, c: COLOR_TIERRA['Tierra-616'] },
+  { id: 'endgame', x: 500, y: 170, c: COLOR_TIERRA['Tierra-616'] },
+  { id: 'wandavision', x: 300, y: 200, c: COLOR_TIERRA['Tierra-616'] },
+  { id: 'loki1', x: 500, y: 270, c: COLOR_TIERRA['El Vacío'] },
+  { id: 'loki2', x: 620, y: 340, c: COLOR_TIERRA['El Vacío'] },
+  { id: 'quantumania', x: 380, y: 340, c: COLOR_TIERRA['Tierra-616'] },
+  { id: 'mom', x: 300, y: 420, c: COLOR_TIERRA['Tierra-838'] },
+  { id: 'nwh', x: 500, y: 470, c: COLOR_TIERRA['Tierra-616'] },
+  { id: 'sony', x: 500, y: 615, c: COLOR_TIERRA['Universo Sony'] },
+  { id: 'marvels', x: 680, y: 200, c: COLOR_TIERRA['Tierra-616'] },
+  { id: 'whatif', x: 820, y: 340, c: COLOR_TIERRA['Universos What If'] },
+  { id: 'zombies', x: 820, y: 470, c: COLOR_TIERRA['Marvel Zombies'] },
+  { id: 'ff', x: 680, y: 470, c: COLOR_TIERRA['Tierra-828'] },
+  { id: 'thunderbolts', x: 680, y: 580, c: COLOR_TIERRA['Tierra-616'] },
+  { id: 'doomsday', x: 820, y: 615, c: COLOR_TIERRA['Tierra-828'] },
 ]
 const MAPA_ARISTAS = [
   { a: 'avengers1', b: 'endgame', t: 'El atraco temporal vuelve a la batalla de Nueva York' },
@@ -3245,6 +3248,8 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   const x = cv.getContext('2d')
 
   // Fondo de tinta nocturna con semitono
+  // La tarjeta es siempre oscura, se vea desde el tema que se vea: los colores
+  // son los del tema oscuro de styles.css (no hay tokens en un canvas).
   x.fillStyle = '#0A0C14'; x.fillRect(0, 0, W, H)
   x.fillStyle = 'rgba(242,239,230,0.045)'
   for (let i = 20; i < W; i += 26) for (let j = 20; j < H; j += 26) {
@@ -3253,13 +3258,13 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
 
   // Rótulo rojo inclinado
   x.save(); x.translate(80, 84); x.transform(1, 0, -0.14, 1, 0, 0)
-  x.fillStyle = '#E5484D'; x.fillRect(0, 0, 470, 46); x.restore()
+  x.fillStyle = '#F84A54'; x.fillRect(0, 0, 470, 46); x.restore()
   x.fillStyle = '#fff'; x.font = '700 21px Archivo, sans-serif'
   x.fillText(tr('GUÍA DE MARATÓN · MI PROGRESO', 'MARATHON GUIDE · MY PROGRESS'), 100, 115)
 
   // Título
   const g1 = x.createLinearGradient(80, 0, 980, 0)
-  g1.addColorStop(0, '#F2EFE6'); g1.addColorStop(.45, '#E5484D'); g1.addColorStop(1, '#F5B822')
+  g1.addColorStop(0, '#F2EFE6'); g1.addColorStop(.45, '#F84A54'); g1.addColorStop(1, '#E8A93C')
   x.fillStyle = g1
   x.font = '400 88px "Archivo Black", Archivo, sans-serif'
   x.fillText(tr('MARATÓN', 'MARVEL & X-MEN'), 80, 246)
@@ -3268,7 +3273,7 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   // Porcentaje gigante
   const pct = est.totMin ? Math.round(100 * est.vistoMin / est.totMin) : 0
   const g2 = x.createLinearGradient(80, 420, 80, 660)
-  g2.addColorStop(0, '#E5484D'); g2.addColorStop(1, '#F5B822')
+  g2.addColorStop(0, '#F84A54'); g2.addColorStop(1, '#E8A93C')
   x.fillStyle = g2
   x.font = '400 230px "Archivo Black", Archivo, sans-serif'
   x.fillText(pct + '%', 74, 650)
@@ -3282,9 +3287,9 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   const suma = fs => fs.reduce((a, f) => [a[0] + f.visto, a[1] + f.tot, a[2] + f.vistos, a[3] + f.items], [0, 0, 0, 0])
   const [xv, xt, xvi, xit] = suma(fx)
   const [uv, ut, uvi, uit] = suma(fu)
-  filas.push([tr('SAGA X-MEN', 'X-MEN SAGA'), xvi, xit, xt ? xv / xt : 0, '#F5B822'])
-  filas.push([tr('UCM', 'MCU'), uvi, uit, ut ? uv / ut : 0, '#E5484D'])
-  filas.push([tr('CÓMICS', 'COMICS'), comicsVistos, comicsTot, comicsTot ? comicsVistos / comicsTot : 0, '#9B7BD8'])
+  filas.push([tr('SAGA X-MEN', 'X-MEN SAGA'), xvi, xit, xt ? xv / xt : 0, '#E8A93C'])
+  filas.push([tr('UCM', 'MCU'), uvi, uit, ut ? uv / ut : 0, '#F84A54'])
+  filas.push([tr('CÓMICS', 'COMICS'), comicsVistos, comicsTot, comicsTot ? comicsVistos / comicsTot : 0, '#A98BE0'])
   let y = 800
   filas.forEach(([nombre, v, n, frac, color]) => {
     x.fillStyle = '#F2EFE6'; x.font = '700 26px Archivo, sans-serif'
@@ -3304,16 +3309,16 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   const objetivo = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
   if (objetivo) {
     const dias = Math.ceil((new Date(objetivo.fecha + 'T00:00:00') - Date.now()) / 86400000)
-    x.strokeStyle = '#2E7D32'; x.lineWidth = 3
+    x.strokeStyle = '#4FB57A'; x.lineWidth = 3
     x.beginPath(); x.roundRect(80, y + 10, 920, 110, 14); x.stroke()
-    x.fillStyle = '#5FD068'; x.font = '700 24px Archivo, sans-serif'
+    x.fillStyle = '#64B05C'; x.font = '700 24px Archivo, sans-serif'
     x.fillText(tr('PRÓXIMO GRAN ESTRENO', 'NEXT BIG PREMIERE'), 116, y + 56)
     x.fillStyle = '#F2EFE6'; x.font = '400 34px "Archivo Black", Archivo, sans-serif'
     x.fillText(tr(`${objetivo.t.toUpperCase()} · FALTAN ${dias} DÍAS`, `${objetivo.t.toUpperCase()} · ${dias} DAYS TO GO`), 116, y + 100)
   }
 
   // Pie
-  x.fillStyle = '#6B6878'; x.font = '600 24px Archivo, sans-serif'
+  x.fillStyle = '#8D8A7E'; x.font = '600 24px Archivo, sans-serif'
   x.fillText('ssebv.github.io/maraton-marvel', 80, H - 60)
 
   const blob = await new Promise(res => cv.toBlob(res, 'image/png'))

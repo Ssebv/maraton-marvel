@@ -361,7 +361,7 @@ export const DATA = [
       { id: "c-hoxpox", en: "House of X Powers of X", t: "Dinastía de X / Potencias de X", a: "Hickman", r: 2019, plat: "Panini / Marvel Unlimited",
         res: "El renacimiento moderno; probable base de los X-Men del UCM." },
     ]},
-    { era: "Vengadores y el camino del UCM", rango: "1966–2015", c: ["#6D4FA3", "#2E2050"], items: [
+    { era: "Vengadores y el camino del UCM", rango: "1966–2015", c: ["#6B62BF", "#2D2365"], items: [
       { id: "c-galactus", en: "Fantastic Four Galactus Trilogy", t: "Los 4 Fantásticos: La trilogía de Galactus", a: "Lee y Kirby", r: 1966, plat: "Panini / Marvel Unlimited",
         res: "El devorador de mundos: la base de First Steps." },
       { id: "c-infinitygauntlet", en: "Infinity Gauntlet", t: "El Guantelete del Infinito", a: "Starlin y Pérez", r: 1991, plat: "Panini / Marvel Unlimited",
@@ -383,7 +383,7 @@ export const DATA = [
       { id: "c-secretwars", en: "Secret Wars 2015", t: "Secret Wars", a: "Hickman y Ribić", r: 2015, plat: "Panini / Marvel Unlimited",
         res: "El evento hacia el que apuntan Doomsday y Secret Wars." },
     ]},
-    { era: "Héroes de calle y rarezas", rango: "1986–2015", c: ["#5A3E8E", "#251844"], items: [
+    { era: "Héroes de calle y rarezas", rango: "1986–2015", c: ["#99519E", "#4B154F"], items: [
       { id: "c-bornagain", en: "Daredevil Born Again", t: "Daredevil: Born Again", a: "Miller y Mazzucchelli", r: 1986, plat: "Panini / Marvel Unlimited",
         res: "Da nombre a la serie y es una obra maestra del cómic." },
       { id: "c-deadpoolkelly", en: "Deadpool 1997 Joe Kelly", t: "Deadpool de Joe Kelly", a: "Kelly y McGuinness", r: 1997, opt: true, plat: "Panini / Marvel Unlimited",
@@ -403,7 +403,7 @@ export const DATA = [
   saga: "animacion", titulo: "La bóveda de animación", uni: "Disney+",
   desc: "Las series animadas de Marvel disponibles hoy en Disney+ España, de los clásicos de los 80 y 90 a la era actual. Fuera de la cronología del maratón: puro disfrute aparte.",
   eras: [
-    { era: "La escuela clásica", rango: "1981–2000", c: ["#C98A10", "#6E4204"], items: [
+    { era: "La escuela clásica", rango: "1981–2000", c: ["#007785", "#0D373D"], items: [
       { id: "sm-amigos81", t: "Spider-Man y sus Increíbles Amigos", h: "—", r: 1981, s: 7.5, d: 528, tipo: "serie", plat: "Disney+",
         dir: "Stan Lee (creador)", cast: ["Dan Gilvezan", "Kathy Garver", "Frank Welker"],
         res: "Spidey, Estrella de Fuego y Hombre de Hielo compartiendo piso: puro sábado por la mañana." },
@@ -426,7 +426,7 @@ export const DATA = [
         dir: "Avi Arad y Will Meugniot (creadores)", cast: ["Rino Romano", "John Payne", "Brian Drummond"],
         res: "Spidey varado en Contra-Tierra; la rareza de culto del 99." },
     ]},
-    { era: "La era Disney XD", rango: "2010–2019", c: ["#2E6ED9", "#12305E"], items: [
+    { era: "La era Disney XD", rango: "2010–2019", c: ["#037AC0", "#093351"], items: [
       { id: "emh", t: "Los Vengadores: Los Superhéroes más poderosos de la Tierra", h: "—", r: 2010, s: 8.2, d: 1144, tipo: "serie", plat: "Disney+",
         dir: "Joshua Fine y Ciro Nieli (creadores)", cast: ["Eric Loomis", "Brian Bloom", "Rick D. Wasserman"],
         res: "Para muchos, la mejor serie de los Vengadores jamás hecha." },
@@ -446,7 +446,7 @@ export const DATA = [
         cast: ["Fred Tatasciore", "Melanie Minichino", "Ben Diskin"],
         res: "Peter en Horizon High, con Miles y Gwen desde el principio." },
     ]},
-    { era: "La era Disney+", rango: "2021 →", c: ["#2E8C7A", "#123F36"], items: [
+    { era: "La era Disney+", rango: "2021 →", c: ["#16827D", "#033936"], items: [
       { id: "modok", t: "M.O.D.O.K.", h: "—", r: 2021, s: 6.6, d: 250, tipo: "serie", plat: "Disney+",
         dir: "Patton Oswalt y Jordan Blum (creadores)", cast: ["Patton Oswalt", "Melissa Fumero", "Aimee Garcia"],
         res: "El villano cabezón en una sitcom de crisis de los cuarenta, en stop-motion." },
@@ -480,27 +480,27 @@ export const ESTRENOS = [
 
 // Guía de universos del multiverso (rescatada del análisis en vídeo "Multiverso de Marvel antes de Doomsday")
 export const MULTIVERSO = [
-  { num: "Tierra-616", nombre: "El UCM — la Línea Sagrada", ids: ["avengers1", "endgame", "loki1"], c: "#E5484D", grupo: "ucm", estado: "Línea sagrada · activa",
+  { num: "Tierra-616", nombre: "El UCM — la Línea Sagrada", ids: ["avengers1", "endgame", "loki1"], c: "#F0555B", grupo: "ucm", estado: "Línea sagrada · activa",
     desc: "El universo principal del cine. Se llamó Tierra-199999 hasta que en 2023 Feige lo renombró 616, como el de los cómics. Es la «línea temporal sagrada» que la TVA protege: cada evento nexo que la desvía genera una rama que la TVA poda." },
-  { num: "Tierra-10005", nombre: "La saga X-Men de Fox", ids: ["logan", "deadpool3"], c: "#F5B822", grupo: "xmen", estado: "Colapsando · ser ancla perdido",
+  { num: "Tierra-10005", nombre: "La saga X-Men de Fox", ids: ["logan", "deadpool3"], c: "#DC9E12", grupo: "xmen", estado: "Colapsando · ser ancla perdido",
     desc: "El universo mutante de Fox. Su «ser ancla» era Lobezno: tras su muerte en Logan, el universo empezó a desvanecerse, la crisis que Deadpool y Lobezno resuelven destruyendo el Desgarrador Temporal." },
-  { num: "El Vacío", nombre: "El vertedero del tiempo", ids: ["loki1", "loki2", "deadpool3"], c: "#8B5CF6", estado: "Fin del tiempo · dominio de Alioth",
+  { num: "El Vacío", nombre: "El vertedero del tiempo", ids: ["loki1", "loki2", "deadpool3"], c: "#8A81EF", estado: "Fin del tiempo · dominio de Alioth",
     desc: "Donde la TVA arroja todo lo podado: no es destrucción, es exilio. Custodiado por Alioth, alberga variantes de Loki (el clásico, el niño, el caimán…) y reliquias de películas canceladas — el Blade y la Antorcha Humana de otros tiempos. Deadpool y Lobezno demostraron que se puede salir." },
-  { num: "Tierra-96283", nombre: "El universo de Raimi", ids: ["sony", "nwh"], c: "#C43B3B", estado: "Convergió en No Way Home",
+  { num: "Tierra-96283", nombre: "El universo de Raimi", ids: ["sony", "nwh"], c: "#E55D7A", estado: "Convergió en No Way Home",
     desc: "La trilogía de Tobey Maguire: el Spider-Man con telarañas orgánicas que demostró que el cine de superhéroes podía ser cine serio. Converge con la Tierra-616 en No Way Home." },
-  { num: "Tierra-120703", nombre: "El universo de Garfield", ids: ["sony", "nwh"], c: "#2E6ED9", estado: "Convergió en No Way Home",
+  { num: "Tierra-120703", nombre: "El universo de Garfield", ids: ["sony", "nwh"], c: "#5492EC", estado: "Convergió en No Way Home",
     desc: "El Amazing Spider-Man: los mejores balanceos filmados y la historia con Gwen Stacy. Sony llegó a licenciar la Torre Oscorp para Los Vengadores antes de cancelar la conexión. También converge en No Way Home." },
-  { num: "Universo Sony", nombre: "El Venomverso", ids: ["sony"], c: "#7A8090", estado: "Activo · sin Spider-Man",
+  { num: "Universo Sony", nombre: "El Venomverso", ids: ["sony"], c: "#8B92A5", estado: "Activo · sin Spider-Man",
     desc: "Venom, Morbius, Madame Web y Kraven: simbiontes de Knull y la Red de la Vida… en un universo Spider-Man sin Spider-Man. Eddie Brock visitó brevemente la Tierra-616 y dejó allí un resto de simbionte que aún no ha estallado." },
-  { num: "Tierra-828", nombre: "El mundo de los 4 Fantásticos", ids: ["ff"], c: "#2E8C7A", estado: "Activo · amenazado por Galactus",
+  { num: "Tierra-828", nombre: "El mundo de los 4 Fantásticos", ids: ["ff"], c: "#31A88E", estado: "Activo · amenazado por Galactus",
     desc: "Retrofuturismo de los 60 con tecnología adelantada décadas: los 4 Fantásticos no son los primeros héroes, son los únicos. Un universo de exploración más que de conflicto… hasta Galactus. Conecta con Doomsday." },
-  { num: "Tierra-838", nombre: "El mundo de los Illuminati", ids: ["mom"], c: "#6FA8DC", estado: "Activo · sin Illuminati",
+  { num: "Tierra-838", nombre: "El mundo de los Illuminati", ids: ["mom"], c: "#299FCD", estado: "Activo · sin Illuminati",
     desc: "Donde los Vengadores fueron sustituidos por los Illuminati (Captain Carter, Black Bolt, Reed Richards, el Profesor X…), que ejecutaron a su propio Strange por usar el Darkhold. La Wanda de la 616 los arrasa en el multiverso de la locura." },
-  { num: "Universos What If", nombre: "Las ramas del Vigilante", ids: ["whatif"], c: "#9B7BD8", estado: "Ramas vigiladas por Uatu",
+  { num: "Universos What If", nombre: "Las ramas del Vigilante", ids: ["whatif"], c: "#B576C3", estado: "Ramas vigiladas por Uatu",
     desc: "Captain Carter (Peggy con el suero), el Star-Lord T'Challa que convence a Thanos de ser bueno, Infinity Ultron —que gana y amenaza el multiverso entero— y la guerra de Killmonger. Los Guardianes del Multiverso nacen aquí." },
-  { num: "Marvel Zombies", nombre: "El brote cuántico", ids: ["zombies"], c: "#4FB57A", estado: "En cuarentena",
+  { num: "Marvel Zombies", nombre: "El brote cuántico", ids: ["zombies"], c: "#3EAB5E", estado: "En cuarentena",
     desc: "Hank Pym trae del reino cuántico a una Janet infectada y el virus arrasa: caen Iron Man, el Capi y casi todos. Visión alimenta en secreto a una Wanda zombi; la esperanza es la Gema de la Mente." },
-  { num: "Tierra-616 (cómics)", nombre: "El original de papel", ids: ["c-civilwar", "c-secretwars"], c: "#8A5FB8", grupo: "comics", estado: "El origen de todo",
+  { num: "Tierra-616 (cómics)", nombre: "El original de papel", ids: ["c-civilwar", "c-secretwars"], c: "#A07CDB", grupo: "comics", estado: "El origen de todo",
     desc: "El universo de los cómics desde los primeros Fantastic Four: Vengadores fundados por Thor, Iron Man, Hank Pym, la Avispa y Hulk; Ultrón creado por Pym, no por Stark; y una Civil War desatada por el incidente de Stamford." },
 ]
 
