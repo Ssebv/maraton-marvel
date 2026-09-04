@@ -114,6 +114,24 @@
   --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
 }
 
+/* Más contraste (ajuste del sistema): la tinta terciaria sube a la secundaria,
+   las líneas y los tintes se marcan más y la tarjeta vista no se apaga tanto.
+   Nada cambia de sitio: solo sube el contraste de lo que ya hay. */
+@media (prefers-contrast: more){
+  :root{--ink3:var(--ink2); --tinte:22%; --line:color-mix(in srgb, var(--ink) 30%, var(--bg))}
+  .card.vista{opacity:.85}
+}
+/* Colores forzados (alto contraste de Windows): el navegador quita los fondos,
+   así que los estados que solo se decían con un fondo se dicen con los colores
+   del sistema. El check y el sello siguen dibujando con currentColor. */
+@media (forced-colors: active){
+  .card.vista .checkbox, .chip-btn[aria-pressed="true"], .tab[aria-pressed="true"], .tab[aria-current="page"], .objetivo-chip.ok, .objetivo-chip.tarde{
+    forced-color-adjust:none; background:Highlight; color:HighlightText; border-color:Highlight;
+  }
+  .barra > i, .era-prog i, .gbar-pista i{background:Highlight}
+  .sello{forced-color-adjust:none}
+}
+
 *{box-sizing:border-box}
 :root{color-scheme:light dark}
 html{

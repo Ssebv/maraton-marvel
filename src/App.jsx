@@ -459,6 +459,16 @@ function suenaPop() {
 }
 
 // Temas de acento por universo (alias sobre los tokens existentes, ya adaptados a claro/oscuro)
+// Tema: por defecto el del sistema; elegir uno fijo pone data-theme en <html>
+// (index.html lo repone antes del primer pintado) y ajusta el color de la barra
+// del navegador, que con los <meta media=…> seguiría al sistema.
+const KEY_TEMA = 'maraton-marvel-tema-v1'
+const TEMAS = [
+  { id: 'sistema', nombre: 'Como el sistema', en: 'Follow system' },
+  { id: 'light', nombre: 'Claro', en: 'Light' },
+  { id: 'dark', nombre: 'Oscuro', en: 'Dark' },
+]
+const COLOR_BARRA = { light: '#F3EDDE', dark: '#0A0C14' }
 const ACENTOS = [
   { id: '616', nombre: 'Tierra-616', en: 'Earth-616' },
   { id: 'xmen', nombre: 'X-Men' },
@@ -3953,6 +3963,21 @@ export default function App() {
     return next
   })
   const setF = k => setFiltros(f => ({ ...f, [k]: !f[k] }))
+  const [tema, setTema] = useState(() => {
+    try { const t = localStorage.getItem(KEY_TEMA); return TEMAS.some(x => x.id === t) ? t : 'sistema' } catch { return 'sistema' }
+  })
+  useEffect(() => {
+    const raiz = document.documentElement
+    if (tema === 'sistema') raiz.removeAttribute('data-theme')
+    else raiz.setAttribute('data-theme', tema)
+    // La barra del navegador: los dos <meta theme-color> de index.html van por
+    // media query; con un tema fijo los dos toman el color de ese tema.
+    for (const m of document.querySelectorAll('meta[name="theme-color"]')) {
+      const propio = (m.getAttribute('media') || '').includes('dark') ? 'dark' : 'light'
+      m.setAttribute('content', COLOR_BARRA[tema === 'sistema' ? propio : tema])
+    }
+    try { if (tema === 'sistema') localStorage.removeItem(KEY_TEMA); else localStorage.setItem(KEY_TEMA, tema) } catch {}
+  }, [tema])
   const [acento, setAcento] = useState(() => {
     try { return localStorage.getItem('maraton-marvel-acento-v1') || '616' } catch { return '616' }
   })
@@ -5347,8 +5372,20 @@ export default function App() {
 
               <div className="ajuste">
                 <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">{tr('Tema', 'Theme')}</h3>
+                  <p className="ajuste-pista">{tr('Pergamino y tinta, o azul noche. Por defecto sigue al sistema y cambia con él.', 'Parchment and ink, or midnight blue. By default it follows your system and switches with it.')}</p>
+                </div>
+                <div className="ajuste-ops">
+                  {TEMAS.map(t => (
+                    <button key={t.id} className="chip-btn" aria-pressed={tema === t.id} onClick={() => setTema(t.id)}>{tr(t.nombre, t.en || t.nombre)}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
                   <h3 className="ajuste-titulo">{tr('Color de acento', 'Accent color')}</h3>
-                  <p className="ajuste-pista">{tr('Cambia el color que la app usa para destacar. No cambia el modo claro u oscuro, que lo decide tu sistema.', 'Changes the color the app uses for highlights. It doesn’t change light or dark mode, which your system decides.')}</p>
+                  <p className="ajuste-pista">{tr('Cambia el color que la app usa para destacar. No cambia el tema claro u oscuro, que se elige arriba.', 'Changes the color the app uses for highlights. It doesn’t change the light or dark theme, which you pick above.')}</p>
                 </div>
                 <div className="ajuste-ops">
                   {ACENTOS.map(a => (

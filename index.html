@@ -2,6 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<!-- El tema elegido en Ajustes (Sistema / Claro / Oscuro) se aplica aquí, antes
+     de la hoja de estilos, para que la página no nazca en un tema y salte al
+     otro. Solo se aceptan los dos valores válidos: cualquier otra cosa en el
+     navegador se ignora y manda el sistema. -->
+<script>try{var t=localStorage.getItem('maraton-marvel-tema-v1');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t)}}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
