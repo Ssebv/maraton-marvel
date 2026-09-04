@@ -5337,59 +5337,59 @@ export default function App() {
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">{tr('Densidad', 'Density')}</h3>
+                  <h3 className="ajuste-titulo" id="aj-densidad">{tr('Densidad', 'Density')}</h3>
                   <p className="ajuste-pista">{tr('El modo compacto esconde carátulas y sinopsis: cabe el triple de títulos en pantalla.', 'Compact mode hides covers and synopses: three times as many titles fit on screen.')}</p>
                 </div>
-                <div className="ajuste-ops">
-                  <button className="chip-btn" aria-pressed={!compacto} onClick={() => { if (compacto) alternaCompacto() }}>{tr('Completa', 'Full')}</button>
-                  <button className="chip-btn" aria-pressed={compacto} onClick={() => { if (!compacto) alternaCompacto() }}>{tr('Compacta', 'Compact')}</button>
+                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-densidad">
+                  <button className="chip-btn" role="radio" aria-checked={!compacto} onClick={() => { if (compacto) alternaCompacto() }}>{tr('Completa', 'Full')}</button>
+                  <button className="chip-btn" role="radio" aria-checked={compacto} onClick={() => { if (!compacto) alternaCompacto() }}>{tr('Compacta', 'Compact')}</button>
                 </div>
               </div>
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">{tr('Orden', 'Order')}</h3>
+                  <h3 className="ajuste-titulo" id="aj-orden">{tr('Orden', 'Order')}</h3>
                   <p className="ajuste-pista">{tr('Dentro de cada era. El cronológico es el orden del maratón; los otros dos reordenan por nota.', 'Within each era. Chronological is the marathon order; the other two sort by rating.')}</p>
                 </div>
-                <div className="ajuste-ops">
+                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-orden">
                   {[['crono', tr('Cronológico', 'Chronological')], ['imdb', tr('Nota IMDb', 'IMDb rating')], ['nota', tr('Tu nota', 'Your rating')]].map(([id, nombre]) => (
-                    <button key={id} className="chip-btn" aria-pressed={orden === id} onClick={() => setOrden(id)}>{nombre}</button>
+                    <button key={id} className="chip-btn" role="radio" aria-checked={orden === id} onClick={() => setOrden(id)}>{nombre}</button>
                   ))}
                 </div>
               </div>
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">{tr('Fondo del encabezado', 'Header background')}</h3>
+                  <h3 className="ajuste-titulo" id="aj-fondo">{tr('Fondo del encabezado', 'Header background')}</h3>
                   <p className="ajuste-pista">{tr('El banner usa el fotograma del próximo estreno, así que se renueva solo. El muro son tus carátulas.', 'The banner uses the next premiere’s still, so it refreshes itself. The wall is your covers.')}</p>
                 </div>
-                <div className="ajuste-ops">
+                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-fondo">
                   {FONDOS.map(f => (
-                    <button key={f.id} className="chip-btn" aria-pressed={fondo === f.id} onClick={() => ponFondo(f.id)}>{tr(f.nombre, f.en || f.nombre)}</button>
+                    <button key={f.id} className="chip-btn" role="radio" aria-checked={fondo === f.id} onClick={() => ponFondo(f.id)}>{tr(f.nombre, f.en || f.nombre)}</button>
                   ))}
                 </div>
               </div>
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">{tr('Tema', 'Theme')}</h3>
-                  <p className="ajuste-pista">{tr('Pergamino y tinta, o azul noche. Por defecto sigue al sistema y cambia con él.', 'Parchment and ink, or midnight blue. By default it follows your system and switches with it.')}</p>
+                  <h3 className="ajuste-titulo" id="aj-tema">{tr('Tema', 'Theme')}</h3>
+                  <p className="ajuste-pista">{tr('Pergamino y tinta, o azul noche. Por defecto sigue al sistema y cambia con él; la pantalla de arranque de la app instalada siempre sigue al sistema.', 'Parchment and ink, or midnight blue. By default it follows your system and switches with it; the installed app’s launch screen always follows the system.')}</p>
                 </div>
-                <div className="ajuste-ops">
+                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-tema">
                   {TEMAS.map(t => (
-                    <button key={t.id} className="chip-btn" aria-pressed={tema === t.id} onClick={() => setTema(t.id)}>{tr(t.nombre, t.en || t.nombre)}</button>
+                    <button key={t.id} className="chip-btn" role="radio" aria-checked={tema === t.id} onClick={() => setTema(t.id)}>{tr(t.nombre, t.en || t.nombre)}</button>
                   ))}
                 </div>
               </div>
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">{tr('Color de acento', 'Accent color')}</h3>
+                  <h3 className="ajuste-titulo" id="aj-acento">{tr('Color de acento', 'Accent color')}</h3>
                   <p className="ajuste-pista">{tr('Cambia el color que la app usa para destacar. No cambia el tema claro u oscuro, que se elige arriba.', 'Changes the color the app uses for highlights. It doesn’t change the light or dark theme, which you pick above.')}</p>
                 </div>
-                <div className="ajuste-ops">
+                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-acento">
                   {ACENTOS.map(a => (
-                    <button key={a.id} className="chip-btn" aria-pressed={acento === a.id} onClick={() => setAcento(a.id)}>{tr(a.nombre, a.en || a.nombre)}</button>
+                    <button key={a.id} className="chip-btn" role="radio" aria-checked={acento === a.id} onClick={() => setAcento(a.id)}>{tr(a.nombre, a.en || a.nombre)}</button>
                   ))}
                 </div>
               </div>
@@ -5416,12 +5416,12 @@ export default function App() {
 
               <div className="ajuste">
                 <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">{tr('Idioma', 'Language')}</h3>
+                  <h3 className="ajuste-titulo" id="aj-idioma">{tr('Idioma', 'Language')}</h3>
                   <p className="ajuste-pista">{tr('La interfaz, los títulos y los textos. En español, el país decide además el matiz («Lobezno» o «Wolverine»).', 'Interface, titles and texts. In Spanish, your country also picks the regional flavor ("Lobezno" vs "Wolverine").')}</p>
                 </div>
-                <div className="ajuste-ops">
-                  <button className="chip-btn" aria-pressed={idioma === 'es'} onClick={() => ponIdioma('es')}>Español</button>
-                  <button className="chip-btn" aria-pressed={idioma === 'en'} onClick={() => ponIdioma('en')}>English</button>
+                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-idioma">
+                  <button className="chip-btn" role="radio" aria-checked={idioma === 'es'} onClick={() => ponIdioma('es')}>Español</button>
+                  <button className="chip-btn" role="radio" aria-checked={idioma === 'en'} onClick={() => ponIdioma('en')}>English</button>
                 </div>
               </div>
 
@@ -5762,12 +5762,12 @@ function Datos({ onReset }) {
     <>
       <div className="ajuste">
         <div className="ajuste-cab">
-          <h3 className="ajuste-titulo">{tr('Sonido', 'Sound')}</h3>
+          <h3 className="ajuste-titulo" id="aj-sonido">{tr('Sonido', 'Sound')}</h3>
           <p className="ajuste-pista">{tr('Un toque breve al marcar un título como visto.', 'A short pop when you mark a title as watched.')}</p>
         </div>
-        <div className="ajuste-ops">
+        <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-sonido">
           {[[true, tr('Sí', 'Yes')], [false, 'No']].map(([v, t]) => (
-            <button key={t} className="chip-btn" aria-pressed={sonido === v} onClick={() => {
+            <button key={t} className="chip-btn" role="radio" aria-checked={sonido === v} onClick={() => {
               if (sonido === v) return
               setSonido(v)
               try { localStorage.setItem('maraton-marvel-sonido-v1', v ? '1' : '0') } catch {}

@@ -41,6 +41,8 @@
      cabecera de era que en el número, el estado y el «Entrar» de cada Tierra.
    · Los acentos de universo cambian --red por --gold-texto, --violet, --doom o
      --teal, todos a 4,5:1 sobre --panel2; el comprobador los mide uno a uno.
+     Lo destructivo y los errores van en --peligro, que NO sigue al acento:
+     con el acento zombi «Empezar de cero» salía en verde, el color del visto.
    · Cuatro tokens NO siguen al tema: --sello y --calido (encima va texto
      blanco), --gold-vivo (extremo de los degradados rojo→dorado y la nota
      sobre carátula: siempre sobre rojo u oscuro) y --noche (el respaldo de
@@ -53,6 +55,7 @@
   --blue:#2B5DA8; --violet:#6D4FA3; --teal:#0E705B;
   --done:#0D7247; --doom:#347025;
   --sello:#C8102E; --calido:#B45C15; --gold-vivo:#E8A93C; --noche:#0A0C14;
+  --peligro:#C8102E;  /* lo destructivo y los errores: NO sigue al acento de universo */
   --sobre-acento:#fff;
   --tinte:10%;
   --r-s:4px; --r-m:10px; --r-l:16px; --r-pill:999px;
@@ -82,12 +85,13 @@
   --violet-soft:color-mix(in srgb, var(--violet) var(--tinte), transparent);
   --teal-soft:color-mix(in srgb, var(--teal) var(--tinte), transparent);
   --doom-soft:color-mix(in srgb, var(--doom) var(--tinte), transparent);
+  --peligro-soft:color-mix(in srgb, var(--peligro) var(--tinte), transparent);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0A0C14; --panel:#131725; --panel2:#1C2133; --panel3:#171B2B;
     --ink:#F2EFE6; --ink2:#A39F92; --ink3:#8D8A7E; --line:#262B3E;
-    --red:#F84A54;
+    --red:#F84A54; --peligro:#F84A54;
     --gold:#E8A93C; --gold-texto:#E8A93C;
     --blue:#7BA6E4; --violet:#A98BE0; --teal:#56C2A7;
     --done:#4FB57A; --doom:#64B05C;
@@ -102,7 +106,7 @@
 :root[data-theme="dark"]{
   --bg:#0A0C14; --panel:#131725; --panel2:#1C2133; --panel3:#171B2B;
   --ink:#F2EFE6; --ink2:#A39F92; --ink3:#8D8A7E; --line:#262B3E;
-  --red:#F84A54;
+  --red:#F84A54; --peligro:#F84A54;
   --gold:#E8A93C; --gold-texto:#E8A93C;
   --blue:#7BA6E4; --violet:#A98BE0; --teal:#56C2A7;
   --done:#4FB57A; --doom:#64B05C;
@@ -114,18 +118,30 @@
   --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
 }
 
+/* Reducir transparencia (ajuste del sistema): el velo del modal deja de
+   desenfocar y oscurece más; el dock tiene su propio caso más abajo. */
+@media (prefers-reduced-transparency: reduce){
+  .overlay{-webkit-backdrop-filter:none; backdrop-filter:none; background:rgba(8,10,14,.86)}
+}
 /* Más contraste (ajuste del sistema): la tinta terciaria sube a la secundaria,
    las líneas y los tintes se marcan más y la tarjeta vista no se apaga tanto.
    Nada cambia de sitio: solo sube el contraste de lo que ya hay. */
 @media (prefers-contrast: more){
-  :root{--ink3:var(--ink2); --tinte:22%; --line:color-mix(in srgb, var(--ink) 30%, var(--bg))}
+  /* Los tres selectores igualan la especificidad de los bloques de tema de
+     arriba (:root[data-theme] y :root:not([data-theme="light"])), que si no
+     ganaban a un :root a secas y en oscuro nada de esto se aplicaba. */
+  :root, :root[data-theme], :root:not([data-theme="light"]){--ink3:var(--ink2); --tinte:22%; --line:color-mix(in srgb, var(--ink) 30%, var(--bg))}
+  /* El texto de era y de Tierra sube del mínimo: más tinta en la mezcla */
+  :root, :root[data-theme="light"]{--era-tinta:30%}
+  :root[data-theme="dark"]{--era-tinta:45%}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--era-tinta:45%} }
   .card.vista{opacity:.85}
 }
 /* Colores forzados (alto contraste de Windows): el navegador quita los fondos,
    así que los estados que solo se decían con un fondo se dicen con los colores
    del sistema. El check y el sello siguen dibujando con currentColor. */
 @media (forced-colors: active){
-  .card.vista .checkbox, .chip-btn[aria-pressed="true"], .tab[aria-pressed="true"], .tab[aria-current="page"], .objetivo-chip.ok, .objetivo-chip.tarde{
+  .card.vista .checkbox, .chip-btn[aria-pressed="true"], .chip-btn[aria-checked="true"], .tab[aria-pressed="true"], .tab[aria-current="page"], .objetivo-chip.ok, .objetivo-chip.tarde{
     forced-color-adjust:none; background:Highlight; color:HighlightText; border-color:Highlight;
   }
   .barra > i, .era-prog i, .gbar-pista i{background:Highlight}
@@ -133,7 +149,11 @@
 }
 
 *{box-sizing:border-box}
+/* Los controles nativos (desplegables, barras de scroll, campos) siguen a
+   color-scheme, no a nuestros tokens: con un tema fijo tienen que ir con él. */
 :root{color-scheme:light dark}
+:root[data-theme="light"]{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
 html{
   scroll-behavior:smooth;
   /* La barra es pegajosa: sin esto, al tabular o saltar a un ancla el
@@ -501,7 +521,7 @@ h1 .rojo{color:var(--red)}
   animation:entraVista var(--dur-media) var(--curva) both;
 }
 .aviso.info{background:var(--gold-soft); border-color:color-mix(in srgb, var(--gold) 45%, transparent)}
-.aviso.peligro{background:var(--red-soft); border-style:solid; border-color:color-mix(in srgb, var(--red) 45%, var(--line))}
+.aviso.peligro{background:var(--peligro-soft); border-style:solid; border-color:color-mix(in srgb, var(--peligro) 45%, var(--line))}
 .aviso.centrado{margin-top: var(--e-9); padding: var(--e-7) var(--e-7); text-align:center; align-items:center; gap: var(--e-3)}
 .aviso-texto{margin: 0; font-size: var(--t-m); line-height:1.5; color:var(--ink2); text-wrap:pretty}
 .aviso-texto b{color:var(--ink)}
@@ -580,7 +600,9 @@ a.tab{text-decoration:none}
 .chip-btn::after{content:""; position:absolute; inset:-3px 0}
 .chip-btn:hover{border-color:var(--ink2); color:var(--ink)}
 .chip-btn:active{transform:scale(.96)}
-.chip-btn[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.chip-btn[aria-pressed="true"], .chip-btn[aria-checked="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+/* Foco de teclado sobre el chip marcado: el anillo azul contra la tinta no se veía */
+.chip-btn[aria-pressed="true"]:focus-visible, .chip-btn[aria-checked="true"]:focus-visible{outline-color:var(--ink); box-shadow:0 0 0 2px var(--panel)}
 .chip-btn.destacado[aria-pressed="true"]{background:var(--red); border-color:var(--red); color:var(--sobre-acento)}
 .atajos{margin-left: auto; display:flex; gap: var(--e-5); font-size: var(--t-m); font-weight:600}
 .atajos a{color:var(--ink2); text-decoration:none; padding: var(--e-3) var(--e-1); display:inline-block}
@@ -1079,7 +1101,7 @@ h3{
   .enlaces{gap: var(--e-4)}
 }
 .importar{display:flex; gap: var(--e-3); align-items:center}
-.import-error{font-size: var(--t-s); color:var(--red)}
+.import-error{font-size: var(--t-s); color:var(--peligro)}
 /* en el pie, los avisos ocupan la fila entera */
 .aviso.en-pie{flex-basis:100%; margin-top: var(--e-4)}
 
@@ -1120,7 +1142,7 @@ h3{
 
 /* ── Sincronización ── */
 .sync-btn.ok{color:var(--done); border-color:color-mix(in srgb, var(--done) 45%, var(--line))}
-.sync-btn.error{color:var(--red); border-color:color-mix(in srgb, var(--red) 45%, var(--line))}
+.sync-btn.error{color:var(--peligro); border-color:color-mix(in srgb, var(--peligro) 45%, var(--line))}
 .modal-sync{max-width:560px}
 .sync-pasos{margin: var(--e-2) 0; padding-left: var(--e-6); font-size: var(--t-m); color:var(--ink2); display:flex; flex-direction:column; gap: var(--e-3)}
 .sync-pasos code{font-size: var(--t-s); background:var(--panel2); padding: var(--e-1) var(--e-2); border-radius:var(--r-s); word-break:break-all}
@@ -1410,7 +1432,7 @@ main.multiverso{margin-top: var(--e-6)}
   text-transform:uppercase; padding: var(--e-2) var(--e-4); border-radius:var(--r-s);
 }
 .objetivo-chip.ok{background:var(--done); color:var(--sobre-acento)}
-.objetivo-chip.tarde{background:var(--red); color:var(--sobre-acento)}
+.objetivo-chip.tarde{background:var(--peligro); color:var(--sobre-acento)}
 /* Aún sin datos: informa sin alarmar — el rojo se reserva para ir tarde de verdad. */
 .objetivo-chip.neutro{
   background:transparent; color:var(--ink2);
@@ -1556,7 +1578,7 @@ footer{margin-top: var(--e-9); border-top:1px solid var(--line); padding-top: va
 .nota-creditos a{color:var(--ink2); text-underline-offset:2px}
 .nota-creditos a:hover{color:var(--ink)}
 .reset{margin-left: auto; display:flex; gap: var(--e-3); flex-wrap:wrap; justify-content:flex-end}
-.chip-btn.peligro{color:var(--red); border-color:var(--red)}
+.chip-btn.peligro{color:var(--peligro); border-color:var(--peligro)}
 .pie-ajustes{margin-left:auto}
 
 /* ── Movimiento con propósito (HIG: nada de animar por animar) ── */
@@ -1855,7 +1877,7 @@ main.crono, main.comics, main.estreno{animation:none}
 .duelo-pista{margin: 0; font-size: var(--t-s); color:var(--ink2)}
 .duelo-fecha{margin: 0; font-size: var(--t-xs); color:var(--ink3)}
 .duelo-input{width:100%; min-height:38px}
-.duelo-error{margin: 0; font-size: var(--t-s); color:var(--red); font-weight:600}
+.duelo-error{margin: 0; font-size: var(--t-s); color:var(--peligro); font-weight:600}
 /* ── TMDB: tráiler, dónde ver y sinopsis de episodios ── */
 /* Dónde verla. Los logos son los oficiales que sirve TMDB para cada
    plataforma: ni se dibujan a mano ni se guardan en el repo. */

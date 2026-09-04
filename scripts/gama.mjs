@@ -41,7 +41,7 @@ for (const k of Object.keys(oscuro)) if (media[k] !== oscuro[k]) fallos.push(`os
 
 const eras = DATA.flatMap(s => s.eras.map(e => e.c[0]))
 const tierras = MULTIVERSO.map(u => u.c)
-const NECESARIOS = ['bg', 'panel', 'panel2', 'ink', 'ink2', 'ink3', 'red', 'gold', 'gold-texto', 'blue', 'violet', 'teal', 'done', 'doom', 'sobre-acento', 'era-tinta', 'tinte']
+const NECESARIOS = ['bg', 'panel', 'panel2', 'ink', 'ink2', 'ink3', 'red', 'gold', 'gold-texto', 'blue', 'violet', 'teal', 'done', 'doom', 'peligro', 'sobre-acento', 'era-tinta', 'tinte']
 // Los alias de acento por universo: ver `:root[data-acento=…]` al final del CSS
 const ALIAS = [...css.matchAll(/data-acento="([a-z0-9]+)"\]\{--red:var\(--([a-z-]+)\)/g)].map(m => [m[1], m[2]])
 
@@ -49,7 +49,7 @@ const mide = (tema, nombre) => {
   for (const k of NECESARIOS) if (tema[k] == null) { fallos.push(`${nombre}: falta el token --${k} (o no es un valor que sepa leer)`); return }
   const sobre = tema.panel2
   const baja = (c, min) => !(c >= min)  // también atrapa NaN
-  const texto = ['ink', 'ink2', 'ink3', 'red', 'gold-texto', 'blue', 'violet', 'teal', 'done', 'doom']
+  const texto = ['ink', 'ink2', 'ink3', 'red', 'peligro', 'gold-texto', 'blue', 'violet', 'teal', 'done', 'doom']
   for (const k of texto) { const c = contraste(tema[k], sobre); if (baja(c, 4.5)) fallos.push(`${nombre}: --${k} ${tema[k]} sobre --panel2 da ${c.toFixed(2)} (mínimo 4,5)`) }
   // jerarquía del texto: tres pasos que se distinguen
   const L = k => lum(tema[k])
@@ -57,8 +57,9 @@ const mide = (tema, nombre) => {
   if (!orden) fallos.push(`${nombre}: --ink, --ink2 e --ink3 no van en escalera`)
   if (baja(contraste(tema.ink2, tema.ink3), 1.25)) fallos.push(`${nombre}: --ink2 e --ink3 casi no se distinguen (${contraste(tema.ink2, tema.ink3).toFixed(2)})`)
   // texto sobre acento, también con cada acento de universo
-  for (const k of ['red', 'gold', 'violet', 'teal', 'doom', 'done']) { const c = contraste(tema['sobre-acento'], tema[k]); if (baja(c, 4.5)) fallos.push(`${nombre}: --sobre-acento sobre --${k} da ${c.toFixed(2)}`) }
+  for (const k of ['red', 'peligro', 'gold', 'violet', 'teal', 'doom', 'done']) { const c = contraste(tema['sobre-acento'], tema[k]); if (baja(c, 4.5)) fallos.push(`${nombre}: --sobre-acento sobre --${k} da ${c.toFixed(2)}`) }
   if (!ALIAS.length) fallos.push('no encuentro los alias data-acento en styles.css')
+  if (/data-acento="[a-z0-9]+"\]\{[^}]*--peligro/.test(css)) fallos.push('un acento de universo redefine --peligro: lo destructivo no sigue al acento')
   for (const [ac, k] of ALIAS) {
     if (tema[k] == null) { fallos.push(`${nombre}: el acento ${ac} apunta a --${k}, que no existe`); continue }
     const c = contraste(tema[k], sobre); if (baja(c, 4.5)) fallos.push(`${nombre}: con el acento ${ac}, --red pasa a --${k} ${tema[k]}, que sobre --panel2 da ${c.toFixed(2)}`)
