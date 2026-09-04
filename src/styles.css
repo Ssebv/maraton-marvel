@@ -849,6 +849,9 @@ h3{
 .meta{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
 .meta .hist{color:var(--blue); font-weight:600; white-space:nowrap}
 .res{font-size: var(--t-b); color:var(--ink2); max-width:60ch; line-height:1.5}
+/* Modo sin spoilers: la sinopsis de lo no visto se sustituye por un aviso breve */
+.res.oculta{font-style:italic; color:var(--ink3); font-size: var(--t-m)}
+.aviso.spoiler{padding: var(--e-4) var(--e-5)}
 .nota{font-size: var(--t-s); color:var(--ink3); font-style:italic}
 .credits{font-size: var(--t-s); color:var(--ink3)}
 

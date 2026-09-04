@@ -21,6 +21,14 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 | ~~**Vista galería**~~ ✅ | Hecho: pestaña Galería con la pared de pósters | — |
 | ~~**PWA instalable**~~ ✅ | Hecho: manifest, icono propio y service worker con caché offline | — |
 
+## Fase 6 — Tras la hoja de ruta (septiembre 2026)
+
+| Funcionalidad | Qué aporta | Esfuerzo |
+|---|---|---|
+| ~~**Tema elegible**~~ ✅ | Hecho: Ajustes › Tema (sistema / claro / oscuro), sin destello al cargar, barra del navegador acorde | — |
+| ~~**Modo sin spoilers**~~ ✅ | Hecho: sinopsis, post-créditos y títulos de episodio ocultos hasta marcar visto; «Mostrar de todos modos» en la ficha | — |
+| ~~**Gama de color medida**~~ ✅ | Hecho: una regla OKLCH por tema y `scripts/gama.mjs` en cada build | — |
+
 ## Fase 2 — Planificación del maratón
 
 | Funcionalidad | Qué aporta | Esfuerzo |

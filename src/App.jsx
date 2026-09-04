@@ -19,6 +19,9 @@ const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
 const KEY_NOTAS = 'maraton-marvel-notas-v1'
 const KEY_COMPACTO = 'maraton-marvel-compacto'
+// Modo sin spoilers: '1' esconde sinopsis, post-créditos y títulos de episodio
+// de lo que aún no has visto (la ficha deja mostrarlos a mano).
+const KEY_SPOILERS = 'maraton-marvel-spoilers-v1'
 const KEY_LISTAS = 'maraton-marvel-listas-v1'
 const KEY_PANEL = 'maraton-marvel-panel-v1'
 const KEY_FONDO = 'maraton-marvel-fondo-v1'
@@ -2449,7 +2452,7 @@ function Estrellas() {
 // comparación porque solo capturan cosas estables (item, era, setters) o
 // funciones con setState funcional; `pais` viaja como prop porque el país
 // MUTA los textos de `item` sin cambiar su identidad.
-const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, epHechos, miNota, lectura }) {
+const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, epHechos, miNota, lectura, sinSpoilers }) {
   let epProg = null
   if (esComic && lectura && lectura.t > 1 && !vista) epProg = tr(`pág. ${lectura.p + 1}/${lectura.t}`, `p. ${lectura.p + 1}/${lectura.t}`)
   if (item.tipo === 'serie' && EPISODES[item.id]) {
@@ -2480,7 +2483,9 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
             {epProg && <span className="ep-prog"> · {epProg}</span>}
             {miNota && <span className="mi-nota"> · {tr('Tú', 'You')}: ★{miNota}</span>}
           </span>
-          {item.res && <span className="res">{item.res}</span>}
+          {item.res && (sinSpoilers && !vista
+            ? <span className="res oculta">{tr('Sinopsis oculta hasta que lo marques como visto.', 'Synopsis hidden until you mark it as seen.')}</span>
+            : <span className="res">{item.res}</span>)}
           {(item.dir || item.cast) && (
             <span className="credits">
               {item.dir && <>Dir. {item.dir}</>}
@@ -2760,8 +2765,12 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca, saliendo }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca, saliendo, sinSpoilers }) {
   const { item, c, esComic } = d
+  // Sin spoilers: lo que no has visto se esconde, salvo que lo pidas para ESTA ficha
+  const [revela, setRevela] = useState(false)
+  useEffect(() => { setRevela(false) }, [item.id])
+  const oculto = !!sinSpoilers && !vista && !revela
   const extra = useTmdb(item, idioma)
   const [verTrailer, setVerTrailer] = useState(false)
   const [sinAbierta, setSinAbierta] = useState(null)
@@ -2938,9 +2947,15 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               ? <>{item.a} · {item.r}</>
               : <><span className="hist">{item.h}</span> · {tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
           </p>
-          {item.res && <p className="modal-res">{item.res}</p>}
+          {oculto && (item.res || item.pc != null) && (
+            <div className="aviso spoiler">
+              <p className="aviso-texto">{tr('Sinopsis, escenas post-créditos y títulos de episodio ocultos hasta que lo marques como visto.', 'Synopsis, post-credit scenes and episode titles hidden until you mark it as seen.')}</p>
+              <div className="aviso-acciones"><button className="chip-btn" onClick={() => setRevela(true)}>{tr('Mostrar de todos modos', 'Show anyway')}</button></div>
+            </div>
+          )}
+          {!oculto && item.res && <p className="modal-res">{item.res}</p>}
           {item.n && <p className="modal-nota">{item.n}</p>}
-          {item.pc != null && (
+          {!oculto && item.pc != null && (
             <p className={`modal-pc${item.pc === '0' ? ' sin' : ''}`}>
               {item.pc === '0'
                 ? <>{tr('Sin escenas post-créditos', 'No post-credit scenes')}{item.pcn ? ` — ${item.pcn}` : tr(' — puedes saltarte los créditos', ' — you can skip the credits')}</>
@@ -3091,7 +3106,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                               <span className="ep-info">
                                 {/* el título va recortado con puntos suspensivos cuando no cabe
                                     —una de cada diez filas—, así que el completo se deja a mano */}
-                                <span className="ep-titulo" title={e.t}>{e.t}</span>
+                                <span className="ep-titulo" title={oculto && !hecho ? undefined : e.t}>{oculto && !hecho ? `${tr('Episodio', 'Episode')} ${e.n}` : e.t}</span>
                                 {e.f && <span className="ep-fecha">{new Date(e.f + 'T00:00:00').toLocaleDateString(LOC(), { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                               </span>
                             </button>
@@ -3541,6 +3556,8 @@ export default function App() {
     history.replaceState(history.state, '', urlEstado)
   }, [vista, detalle, busca, filtros, perfil])
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
+  const [sinSpoilers, setSinSpoilers] = useState(() => { try { return localStorage.getItem(KEY_SPOILERS) === '1' } catch { return false } })
+  const ponSinSpoilers = v => { setSinSpoilers(v); try { localStorage.setItem(KEY_SPOILERS, v ? '1' : '0') } catch {} }
   const [panelAbierto, setPanelAbierto] = useState(() => {
     try {
       const guardado = localStorage.getItem(KEY_PANEL)
@@ -4729,7 +4746,7 @@ export default function App() {
                   )}
                   <div className="grid tierra-grid">
                     {itemsOrdenados.map(({ item, c, esComic }, i) => (
-                      <Card key={item.id} pais={pais} idioma={idioma} item={item} num={i + 1} c={c} esComic={esComic} lectura={esComic ? lecturas[item.id] : null}
+                      <Card key={item.id} sinSpoilers={sinSpoilers} pais={pais} idioma={idioma} item={item} num={i + 1} c={c} esComic={esComic} lectura={esComic ? lecturas[item.id] : null}
                         vista={!!l.prog[item.id]}
                         onToggle={() => toggleProgLista(l.id, item.id)}
                         onAbrir={() => setDetalle({ item, c, esComic })}
@@ -4803,7 +4820,7 @@ export default function App() {
                 </header>
                 <div className="grid tierra-grid">
                   {items.map(({ item, c }, i) => (
-                    <Card key={item.id} pais={pais} idioma={idioma} item={item} num={i + 1} c={c} lectura={item.id.startsWith('c-') ? lecturas[item.id] : null}
+                    <Card key={item.id} sinSpoilers={sinSpoilers} pais={pais} idioma={idioma} item={item} num={i + 1} c={c} lectura={item.id.startsWith('c-') ? lecturas[item.id] : null}
                       esComic={item.id.startsWith('c-')}
                       vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
@@ -5113,7 +5130,7 @@ export default function App() {
                         <div className="grid">
                           {numerados.map((item, i) =>
                             visibles.includes(item) && (
-                              <Card key={item.id} pais={pais} idioma={idioma} item={item} num={base + i + 1} c={era.c}
+                              <Card key={item.id} sinSpoilers={sinSpoilers} pais={pais} idioma={idioma} item={item} num={base + i + 1} c={era.c}
                                 esComic={esComic} vista={!!vistas[item.id]}
                                 onToggle={() => toggle(item.id)}
                                 onAbrir={() => setDetalle({ item, c: era.c, esComic })}
@@ -5183,7 +5200,7 @@ export default function App() {
                     {item.s != null && <span className="star">★ {item.s.toFixed(1)} · </span>}
                     <span className="hist">{item.h}</span>{item.d ? <> · {fmtDur(item.d)}</> : null}
                   </p>
-                  {item.res && <p className="cine-res">{item.res}</p>}
+                  {item.res && !(sinSpoilers && !vistas[item.id]) && <p className="cine-res">{item.res}</p>}
                   <div className="modal-acciones">
                     <button className="accion-principal" onClick={() => toggle(item.id)}>{tr('✓ La veo — marcar vista', '✓ Watching it — mark as seen')}</button>
                     <button className="ghost" onClick={() => setDetalle({ item, c, esComic: false })}>{tr('Ver ficha', 'Open title')}</button>
@@ -5343,6 +5360,17 @@ export default function App() {
                 <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-densidad">
                   <button className="chip-btn" role="radio" aria-checked={!compacto} onClick={() => { if (compacto) alternaCompacto() }}>{tr('Completa', 'Full')}</button>
                   <button className="chip-btn" role="radio" aria-checked={compacto} onClick={() => { if (!compacto) alternaCompacto() }}>{tr('Compacta', 'Compact')}</button>
+                </div>
+              </div>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo" id="aj-spoilers">{tr('Spoilers', 'Spoilers')}</h3>
+                  <p className="ajuste-pista">{tr('Sin spoilers esconde la sinopsis, las escenas post-créditos y los títulos de episodio de lo que aún no has visto. En cada ficha puedes mostrarlos a mano.', 'No spoilers hides the synopsis, post-credit scenes and episode titles of what you haven’t watched yet. Each title lets you show them by hand.')}</p>
+                </div>
+                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-spoilers">
+                  <button className="chip-btn" role="radio" aria-checked={!sinSpoilers} onClick={() => ponSinSpoilers(false)}>{tr('Todo visible', 'Show everything')}</button>
+                  <button className="chip-btn" role="radio" aria-checked={sinSpoilers} onClick={() => ponSinSpoilers(true)}>{tr('Sin spoilers', 'No spoilers')}</button>
                 </div>
               </div>
 
@@ -5517,7 +5545,7 @@ export default function App() {
       )}
 
       {detalleMontado && (
-        <Detalle d={ultimoDetalle.current} vista={!!vistas[ultimoDetalle.current.item.id]} pais={pais} idioma={idioma}
+        <Detalle d={ultimoDetalle.current} vista={!!vistas[ultimoDetalle.current.item.id]} pais={pais} idioma={idioma} sinSpoilers={sinSpoilers}
           onLeer={(item, registro) => setLector({ item, registro })} lectura={lecturas[ultimoDetalle.current.item.id]}
           onOlvida={id => setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c })}
           onBiblioteca={recargaBiblioteca}
