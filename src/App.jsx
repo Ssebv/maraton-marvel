@@ -610,7 +610,7 @@ function Portada({ item, c, esComic }) {
 
 const CheckIcon = () => (
   <svg viewBox="0 0 16 16" aria-hidden="true">
-    <path d="M2.5 8.5l3.5 3.5 7-8" fill="none" stroke="#fff" strokeWidth="2.5"
+    <path d="M2.5 8.5l3.5 3.5 7-8" fill="none" stroke="currentColor" strokeWidth="2.5"
       strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 )
@@ -3240,6 +3240,10 @@ function Logros({ ctx }) {
   )
 }
 
+// La tarjeta para compartir es siempre oscura, se vea desde el tema que se
+// vea: estos son los valores del tema oscuro de styles.css (un canvas no lee
+// tokens) y scripts/gama.mjs comprueba que sigan siendo los mismos.
+const OSCURO = { bg: '#0A0C14', panel2: '#1C2133', ink: '#F2EFE6', ink2: '#A39F92', ink3: '#8D8A7E', red: '#F84A54', gold: '#E8A93C', violet: '#A98BE0', doom: '#64B05C' }
 async function compartirImagen(est, comicsVistos, comicsTot) {
   try { await document.fonts.ready } catch {}
   const W = 1080, H = 1350
@@ -3248,9 +3252,7 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   const x = cv.getContext('2d')
 
   // Fondo de tinta nocturna con semitono
-  // La tarjeta es siempre oscura, se vea desde el tema que se vea: los colores
-  // son los del tema oscuro de styles.css (no hay tokens en un canvas).
-  x.fillStyle = '#0A0C14'; x.fillRect(0, 0, W, H)
+  x.fillStyle = OSCURO.bg; x.fillRect(0, 0, W, H)
   x.fillStyle = 'rgba(242,239,230,0.045)'
   for (let i = 20; i < W; i += 26) for (let j = 20; j < H; j += 26) {
     x.beginPath(); x.arc(i, j, 1.3, 0, 7); x.fill()
@@ -3258,13 +3260,13 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
 
   // Rótulo rojo inclinado
   x.save(); x.translate(80, 84); x.transform(1, 0, -0.14, 1, 0, 0)
-  x.fillStyle = '#F84A54'; x.fillRect(0, 0, 470, 46); x.restore()
+  x.fillStyle = OSCURO.red; x.fillRect(0, 0, 470, 46); x.restore()
   x.fillStyle = '#fff'; x.font = '700 21px Archivo, sans-serif'
   x.fillText(tr('GUÍA DE MARATÓN · MI PROGRESO', 'MARATHON GUIDE · MY PROGRESS'), 100, 115)
 
   // Título
   const g1 = x.createLinearGradient(80, 0, 980, 0)
-  g1.addColorStop(0, '#F2EFE6'); g1.addColorStop(.45, '#F84A54'); g1.addColorStop(1, '#E8A93C')
+  g1.addColorStop(0, OSCURO.ink); g1.addColorStop(.45, OSCURO.red); g1.addColorStop(1, OSCURO.gold)
   x.fillStyle = g1
   x.font = '400 88px "Archivo Black", Archivo, sans-serif'
   x.fillText(tr('MARATÓN', 'MARVEL & X-MEN'), 80, 246)
@@ -3273,11 +3275,11 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   // Porcentaje gigante
   const pct = est.totMin ? Math.round(100 * est.vistoMin / est.totMin) : 0
   const g2 = x.createLinearGradient(80, 420, 80, 660)
-  g2.addColorStop(0, '#F84A54'); g2.addColorStop(1, '#E8A93C')
+  g2.addColorStop(0, OSCURO.red); g2.addColorStop(1, OSCURO.gold)
   x.fillStyle = g2
   x.font = '400 230px "Archivo Black", Archivo, sans-serif'
   x.fillText(pct + '%', 74, 650)
-  x.fillStyle = '#A39F92'; x.font = '500 34px Archivo, sans-serif'
+  x.fillStyle = OSCURO.ink2; x.font = '500 34px Archivo, sans-serif'
   x.fillText(tr(`${est.titulosVistos} de ${est.titulosTot} títulos · ${Math.round(est.vistoMin / 60)} de ${Math.round(est.totMin / 60)} horas vistas`, `${est.titulosVistos} of ${est.titulosTot} titles · ${Math.round(est.vistoMin / 60)} of ${Math.round(est.totMin / 60)} hours watched`), 80, 716)
 
   // Barras por saga
@@ -3287,16 +3289,16 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   const suma = fs => fs.reduce((a, f) => [a[0] + f.visto, a[1] + f.tot, a[2] + f.vistos, a[3] + f.items], [0, 0, 0, 0])
   const [xv, xt, xvi, xit] = suma(fx)
   const [uv, ut, uvi, uit] = suma(fu)
-  filas.push([tr('SAGA X-MEN', 'X-MEN SAGA'), xvi, xit, xt ? xv / xt : 0, '#E8A93C'])
-  filas.push([tr('UCM', 'MCU'), uvi, uit, ut ? uv / ut : 0, '#F84A54'])
-  filas.push([tr('CÓMICS', 'COMICS'), comicsVistos, comicsTot, comicsTot ? comicsVistos / comicsTot : 0, '#A98BE0'])
+  filas.push([tr('SAGA X-MEN', 'X-MEN SAGA'), xvi, xit, xt ? xv / xt : 0, OSCURO.gold])
+  filas.push([tr('UCM', 'MCU'), uvi, uit, ut ? uv / ut : 0, OSCURO.red])
+  filas.push([tr('CÓMICS', 'COMICS'), comicsVistos, comicsTot, comicsTot ? comicsVistos / comicsTot : 0, OSCURO.violet])
   let y = 800
   filas.forEach(([nombre, v, n, frac, color]) => {
-    x.fillStyle = '#F2EFE6'; x.font = '700 26px Archivo, sans-serif'
+    x.fillStyle = OSCURO.ink; x.font = '700 26px Archivo, sans-serif'
     x.fillText(nombre, 80, y + 26)
-    x.fillStyle = '#A39F92'; x.font = '500 26px Archivo, sans-serif'
+    x.fillStyle = OSCURO.ink2; x.font = '500 26px Archivo, sans-serif'
     x.textAlign = 'right'; x.fillText(`${v} / ${n}`, 1000, y + 26); x.textAlign = 'left'
-    x.fillStyle = '#1C2133'
+    x.fillStyle = OSCURO.panel2
     x.beginPath(); x.roundRect(80, y + 44, 920, 22, 6); x.fill()
     if (frac > 0) {
       x.fillStyle = color
@@ -3309,16 +3311,16 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   const objetivo = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
   if (objetivo) {
     const dias = Math.ceil((new Date(objetivo.fecha + 'T00:00:00') - Date.now()) / 86400000)
-    x.strokeStyle = '#4FB57A'; x.lineWidth = 3
+    x.strokeStyle = OSCURO.doom; x.lineWidth = 3
     x.beginPath(); x.roundRect(80, y + 10, 920, 110, 14); x.stroke()
-    x.fillStyle = '#64B05C'; x.font = '700 24px Archivo, sans-serif'
+    x.fillStyle = OSCURO.doom; x.font = '700 24px Archivo, sans-serif'
     x.fillText(tr('PRÓXIMO GRAN ESTRENO', 'NEXT BIG PREMIERE'), 116, y + 56)
-    x.fillStyle = '#F2EFE6'; x.font = '400 34px "Archivo Black", Archivo, sans-serif'
+    x.fillStyle = OSCURO.ink; x.font = '400 34px "Archivo Black", Archivo, sans-serif'
     x.fillText(tr(`${objetivo.t.toUpperCase()} · FALTAN ${dias} DÍAS`, `${objetivo.t.toUpperCase()} · ${dias} DAYS TO GO`), 116, y + 100)
   }
 
   // Pie
-  x.fillStyle = '#8D8A7E'; x.font = '600 24px Archivo, sans-serif'
+  x.fillStyle = OSCURO.ink3; x.font = '600 24px Archivo, sans-serif'
   x.fillText('ssebv.github.io/maraton-marvel', 80, H - 60)
 
   const blob = await new Promise(res => cv.toBlob(res, 'image/png'))

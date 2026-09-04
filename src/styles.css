@@ -33,7 +33,14 @@
      14 % oscuro): un acento nuevo o un acento de universo arrastra su tinte.
    · Sobre un acento el texto es --sobre-acento: blanco en claro, el fondo
      en oscuro (el blanco sobre los acentos claros del oscuro se quedaba en
-     2–3,7:1).
+     2–3,7:1). Lo llevan los chips activos, el botón «Vista», el check de la
+     tarjeta y la galería, y el rótulo del duelo; el check dibuja con
+     currentColor.
+   · El color de una era o de una Tierra no es texto: para leerse se mezcla
+     con la tinta en --era-tinta (48 % claro, 60 % oscuro), lo mismo en la
+     cabecera de era que en el número, el estado y el «Entrar» de cada Tierra.
+   · Los acentos de universo cambian --red por --gold-texto, --violet, --doom o
+     --teal, todos a 4,5:1 sobre --panel2; el comprobador los mide uno a uno.
    · Cuatro tokens NO siguen al tema: --sello y --calido (encima va texto
      blanco), --gold-vivo (extremo de los degradados rojo→dorado y la nota
      sobre carátula: siempre sobre rojo u oscuro) y --noche (el respaldo de
@@ -48,7 +55,6 @@
   --sello:#C8102E; --calido:#B45C15; --gold-vivo:#E8A93C; --noche:#0A0C14;
   --sobre-acento:#fff;
   --tinte:10%;
-  --tc-tinta:45%;  /* parte del color de una Tierra en su texto; ver .tierra-num */
   --r-s:4px; --r-m:10px; --r-l:16px; --r-pill:999px;
   /* Tipografía: siete pasos. La única excepción es el clamp del titular. */
   --t-xs:11px; --t-s:12px; --t-m:13px; --t-b:15px;
@@ -57,7 +63,7 @@
   --e-1:2px; --e-2:4px; --e-3:8px; --e-4:12px;
   --e-5:16px; --e-6:24px; --e-7:32px; --e-8:48px; --e-9:64px;
   --fondo-op:.45; --velo-a:62%; --velo-b:84%; --material:#F6F1E3;
-  --era-tinta:48%;  /* color del titular de era; ver .era-head h3 (al 50 % el dorado quedaba en 4,50 justo) */
+  --era-tinta:48%;  /* parte de color de era o de Tierra en su texto; ver .era-head h3 y .tierra-num (al 50 % el dorado quedaba en 4,50 justo) */
   /* Movimiento: una curva y tres duraciones para toda la app */
   --curva:cubic-bezier(.22, 1, .36, 1);
   --curva-rebote:cubic-bezier(.34, 1.56, .64, 1);  /* confirmación: pasa de largo y vuelve */
@@ -86,9 +92,9 @@
     --blue:#7BA6E4; --violet:#A98BE0; --teal:#56C2A7;
     --done:#4FB57A; --doom:#64B05C;
     --sobre-acento:var(--bg);
-    --tinte:14%; --tc-tinta:65%;
+    --tinte:14%;
     --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
-    --era-tinta:60%;  /* color del titular de era; ver .era-head h3 */
+    --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
     --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
     --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
   }
@@ -101,9 +107,9 @@
   --blue:#7BA6E4; --violet:#A98BE0; --teal:#56C2A7;
   --done:#4FB57A; --doom:#64B05C;
   --sobre-acento:var(--bg);
-  --tinte:14%; --tc-tinta:65%;
+  --tinte:14%;
   --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
-  --era-tinta:60%;  /* color del titular de era; ver .era-head h3 */
+  --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
   --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
   --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
 }
@@ -512,6 +518,12 @@ h1 .rojo{color:var(--red)}
 }
 @supports not (background:color-mix(in srgb, red 50%, blue)){
   .toolbar{background:var(--bg)}
+  /* Sin color-mix los tintes derivados no existen: el equivalente en hex */
+  :root{--red-soft:#C8102E1A; --gold-soft:#9E6C111A; --blue-soft:#2B5DA81A; --violet-soft:#6D4FA31A; --teal-soft:#0E705B1A; --doom-soft:#3470251A}
+  :root[data-theme="dark"]{--red-soft:#F84A5424; --gold-soft:#E8A93C24; --blue-soft:#7BA6E424; --violet-soft:#A98BE024; --teal-soft:#56C2A724; --doom-soft:#64B05C24}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){--red-soft:#F84A5424; --gold-soft:#E8A93C24; --blue-soft:#7BA6E424; --violet-soft:#A98BE024; --teal-soft:#56C2A724; --doom-soft:#64B05C24}
+  }
 }
 .controles{display:flex; gap: var(--e-3); flex-wrap:wrap; align-items:center}
 /* Separa navegación · filtros de contenido · herramientas de vista: sin esto los
@@ -739,7 +751,7 @@ h3{
 /* área táctil de 44 px: el círculo visible mide 26 y el mínimo táctil es 44 */
 .checkbox::after{content:""; position:absolute; inset:-9px; border-radius:50%}
 .card.vista .checkbox{
-  background:var(--done); border-color:var(--done);
+  background:var(--done); border-color:var(--done); color:var(--sobre-acento);
   animation:anillo .5s var(--curva) both;
 }
 @keyframes anillo{
@@ -943,7 +955,7 @@ h3{
 }
 .accion-principal:hover{filter:brightness(1.1)}
 .accion-principal:active{transform:scale(.97)}
-.accion-principal.hecha{background:var(--done)}
+.accion-principal.hecha{background:var(--done); color:var(--sobre-acento)}
 @media (max-width:640px){
   .modal{--pad: var(--e-6); flex-direction:column; padding: var(--pad); gap: var(--e-5)}
   /* apilado no hay columna que seguir: el sticky estorbaría */
@@ -1197,7 +1209,7 @@ main.galeria{margin-top: var(--e-6)}
 .galeria-check{
   position:absolute; right:6px; bottom:6px; width:24px; height:24px;
   background:var(--done); border-radius:50%; border:2px solid var(--panel);
-  display:grid; place-items:center;
+  color:var(--sobre-acento); display:grid; place-items:center;
 }
 .galeria-check svg{width:12px; height:12px}
 
@@ -1326,14 +1338,14 @@ main.multiverso{margin-top: var(--e-6)}
   border-color:color-mix(in srgb, var(--tc, var(--violet)) 55%, var(--line));
   box-shadow:5px 6px 0 color-mix(in srgb, var(--tc, var(--violet)) 40%, transparent);
 }
-.mv-card .mv-num{color:color-mix(in srgb, var(--tc, var(--violet)) var(--tc-tinta), var(--ink)); background:color-mix(in srgb, var(--tc, var(--violet)) 15%, transparent)}
+.mv-card .mv-num{color:color-mix(in srgb, var(--tc, var(--violet)) var(--era-tinta), var(--ink)); background:color-mix(in srgb, var(--tc, var(--violet)) 15%, transparent)}
 .mv-estado{
   font-size: var(--t-xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase;
-  color:color-mix(in srgb, var(--tc, var(--violet)) 75%, var(--ink));
+  color:color-mix(in srgb, var(--tc, var(--violet)) var(--era-tinta), var(--ink));
 }
 .mv-entrar{
   margin-top: auto; padding-top: var(--e-3); font-size: var(--t-s); font-weight:700;
-  color:var(--tc, var(--violet)); transition:transform var(--dur-media) var(--curva);
+  color:color-mix(in srgb, var(--tc, var(--violet)) var(--era-tinta), var(--ink)); transition:transform var(--dur-media) var(--curva);
 }
 .mv-card:hover .mv-entrar{transform:translateX(3px)}
 
@@ -1351,13 +1363,13 @@ main.multiverso{margin-top: var(--e-6)}
   display:flex; flex-direction:column; gap: var(--e-3);
 }
 /* El color de una Tierra pinta el planeta, no sirve de texto (el dorado sobre
-   pergamino se quedaba en 1,9:1): para leerse se mezcla con la tinta, --tc-tinta
-   por tema, como el titular de era. */
-.tierra-num{align-self:flex-start; color:color-mix(in srgb, var(--tc) var(--tc-tinta), var(--ink)); background:color-mix(in srgb, var(--tc) 16%, transparent)}
+   pergamino se quedaba en 1,9:1): para leerse se mezcla con la tinta en la
+   misma proporción que el titular de era (--era-tinta). */
+.tierra-num{align-self:flex-start; color:color-mix(in srgb, var(--tc) var(--era-tinta), var(--ink)); background:color-mix(in srgb, var(--tc) 16%, transparent)}
 .tierra-nombre{margin: 0; font-size: var(--t-xl); font-weight:700; text-transform:none; letter-spacing:-.01em}
 .tierra-estado{
   font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-  color:color-mix(in srgb, var(--tc) 75%, var(--ink));
+  color:color-mix(in srgb, var(--tc) var(--era-tinta), var(--ink));
 }
 .tierra-desc{margin: var(--e-2) 0 0; font-size: var(--t-b); color:var(--ink2); max-width:72ch; line-height:1.55}
 .tierra-barra{margin-top: var(--e-4)}
@@ -1908,7 +1920,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
   width:42px; height:60px; object-fit:cover; border-radius:var(--r-s);
   border:2px solid var(--nc); box-shadow:0 4px 14px rgba(0,0,0,.35); background:var(--panel2);
 }
-.nodo-ini{display:grid; place-items:center; font-weight:700; font-size: var(--t-s); color:color-mix(in srgb, var(--nc) var(--tc-tinta), var(--ink))}
+.nodo-ini{display:grid; place-items:center; font-weight:700; font-size: var(--t-s); color:color-mix(in srgb, var(--nc) var(--era-tinta), var(--ink))}
 .nodo-t{font-size: var(--t-xs); font-weight:600; color:var(--ink2); text-align:center; line-height:1.15; max-width:76px}
 .nodo:hover{transform:translate(-50%,-50%) scale(1.08)}
 .nodo.on img, .nodo.on .nodo-ini{outline:2.5px solid var(--red); outline-offset:2px}
@@ -1937,7 +1949,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 }
 .duelo-live{
   margin-left: var(--e-4); font-size: var(--t-xs); font-weight:700; letter-spacing:.08em;
-  color:var(--bg); background:var(--done); border-radius:var(--r-s); padding: var(--e-1) var(--e-3);
+  color:var(--sobre-acento); background:var(--done); border-radius:var(--r-s); padding: var(--e-1) var(--e-3);
   vertical-align:middle; animation:pulso 2s ease-in-out infinite;
 }
 @keyframes pulso{50%{opacity:.65}}
@@ -2082,7 +2094,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 }
 /* ── Temas de acento por universo (alias sobre tokens ya adaptados a claro/oscuro;
    el tinte --red-soft se deriva solo) ── */
-:root[data-acento="xmen"]{--red:var(--gold)}
+:root[data-acento="xmen"]{--red:var(--gold-texto)}  /* --gold a secas se queda en 3,5:1 en claro */
 :root[data-acento="tva"]{--red:var(--violet)}
 :root[data-acento="zombi"]{--red:var(--doom)}
 :root[data-acento="828"]{--red:var(--teal)}
