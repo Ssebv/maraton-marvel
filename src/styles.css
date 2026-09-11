@@ -1357,25 +1357,36 @@ main.galeria{margin-top: var(--e-6)}
 /* ── Planetas giratorios (elementos de uiverse adaptados: Tierra de Lakshay-art + Sol de reyrojo2) ── */
 .planeta{
   border-radius:50%; flex:none; position:absolute;
+  /* tres capas (11 sep 2026): el halo en el planeta, la textura que gira
+     como hija recortada por el círculo, y el volumen encima. Antes se
+     animaba background-position, que repinta cada fotograma: con once
+     planetas el hilo principal no descansaba nunca en el Multiverso. */
+  overflow:hidden; isolation:isolate;
+  box-shadow:0 0 26px -4px color-mix(in srgb, var(--tc, var(--blue)) 70%, transparent);
+}
+.planeta-textura{
+  position:absolute; top:0; left:0; height:100%; width:calc(100% + 640px);
   background-image:url('/maraton-marvel/tierra.jpg');
   background-size:auto 100%; background-repeat:repeat-x;
   animation:girarPlaneta 28s linear infinite;
+}
+.planeta::before{
+  content:""; position:absolute; inset:0; border-radius:50%; z-index:1;
   box-shadow:
-    0 0 26px -4px color-mix(in srgb, var(--tc, var(--blue)) 70%, transparent),
     -4px 0 8px rgba(195,244,255,.4) inset,
     10px 2px 20px rgba(0,0,0,.9) inset,
     -14px -2px 24px color-mix(in srgb, var(--tc, var(--blue)) 40%, transparent) inset,
     64px 0 38px rgba(0,0,0,.6) inset;
 }
 .planeta::after{
-  content:""; position:absolute; inset:0; border-radius:50%;
+  content:""; position:absolute; inset:0; border-radius:50%; z-index:2;
   background:var(--tc, transparent); mix-blend-mode:color; opacity:.5;
 }
 .planeta-mini{width:56px; height:56px; top:16px; right:16px}
 .planeta-grande{width:150px; height:150px; right:30px; top:50%; transform:translateY(-50%)}
 @keyframes girarPlaneta{
-  from{background-position:0 0}
-  to{background-position:-640px 0}
+  from{transform:translateX(0)}
+  to{transform:translateX(-640px)}
 }
 .mv-card{position:relative; padding-right: 88px}
 @media (max-width:640px){
@@ -1413,8 +1424,10 @@ main.galeria{margin-top: var(--e-6)}
 .sol:hover{transform:translate(-50%, -50%) scale(1.12)}
 .planeta-sol{
   width:92px; height:92px;
+  box-shadow:0 0 55px 6px color-mix(in srgb, var(--tc, var(--red)) 55%, transparent);
+}
+.planeta-sol::before{
   box-shadow:
-    0 0 55px 6px color-mix(in srgb, var(--tc, var(--red)) 55%, transparent),
     -5px 0 10px rgba(255,220,180,.5) inset,
     12px 2px 24px rgba(0,0,0,.85) inset,
     -16px -2px 28px color-mix(in srgb, var(--tc, var(--red)) 50%, transparent) inset,
@@ -1705,6 +1718,29 @@ main.crono, main.comics, main.estreno{animation:none}
    de golpe; el mismo fundido corto, solo al navegar, nunca al abrir. */
 .modal-cambio{animation:entraVista var(--dur-corta) var(--curva) both}
 @keyframes entraVista{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+/* tarjetas fuera de las 12 primeras, o montadas durante una transición de vista */
+.card.quieta{animation:none}
+
+/* ── Cambio de vista con View Transitions (11 sep 2026) ──
+   La página vieja sale y la nueva entra con un desliz de 24 px hacia el lado
+   de la pestaña, 360 ms con la curva de las hojas de iOS. Las dos barras
+   llevan nombre propio y no se funden con el contenido. La vista entra por
+   aquí, así que main no se anima además. */
+@supports (view-transition-name: none){
+  main{animation:none}
+  nav.tabs{view-transition-name:dock}
+  .toolbar{view-transition-name:barra}
+  ::view-transition-group(*){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
+  ::view-transition-old(root), ::view-transition-new(root){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
+  html[data-vt="adelante"]::view-transition-old(root){animation-name:vtSaleIzq}
+  html[data-vt="adelante"]::view-transition-new(root){animation-name:vtEntraDer}
+  html[data-vt="atras"]::view-transition-old(root){animation-name:vtSaleDer}
+  html[data-vt="atras"]::view-transition-new(root){animation-name:vtEntraIzq}
+}
+@keyframes vtSaleIzq{to{opacity:0; transform:translateX(-24px)}}
+@keyframes vtEntraDer{from{opacity:0; transform:translateX(24px)}}
+@keyframes vtSaleDer{to{opacity:0; transform:translateX(24px)}}
+@keyframes vtEntraIzq{from{opacity:0; transform:translateX(-24px)}}
 
 /* El escalonado de las tarjetas ya lo pone el JSX (animationDelay en línea). */
 

@@ -1,5 +1,5 @@
 import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 import { DATA, ESTRENOS, JOYA_MIN, KEY, MULTIVERSO } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
@@ -26,6 +26,22 @@ const KEY_PLEGADAS = 'maraton-marvel-plegadas-v1'
 // El lote «Marvel One-Shots (cortos)» se partió en cinco tarjetas, cada una en
 // su año (11 sep 2026): quien lo tenía marcado, o en una lista, conserva la
 // marca en las cinco. El id viejo sigue ocupando su bit en orden.js.
+// Cambio de vista con View Transitions: la vista vieja y la nueva se funden
+// con un desliz corto hacia el lado de la pestaña (adelante / atrás) y las
+// barras se quedan quietas. Sin soporte o con «reducir movimiento», directo.
+// Mientras dura el render de la transición las tarjetas no se escalonan:
+// una animación por cambio, no dos.
+let enTransicion = false
+function conTransicion(dir, fn) {
+  if (typeof document === 'undefined' || !document.startViewTransition || movimientoReducido()) { fn(); return }
+  const raiz = document.documentElement
+  raiz.dataset.vt = dir
+  const t = document.startViewTransition(() => {
+    enTransicion = true
+    try { flushSync(fn) } finally { enTransicion = false }
+  })
+  t.finished.finally(() => { if (raiz.dataset.vt === dir) delete raiz.dataset.vt })
+}
 const ONESHOTS_PARTIDOS = ['oneshot-martillo', 'oneshot-consultor', 'oneshot-item47', 'oneshot-rey', 'oneshot-carter']
 const migraMarcas = v => {
   if (!v || !v.oneshots) return v
@@ -2543,8 +2559,8 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
     if (hechos > 0 && !vista) epProg = `${hechos}/${total} ep`
   }
   return (
-    <article className={`card${vista ? ' vista' : ''}`} id={`card-${item.id}`}
-      style={{ animationDelay: `${delay}ms`, '--glow': c[0] }}>
+    <article className={`card${vista ? ' vista' : ''}${delay == null ? ' quieta' : ''}`} id={`card-${item.id}`}
+      style={{ animationDelay: delay == null ? undefined : `${delay}ms`, '--glow': c[0] }}>
       <button className="checkbox" aria-pressed={vista} onClick={onToggle}
         title={vista ? tr('Vista — pulsa para marcar pendiente', 'Watched — tap to mark as pending') : tr('Pendiente — pulsa para marcar vista', 'Pending — tap to mark as watched')}>
         <CheckIcon />
@@ -3484,7 +3500,7 @@ export default function App() {
     if (perfil) return
     const onHash = () => {
       const h = window.location.hash.replace('#', '')
-      setVista(VISTAS_VALIDAS.includes(h) ? h : 'crono')
+      conTransicion('atras', () => setVista(VISTAS_VALIDAS.includes(h) ? h : 'crono'))
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
@@ -3493,7 +3509,7 @@ export default function App() {
   // botón en Android) vuelve a Maratón en vez de salir de la app, como en
   // las apps con pestañas; solo desde Maratón se sale. La subvista en la que
   // estabas se conserva (ultimaVista). El contenido sigue al dedo en el gesto.
-  useVolverCierra(!perfil && destinoDe(vista) !== 'maraton', () => setVista(ultimaVista.maraton || 'crono'), () => document.querySelector('main'))
+  useVolverCierra(!perfil && destinoDe(vista) !== 'maraton', () => conTransicion('atras', () => setVista(ultimaVista.maraton || 'crono')), () => document.querySelector('main'))
   const [detalle, setDetalle] = useState(() => {
     try {
       const p = new URLSearchParams(window.location.search)
@@ -4648,7 +4664,12 @@ export default function App() {
   }
 
   let delayIdx = 0
-  const nextDelay = () => Math.min((delayIdx++) * 30, 360)
+  // solo las 12 primeras tarjetas entran escalonadas (lo que se ve); el
+  // resto aparece sin animar: eran cien animaciones vivas por cambio de vista
+  const nextDelay = () => {
+    if (enTransicion || delayIdx >= 12) { delayIdx++; return null }
+    return (delayIdx++) * 30
+  }
   const pct = stats.totN ? Math.round(100 * stats.totV / stats.totN) : 0
 
   // ¿queda algo tras filtrar y buscar? (134 títulos: barato de calcular en cada render)
@@ -4703,7 +4724,7 @@ export default function App() {
               e.preventDefault()
               // la pestaña en la que ya estás sube al principio, como en iOS
               if (destino === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
-              setVista(destino)
+              conTransicion(DESTINOS.findIndex(x => x.id === d.id) > DESTINOS.findIndex(x => x.id === destinoDe(vista)) ? 'adelante' : 'atras', () => setVista(destino))
             }}>
             {ICONOS_DESTINO[d.id]}
             <span className="tab-rotulo">{tr(d.label, d.en || d.label)}</span>
@@ -4915,7 +4936,7 @@ export default function App() {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
                     if (v === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
-                    setVista(v)
+                    conTransicion(d.vistas.indexOf(v) > d.vistas.indexOf(vista) ? 'adelante' : 'atras', () => setVista(v))
                   }}>{p ? tr(p.label, p.en || p.label) : v}</a>
               )
             })}
@@ -5094,7 +5115,7 @@ export default function App() {
               <div className="tierra" style={{ '--tc': u.c }}>
                 <button className="chip-btn" onClick={() => setTierra(null)}>{tr('← Volver al multiverso', '← Back to the multiverse')}</button>
                 <header className="tierra-hero">
-                  <span className="planeta planeta-grande" aria-hidden="true" />
+                  <span className="planeta planeta-grande" aria-hidden="true"><span className="planeta-textura" /></span>
                   <span className="mv-num tierra-num">{u.num}</span>
                   <h2 className="tierra-nombre">{u.nombre}</h2>
                   <span className="tierra-estado">{u.estado}</span>
@@ -5142,7 +5163,7 @@ export default function App() {
                       return (
                         <button className="sol" style={{ '--tc': u616.c }}
                           onClick={() => setTierra(u616.num)} title={u616.nombre}>
-                          <span className="planeta planeta-orbe planeta-sol" />
+                          <span className="planeta planeta-orbe planeta-sol"><span className="planeta-textura" /></span>
                           <span className="nav-nombre">Tierra-616</span>
                         </button>
                       )
@@ -5157,7 +5178,7 @@ export default function App() {
                               <div className="contra" style={{ animationDuration: dur + 's' }}>
                                 <button className="planeta-nav" style={{ '--tc': u.c }}
                                   onClick={() => setTierra(u.num)} title={u.nombre}>
-                                  <span className="planeta planeta-orbe" style={{ width: tam, height: tam }} />
+                                  <span className="planeta planeta-orbe" style={{ width: tam, height: tam }}><span className="planeta-textura" /></span>
                                   <span className="nav-nombre">{u.num.replace('Tierra-', 'T-')}</span>
                                 </button>
                               </div>
@@ -5175,7 +5196,7 @@ export default function App() {
                     role="button" tabIndex={0}
                     onClick={() => setTierra(u.num)}
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTierra(u.num) } }}>
-                    <span className="planeta planeta-mini" aria-hidden="true" />
+                    <span className="planeta planeta-mini" aria-hidden="true"><span className="planeta-textura" /></span>
                     <span className="mv-num">{u.num}</span>
                     <h2 className="mv-nombre">{u.nombre}</h2>
                     <p className="mv-desc">{u.desc}</p>
