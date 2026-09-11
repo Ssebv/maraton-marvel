@@ -1813,9 +1813,14 @@ main.crono, main.comics, main.estreno{animation:none}
   .era{margin-top: var(--e-6)}
   /* con el botón de plegar, «Tras Nueva York» se partía en tres líneas:
      el nombre va entero y lo demás salta a una segunda fila */
-  .era-head{flex-wrap:wrap; row-gap: var(--e-2)}
-  .era-head h3{white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis}
-  .era-head .era-plegar{margin-left:auto}
+  /* Rejilla de dos filas: nombre y botón arriba; años, barra y cuenta
+     abajo. Con flex-wrap el botón caía solo en una segunda fila. */
+  .era-head{display:grid; grid-template-columns:1fr auto auto; grid-template-rows:auto auto; row-gap: var(--e-2); column-gap: var(--e-3); align-items:center}
+  .era-head h3{grid-column:1 / 3; grid-row:1; justify-self:start; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis}
+  .era-head .era-plegar{grid-column:3; grid-row:1; margin-left:0}
+  .era-head .era-rango{grid-column:1; grid-row:2}
+  .era-head .era-prog{grid-column:2; grid-row:2; margin-left:0; justify-self:end}
+  .era-head .era-count{grid-column:3; grid-row:2; justify-self:end}
   .tira-item .cover{width:44px; height:66px}
   /* cinco cajas a ancho completo eran 550 px de cifras antes de la primera gráfica */
   .stats-tiles{grid-template-columns:1fr 1fr}
