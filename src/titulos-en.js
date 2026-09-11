@@ -75,6 +75,8 @@ export const TITULOS_EN = {
  "spiderman94": "Spider-Man: The Animated Series",
  "hulk96": "The Incredible Hulk (1996)",
  "sm-unlimited99": "Spider-Man Unlimited (Unlimited)",
+ "xmen-evolution": "X-Men: Evolution",
+ "wolverine-xmen": "Wolverine and the X-Men",
  "emh": "The Avengers: Earth's Mightiest Heroes",
  "avengers-assemble": "Avengers",
  "hulk-smash": "Hulk and the Agents of S.M.A.S.H.",

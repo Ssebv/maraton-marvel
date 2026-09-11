@@ -117,6 +117,8 @@ export const POSTERS = {
   "team-thor": "posters/team-thor.webp",
   "team-darryl": "posters/team-darryl.webp",
   "peter-lista": "posters/peter-lista.webp",
+  "xmen-evolution": "posters/xmen-evolution.webp",
+  "wolverine-xmen": "posters/wolverine-xmen.webp",
   "origins-wolverine": "posters/origins-wolverine.webp",
   "punisher": "posters/punisher.webp",
   "quantumania": "posters/quantumania.webp",

@@ -42,6 +42,8 @@ function conTransicion(dir, fn) {
   })
   t.finished.finally(() => { if (raiz.dataset.vt === dir) delete raiz.dataset.vt })
 }
+// cuántas series tiene la bóveda de animación: se cuenta, no se escribe
+const N_SERIES_BOVEDA = DATA.find(s => s.saga === 'animacion').eras.reduce((a, e) => a + e.items.length, 0)
 const ONESHOTS_PARTIDOS = ['oneshot-martillo', 'oneshot-consultor', 'oneshot-item47', 'oneshot-rey', 'oneshot-carter']
 const migraMarcas = v => {
   if (!v || !v.oneshots) return v
@@ -1360,8 +1362,10 @@ const FOCABLES = 'a[href],button:not([disabled]),input,select,textarea,[tabindex
 // Cuántas capas tienen el fondo bloqueado: solo la última en irse lo libera,
 // da igual en qué orden se cierren (cine bajo ficha, lector sobre ficha…)
 let capasBloqueando = 0
-const bloqueaFondo = () => { capasBloqueando++; document.body.style.overflow = 'hidden' }
-const liberaFondo = () => { capasBloqueando = Math.max(0, capasBloqueando - 1); if (!capasBloqueando) document.body.style.overflow = '' }
+// html.capa-abierta: el dock móvil vive en <body> (portal) y pintaba por encima
+// de hojas, lector y modo cine; con una capa abierta se retira (CSS)
+const bloqueaFondo = () => { capasBloqueando++; document.body.style.overflow = 'hidden'; document.documentElement.classList.add('capa-abierta') }
+const liberaFondo = () => { capasBloqueando = Math.max(0, capasBloqueando - 1); if (!capasBloqueando) { document.body.style.overflow = ''; document.documentElement.classList.remove('capa-abierta') } }
 // visible de verdad: offsetParent es null también para position:fixed
 const visible = el => el.getClientRects().length > 0
 
@@ -1791,7 +1795,7 @@ function Club({ club, vistas, eps, onSalir, onInvitar }) {
       const v = typeof m.v === 'string' ? m.v : ''
       const e = typeof m.e === 'string' ? m.e : ''
       out.push({ alias, yo: false, t: typeof m.t === 'number' ? m.t : null,
-        ...resumenMaraton(deBits(v, ORDEN_IDS), deBits(e, ORDEN_EPS)) })
+        ...resumenMaraton(migraMarcas(deBits(v, ORDEN_IDS)), deBits(e, ORDEN_EPS)) })
     }
     return out.sort((a, b) => b.n - a.n || b.min - a.min)
   }, [miembros, vistas, eps, club])
@@ -1893,7 +1897,8 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
   }, [amigo, esLive])
   const datos = useMemo(() => {
     // en vivo el rival llega de una base compartida: mismo saneado que el resto
-    const vA = esLive ? (saneaMarcas(remoto && remoto.v) || {}) : deBits(amigo.v, ORDEN_IDS)
+    // lo de otros (bits de un enlace viejo o de alguien con la versión vieja) también migra el lote de One-Shots
+    const vA = migraMarcas(esLive ? (saneaMarcas(remoto && remoto.v) || {}) : deBits(amigo.v, ORDEN_IDS))
     const eA = esLive ? (saneaMarcas(remoto && remoto.e) || {}) : deBits(amigo.e, ORDEN_EPS)
     const yo = resumenMaraton(vistas, eps)
     const el = resumenMaraton(vA, eA)
@@ -2418,7 +2423,7 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
           <div className="stat">
             <span className="stat-label">{tr('Bóveda de animación', 'Animation vault')}</span>
             <span className="stat-num"><Cifra n={est.bovedaVistos} /><small> / {est.bovedaTot}</small></span>
-            <span className="stat-foot">{tr('episodios de las 17 series', 'episodes across the 17 series')}</span>
+            <span className="stat-foot">{tr(`episodios de las ${N_SERIES_BOVEDA} series`, `episodes across the ${N_SERIES_BOVEDA} series`)}</span>
           </div>
         </div>
         <div className="mapa" aria-label={tr('Mapa de progreso', 'Progress map')}>
@@ -2551,6 +2556,10 @@ function Estrellas() {
 // funciones con setState funcional; `pais` viaja como prop porque el país
 // MUTA los textos de `item` sin cambiar su identidad.
 const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, epHechos, miNota, lectura, sinSpoilers }) {
+  // la entrada se decide al montar: nacida quieta (fuera de las 12 primeras o
+  // durante una transición de vista) no se anima luego porque otro render le
+  // pase un retraso; nacida animada conserva el suyo
+  const entrada = useRef(delay)
   let epProg = null
   if (esComic && lectura && lectura.t > 1 && !vista) epProg = tr(`pág. ${lectura.p + 1}/${lectura.t}`, `p. ${lectura.p + 1}/${lectura.t}`)
   if (item.tipo === 'serie' && EPISODES[item.id]) {
@@ -2559,8 +2568,8 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
     if (hechos > 0 && !vista) epProg = `${hechos}/${total} ep`
   }
   return (
-    <article className={`card${vista ? ' vista' : ''}${delay == null ? ' quieta' : ''}`} id={`card-${item.id}`}
-      style={{ animationDelay: delay == null ? undefined : `${delay}ms`, '--glow': c[0] }}>
+    <article className={`card${vista ? ' vista' : ''}${entrada.current == null ? ' quieta' : ''}`} id={`card-${item.id}`}
+      style={{ animationDelay: entrada.current == null ? undefined : `${entrada.current}ms`, '--glow': c[0] }}>
       <button className="checkbox" aria-pressed={vista} onClick={onToggle}
         title={vista ? tr('Vista — pulsa para marcar pendiente', 'Watched — tap to mark as pending') : tr('Pendiente — pulsa para marcar vista', 'Pending — tap to mark as watched')}>
         <CheckIcon />
@@ -2605,7 +2614,7 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
     </article>
   )
 }, (a, b) => {
-  for (const k in a) if (k !== 'onToggle' && k !== 'onAbrir' && !Object.is(a[k], b[k])) return false
+  for (const k in a) if (k !== 'onToggle' && k !== 'onAbrir' && k !== 'delay' && !Object.is(a[k], b[k])) return false
   return true
 })
 
@@ -3472,7 +3481,7 @@ export default function App() {
       const notas = Array.isArray(j.r) ? j.r : []
       return {
         nombre: typeof j.n === 'string' && j.n.trim() ? j.n.trim().slice(0, 40) : tr('Alguien', 'Someone'),
-        vistasP: deBits(typeof j.v === 'string' ? j.v : '', ORDEN_IDS),
+        vistasP: migraMarcas(deBits(typeof j.v === 'string' ? j.v : '', ORDEN_IDS)),
         epsP: deBits(typeof j.e === 'string' ? j.e : '', ORDEN_EPS),
         notasP: Object.fromEntries(notas
           .filter(x => Array.isArray(x) && ORDEN_IDS[x[0]] && typeof x[1] === 'number')
@@ -4374,7 +4383,9 @@ export default function App() {
   // marcha nada se pliega: escondería los resultados.
   const [plegadas, setPlegadas] = useState(() => leeGuardado(KEY_PLEGADAS, saneaPlegadas, {}))
   // Las eras van con la misma lógica, con clave «era:<id del primer título>».
-  const claveEra = era => 'era:' + (era.items[0] ? era.items[0].id : era.rango)
+  // `clave` fija la de las eras que ganaron un primer título después (así no se
+  // pierde lo plegado a mano): «Tras Nueva York» con Artículo 47, la de Disney XD con Lobezno y los X-Men
+  const claveEra = era => 'era:' + (era.clave || (era.items[0] ? era.items[0].id : era.rango))
   // Instantánea de lo COMPLETO al cargar, SIN filtros (con ?f=series una saga
   // cuyos únicos pendientes eran series contaba como completa). Se vuelve a
   // tomar cuando lo visto cambia de golpe (sincronización, cuenta de Google,
@@ -5260,7 +5271,7 @@ export default function App() {
             <div className="stat">
               <span className="stat-label">{tr('Bóveda de animación', 'Animation vault')}</span>
               <span className="stat-num">{estadisticas.bovedaEpVistos}<small> / {estadisticas.bovedaEpTot}</small></span>
-              <span className="stat-foot">{tr('episodios de las 17 series', 'episodes across the 17 series')}</span>
+              <span className="stat-foot">{tr(`episodios de las ${N_SERIES_BOVEDA} series`, `episodes across the ${N_SERIES_BOVEDA} series`)}</span>
             </div>
           </div>
 

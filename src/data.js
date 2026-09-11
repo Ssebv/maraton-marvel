@@ -128,7 +128,7 @@ export const DATA = [
         dir: "Joss Whedon", cast: ["Robert Downey Jr.", "Chris Evans", "Scarlett Johansson"],
         res: "Loki invade Nueva York y el equipo se une por primera vez." },
     ]},
-    { era: "Tras Nueva York", rango: "2012–2015", c: ["#2E8C7A", "#123F36"], items: [
+    { era: "Tras Nueva York", clave: "ironman3", rango: "2012–2015", c: ["#2E8C7A", "#123F36"], items: [
       { id: "oneshot-item47", t: "Artículo 47 (One-Shot)", h: "2012", r: 2012, d: 12, tipo: "esp", opt: true, plat: "Disney+",
         dir: "Louis D'Esposito", cast: ["Lizzy Caplan", "Jesse Bradford", "Maximiliano Hernández"],
         res: "Una pareja encuentra un arma chitauri tras la batalla de Nueva York y la usa para atracar bancos." },
@@ -429,7 +429,7 @@ export const DATA = [
   saga: "animacion", titulo: "La bóveda de animación", uni: "Disney+",
   desc: "Las series animadas de Marvel disponibles hoy en Disney+ España, de los clásicos de los 80 y 90 a la era actual. Fuera de la cronología del maratón: puro disfrute aparte.",
   eras: [
-    { era: "La escuela clásica", rango: "1981–2000", c: ["#007785", "#0D373D"], items: [
+    { era: "La escuela clásica", rango: "1981–2003", c: ["#007785", "#0D373D"], items: [
       { id: "sm-amigos81", t: "Spider-Man y sus Increíbles Amigos", h: "—", r: 1981, s: 7.5, d: 528, tipo: "serie", plat: "Disney+",
         dir: "Stan Lee (creador)", cast: ["Dan Gilvezan", "Kathy Garver", "Frank Welker"],
         res: "Spidey, Estrella de Fuego y Hombre de Hielo compartiendo piso: puro sábado por la mañana." },
@@ -451,8 +451,16 @@ export const DATA = [
       { id: "sm-unlimited99", t: "El Regreso de Spiderman (Unlimited)", h: "—", r: 1999, s: 7.6, d: 286, tipo: "serie", plat: "Disney+",
         dir: "Avi Arad y Will Meugniot (creadores)", cast: ["Rino Romano", "John Payne", "Brian Drummond"],
         res: "Spidey varado en Contra-Tierra; la rareza de culto del 99." },
+      { id: "xmen-evolution", t: "X-Men: Evolución", h: "—", r: 2000, d: 1144, tipo: "serie",
+        dir: "Robert N. Skir, Marty Isenberg y David Wise (creadores)", cast: ["Kirby Morrow", "Venus Terzo", "David Kaye"],
+        res: "Los X-Men como adolescentes en el instituto de Bayville: la serie que creó a X-23.",
+        n: "En Disney+ de EE. UU.; en España y Latinoamérica no está en ninguna plataforma." },
     ]},
-    { era: "La era Disney XD", rango: "2010–2019", c: ["#037AC0", "#093351"], items: [
+    { era: "La era Disney XD", clave: "emh", rango: "2009–2019", c: ["#037AC0", "#093351"], items: [
+      { id: "wolverine-xmen", t: "Lobezno y los X-Men", h: "—", r: 2009, d: 572, tipo: "serie",
+        dir: "Craig Kyle y Greg Johnson (creadores)", cast: ["Steve Blum", "Jim Ward", "Nolan North"],
+        res: "Con Xavier desaparecido y el equipo disuelto, Lobezno reúne a los X-Men para evitar un futuro en ruinas.",
+        n: "En Disney+ de EE. UU.; en España y Latinoamérica no está en ninguna plataforma." },
       { id: "emh", t: "Los Vengadores: Los Superhéroes más poderosos de la Tierra", h: "—", r: 2010, s: 8.2, d: 1144, tipo: "serie", plat: "Disney+",
         dir: "Joshua Fine y Ciro Nieli (creadores)", cast: ["Eric Loomis", "Brian Bloom", "Rick D. Wasserman"],
         res: "Para muchos, la mejor serie de los Vengadores jamás hecha." },

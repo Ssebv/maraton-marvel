@@ -28,7 +28,8 @@ export const ORDEN_CONGELADO = {
   "c-deadpoolkelly","c-ultimatespider","c-hawkeyefraction","c-msmarvel","c-visionking","sm-amigos81","ironman94",
   "f4-94","spiderman94","hulk96","silversurfer98","sm-unlimited99","emh","ultimate-sm","avengers-assemble",
   "hulk-smash","gotg-2015","sm-2017","modok","hitmonkey","spidey-equipo","moongirl","oneshot-carter","oneshot-martillo",
-  "oneshot-consultor","oneshot-item47","oneshot-rey","team-thor","team-darryl","peter-lista"
+  "oneshot-consultor","oneshot-item47","oneshot-rey","team-thor","team-darryl","peter-lista","xmen-evolution",
+  "wolverine-xmen"
 ],
   eps: [
   "gifted:1:1","gifted:1:2","gifted:1:3","gifted:1:4","gifted:1:5","gifted:1:6","gifted:1:7","gifted:1:8",
@@ -277,6 +278,22 @@ export const ORDEN_CONGELADO = {
   "moongirl:1:14","moongirl:1:15","moongirl:1:16","moongirl:2:1","moongirl:2:2","moongirl:2:3","moongirl:2:4",
   "moongirl:2:5","moongirl:2:6","moongirl:2:7","moongirl:2:8","moongirl:2:9","moongirl:2:10","moongirl:2:11",
   "moongirl:2:12","moongirl:2:13","moongirl:2:14","moongirl:2:15","moongirl:2:16","moongirl:2:17","moongirl:2:18",
-  "moongirl:2:19","moongirl:2:20","moongirl:2:21","moongirl:2:22","moongirl:2:23","moongirl:2:24"
+  "moongirl:2:19","moongirl:2:20","moongirl:2:21","moongirl:2:22","moongirl:2:23","moongirl:2:24","xmen-evolution:1:1",
+  "xmen-evolution:1:2","xmen-evolution:1:3","xmen-evolution:1:4","xmen-evolution:1:5","xmen-evolution:1:6",
+  "xmen-evolution:1:7","xmen-evolution:1:8","xmen-evolution:1:9","xmen-evolution:1:10","xmen-evolution:1:11",
+  "xmen-evolution:1:12","xmen-evolution:1:13","xmen-evolution:2:1","xmen-evolution:2:2","xmen-evolution:2:3",
+  "xmen-evolution:2:4","xmen-evolution:2:5","xmen-evolution:2:6","xmen-evolution:2:7","xmen-evolution:2:8",
+  "xmen-evolution:2:9","xmen-evolution:2:10","xmen-evolution:2:11","xmen-evolution:2:12","xmen-evolution:2:13",
+  "xmen-evolution:2:14","xmen-evolution:2:15","xmen-evolution:2:16","xmen-evolution:2:17","xmen-evolution:3:1",
+  "xmen-evolution:3:2","xmen-evolution:3:3","xmen-evolution:3:4","xmen-evolution:3:5","xmen-evolution:3:6",
+  "xmen-evolution:3:7","xmen-evolution:3:8","xmen-evolution:3:9","xmen-evolution:3:10","xmen-evolution:3:11",
+  "xmen-evolution:3:12","xmen-evolution:3:13","xmen-evolution:4:1","xmen-evolution:4:2","xmen-evolution:4:3",
+  "xmen-evolution:4:4","xmen-evolution:4:5","xmen-evolution:4:6","xmen-evolution:4:7","xmen-evolution:4:8",
+  "xmen-evolution:4:9","wolverine-xmen:1:1","wolverine-xmen:1:2","wolverine-xmen:1:3","wolverine-xmen:1:4",
+  "wolverine-xmen:1:5","wolverine-xmen:1:6","wolverine-xmen:1:7","wolverine-xmen:1:8","wolverine-xmen:1:9",
+  "wolverine-xmen:1:10","wolverine-xmen:1:11","wolverine-xmen:1:12","wolverine-xmen:1:13","wolverine-xmen:1:14",
+  "wolverine-xmen:1:15","wolverine-xmen:1:16","wolverine-xmen:1:17","wolverine-xmen:1:18","wolverine-xmen:1:19",
+  "wolverine-xmen:1:20","wolverine-xmen:1:21","wolverine-xmen:1:22","wolverine-xmen:1:23","wolverine-xmen:1:24",
+  "wolverine-xmen:1:25","wolverine-xmen:1:26"
 ],
 }

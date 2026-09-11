@@ -1945,6 +1945,9 @@ main.crono, main.comics, main.estreno{animation:none}
   /* y la barra de pestañas se retira hacia abajo, fundiéndose, con la misma
      curva de iOS; ya no vive dentro de .toolbar (portal a body en móvil) */
   html.barra-oculta nav.tabs{transform:translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 2px)); opacity:0}
+  /* con una hoja, el lector o el modo cine abiertos el dock se retira, como en
+     iOS: vive en <body> y pintaba por encima de ellos (revisión del 11 sep) */
+  html.capa-abierta nav.tabs{transform:translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 2px)); opacity:0; pointer-events:none}
   /* Los destinos van en el dock de abajo: el separador que los seguía quedaba
      solo al principio del carril y parecía un chip cortado. */
   nav.tabs + .ctrl-sep, .controles > .ctrl-sep:first-child{display:none}

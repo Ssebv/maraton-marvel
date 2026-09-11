@@ -46,6 +46,8 @@ export const TMDB = {
   "team-thor": [413279, "movie"],
   "team-darryl": [505945, "movie"],
   "peter-lista": [758025, "movie"],
+  "xmen-evolution": [668, "tv"],
+  "wolverine-xmen": [6549, "tv"],
   "capmarvel": [299537, "movie"],
   "ironman1": [1726, "movie"],
   "ironman2": [10138, "movie"],

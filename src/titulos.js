@@ -59,6 +59,7 @@ export const TITULOS_LATAM = {
  "sm-amigos81": "El Hombre-Araña y sus Sorprendentes Amigos",
  "spiderman94": "El Hombre Araña: La serie animada",
  "sm-unlimited99": "El Hombre-Araña: Sin Limites",
+ "wolverine-xmen": "Wolverine y los X-Men",
  "emh": "Los Vengadores: Los héroes más poderosos del planeta",
  "sm-2017": "Spider-Man de Marvel (2017)",
  "spidey-equipo": "Spidey y sus Sorprendentes Amigos",
