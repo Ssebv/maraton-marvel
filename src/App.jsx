@@ -4175,21 +4175,35 @@ export default function App() {
   // plegar y desplegar cualquiera, y eso sí se recuerda. Con una búsqueda en
   // marcha nada se pliega: escondería los resultados.
   const [plegadas, setPlegadas] = useState(() => leeGuardado(KEY_PLEGADAS, saneaPlegadas, {}))
+  // Las eras van con la misma lógica, con clave «era:<id del primer título>».
+  const claveEra = era => 'era:' + (era.items[0] ? era.items[0].id : era.rango)
   const completasAlCargar = useRef(null)
   if (completasAlCargar.current === null) {
-    completasAlCargar.current = new Set(Object.entries(stats.porSaga).filter(([, s]) => s.n > 0 && s.v === s.n).map(([k]) => k))
+    const c = new Set(Object.entries(stats.porSaga).filter(([, s]) => s.n > 0 && s.v === s.n).map(([k]) => k))
+    DATA.forEach(sg => sg.eras.forEach(era => {
+      const items = era.items.filter(it => pasaFiltro(it, sg.saga === 'comics'))
+      if (items.length && items.every(it => vistas[it.id])) c.add(claveEra(era))
+    }))
+    completasAlCargar.current = c
   }
-  const sagaPlegada = id => {
-    if (plegadas[id] != null) return plegadas[id] === 1
-    const s = stats.porSaga[id]
-    return !!s && completasAlCargar.current.has(id) && s.n > 0 && s.v === s.n
+  // plegado = lo elegido a mano; si no hay elección, plegado solo si estaba
+  // completo al cargar Y lo sigue estando
+  const estaPlegado = (clave, completoAhora) => {
+    if (plegadas[clave] != null) return plegadas[clave] === 1
+    return completasAlCargar.current.has(clave) && completoAhora
   }
-  const ponSagaPlegada = (id, v) => setPlegadas(p => {
-    const n = { ...p, [id]: v ? 1 : 0 }
+  const sagaPlegada = id => { const s = stats.porSaga[id]; return !!s && estaPlegado(id, s.n > 0 && s.v === s.n) }
+  const ponPlegado = (clave, v) => setPlegadas(p => {
+    const n = { ...p, [clave]: v ? 1 : 0 }
     try { localStorage.setItem(KEY_PLEGADAS, JSON.stringify(n)) } catch {}
     return n
   })
-  const sagaDe = itemId => { const sg = DATA.find(sg => sg.eras.some(e => e.items.some(it => it.id === itemId))); return sg ? sg.saga : null }
+  const ponSagaPlegada = ponPlegado
+  // dónde vive un título: su saga y la clave de su era (para desplegarlas antes de saltar a él)
+  const dondeEsta = itemId => {
+    for (const sg of DATA) for (const era of sg.eras) if (era.items.some(it => it.id === itemId)) return { saga: sg.saga, era: claveEra(era) }
+    return null
+  }
 
   const estadisticas = useMemo(() => {
     const minutosVistos = item => {
@@ -4507,8 +4521,11 @@ export default function App() {
           {stats.siguiente && (
             <button className="stat siguiente-stat" title={tr('Ir a la tarjeta', 'Go to the card')} onClick={() => {
               if (vista !== 'crono') setVista('crono')
-              const sg = sagaDe(stats.siguiente.id)
-              if (sg && sagaPlegada(sg)) ponSagaPlegada(sg, false)
+              const donde = dondeEsta(stats.siguiente.id)
+              if (donde) {
+                if (sagaPlegada(donde.saga)) ponPlegado(donde.saga, false)
+                if (plegadas[donde.era] === 1 || completasAlCargar.current.has(donde.era)) ponPlegado(donde.era, false)
+              }
               setTimeout(() => {
                 const el = document.getElementById('card-' + stats.siguiente.id)
                 if (el) {
@@ -5149,7 +5166,13 @@ export default function App() {
                   </button>
                 </div>
                 {plegada ? (
-                  <div className="barra" aria-hidden="true"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
+                  <>
+                    <TiraPlegada esComic={esComic} desc={saga.desc}
+                      entradas={saga.eras.flatMap(era => era.items.filter(it => pasaFiltro(it, esComic)).map(item => ({ item, c: era.c })))}
+                      detalle={resumenBloque(saga.eras.flatMap(era => era.items.filter(it => pasaFiltro(it, esComic))), esComic) + (completa ? tr(' · vista entera', ' · all watched') : '')}
+                      onAbrir={(item, c) => setDetalle({ item, c, esComic })} />
+                    <div className="barra" aria-hidden="true"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
+                  </>
                 ) : (
                 <div id={`saga-cuerpo-${saga.saga}`}>
                 <DescPlegable texto={saga.desc} />
@@ -5180,8 +5203,10 @@ export default function App() {
                   const base = num
                   num += numerados.length
                   const vEra = numerados.filter(it => vistas[it.id]).length
+                  const kEra = claveEra(era)
+                  const eraPlegada = !buscaLenta.trim() && estaPlegado(kEra, vEra === numerados.length)
                   return (
-                    <div className="era" key={era.items[0] ? era.items[0].id : era.rango} style={{ '--era': era.c[0] }}>
+                    <div className={`era${eraPlegada ? ' plegada' : ''}`} key={era.items[0] ? era.items[0].id : era.rango} style={{ '--era': era.c[0] }}>
                       <div className="era-head">
                         <h3>{era.era}</h3>
                         <span className="era-rango">{era.rango}</span>
@@ -5189,7 +5214,17 @@ export default function App() {
                           <i style={{ width: `${100 * vEra / numerados.length}%` }} />
                         </span>
                         <span className="era-count">{vEra}/{numerados.length}</span>
+                        <button type="button" className="era-plegar" aria-expanded={!eraPlegada} aria-label={eraPlegada ? tr(`Desplegar ${era.era}`, `Expand ${era.era}`) : tr(`Plegar ${era.era}`, `Collapse ${era.era}`)}
+                          onClick={() => ponPlegado(kEra, !eraPlegada)}>
+                          {eraPlegada ? tr('Desplegar', 'Expand') : tr('Plegar', 'Collapse')}
+                        </button>
                       </div>
+                      {eraPlegada && (
+                        <TiraPlegada esComic={esComic} entradas={numerados.map(item => ({ item, c: era.c }))}
+                          detalle={resumenBloque(numerados, esComic) + (vEra === numerados.length ? tr(' · vista entera', ' · all watched') : '')}
+                          onAbrir={item => setDetalle({ item, c: era.c, esComic })} />
+                      )}
+                      {!eraPlegada && (
                       <div className="era-borde">
                         <div className="grid">
                           {numerados.map((item, i) =>
@@ -5203,6 +5238,7 @@ export default function App() {
                           )}
                         </div>
                       </div>
+                      )}
                     </div>
                   )
                 })}
@@ -5731,6 +5767,52 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais, salie
 
 // La descripción de la saga, plegada a dos líneas en móvil (CSS) con un
 // «Leer más» que solo aparece si de verdad se ha cortado algo.
+// Lo que enseña una saga o una era plegada: sus carátulas desfilando solas
+// (carrusel continuo: la pista lleva la lista dos veces y se desplaza la
+// mitad, así el bucle no se nota), cada una abre su ficha, y debajo una
+// línea que dice qué es y cuánto hay. Se para al pasar el ratón o al
+// enfocar; con «reducir movimiento» es un carril normal que se desliza.
+function TiraPlegada({ entradas, esComic, onAbrir, desc, detalle }) {
+  if (!entradas.length) return null
+  return (
+    <div className="tira-plegada">
+      <div className="tira" style={{ '--n': entradas.length }}>
+        <div className="tira-pista">
+          {[0, 1].map(copia => (
+            <div className={`tira-lote${copia ? ' tira-copia' : ''}`} key={copia} aria-hidden={copia ? 'true' : undefined}>
+              {entradas.map(({ item, c }) => (
+                <button key={item.id} type="button" className="tira-item" title={item.t}
+                  aria-label={tr(`Abrir ${item.t}`, `Open ${item.t}`)} tabIndex={copia ? -1 : 0}
+                  onClick={() => onAbrir(item, c)}>
+                  <Portada item={item} c={c} esComic={esComic} />
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      {desc && <p className="tira-desc">{desc}</p>}
+      {detalle && <p className="tira-detalle">{detalle}</p>}
+    </div>
+  )
+}
+
+// «17 títulos · 12 películas · 5 series · 41 h» — el resumen de un bloque plegado
+function resumenBloque(items, esComic) {
+  const n = items.length
+  const min = items.reduce((a, it) => a + (it.d || 0), 0)
+  if (esComic) return tr(`${n} cómic${n === 1 ? '' : 's'}`, `${n} comic${n === 1 ? '' : 's'}`)
+  const pel = items.filter(it => it.tipo !== 'serie' && it.tipo !== 'esp').length
+  const ser = items.filter(it => it.tipo === 'serie').length
+  const esp = items.filter(it => it.tipo === 'esp').length
+  const partes = [tr(`${n} título${n === 1 ? '' : 's'}`, `${n} title${n === 1 ? '' : 's'}`)]
+  if (pel) partes.push(tr(`${pel} película${pel === 1 ? '' : 's'}`, `${pel} movie${pel === 1 ? '' : 's'}`))
+  if (ser) partes.push(tr(`${ser} serie${ser === 1 ? '' : 's'}`, `${ser} series`))
+  if (esp) partes.push(tr(`${esp} especial${esp === 1 ? '' : 'es'}`, `${esp} special${esp === 1 ? '' : 's'}`))
+  if (min) partes.push(fmtDur(min))
+  return partes.join(' · ')
+}
+
 function DescPlegable({ texto }) {
   const [abierta, setAbierta] = useState(false)
   const [larga, setLarga] = useState(false)

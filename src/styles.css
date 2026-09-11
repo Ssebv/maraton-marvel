@@ -667,14 +667,53 @@ h2{
 .saga-count{margin-left: auto; font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
 /* Plegar la saga: mismo botón discreto que «Ocultar panel». Una saga vista
    entera arranca plegada (cabecera + barra) y deja sitio a lo que falta. */
-.saga-plegar{
+.saga-plegar, .era-plegar{
   flex:none; padding: var(--e-1) var(--e-4); margin: 0;
   background:none; border:1px solid var(--line); border-radius:var(--r-pill);
   color:var(--ink3); font:inherit; font-size: var(--t-s); font-weight:600; cursor:pointer;
   position:relative;
 }
-.saga-plegar::after{content:""; position:absolute; inset:-10px 0}
-.saga-plegar:hover{border-color:var(--ink2); color:var(--ink2)}
+.saga-plegar::after, .era-plegar::after{content:""; position:absolute; inset:-10px 0}
+.saga-plegar:hover, .era-plegar:hover{border-color:var(--ink2); color:var(--ink2)}
+/* Era plegada: cabecera y carrusel. Varias seguidas se apilan más juntas. */
+.era.plegada .era-head{margin-bottom: var(--e-3)}
+.era.plegada + .era, .era.plegada{margin-top: var(--e-5)}
+
+/* ── Carrusel de un bloque plegado ── */
+.tira-plegada{display:flex; flex-direction:column; gap: var(--e-3); margin-top: var(--e-4)}
+.saga{min-width:0}
+.tira{
+  overflow:hidden; min-width:0;
+  /* sin esto la pista (width:max-content, 2.000 px) estira la saga entera
+     cuando es item de rejilla en escritorio: la cabecera se salía de la ventana */
+  contain:inline-size;
+  /* márgenes negativos pareja del relleno: el carrusel llega al borde y se funde */
+  margin-inline:calc(-1 * var(--e-6)); padding-inline:var(--e-6);
+  -webkit-mask-image:linear-gradient(90deg, transparent, #000 var(--e-6), #000 calc(100% - var(--e-6)), transparent);
+  mask-image:linear-gradient(90deg, transparent, #000 var(--e-6), #000 calc(100% - var(--e-6)), transparent);
+}
+.tira-pista{display:flex; width:max-content; animation:tiraMarcha calc(var(--n, 10) * 2.2s) linear infinite; will-change:transform}
+.tira:hover .tira-pista, .tira:focus-within .tira-pista{animation-play-state:paused}
+.tira-lote{display:flex; gap: var(--e-3); padding-right: var(--e-3)}
+@keyframes tiraMarcha{to{transform:translateX(-50%)}}
+.tira-item{
+  flex:none; background:none; border:none; padding:0; margin:0; cursor:pointer;
+  border-radius:var(--r-s); transition:transform var(--dur-corta) var(--curva);
+}
+.tira-item:hover{transform:translateY(-3px)}
+.tira-item .cover{width:52px; height:78px; border-radius:var(--r-s); box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.tira-item .rating-badge, .tira-item .lc-year, .tira-item .lc-tipo{display:none}
+.tira-desc{
+  margin:0; font-size: var(--t-m); color:var(--ink2); max-width:68ch;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+}
+.tira-detalle{margin:0; font-size: var(--t-s); font-weight:600; color:var(--ink3); font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion: reduce){
+  .tira-pista{animation:none; width:auto}
+  .tira{overflow-x:auto; scrollbar-width:none; -webkit-mask-image:none; mask-image:none}
+  .tira::-webkit-scrollbar{display:none}
+  .tira-copia{display:none}
+}
 .saga.plegada .barra{margin-top: var(--e-4)}
 .saga.plegada + .saga{margin-top: var(--e-7)}
 .saga-desc{margin: var(--e-3) 0 0; font-size: var(--t-b); color:var(--ink2); max-width:68ch}
@@ -1615,7 +1654,7 @@ main.crono, main.comics, main.estreno{animation:none}
 .saga-guia[open] > p:nth-of-type(6){animation-delay:150ms}
 /* Todo lo pulsable responde al dedo igual: encoge un 4 % y vuelve en 160 ms.
    Los chips, la casilla, la tarjeta y el botón principal ya lo hacían. */
-.ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .saga-plegar, .estrella, .tab,
+.ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .saga-plegar, .era-plegar, .estrella, .tab,
 .galeria-item, .tl-card, .mv-card, .pf-item, .volver-ficha, .cine-flecha, .prov-chip, .aviso-btn, .persona .avatar{transition:transform var(--dur-corta)}
 .ep{transition:opacity var(--dur-corta), transform var(--dur-corta)}
 .ghost:active, .subvista:active, .siguiente-stat:active, .filtros-quitar:active, .proximo-cal:active,
@@ -1748,6 +1787,12 @@ main.crono, main.comics, main.estreno{animation:none}
   .saga-guia .sg-movil{display:inline}
   .saga-guia-desc, .saga-guia.sin-guia{display:block}
   .era{margin-top: var(--e-6)}
+  /* con el botón de plegar, «Tras Nueva York» se partía en tres líneas:
+     el nombre va entero y lo demás salta a una segunda fila */
+  .era-head{flex-wrap:wrap; row-gap: var(--e-2)}
+  .era-head h3{white-space:nowrap}
+  .era-head .era-plegar{margin-left:auto}
+  .tira-item .cover{width:44px; height:66px}
   /* cinco cajas a ancho completo eran 550 px de cifras antes de la primera gráfica */
   .stats-tiles{grid-template-columns:1fr 1fr}
   .credits{display:none}
