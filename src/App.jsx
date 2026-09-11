@@ -3779,9 +3779,35 @@ export default function App() {
   useEffect(() => {
     const onKey = e => {
       if (e.key === 'Escape') { setPlanModal(false); setHorarioModal(false); setPerfilModal(false); setSyncModal(false); setDueloModal(false); setClubModal(false); setClubInvitar(false) }
-      if (e.key === '/' && !/INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) {
+      const enCampo = /INPUT|TEXTAREA|SELECT/.test(document.activeElement && document.activeElement.tagName)
+      if (e.key === '/' && !enCampo) {
         const campo = document.querySelector('input[name="busqueda"]')
         if (campo) { e.preventDefault(); campo.focus() }
+      }
+      // Atajos de lista en escritorio: j/k pasan de tarjeta, v marca vista,
+      // Enter (nativo del botón) abre la ficha. Fuera de campos y de capas.
+      if ((e.key === 'j' || e.key === 'k' || e.key === 'v') && !enCampo && !e.metaKey && !e.ctrlKey && !e.altKey
+          && !document.querySelector('.overlay, .lector, .cine')) {
+        const actual = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.card') : null
+        if (e.key === 'v') {
+          const caja = actual && actual.querySelector('.checkbox')
+          if (caja) { e.preventDefault(); caja.click() }
+          return
+        }
+        const tarjetas = [...document.querySelectorAll('.card')]
+        if (!tarjetas.length) return
+        let i = tarjetas.indexOf(actual)
+        if (i < 0) {
+          // sin tarjeta enfocada, la primera que se ve entera bajo la barra
+          i = tarjetas.findIndex(t => t.getBoundingClientRect().top >= 80)
+          if (i < 0) i = 0
+          if (e.key === 'k') i = Math.max(0, i - 1)
+        } else i = e.key === 'j' ? Math.min(tarjetas.length - 1, i + 1) : Math.max(0, i - 1)
+        const destino = tarjetas[i]
+        const b = destino.querySelector('.abrir') || destino
+        e.preventDefault()
+        try { b.focus({ preventScroll: true }) } catch {}
+        destino.scrollIntoView({ behavior: movimientoReducido() ? 'instant' : 'smooth', block: 'center' })
       }
     }
     window.addEventListener('keydown', onKey)
@@ -4213,17 +4239,25 @@ export default function App() {
   const pajares = useMemo(() => {
     const m = {}
     DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
-      m[it.id] = norm([it.t, T_ES[it.id] || '', TITULOS_LATAM[it.id] || '', TITULOS_EN[it.id] || '', it.en || '', it.dir || '', ...(it.cast || []), String(it.r),
-        // los episodios también en sus tres idiomas, como los títulos
-        ...(EP_ES[it.id] || []),
-        ...Object.values(EPISODIOS_LATAM[it.id] || {}),
-        ...Object.values(EPISODIOS_EN[it.id] || {})].join(' '))
+      m[it.id] = {
+        base: norm([it.t, T_ES[it.id] || '', TITULOS_LATAM[it.id] || '', TITULOS_EN[it.id] || '', it.en || '', it.dir || '', ...(it.cast || []), String(it.r)].join(' ')),
+        // los episodios también en sus tres idiomas, como los títulos; van
+        // aparte porque en modo sin spoilers los de un título no visto no
+        // cuentan (la lista los enseña como «Episodio N» y la búsqueda no
+        // debe delatarlos)
+        eps: norm([...(EP_ES[it.id] || []),
+          ...Object.values(EPISODIOS_LATAM[it.id] || {}),
+          ...Object.values(EPISODIOS_EN[it.id] || {})].join(' ')),
+      }
     })))
     return m
   }, [pais, idioma])
   const pasaFiltro = (item, esComic) => {
     if (buscaLenta) {
-      if (!(pajares[item.id] || '').includes(norm(buscaLenta))) return false
+      const p = pajares[item.id], q = norm(buscaLenta)
+      if (!p) return false
+      const conEps = !(sinSpoilers && !vistas[item.id])
+      if (!p.base.includes(q) && !(conEps && p.eps.includes(q))) return false
     }
     if (filtros.series && item.tipo === 'serie') return false
     if (filtros.opc && item.opt) return false
@@ -4775,7 +4809,7 @@ export default function App() {
               setDetalle({ item: e.item, c: e.c, esComic: false })
             }
           }}>{tr('Sorpréndeme', 'Surprise me')}</button>
-          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio, actor o año', 'Title, episode, actor or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajo: /', 'Search by title, episode, actor, director or year — shortcut: /')} value={busca} spellCheck={false}
+          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio, actor o año', 'Title, episode, actor or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
             enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
           <button className="chip-btn" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
