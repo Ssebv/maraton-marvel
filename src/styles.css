@@ -418,7 +418,7 @@ h1 .rojo{color:var(--red)}
 @media (max-width:640px){
   /* en móvil la barra debe caber en una línea: el ritmo ya está dentro del panel */
   .pr-extra{display:none}
-  .panel-resumen{gap: var(--e-4); padding: var(--e-4) var(--e-5)}
+  .panel-resumen{gap: var(--e-4); padding: 0 var(--e-5); min-height:44px; margin-top: var(--e-3)}
 }
 .panel-plegar{
   display:block; margin: var(--e-3) 0 0 auto; padding: var(--e-1) var(--e-4);
@@ -693,6 +693,11 @@ h2{
 .saga-guia[open] summary{color:var(--ink)}
 .saga-guia p{margin: var(--e-3) 0 0; line-height:1.55; text-wrap:pretty}
 .saga-guia p b{color:var(--ink)}
+/* Solo en móvil: la descripción dentro del desplegable, su rótulo «Sobre esta
+   saga» y el desplegable de las sagas que no tienen guía. */
+.saga-guia-desc, .saga-guia .sg-movil, .saga-guia.sin-guia{display:none}
+.progreso-movil, .stat-sig-img{display:none}
+.stat-sig-texto{display:contents}
 .saga .barra{margin-top: var(--e-4)}
 .saga[data-saga="xmen"] .barra > i{background:linear-gradient(90deg, var(--gold), color-mix(in srgb, var(--gold-vivo) 75%, #fff))}
 .saga[data-saga="comics"] .barra > i{background:linear-gradient(90deg, var(--violet), color-mix(in srgb, var(--violet) 65%, #fff))}
@@ -1698,12 +1703,33 @@ main.crono, main.comics, main.estreno{animation:none}
 @media (max-width:640px){
   /* La primera pantalla del móvil no enseñaba ni un título: el hero con
      sus tres cajas medía 424 px. Un paso menos de titular y de aire. */
-  .hero{padding: var(--e-6) 0 var(--e-4)}
+  .hero{padding: var(--e-5) 0 var(--e-3)}
   .hero-eyebrow{margin-bottom: var(--e-3)}
   h1{font-size:clamp(28px,7.4vw,50px); text-wrap:balance}
   .stats{margin-top: var(--e-5)}
   .stat{padding: var(--e-4)}
-  .saga{margin-top: var(--e-7)}
+  /* Portada móvil (11 sep 2026): el primer título empezaba a 832 px, fuera
+     de la pantalla. Las dos cajas de cifras se van (las resume la línea de
+     progreso de abajo) y queda solo «Siguiente», que es la acción; y la
+     descripción y la guía de la saga se pliegan en un desplegable. */
+  .stats-inicio{display:flex; flex-direction:column; margin-top: var(--e-4)}
+  .stats-inicio > .stat:not(.siguiente-stat){display:none}
+  .stats-inicio .siguiente-stat{
+    border:1px solid color-mix(in srgb, var(--red) 40%, transparent);
+    flex-direction:row; align-items:center; gap: var(--e-4);
+  }
+  .stat-sig-img{display:block; flex:none; width:44px; height:66px; object-fit:cover; border-radius:var(--r-s); background:var(--panel2)}
+  .stat-sig-texto{display:flex; flex-direction:column; gap: var(--e-2); min-width:0}
+  .progreso-movil{display:flex; flex-direction:column; gap: var(--e-2); margin: var(--e-3) 0 0}
+  .progreso-movil .barra{margin:0; display:block}
+  .pm-texto{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+  .pm-texto b{color:var(--ink); font-weight:700}
+  .saga{margin-top: var(--e-6)}
+  .saga-desc-wrap{display:none}
+  .saga-guia .sg-escritorio{display:none}
+  .saga-guia .sg-movil{display:inline}
+  .saga-guia-desc, .saga-guia.sin-guia{display:block}
+  .era{margin-top: var(--e-6)}
   /* cinco cajas a ancho completo eran 550 px de cifras antes de la primera gráfica */
   .stats-tiles{grid-template-columns:1fr 1fr}
   .credits{display:none}

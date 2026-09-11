@@ -4462,7 +4462,7 @@ export default function App() {
           <p className="hero-eyebrow">{tr('Guía de maratón · cronología completa', 'Marathon guide · the full chronology')}</p>
           <h1>{tr(<>Maratón <span className="rojo">Marvel</span> &amp; X-Men</>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}</h1>
         </div>
-        <div className="stats">
+        <div className="stats stats-inicio">
           <div className="stat">
             <span className="stat-label">{tr('Completados', 'Completed')}</span>
             <span className="stat-num"><Cifra n={stats.totV} /><small> / {stats.totN}</small></span>
@@ -4486,12 +4486,26 @@ export default function App() {
                 }
               }, vista !== 'crono' ? 120 : 0)
             }}>
+              {/* carátula solo en móvil (CSS): ahí «Siguiente» es la acción
+                  de la primera pantalla y debe leerse como una tarjeta */}
+              {POSTERS[stats.siguiente.id] && <img className="stat-sig-img" src={POSTERS[stats.siguiente.id]} alt="" loading="lazy" decoding="async" />}
+              <span className="stat-sig-texto">
               <span className="stat-label">{tr('Siguiente', 'Up next')}</span>
               <span className="stat-sig">{stats.siguiente.t}</span>
               <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>
+              </span>
             </button>
           )}
         </div>
+        {/* En móvil las dos cajas de cifras se resumen en esta línea (CSS las
+            esconde y enseña esto): la primera pantalla es para el siguiente
+            título y la lista, no para el cuadro de mandos. */}
+        <p className="progreso-movil">
+          <span className="barra" role="img" aria-label={`${pct} %`}><i style={{ width: `${pct}%` }} /></span>
+          <span className="pm-texto">
+            <b>{stats.totV}</b> / {stats.totN} {tr('completados', 'completed')} · {pct} % · {tr('te quedan', 'left:')} <b>{Math.round(stats.mins / 60)} h</b>
+          </span>
+        </p>
       </section>
 
       <AvisoNuevo onProbar={stats.siguiente ? () => { const d = buscaItem(stats.siguiente.id); if (d) setDetalle(d) } : null} />
@@ -5097,10 +5111,18 @@ export default function App() {
                   </span>
                 </div>
                 <DescPlegable texto={saga.desc} />
-                {saga.guia && (
-                  <details className="saga-guia">
-                    <summary>{tr('Cómo entender la saga', 'How to make sense of the saga')}</summary>
-                    {saga.guia.map((g, i) => <p key={i}><b>{g.t}.</b> {g.p}</p>)}
+                {/* En móvil la descripción entra aquí, plegada con la guía en
+                    un solo desplegable «Sobre esta saga»: desplegados, los dos
+                    bloques empujaban el primer título fuera de la pantalla.
+                    En escritorio el desplegable sigue siendo solo la guía. */}
+                {(saga.guia || saga.desc) && (
+                  <details className={`saga-guia${saga.guia ? '' : ' sin-guia'}`}>
+                    <summary>
+                      <span className="sg-escritorio">{tr('Cómo entender la saga', 'How to make sense of the saga')}</span>
+                      <span className="sg-movil">{tr('Sobre esta saga', 'About this saga')}</span>
+                    </summary>
+                    <p className="saga-guia-desc">{saga.desc}</p>
+                    {saga.guia && saga.guia.map((g, i) => <p key={i}><b>{g.t}.</b> {g.p}</p>)}
                   </details>
                 )}
                 <div className="barra"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
