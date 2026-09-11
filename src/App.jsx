@@ -4976,15 +4976,14 @@ export default function App() {
             }
             return (
               <>
-                <p className="saga-desc mv-intro">
-                  {tr('Rutas personalizadas con su propio progreso, independiente del maratón principal — perfectas para re-ver con alguien o armar sesiones temáticas.', 'Custom routes with their own progress, independent from the main marathon — perfect for rewatching with someone or building themed sessions.')}
-                </p>
+                {/* la explicación de qué es una lista solo hace falta la primera
+                    vez: va dentro del estado vacío, no encima de las listas */}
                 <CrearLista onCrear={crearLista} />
                 {listas.length === 0 ? (
                   <div className="aviso centrado">
                     <p className="sr-titulo">{tr('Todavía no tienes listas', 'No lists yet')}</p>
                     <p className="sr-detalle">
-                      {tr('Ponle nombre arriba y créala: podrás añadirle títulos desde su ficha, y llevará su propio progreso al margen del maratón.', 'Name it above and create it: you can add titles from their pages, and it keeps its own progress apart from the marathon.')}
+                      {tr('Rutas personalizadas con su propio progreso, aparte del maratón: para re-ver con alguien o armar sesiones temáticas. Ponle nombre arriba y créala; podrás añadirle títulos desde su ficha.', 'Custom routes with their own progress, apart from the marathon: for rewatching with someone or building themed sessions. Name it above and create it; you can add titles from their pages.')}
                     </p>
                   </div>
                 ) : (
