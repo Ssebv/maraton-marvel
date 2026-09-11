@@ -303,7 +303,6 @@ h1 .rojo{color:var(--red)}
      bloque de estrenos acaba 48 px por encima de la cuenta atrás. La altura
      que sobra se llena con la nota de cada estreno, no con aire. */
   .proximos{flex:1}
-  .proximo{justify-content:center}
 }
 .mapa{
   width:100%;
@@ -702,7 +701,7 @@ h2{
 .tira-pista{display:flex; width:max-content; animation:tiraMarcha calc(var(--n, 10) * 2.2s) linear infinite; will-change:transform}
 .tira:hover .tira-pista, .tira:focus-within .tira-pista{animation-play-state:paused}
 .tira-lote{display:flex; gap: var(--e-3); padding-right: var(--e-3)}
-@keyframes tiraMarcha{to{transform:translateX(-50%)}}
+@keyframes tiraMarcha{to{transform:translateX(calc(-1 * var(--lote, 50%)))}}
 .tira-item{
   flex:none; background:none; border:none; padding:0; margin:0; cursor:pointer;
   border-radius:var(--r-s); transition:transform var(--dur-corta) var(--curva);
@@ -1659,6 +1658,9 @@ main.crono, main.comics, main.estreno{animation:none}
 .saga-guia[open] > p:nth-of-type(4){animation-delay:90ms}
 .saga-guia[open] > p:nth-of-type(5){animation-delay:120ms}
 .saga-guia[open] > p:nth-of-type(6){animation-delay:150ms}
+/* el primer <p> es la descripción (solo visible en móvil, pero cuenta para
+   nth-of-type también en escritorio): la guía de seis pasos llega al séptimo */
+.saga-guia[open] > p:nth-of-type(7){animation-delay:180ms}
 /* Todo lo pulsable responde al dedo igual: encoge un 4 % y vuelve en 160 ms.
    Los chips, la casilla, la tarjeta y el botón principal ya lo hacían. */
 .ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .saga-plegar, .era-plegar, .estrella, .tab,
@@ -1789,6 +1791,9 @@ main.crono, main.comics, main.estreno{animation:none}
   .pm-texto{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
   .pm-texto b{color:var(--ink); font-weight:700}
   .saga{margin-top: var(--e-6)}
+  /* la regla general (.saga.plegada + .saga, dos clases) ganaba a esta y
+     dejaba 32 px justo donde se quería apretar */
+  .saga.plegada + .saga{margin-top: var(--e-5)}
   .saga-desc-wrap{display:none}
   .saga-guia .sg-escritorio{display:none}
   .saga-guia .sg-movil{display:inline}
@@ -1797,7 +1802,7 @@ main.crono, main.comics, main.estreno{animation:none}
   /* con el botón de plegar, «Tras Nueva York» se partía en tres líneas:
      el nombre va entero y lo demás salta a una segunda fila */
   .era-head{flex-wrap:wrap; row-gap: var(--e-2)}
-  .era-head h3{white-space:nowrap}
+  .era-head h3{white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis}
   .era-head .era-plegar{margin-left:auto}
   .tira-item .cover{width:44px; height:66px}
   /* cinco cajas a ancho completo eran 550 px de cifras antes de la primera gráfica */
@@ -1873,9 +1878,9 @@ main.crono, main.comics, main.estreno{animation:none}
   /* Cristal en el dock (pedido el 3 sep 2026: excepción consciente y única a
      la regla del 18 de agosto de no usar backdrop-filter como superficie).
      Solo aquí: es una franja de 60 px que iOS desenfoca igual en sus barras.
-     Tinte al 80 % para que el rótulo aguante 4,5:1 sobre un póster (medido:
-     activo 8,3:1 y el inactivo, subido hacia --ink, 6,9:1 con blanco puro
-     debajo); sin brillos ni reflejos pintados. Opaco donde no hay
+     Tinte al 80 % para que el rótulo aguante 4,5:1 sobre un póster; el
+     rótulo inactivo va en --ink3, igual que sin cristal; sin brillos ni
+     reflejos pintados. Opaco donde no hay
      backdrop-filter o se pide reducir transparencia. */
   @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))){
     nav.tabs{
@@ -1883,7 +1888,6 @@ main.crono, main.comics, main.estreno{animation:none}
       -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
       border-color:color-mix(in srgb, var(--line) 75%, transparent);
     }
-    nav.tabs .tab{color:color-mix(in srgb, var(--ink) 40%, var(--ink2))}
     @media (prefers-reduced-transparency: reduce){
       nav.tabs{background:var(--panel); -webkit-backdrop-filter:none; backdrop-filter:none; border-color:var(--line)}
     }

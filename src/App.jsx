@@ -3522,13 +3522,21 @@ export default function App() {
     const { origen, ultimo } = f
     f.origen = f.ultimo = null
     if (!origen || origen === ultimo) return
-    const el = document.getElementById('card-' + ultimo) || document.getElementById('tl-' + ultimo) || document.getElementById('gal-' + ultimo)
-    if (!el) return
-    const b = el.querySelector('.abrir') || el
-    try { b.focus({ preventScroll: true }) } catch {}
-    el.scrollIntoView({ behavior: movimientoReducido() ? 'instant' : 'smooth', block: 'center' })
-    el.classList.add('destello')
-    setTimeout(() => el.classList.remove('destello'), 1600)
+    const busca = () => document.getElementById('card-' + ultimo) || document.getElementById('tl-' + ultimo) || document.getElementById('gal-' + ultimo)
+    const aterriza = el => {
+      const b = el.querySelector('.abrir') || el
+      try { b.focus({ preventScroll: true }) } catch {}
+      el.scrollIntoView({ behavior: movimientoReducido() ? 'instant' : 'smooth', block: 'center' })
+      el.classList.add('destello')
+      setTimeout(() => el.classList.remove('destello'), 1600)
+    }
+    const el = busca()
+    if (el) { aterriza(el); return }
+    // la tarjeta puede vivir en una saga o era plegada (no está en el DOM):
+    // se despliega y se busca en el siguiente pintado
+    if (!despliegaPara(ultimo)) return
+    const t = setTimeout(() => { const e = busca(); if (e) aterriza(e) }, 60)
+    return () => clearTimeout(t)
   }, [detalle])
   const navegaDetalle = dir => setDetalle(d => {
     if (!d) return d
@@ -4236,32 +4244,55 @@ export default function App() {
   const [plegadas, setPlegadas] = useState(() => leeGuardado(KEY_PLEGADAS, saneaPlegadas, {}))
   // Las eras van con la misma lógica, con clave «era:<id del primer título>».
   const claveEra = era => 'era:' + (era.items[0] ? era.items[0].id : era.rango)
+  // Instantánea de lo COMPLETO al cargar, SIN filtros (con ?f=series una saga
+  // cuyos únicos pendientes eran series contaba como completa). Se vuelve a
+  // tomar cuando lo visto cambia de golpe (sincronización, cuenta de Google,
+  // sala): un toque mueve el recuento en uno; más que eso es otra fuente.
   const completasAlCargar = useRef(null)
-  if (completasAlCargar.current === null) {
-    const c = new Set(Object.entries(stats.porSaga).filter(([, s]) => s.n > 0 && s.v === s.n).map(([k]) => k))
-    DATA.forEach(sg => sg.eras.forEach(era => {
-      const items = era.items.filter(it => pasaFiltro(it, sg.saga === 'comics'))
-      if (items.length && items.every(it => vistas[it.id])) c.add(claveEra(era))
-    }))
+  const nVistasSnap = useRef(-1)
+  const nVistas = Object.keys(vistas).length
+  if (completasAlCargar.current === null || Math.abs(nVistas - nVistasSnap.current) > 1) {
+    const c = new Set()
+    DATA.forEach(sg => {
+      const todos = sg.eras.flatMap(era => era.items)
+      if (todos.length && todos.every(it => vistas[it.id])) c.add(sg.saga)
+      sg.eras.forEach(era => { if (era.items.length && era.items.every(it => vistas[it.id])) c.add(claveEra(era)) })
+    })
     completasAlCargar.current = c
   }
+  nVistasSnap.current = nVistas
+  // Con una búsqueda en marcha nada está plegado (escondería resultados):
+  // los botones de plegar no se pintan y nadie guarda un estado que no se ve.
+  const buscando = !!buscaLenta.trim()
   // plegado = lo elegido a mano; si no hay elección, plegado solo si estaba
   // completo al cargar Y lo sigue estando
   const estaPlegado = (clave, completoAhora) => {
+    if (buscando) return false
     if (plegadas[clave] != null) return plegadas[clave] === 1
     return completasAlCargar.current.has(clave) && completoAhora
   }
   const sagaPlegada = id => { const s = stats.porSaga[id]; return !!s && estaPlegado(id, s.n > 0 && s.v === s.n) }
+  const eraCompleta = (sg, era) => {
+    const items = era.items.filter(it => pasaFiltro(it, sg.saga === 'comics'))
+    return items.length > 0 && items.every(it => vistas[it.id])
+  }
   const ponPlegado = (clave, v) => setPlegadas(p => {
     const n = { ...p, [clave]: v ? 1 : 0 }
     try { localStorage.setItem(KEY_PLEGADAS, JSON.stringify(n)) } catch {}
     return n
   })
-  const ponSagaPlegada = ponPlegado
-  // dónde vive un título: su saga y la clave de su era (para desplegarlas antes de saltar a él)
-  const dondeEsta = itemId => {
-    for (const sg of DATA) for (const era of sg.eras) if (era.items.some(it => it.id === itemId)) return { saga: sg.saga, era: claveEra(era) }
-    return null
+  // Despliega la saga y la era donde vive un título, solo si están plegadas
+  // tal como se ven ahora (no lo que dice el almacén): devuelve si hizo algo,
+  // para que quien salte a la tarjeta espere al siguiente pintado.
+  const despliegaPara = itemId => {
+    for (const sg of DATA) for (const era of sg.eras) if (era.items.some(it => it.id === itemId)) {
+      let hecho = false
+      if (sagaPlegada(sg.saga)) { ponPlegado(sg.saga, false); hecho = true }
+      const k = claveEra(era)
+      if (estaPlegado(k, eraCompleta(sg, era))) { ponPlegado(k, false); hecho = true }
+      return hecho
+    }
+    return false
   }
 
   const estadisticas = useMemo(() => {
@@ -4580,11 +4611,7 @@ export default function App() {
           {stats.siguiente && (
             <button className="stat siguiente-stat" title={tr('Ir a la tarjeta', 'Go to the card')} onClick={() => {
               if (vista !== 'crono') setVista('crono')
-              const donde = dondeEsta(stats.siguiente.id)
-              if (donde) {
-                if (sagaPlegada(donde.saga)) ponPlegado(donde.saga, false)
-                if (plegadas[donde.era] === 1 || completasAlCargar.current.has(donde.era)) ponPlegado(donde.era, false)
-              }
+              const desplegado = despliegaPara(stats.siguiente.id)
               setTimeout(() => {
                 const el = document.getElementById('card-' + stats.siguiente.id)
                 if (el) {
@@ -4592,7 +4619,7 @@ export default function App() {
                   el.classList.add('destello')
                   setTimeout(() => el.classList.remove('destello'), 1600)
                 }
-              }, vista !== 'crono' ? 120 : 0)
+              }, vista !== 'crono' || desplegado ? 120 : 0)
             }}>
               {/* carátula solo en móvil (CSS): ahí «Siguiente» es la acción
                   de la primera pantalla y debe leerse como una tarjeta */}
@@ -5202,7 +5229,7 @@ export default function App() {
             const visibles = saga.eras.reduce((acc, era) => acc + era.items.filter(it => pasaFiltro(it, esComic)).length, 0)
             if (!s.n || !visibles) return null
             let num = 0
-            const plegada = !buscaLenta.trim() && sagaPlegada(saga.saga)
+            const plegada = sagaPlegada(saga.saga)
             const completa = s.n > 0 && s.v === s.n
             return (
               <section className={`saga${plegada ? ' plegada' : ''}`} data-saga={saga.saga} id={`saga-${saga.saga}`} key={saga.saga}>
@@ -5220,16 +5247,19 @@ export default function App() {
                   <span className="saga-count">
                     {s.v} / {s.n}{s.m ? tr(` · quedan ${fmtDur(s.m)}`, ` · ${fmtDur(s.m)} left`) : completa ? tr(' · completa', ' · complete') : ''}
                   </span>
+                  {!buscando && (
                   <button type="button" className="saga-plegar" aria-expanded={!plegada} aria-controls={plegada ? undefined : `saga-cuerpo-${saga.saga}`}
-                    onClick={() => ponSagaPlegada(saga.saga, !plegada)}>
+                    onClick={() => ponPlegado(saga.saga, !plegada)}>
                     {plegada ? tr('Desplegar', 'Expand') : tr('Plegar', 'Collapse')}
                   </button>
+                  )}
                 </div>
                 {plegada ? (
                   <>
+                    {/* mismos filtros que la rejilla desplegada: con «Solo pendientes» no desfila lo visto */}
                     <TiraPlegada esComic={esComic} desc={saga.desc}
-                      entradas={saga.eras.flatMap(era => era.items.filter(it => pasaFiltro(it, esComic)).map(item => ({ item, c: era.c })))}
-                      detalle={resumenBloque(saga.eras.flatMap(era => era.items.filter(it => pasaFiltro(it, esComic))), esComic) + (completa ? tr(' · vista entera', ' · all watched') : '')}
+                      entradas={saga.eras.flatMap(era => era.items.filter(it => pasaFiltro(it, esComic) && !oculto(it, esComic)).map(item => ({ item, c: era.c })))}
+                      detalle={resumenBloque(saga.eras.flatMap(era => era.items.filter(it => pasaFiltro(it, esComic) && !oculto(it, esComic))), esComic) + (completa ? tr(' · vista entera', ' · all watched') : '')}
                       onAbrir={(item, c) => setDetalle({ item, c, esComic })} />
                     <div className="barra" aria-hidden="true"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
                   </>
@@ -5264,7 +5294,7 @@ export default function App() {
                   num += numerados.length
                   const vEra = numerados.filter(it => vistas[it.id]).length
                   const kEra = claveEra(era)
-                  const eraPlegada = !buscaLenta.trim() && estaPlegado(kEra, vEra === numerados.length)
+                  const eraPlegada = estaPlegado(kEra, vEra === numerados.length)
                   return (
                     <div className={`era${eraPlegada ? ' plegada' : ''}`} key={era.items[0] ? era.items[0].id : era.rango} style={{ '--era': era.c[0] }}>
                       <div className="era-head">
@@ -5274,14 +5304,16 @@ export default function App() {
                           <i style={{ width: `${100 * vEra / numerados.length}%` }} />
                         </span>
                         <span className="era-count">{vEra}/{numerados.length}</span>
+                        {!buscando && (
                         <button type="button" className="era-plegar" aria-expanded={!eraPlegada} aria-label={eraPlegada ? tr(`Desplegar ${era.era}`, `Expand ${era.era}`) : tr(`Plegar ${era.era}`, `Collapse ${era.era}`)}
                           onClick={() => ponPlegado(kEra, !eraPlegada)}>
                           {eraPlegada ? tr('Desplegar', 'Expand') : tr('Plegar', 'Collapse')}
                         </button>
+                        )}
                       </div>
                       {eraPlegada && (
-                        <TiraPlegada esComic={esComic} entradas={numerados.map(item => ({ item, c: era.c }))}
-                          detalle={resumenBloque(numerados, esComic) + (vEra === numerados.length ? tr(' · vista entera', ' · all watched') : '')}
+                        <TiraPlegada esComic={esComic} entradas={visibles.map(item => ({ item, c: era.c }))}
+                          detalle={resumenBloque(visibles, esComic) + (vEra === numerados.length ? tr(' · vista entera', ' · all watched') : '')}
                           onAbrir={item => setDetalle({ item, c: era.c, esComic })} />
                       )}
                       {!eraPlegada && (
@@ -5602,7 +5634,7 @@ export default function App() {
                 </div>
               </div>
 
-              <Datos onReset={() => { setVistas({}); setLecturas({}); try { localStorage.setItem(KEY, '{}') } catch {} }} />
+              <Datos onReset={() => { setVistas({}); setLecturas({}); setPlegadas({}); try { localStorage.setItem(KEY, '{}'); localStorage.removeItem(KEY_PLEGADAS) } catch {} }} />
 
               <div className="ajuste">
                 <div className="ajuste-cab">
@@ -5833,12 +5865,34 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais, salie
 // línea que dice qué es y cuánto hay. Se para al pasar el ratón o al
 // enfocar; con «reducir movimiento» es un carril normal que se desliza.
 function TiraPlegada({ entradas, esComic, onAbrir, desc, detalle }) {
+  // Copias suficientes para que el bucle no deje un hueco: la pista se
+  // desplaza el ancho de UN lote (--lote), así que hace falta que los demás
+  // cubran el carril entero. Una era de 4 títulos a 1.300 px necesita siete.
+  const ref = useRef(null)
+  const [copias, setCopias] = useState(2)
+  React.useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const mide = () => {
+      const lote = el.querySelector('.tira-lote')
+      if (!lote) return
+      const w = lote.getBoundingClientRect().width
+      if (!w) return
+      el.style.setProperty('--lote', w + 'px')
+      setCopias(Math.max(2, Math.ceil(el.clientWidth / w) + 1))
+    }
+    mide()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(mide)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [entradas.length])
   if (!entradas.length) return null
   return (
     <div className="tira-plegada">
-      <div className="tira" style={{ '--n': entradas.length }}>
+      <div className="tira" ref={ref} style={{ '--n': entradas.length }}>
         <div className="tira-pista">
-          {[0, 1].map(copia => (
+          {Array.from({ length: copias }, (_, copia) => (
             <div className={`tira-lote${copia ? ' tira-copia' : ''}`} key={copia} aria-hidden={copia ? 'true' : undefined}>
               {entradas.map(({ item, c }) => (
                 <button key={item.id} type="button" className="tira-item" title={item.t}
