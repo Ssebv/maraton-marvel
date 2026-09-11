@@ -178,7 +178,7 @@ body{
   padding-top:env(safe-area-inset-top);
   padding-left:env(safe-area-inset-left);
   padding-right:env(safe-area-inset-right);
-  padding-bottom:calc(96px + env(safe-area-inset-bottom));
+  padding-bottom:calc(72px + env(safe-area-inset-bottom));
   position:relative;
 }
 /* Sin halo ambiental ni trama de puntos: el fondo es papel, no una landing. */
@@ -1860,21 +1860,25 @@ main.crono, main.comics, main.estreno{animation:none}
   nav.tabs{
     position:fixed; left:0; right:0; bottom:0; z-index:40;
     justify-content:space-around; gap: 0;
-    padding: var(--e-2) env(safe-area-inset-right, 0px) calc(var(--e-2) + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
+    /* pedida «mucho más pequeña» (11 sep 2026): 42 px + zona segura, en vez
+       de 58; el icono baja a 18 y el rótulo va pegado. La zona táctil se
+       completa por arriba con el ::after de cada pestaña. */
+    padding: var(--e-1) env(safe-area-inset-right, 0px) calc(var(--e-1) + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
     background:var(--panel);
     border:none; border-top:1px solid var(--line);
     border-radius:0; box-shadow:none;
   }
   nav.tabs .tab{
-    flex:1 1 0; min-width:0; min-height:49px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap: var(--e-1);
-    padding: var(--e-2) var(--e-2); border-radius:0; background:transparent;
-    font-size: var(--t-xs); font-weight:600; letter-spacing:.01em; color:var(--ink3);
+    flex:1 1 0; min-width:0; min-height:37px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 0;
+    padding: var(--e-1) var(--e-2); border-radius:0; background:transparent;
+    font-size: var(--t-xs); font-weight:600; letter-spacing:.01em; line-height:1.2; color:var(--ink3);
   }
   nav.tabs .tab{position:relative; z-index:1}
-  nav.tabs .tab-ico{display:block}
+  nav.tabs .tab-ico{display:block; width:18px; height:18px}
   nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.2; fill:var(--red-soft)}
-  nav.tabs .tab::after{content:""; position:absolute; inset:0}
+  /* 37 px de alto: la zona táctil llega a 44 creciendo hacia arriba */
+  nav.tabs .tab::after{content:""; position:absolute; inset:-7px 0 0}
   /* Cristal en el dock (pedido el 3 sep 2026: excepción consciente y única a
      la regla del 18 de agosto de no usar backdrop-filter como superficie).
      Solo aquí: es una franja de 60 px que iOS desenfoca igual en sus barras.
@@ -1939,7 +1943,7 @@ main.crono, main.comics, main.estreno{animation:none}
   box-shadow:var(--card-shadow-up); white-space:nowrap;
   animation:fadeIn var(--dur-media) ease both;
 }
-@media (max-width:720px){ .version-nueva{bottom:calc(76px + env(safe-area-inset-bottom, 0px))} }
+@media (max-width:720px){ .version-nueva{bottom:calc(56px + env(safe-area-inset-bottom, 0px))} }
 /* ── Recordatorios de estreno ── */
 .novedades{
   flex-direction:row; align-items:center; justify-content:space-between;
