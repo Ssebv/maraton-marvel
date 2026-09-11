@@ -57,7 +57,7 @@
   --sello:#C8102E; --calido:#B45C15; --gold-vivo:#E8A93C; --noche:#0A0C14;
   --peligro:#C8102E;  /* lo destructivo y los errores: NO sigue al acento de universo */
   --sobre-acento:#fff;
-  --tinte:10%;
+  --tinte:10%; --cristal:92%;
   --r-s:4px; --r-m:10px; --r-l:16px; --r-pill:999px;
   /* Tipografía: siete pasos. La única excepción es el clamp del titular. */
   --t-xs:11px; --t-s:12px; --t-m:13px; --t-b:15px;
@@ -96,7 +96,7 @@
     --blue:#7BA6E4; --violet:#A98BE0; --teal:#56C2A7;
     --done:#4FB57A; --doom:#64B05C;
     --sobre-acento:var(--bg);
-    --tinte:14%;
+    --tinte:14%; --cristal:96%;
     --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
     --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
     --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
@@ -111,7 +111,7 @@
   --blue:#7BA6E4; --violet:#A98BE0; --teal:#56C2A7;
   --done:#4FB57A; --doom:#64B05C;
   --sobre-acento:var(--bg);
-  --tinte:14%;
+  --tinte:14%; --cristal:96%;
   --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
   --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
   --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
@@ -699,7 +699,7 @@ h2{
   mask-image:linear-gradient(90deg, transparent, #000 var(--e-5), #000 calc(100% - var(--e-5)), transparent);
 }
 .tira-pista{display:flex; width:max-content; animation:tiraMarcha calc(var(--n, 10) * 2.2s) linear infinite; will-change:transform}
-.tira:hover .tira-pista, .tira:focus-within .tira-pista{animation-play-state:paused}
+.tira:hover .tira-pista, .tira:focus-within .tira-pista, .tira.parada .tira-pista, .tira.fuera .tira-pista{animation-play-state:paused}
 .tira-lote{display:flex; gap: var(--e-3); padding-right: var(--e-3)}
 @keyframes tiraMarcha{to{transform:translateX(calc(-1 * var(--lote, 50%)))}}
 .tira-item{
@@ -755,6 +755,7 @@ h2{
 .saga-guia-desc, .saga-guia .sg-movil, .saga-guia.sin-guia{display:none}
 .progreso-movil, .stat-sig-img{display:none}
 .stat-sig-texto{display:contents}
+.stat-sig-chevron{display:none; width:18px; height:18px; fill:none; stroke:var(--ink3); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; margin-left:auto}
 .saga .barra{margin-top: var(--e-4)}
 .saga[data-saga="xmen"] .barra > i{background:linear-gradient(90deg, var(--gold), color-mix(in srgb, var(--gold-vivo) 75%, #fff))}
 .saga[data-saga="comics"] .barra > i{background:linear-gradient(90deg, var(--violet), color-mix(in srgb, var(--violet) 65%, #fff))}
@@ -1785,7 +1786,8 @@ main.crono, main.comics, main.estreno{animation:none}
     flex-direction:row; align-items:center; gap: var(--e-4);
   }
   .stat-sig-img{display:block; flex:none; width:44px; height:66px; object-fit:cover; border-radius:var(--r-s); background:var(--panel2)}
-  .stat-sig-texto{display:flex; flex-direction:column; gap: var(--e-2); min-width:0}
+  .stat-sig-texto{display:flex; flex-direction:column; gap: var(--e-2); min-width:0; flex:1}
+  .stat-sig-chevron{display:block}
   .progreso-movil{display:flex; flex-direction:column; gap: var(--e-2); margin: var(--e-3) 0 0}
   .progreso-movil .barra{margin:0; display:block}
   .pm-texto{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
@@ -1876,7 +1878,8 @@ main.crono, main.comics, main.estreno{animation:none}
   }
   nav.tabs .tab{position:relative; z-index:1}
   nav.tabs .tab-ico{display:block; width:18px; height:18px}
-  nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.2; fill:var(--red-soft)}
+  /* activa: relleno al 35 % y trazo más grueso, para que se distinga sin color */
+  nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.4; fill:color-mix(in srgb, var(--red) 35%, transparent)}
   /* 37 px de alto: la zona táctil llega a 44 creciendo hacia arriba */
   nav.tabs .tab::after{content:""; position:absolute; inset:-7px 0 0}
   /* Cristal en el dock (pedido el 3 sep 2026: excepción consciente y única a
@@ -1888,7 +1891,10 @@ main.crono, main.comics, main.estreno{animation:none}
      backdrop-filter o se pide reducir transparencia. */
   @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))){
     nav.tabs{
-      background:color-mix(in srgb, var(--panel) 80%, transparent);
+      /* 92 % en claro y 96 % en oscuro: con el 80 % una carátula pálida
+         debajo dejaba el rótulo en 2,8:1 (revisión HIG del 11 sep 2026);
+         el cristal se sigue notando por el desenfoque y la saturación */
+      background:color-mix(in srgb, var(--panel) var(--cristal), transparent);
       -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
       border-color:color-mix(in srgb, var(--line) 75%, transparent);
     }

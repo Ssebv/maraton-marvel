@@ -2257,12 +2257,14 @@ function Proximos() {
   useEffect(() => {
     const el = ref.current
     if (!el || movimientoReducido()) return
-    let pausaHasta = 0
-    const pausa = () => { pausaHasta = Date.now() + 12000 }
+    // WCAG 2.2.2: lo que se mueve más de 5 s necesita una forma de PARARLO,
+    // no solo de pausarlo un rato. La primera interacción lo para para siempre.
+    let parado = false
+    const para = () => { parado = true; clearInterval(t) }
     const eventos = ['pointerdown', 'touchstart', 'wheel', 'focusin', 'mouseenter']
-    eventos.forEach(ev => el.addEventListener(ev, pausa, { passive: true }))
+    eventos.forEach(ev => el.addEventListener(ev, para, { passive: true }))
     const paso = () => {
-      if (document.hidden || Date.now() < pausaHasta) return
+      if (document.hidden || parado) return
       if (el.scrollWidth - el.clientWidth < 8) return
       const tarjeta = el.querySelector('.proximo')
       if (!tarjeta) return
@@ -2271,7 +2273,7 @@ function Proximos() {
       el.scrollTo({ left: fin ? 0 : el.scrollLeft + ancho, behavior: 'smooth' })
     }
     const t = setInterval(paso, 4500)
-    return () => { clearInterval(t); eventos.forEach(ev => el.removeEventListener(ev, pausa)) }
+    return () => { clearInterval(t); eventos.forEach(ev => el.removeEventListener(ev, para)) }
   }, [])
   return (
     <div className="proximos" ref={ref}>
@@ -4629,6 +4631,8 @@ export default function App() {
               <span className="stat-sig">{stats.siguiente.t}</span>
               <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>
               </span>
+              {/* solo en móvil (CSS): la flecha dice que la tarjeta se pulsa, como una fila de iOS */}
+              <svg className="stat-sig-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
             </button>
           )}
         </div>
@@ -4636,7 +4640,7 @@ export default function App() {
             esconde y enseña esto): la primera pantalla es para el siguiente
             título y la lista, no para el cuadro de mandos. */}
         <p className="progreso-movil">
-          <span className="barra" role="img" aria-label={`${pct} %`}><i style={{ width: `${pct}%` }} /></span>
+          <span className="barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
           <span className="pm-texto">
             <b>{stats.totV}</b> / {stats.totN} {tr('completados', 'completed')} · {pct} % · {tr('te quedan', 'left:')} <b>{Math.round(stats.mins / 60)} h</b>
           </span>
@@ -5249,6 +5253,7 @@ export default function App() {
                   </span>
                   {!buscando && (
                   <button type="button" className="saga-plegar" aria-expanded={!plegada} aria-controls={plegada ? undefined : `saga-cuerpo-${saga.saga}`}
+                    aria-label={plegada ? tr(`Desplegar ${saga.titulo}`, `Expand ${saga.titulo}`) : tr(`Plegar ${saga.titulo}`, `Collapse ${saga.titulo}`)}
                     onClick={() => ponPlegado(saga.saga, !plegada)}>
                     {plegada ? tr('Desplegar', 'Expand') : tr('Plegar', 'Collapse')}
                   </button>
@@ -5306,6 +5311,7 @@ export default function App() {
                         <span className="era-count">{vEra}/{numerados.length}</span>
                         {!buscando && (
                         <button type="button" className="era-plegar" aria-expanded={!eraPlegada} aria-label={eraPlegada ? tr(`Desplegar ${era.era}`, `Expand ${era.era}`) : tr(`Plegar ${era.era}`, `Collapse ${era.era}`)}
+                          aria-controls={eraPlegada ? undefined : `era-cuerpo-${kEra.slice(4)}`}
                           onClick={() => ponPlegado(kEra, !eraPlegada)}>
                           {eraPlegada ? tr('Desplegar', 'Expand') : tr('Plegar', 'Collapse')}
                         </button>
@@ -5317,7 +5323,7 @@ export default function App() {
                           onAbrir={item => setDetalle({ item, c: era.c, esComic })} />
                       )}
                       {!eraPlegada && (
-                      <div className="era-borde">
+                      <div className="era-borde" id={`era-cuerpo-${kEra.slice(4)}`}>
                         <div className="grid">
                           {numerados.map((item, i) =>
                             visibles.includes(item) && (
@@ -5887,10 +5893,23 @@ function TiraPlegada({ entradas, esComic, onAbrir, desc, detalle }) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [entradas.length])
+  // Varias tiras a la vez cansan y gastan batería: solo se mueve la que está
+  // en pantalla, y un toque la para del todo (con el dedo no hay hover).
+  const [parada, setParada] = useState(false)
+  const [fuera, setFuera] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setFuera(!e.isIntersecting), { threshold: 0 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
   if (!entradas.length) return null
   return (
     <div className="tira-plegada">
-      <div className="tira" ref={ref} style={{ '--n': entradas.length }}>
+      <div className={`tira${parada ? ' parada' : ''}${fuera ? ' fuera' : ''}`} ref={ref} style={{ '--n': entradas.length }}
+        role="group" aria-roledescription={tr('carrusel', 'carousel')} aria-label={tr('Carátulas del bloque', 'Covers in this block')}
+        onPointerDown={() => setParada(true)}>
         <div className="tira-pista">
           {Array.from({ length: copias }, (_, copia) => (
             <div className={`tira-lote${copia ? ' tira-copia' : ''}`} key={copia} aria-hidden={copia ? 'true' : undefined}>
