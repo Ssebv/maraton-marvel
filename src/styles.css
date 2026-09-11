@@ -57,7 +57,7 @@
   --sello:#C8102E; --calido:#B45C15; --gold-vivo:#E8A93C; --noche:#0A0C14;
   --peligro:#C8102E;  /* lo destructivo y los errores: NO sigue al acento de universo */
   --sobre-acento:#fff;
-  --tinte:10%; --cristal:92%;
+  --tinte:10%; --cristal:72%;
   --r-s:4px; --r-m:10px; --r-l:16px; --r-pill:999px;
   /* Tipografía: siete pasos. La única excepción es el clamp del titular. */
   --t-xs:11px; --t-s:12px; --t-m:13px; --t-b:15px;
@@ -96,7 +96,7 @@
     --blue:#7BA6E4; --violet:#A98BE0; --teal:#56C2A7;
     --done:#4FB57A; --doom:#64B05C;
     --sobre-acento:var(--bg);
-    --tinte:14%; --cristal:96%;
+    --tinte:14%; --cristal:72%;
     --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
     --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
     --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
@@ -111,7 +111,7 @@
   --blue:#7BA6E4; --violet:#A98BE0; --teal:#56C2A7;
   --done:#4FB57A; --doom:#64B05C;
   --sobre-acento:var(--bg);
-  --tinte:14%; --cristal:96%;
+  --tinte:14%; --cristal:72%;
   --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
   --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
   --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
@@ -1851,9 +1851,14 @@ main.crono, main.comics, main.estreno{animation:none}
     border-radius:0; border-width:0 0 1px; box-shadow:none;
   }
   /* Se retira al bajar por la lista y vuelve al subir (la clase la pone un
-     oyente de scroll en App): solo transform, la página no se mueve. */
-  .toolbar{transition:transform var(--dur-media) var(--curva)}
-  html.barra-oculta .toolbar{transform:translateY(calc(-100% - env(safe-area-inset-top, 0px) - 2px))}
+     oyente de scroll en App). Se mueve con `top`, NO con transform: la barra
+     de pestañas (position:fixed) vive dentro de esta en el DOM y un
+     transform aquí la convertía en su contenedor, así que el dock se iba
+     hacia arriba con la barra al hacer scroll (visto en el iPhone, 11 sep). */
+  .toolbar{transition:top var(--dur-media) var(--curva)}
+  html.barra-oculta .toolbar{top:-90px}
+  /* y la barra de pestañas también se retira al bajar y vuelve al subir */
+  html.barra-oculta nav.tabs{transform:translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 2px))}
   /* Los destinos van en el dock de abajo: el separador que los seguía quedaba
      solo al principio del carril y parecía un chip cortado. */
   nav.tabs + .ctrl-sep{display:none}
@@ -1875,23 +1880,23 @@ main.crono, main.comics, main.estreno{animation:none}
     /* pedida «mucho más pequeña» (11 sep 2026): 42 px + zona segura, en vez
        de 58; el icono baja a 18 y el rótulo va pegado. La zona táctil se
        completa por arriba con el ::after de cada pestaña. */
-    padding: var(--e-1) env(safe-area-inset-right, 0px) calc(var(--e-1) + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
+    padding: 1px env(safe-area-inset-right, 0px) calc(1px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
     background:var(--panel);
     border:none; border-top:1px solid var(--line);
     border-radius:0; box-shadow:none;
   }
   nav.tabs .tab{
-    flex:1 1 0; min-width:0; min-height:37px;
+    flex:1 1 0; min-width:0; min-height:31px;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 0;
-    padding: var(--e-1) var(--e-2); border-radius:0; background:transparent;
+    padding: 0 var(--e-2); border-radius:0; background:transparent;
     font-size: var(--t-xs); font-weight:600; letter-spacing:.01em; line-height:1.2; color:var(--ink3);
   }
   nav.tabs .tab{position:relative; z-index:1}
-  nav.tabs .tab-ico{display:block; width:18px; height:18px}
+  nav.tabs .tab-ico{display:block; width:16px; height:16px}
   /* activa: relleno al 35 % y trazo más grueso, para que se distinga sin color */
   nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.4; fill:color-mix(in srgb, var(--red) 35%, transparent)}
-  /* 37 px de alto: la zona táctil llega a 44 creciendo hacia arriba */
-  nav.tabs .tab::after{content:""; position:absolute; inset:-7px 0 0}
+  /* 31 px de alto: la zona táctil llega a 44 creciendo hacia arriba */
+  nav.tabs .tab::after{content:""; position:absolute; inset:-13px 0 0}
   /* Cristal en el dock (pedido el 3 sep 2026: excepción consciente y única a
      la regla del 18 de agosto de no usar backdrop-filter como superficie).
      Solo aquí: es una franja de 60 px que iOS desenfoca igual en sus barras.
@@ -1901,13 +1906,14 @@ main.crono, main.comics, main.estreno{animation:none}
      backdrop-filter o se pide reducir transparencia. */
   @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))){
     nav.tabs{
-      /* 92 % en claro y 96 % en oscuro: con el 80 % una carátula pálida
-         debajo dejaba el rótulo en 2,8:1 (revisión HIG del 11 sep 2026);
-         el cristal se sigue notando por el desenfoque y la saturación */
+      /* Sebastián la quiere traslúcida (11 sep 2026, tras subirla al 92/96 %
+         por contraste): 72 % con desenfoque de 20 px y saturación; el rótulo
+         inactivo sube a --ink2 para aguantar sobre una carátula pálida */
       background:color-mix(in srgb, var(--panel) var(--cristal), transparent);
       -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
       border-color:color-mix(in srgb, var(--line) 75%, transparent);
     }
+    nav.tabs .tab{color:var(--ink2)}
     @media (prefers-reduced-transparency: reduce){
       nav.tabs{background:var(--panel); -webkit-backdrop-filter:none; backdrop-filter:none; border-color:var(--line)}
     }
