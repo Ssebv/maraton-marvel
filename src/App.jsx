@@ -4805,6 +4805,8 @@ export default function App() {
       )}
 
       <header className="toolbar">
+        {/* pegada arriba en móvil, cubre la zona segura del notch con el mismo cristal (CSS) */}
+        <span className="toolbar-tope" aria-hidden="true" />
         <div className="controles" role="group" aria-label={tr('Vista y filtros', 'View and filters')}>
           {esMovil ? createPortal(navTabs, document.body) : navTabs}
           {/* los filtros solo actúan sobre las listas del maratón (crono,

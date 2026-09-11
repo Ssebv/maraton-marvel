@@ -710,6 +710,8 @@ h2{
 .tira-pista{display:flex; width:max-content; animation:tiraMarcha calc(var(--n, 10) * 2.2s) linear infinite; will-change:transform}
 .tira:hover .tira-pista, .tira:focus-within .tira-pista, .tira.parada .tira-pista, .tira.fuera .tira-pista{animation-play-state:paused}
 .tira-lote{display:flex; gap: var(--e-3); padding-right: var(--e-3)}
+/* el icono de la pestaña a la que llegas da un pequeño rebote: una cosa, 240 ms */
+@keyframes pestanaPop{from{transform:scale(.8)} to{transform:none}}
 @keyframes tiraMarcha{to{transform:translateX(calc(-1 * var(--lote, 50%)))}}
 .tira-item{
   flex:none; background:none; border:none; padding:0; margin:0; cursor:pointer;
@@ -1873,6 +1875,31 @@ main.crono, main.comics, main.estreno{animation:none}
      clase, para no pintar sobre el panel en reposo. No usa ::before porque
      ese pseudoelemento es el fundido izquierdo del carril. */
   html.barra-pegada .toolbar{box-shadow:0 -120px 0 0 var(--bg)}
+  /* Cristal en la barra de herramientas (pedido el 11 sep 2026 junto con el
+     del dock): ahora es seguro porque el dock ya no vive dentro de ella en
+     móvil (portal a body), así que el backdrop-filter no atrapa nada fijo.
+     La franja de la zona segura se cubre con .toolbar-tope, del mismo
+     cristal, en vez de la sombra sólida. Opaco sin backdrop-filter o con
+     reducir transparencia. */
+  .toolbar-tope{display:none}
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))){
+    .toolbar{
+      background:color-mix(in srgb, var(--bg) var(--cristal), transparent);
+      -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
+      border-color:color-mix(in srgb, var(--line) 75%, transparent);
+    }
+    html.barra-pegada .toolbar{box-shadow:none}
+    html.barra-pegada .toolbar-tope{
+      display:block; position:absolute; left:0; right:0; bottom:100%; height:120px;
+      background:color-mix(in srgb, var(--bg) var(--cristal), transparent);
+      -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
+    }
+    @media (prefers-reduced-transparency: reduce){
+      .toolbar{background:var(--bg); -webkit-backdrop-filter:none; backdrop-filter:none; border-color:var(--line)}
+      html.barra-pegada .toolbar{box-shadow:0 -120px 0 0 var(--bg)}
+      html.barra-pegada .toolbar-tope{display:none}
+    }
+  }
   /* SOLO cuando está pegada arriba: si aún va en el flujo de la página, el
      transform la subía sobre el panel (visto en el iPhone: la barra montada
      sobre la cuenta atrás y una franja vacía donde estaba) */
@@ -1918,7 +1945,7 @@ main.crono, main.comics, main.estreno{animation:none}
   nav.tabs .tab{position:relative; z-index:1}
   nav.tabs .tab-ico{display:block; width:16px; height:16px}
   /* activa: relleno al 35 % y trazo más grueso, para que se distinga sin color */
-  nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.4; fill:color-mix(in srgb, var(--red) 35%, transparent)}
+  nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.4; fill:color-mix(in srgb, var(--red) 35%, transparent); animation:pestanaPop var(--dur-media) var(--curva-rebote) both}
   /* 31 px de alto: la zona táctil llega a 44 creciendo hacia arriba */
   nav.tabs .tab::after{content:""; position:absolute; inset:-13px 0 0}
   /* Cristal en el dock (pedido el 3 sep 2026: excepción consciente y única a
