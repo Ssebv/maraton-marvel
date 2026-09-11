@@ -9,6 +9,7 @@ export const TITULOS_LATAM = {
  "dark-phoenix": "X-Men: Dark Phoenix",
  "logan": "Logan: Wolverine",
  "gifted": "The Gifted: Los Elegidos (T1–T2)",
+ "oneshot-carter": "Marvel One-Shot: Agente Carter",
  "ironman1": "Iron Man: El hombre de hierro",
  "hulk": "Hulk: El hombre increíble",
  "avengers1": "Avengers: Los Vengadores",

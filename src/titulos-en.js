@@ -16,6 +16,7 @@ export const TITULOS_EN = {
  "legion": "Legion (S1–S3)",
  "xmen-tas": "X-Men: The Animated Series",
  "cap1": "Captain America: The First Avenger",
+ "oneshot-carter": "Marvel One-Shot: Agent Carter",
  "agent-carter": "Agent Carter (S1–S2)",
  "capmarvel": "Captain Marvel",
  "hulk": "The Incredible Hulk",

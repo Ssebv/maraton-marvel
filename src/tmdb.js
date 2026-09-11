@@ -38,6 +38,7 @@ export const TMDB = {
   "xmen97": [138502, "tv"],
   "cap1": [1771, "movie"],
   "agent-carter": [61550, "tv"],
+  "oneshot-carter": [211387, "movie"],
   "capmarvel": [299537, "movie"],
   "ironman1": [1726, "movie"],
   "ironman2": [10138, "movie"],

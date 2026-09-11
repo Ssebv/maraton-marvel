@@ -110,6 +110,7 @@ export const POSTERS = {
   "new-mutants": "posters/new-mutants.webp",
   "nwh": "posters/nwh.webp",
   "oneshots": "posters/oneshots.webp",
+  "oneshot-carter": "posters/oneshot-carter.webp",
   "origins-wolverine": "posters/origins-wolverine.webp",
   "punisher": "posters/punisher.webp",
   "quantumania": "posters/quantumania.webp",
