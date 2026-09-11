@@ -11,7 +11,7 @@ const ojo = m => avisos.push(m)
 const bien = []
 
 const fuentes = await cargaFuentes()
-const { DATA, EPISODES, POSTERS, PEOPLE, TMDB, ORDEN_CONGELADO } = fuentes
+const { DATA, EPISODES, POSTERS, PEOPLE, TMDB, ORDEN_CONGELADO, ESTRENOS = [] } = fuentes
 const items = DATA.flatMap(s => s.eras.flatMap(e => e.items.map(it => ({ ...it, saga: s.saga }))))
 const { ids, eps, vista } = ordenes(fuentes)
 
@@ -100,7 +100,8 @@ for (const [id, ruta] of Object.entries(POSTERS)) {
   if (!existsSync(join(pub, ruta))) mal(`falta el archivo ${ruta} (carátula de ${id})`)
 }
 for (const [n, ruta] of Object.entries(PEOPLE)) if (!existsSync(join(pub, ruta))) mal(`falta el archivo ${ruta} (foto de ${n})`)
-const usados = new Set([...Object.values(POSTERS), ...Object.values(PEOPLE)].map(r => r.split('/').pop()))
+// las carátulas de los próximos estrenos las referencia ESTRENOS, no POSTERS
+const usados = new Set([...Object.values(POSTERS), ...Object.values(PEOPLE), ...ESTRENOS.map(e => e.poster).filter(Boolean)].map(r => r.split('/').pop()))
 for (const carpeta of ['posters', 'people']) {
   const sobran = readdirSync(join(pub, carpeta)).filter(f => !usados.has(f))
   if (sobran.length) ojo(`${carpeta}/: ${sobran.length} archivo(s) que no referencia nadie — ${sobran.slice(0, 4).join(', ')}`)

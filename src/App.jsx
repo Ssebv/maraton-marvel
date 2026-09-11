@@ -23,6 +23,17 @@ const KEY_COMPACTO = 'maraton-marvel-compacto'
 // Sagas plegadas a mano: { xmen: 1 | 0 }. Sin entrada, la saga decide sola
 // (plegada si estaba completa al cargar la página).
 const KEY_PLEGADAS = 'maraton-marvel-plegadas-v1'
+// El lote «Marvel One-Shots (cortos)» se partió en cinco tarjetas, cada una en
+// su año (11 sep 2026): quien lo tenía marcado, o en una lista, conserva la
+// marca en las cinco. El id viejo sigue ocupando su bit en orden.js.
+const ONESHOTS_PARTIDOS = ['oneshot-martillo', 'oneshot-consultor', 'oneshot-item47', 'oneshot-rey', 'oneshot-carter']
+const migraMarcas = v => {
+  if (!v || !v.oneshots) return v
+  const n = { ...v }
+  ONESHOTS_PARTIDOS.forEach(id => { if (!n[id]) n[id] = v.oneshots })
+  delete n.oneshots
+  return n
+}
 // Modo sin spoilers: '1' esconde sinopsis, post-créditos y títulos de episodio
 // de lo que aún no has visto (la ficha deja mostrarlos a mano).
 const KEY_SPOILERS = 'maraton-marvel-spoilers-v1'
@@ -3637,6 +3648,23 @@ export default function App() {
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
   const [sinSpoilers, setSinSpoilers] = useState(() => { try { return localStorage.getItem(KEY_SPOILERS) === '1' } catch { return false } })
   const ponSinSpoilers = v => { setSinSpoilers(v); try { localStorage.setItem(KEY_SPOILERS, v ? '1' : '0') } catch {} }
+  // Migración del lote de One-Shots: en marcas locales y en lo que llegue de
+  // fuera (sincronización, cuenta, sala), porque todas pasan por setVistas
+  useEffect(() => {
+    if (!vistas.oneshots) return
+    const n = migraMarcas(vistas)
+    setVistas(n)
+    try { localStorage.setItem(KEY, JSON.stringify(n)) } catch {}
+  }, [vistas])
+  useEffect(() => {
+    const tiene = l => l.items.includes('oneshots') || (l.prog && l.prog.oneshots)
+    if (!listas.some(tiene)) return
+    guardaListas(prev => prev.map(l => {
+      if (!tiene(l)) return l
+      const items = l.items.flatMap(id => id === 'oneshots' ? ONESHOTS_PARTIDOS.filter(x => !l.items.includes(x)) : [id])
+      return { ...l, items, prog: migraMarcas(l.prog) || {} }
+    }))
+  }, [listas])
   // En móvil la barra de pestañas se dibuja directamente en <body> (portal):
   // dentro de .toolbar, cualquier transform de la barra al retirarse la
   // convertía en su contenedor y el dock se iba con ella (11 sep 2026).

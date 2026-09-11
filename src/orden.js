@@ -27,7 +27,8 @@ export const ORDEN_CONGELADO = {
   "c-extremis","c-wintersoldier","c-civilwar","c-planethulk","c-gotg","c-thoraaron","c-secretwars","c-bornagain",
   "c-deadpoolkelly","c-ultimatespider","c-hawkeyefraction","c-msmarvel","c-visionking","sm-amigos81","ironman94",
   "f4-94","spiderman94","hulk96","silversurfer98","sm-unlimited99","emh","ultimate-sm","avengers-assemble",
-  "hulk-smash","gotg-2015","sm-2017","modok","hitmonkey","spidey-equipo","moongirl","oneshot-carter"
+  "hulk-smash","gotg-2015","sm-2017","modok","hitmonkey","spidey-equipo","moongirl","oneshot-carter","oneshot-martillo",
+  "oneshot-consultor","oneshot-item47","oneshot-rey","team-thor","team-darryl","peter-lista"
 ],
   eps: [
   "gifted:1:1","gifted:1:2","gifted:1:3","gifted:1:4","gifted:1:5","gifted:1:6","gifted:1:7","gifted:1:8",

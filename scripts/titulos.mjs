@@ -52,6 +52,14 @@ for (const it of items) {
   salida[it.id] = conApostilla
   await dormir(60)
 }
+// Donde TMDB es-MX no sirve: sin traducir, o con el título de una sola parte
+// de un lote (el lote se consulta por el id de su primera parte). Manda.
+const A_MANO = {
+  'team-thor': 'Marvel One-Shot: El Equipo Thor (cortos)',
+  'team-darryl': 'Marvel One-Shot: El Equipo Darryl',
+  'peter-lista': 'La lista de pendientes de Peter (corto)',
+}
+for (const [id, t] of Object.entries(A_MANO)) if (items.some(i => i.id === id)) salida[id] = t
 const raiz = dirname(dirname(fileURLToPath(import.meta.url)))
 writeFileSync(join(raiz, 'src', 'titulos.js'), `// GENERADO por \`npm run titulos\` (scripts/titulos.mjs). NO SE EDITA A MANO.
 //
