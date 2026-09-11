@@ -4142,6 +4142,29 @@ export default function App() {
     document.addEventListener('visibilitychange', onOculta)
     return () => { clearTimeout(cola); window.removeEventListener('scroll', onScroll); document.removeEventListener('visibilitychange', onOculta) }
   }, [])
+  // En móvil la barra de herramientas (búsqueda y filtros) se retira al bajar
+  // por la lista y vuelve en cuanto subes, como la barra de Safari: son 55 px
+  // de pantalla que mientras lees tarjetas no hacen nada. Hace falta un
+  // recorrido de 24 px en la misma dirección para cambiar (un dedo que tiembla
+  // no la hace parpadear), nunca se esconde en la portada (primeros 160 px)
+  // ni mientras se escribe en la búsqueda.
+  useEffect(() => {
+    if (!window.matchMedia('(max-width:720px)').matches) return
+    const raiz = document.documentElement
+    let ultimo = window.scrollY, acumulado = 0
+    const on = () => {
+      const y = window.scrollY
+      const d = y - ultimo
+      ultimo = y
+      const enBarra = document.activeElement && document.activeElement.closest && document.activeElement.closest('.toolbar')
+      if (y < 160 || enBarra) { raiz.classList.remove('barra-oculta'); acumulado = 0; return }
+      acumulado = Math.sign(d) === Math.sign(acumulado) ? acumulado + d : d
+      if (acumulado > 24) raiz.classList.add('barra-oculta')
+      else if (acumulado < -24) raiz.classList.remove('barra-oculta')
+    }
+    window.addEventListener('scroll', on, { passive: true })
+    return () => { window.removeEventListener('scroll', on); raiz.classList.remove('barra-oculta') }
+  }, [])
   // En móvil la tira de subvistas se desliza: al cambiar de vista (atrás,
   // enlace, pestaña) la activa se trae a la vista dentro de la tira, sin
   // mover la página (scrollIntoView con block:nearest también la movería)
@@ -4658,6 +4681,11 @@ export default function App() {
                   {objetivo.restante > 0 && <span className="pr-extra"> · {tr('ruta express: ', 'express route: ')}{objetivo.necesario} {tr('min/día', 'min/day')}</span>}
                 </>
               : <>{tr('Mapa de progreso, próximos estrenos y cuenta atrás', 'Progress map, upcoming premieres and countdown')}</>}
+            {/* el horario vive dentro del panel, que en móvil arranca plegado:
+                si hoy toca sesión, se dice aquí, que es lo que se ve */}
+            {sesionHoy && horario && (
+              <span className="pr-sesion">{' · '}{tr(`hoy sesión a las ${horario.hora}`, `session today at ${horario.hora}`)}</span>
+            )}
           </span>
           <span className="pr-abrir">{tr('Panel completo', 'Full panel')}</span>
         </button>

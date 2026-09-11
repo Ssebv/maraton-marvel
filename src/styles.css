@@ -414,6 +414,7 @@ h1 .rojo{color:var(--red)}
 .pr-datos{flex:1; min-width:0}
 .pr-datos b{color:var(--ink); font-weight:700}
 .pr-datos b.pr-dias{color:var(--doom); font-variant-numeric:tabular-nums}
+.pr-sesion{color:var(--ink); font-weight:600}
 .pr-abrir{
   flex:none; font-size: var(--t-s); font-weight:600; letter-spacing:0;
   color:var(--ink3); border:1px solid var(--line); border-radius:var(--r-pill); padding: var(--e-1) var(--e-4);
@@ -1844,6 +1845,10 @@ main.crono, main.comics, main.estreno{animation:none}
     margin: var(--e-4) calc(-1 * var(--e-6)) var(--e-2); padding: var(--e-3) var(--e-6);
     border-radius:0; border-width:0 0 1px; box-shadow:none;
   }
+  /* Se retira al bajar por la lista y vuelve al subir (la clase la pone un
+     oyente de scroll en App): solo transform, la página no se mueve. */
+  .toolbar{transition:transform var(--dur-media) var(--curva)}
+  html.barra-oculta .toolbar{transform:translateY(calc(-100% - env(safe-area-inset-top, 0px) - 2px))}
   /* Los destinos van en el dock de abajo: el separador que los seguía quedaba
      solo al principio del carril y parecía un chip cortado. */
   nav.tabs + .ctrl-sep{display:none}
