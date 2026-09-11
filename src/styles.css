@@ -547,8 +547,10 @@ h1 .rojo{color:var(--red)}
 .sr-detalle{margin: 0 0 var(--e-3); font-size: var(--t-b); color:var(--ink2); max-width:52ch; text-wrap:pretty}
 .sr-detalle b{color:var(--ink)}
 /* un botón que no puede hacer nada debe parecerlo */
-.accion-principal:disabled{opacity:.45; cursor:not-allowed; filter:grayscale(.6)}
-.accion-principal:disabled:hover{filter:grayscale(.6)}
+/* Apagado = neutro, no el degradado rojo lavado: «Crear lista» sin nombre
+   salía como una pastilla roja sucia y parecía un fallo, no un estado. */
+.accion-principal:disabled{background:var(--panel2); color:var(--ink3); cursor:not-allowed; opacity:1; filter:none}
+.accion-principal:disabled:hover{filter:none}
 
 /* ── Barra de herramientas fija ── */
 .toolbar{
@@ -1810,6 +1812,9 @@ main.crono, main.comics, main.estreno{animation:none}
   .tira-item .cover{width:44px; height:66px}
   /* cinco cajas a ancho completo eran 550 px de cifras antes de la primera gráfica */
   .stats-tiles{grid-template-columns:1fr 1fr}
+  /* los logros a dos columnas: a una, diez cajas de 100 px eran pantalla y media */
+  .logros{grid-template-columns:1fr 1fr; gap: var(--e-3)}
+  .logro{padding: var(--e-4) var(--e-3)}
   .credits{display:none}
   .checkbox{width:26px; height:26px}
   .abrir{gap: var(--e-4)}
