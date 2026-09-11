@@ -2215,17 +2215,54 @@ function HorarioModal({ horario, onGuardar, vistas, eps, onClose, saliendo }) {
   )
 }
 
+// Carátula de un estreno: la del título si ya está en el maratón (id), la
+// bajada de TMDB si aún no (poster), y si no hay ninguna, la portada dibujada
+// con sus iniciales, para que ninguna tarjeta salga sin imagen.
+function CaraEstreno({ e }) {
+  const src = (e.id && POSTERS[e.id]) || e.poster
+  const [err, setErr] = useState(false)
+  if (!src || err) return <Cover item={{ id: 'estreno-' + e.t.toLowerCase().replace(/[^a-z0-9]+/g, '-'), t: e.t, tipo: /serie/i.test(e.tipo) ? 'serie' : 'peli' }} c={['#C8102E', '#E8A93C']} />
+  return <img className="cover foto" src={src} alt="" loading="lazy" decoding="async" onError={() => setErr(true)} />
+}
+
 function Proximos() {
   const primero = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
+  // En móvil el carril avanza solo, una tarjeta cada pocos segundos, como un
+  // carrusel; en cuanto lo tocas (dedo, ratón o teclado) se para y no vuelve
+  // hasta pasado un rato. No se mueve con «reducir movimiento», ni cuando el
+  // carril no se desliza (escritorio: rejilla), ni con la pestaña oculta.
+  const ref = useRef(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || movimientoReducido()) return
+    let pausaHasta = 0
+    const pausa = () => { pausaHasta = Date.now() + 12000 }
+    const eventos = ['pointerdown', 'touchstart', 'wheel', 'focusin', 'mouseenter']
+    eventos.forEach(ev => el.addEventListener(ev, pausa, { passive: true }))
+    const paso = () => {
+      if (document.hidden || Date.now() < pausaHasta) return
+      if (el.scrollWidth - el.clientWidth < 8) return
+      const tarjeta = el.querySelector('.proximo')
+      if (!tarjeta) return
+      const ancho = tarjeta.getBoundingClientRect().width + (parseFloat(getComputedStyle(el).columnGap || getComputedStyle(el).gap) || 0)
+      const fin = el.scrollLeft + el.clientWidth >= el.scrollWidth - 8
+      el.scrollTo({ left: fin ? 0 : el.scrollLeft + ancho, behavior: 'smooth' })
+    }
+    const t = setInterval(paso, 4500)
+    return () => { clearInterval(t); eventos.forEach(ev => el.removeEventListener(ev, pausa)) }
+  }, [])
   return (
-    <div className="proximos">
+    <div className="proximos" ref={ref}>
       {ESTRENOS.filter(e => !primero || e.t !== primero.t).map(e => (
         <div className="proximo" key={e.t}>
+          <span className="proximo-cara" aria-hidden="true"><CaraEstreno e={e} /></span>
+          <span className="proximo-texto">
           <span className="proximo-fecha">{fmtFecha(e.fecha) || e.aprox}</span>
           <span className="proximo-titulo">{e.t}</span>
           <span className="proximo-tipo">{e.tipo}</span>
           <span className="proximo-nota">{e.n}</span>
           {e.fecha && <button className="proximo-cal" onClick={() => descargaIcs(e)}>{tr('Al calendario', 'Add to calendar')}</button>}
+          </span>
         </div>
       ))}
     </div>

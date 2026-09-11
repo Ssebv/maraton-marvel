@@ -356,9 +356,14 @@ h1 .rojo{color:var(--red)}
 .proximos{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap: var(--e-4)}
 .proximo{
   background:var(--panel); border:none; border-radius:var(--r-m);
-  padding: var(--e-4) var(--e-5); display:flex; flex-direction:column; gap: var(--e-1);
+  padding: var(--e-4) var(--e-5); display:flex; flex-direction:row; align-items:flex-start; gap: var(--e-4);
   box-shadow:none;
 }
+/* carátula a la izquierda y el texto en columna, como en las tarjetas de la lista */
+.proximo-cara{flex:none}
+.proximo-cara .cover{width:52px; height:78px; border-radius:var(--r-s); box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.proximo-cara .lc-year, .proximo-cara .lc-tipo{display:none}
+.proximo-texto{display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
 .proximo-fecha{
   font-size: var(--t-xs); font-weight:700; letter-spacing:.02em;
   color:var(--red);
@@ -687,10 +692,10 @@ h2{
   /* sin esto la pista (width:max-content, 2.000 px) estira la saga entera
      cuando es item de rejilla en escritorio: la cabecera se salía de la ventana */
   contain:inline-size;
-  /* márgenes negativos pareja del relleno: el carrusel llega al borde y se funde */
-  margin-inline:calc(-1 * var(--e-6)); padding-inline:var(--e-6);
-  -webkit-mask-image:linear-gradient(90deg, transparent, #000 var(--e-6), #000 calc(100% - var(--e-6)), transparent);
-  mask-image:linear-gradient(90deg, transparent, #000 var(--e-6), #000 calc(100% - var(--e-6)), transparent);
+  /* dentro de la viñeta de la saga: en el iPhone, llevado al borde de la
+     pantalla, se salía del bloque y las carátulas se cortaban en seco */
+  -webkit-mask-image:linear-gradient(90deg, transparent, #000 var(--e-5), #000 calc(100% - var(--e-5)), transparent);
+  mask-image:linear-gradient(90deg, transparent, #000 var(--e-5), #000 calc(100% - var(--e-5)), transparent);
 }
 .tira-pista{display:flex; width:max-content; animation:tiraMarcha calc(var(--n, 10) * 2.2s) linear infinite; will-change:transform}
 .tira:hover .tira-pista, .tira:focus-within .tira-pista{animation-play-state:paused}
