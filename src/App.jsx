@@ -4194,6 +4194,14 @@ export default function App() {
       const y = window.scrollY
       const d = y - ultimo
       ultimo = y
+      // pegada arriba: en el iPhone la barra se queda bajo el reloj y por
+      // encima quedaba una franja (la zona segura del notch) donde se veía
+      // pasar el contenido; con esta clase el CSS la tapa con el fondo
+      const tb = document.querySelector('.toolbar')
+      if (tb) {
+        const tope = parseFloat(getComputedStyle(tb).top) || 0
+        raiz.classList.toggle('barra-pegada', y > 0 && tb.getBoundingClientRect().top <= tope + 1)
+      }
       const enBarra = document.activeElement && document.activeElement.closest && document.activeElement.closest('.toolbar')
       if (y < 160 || enBarra) { raiz.classList.remove('barra-oculta'); acumulado = 0; return }
       acumulado = Math.sign(d) === Math.sign(acumulado) ? acumulado + d : d

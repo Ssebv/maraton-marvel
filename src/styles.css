@@ -1868,7 +1868,15 @@ main.crono, main.comics, main.estreno{animation:none}
      transform aquí la convertía en su contenedor, así que el dock se iba
      hacia arriba con la barra al hacer scroll (visto en el iPhone, 11 sep). */
   .toolbar{transition:transform var(--dur-larga) var(--curva-hoja)}
-  html.barra-oculta .toolbar{transform:translateY(calc(-100% - env(safe-area-inset-top, 0px) - 2px))}
+  /* Pegada arriba, tapa la zona segura del notch (y lo que haya por encima
+     de su borde) con una sombra sólida desplazada hacia arriba: solo con la
+     clase, para no pintar sobre el panel en reposo. No usa ::before porque
+     ese pseudoelemento es el fundido izquierdo del carril. */
+  html.barra-pegada .toolbar{box-shadow:0 -120px 0 0 var(--bg)}
+  /* SOLO cuando está pegada arriba: si aún va en el flujo de la página, el
+     transform la subía sobre el panel (visto en el iPhone: la barra montada
+     sobre la cuenta atrás y una franja vacía donde estaba) */
+  html.barra-pegada.barra-oculta .toolbar{transform:translateY(calc(-100% - env(safe-area-inset-top, 0px) - 2px))}
   /* y la barra de pestañas se retira hacia abajo, fundiéndose, con la misma
      curva de iOS; ya no vive dentro de .toolbar (portal a body en móvil) */
   html.barra-oculta nav.tabs{transform:translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 2px)); opacity:0}
