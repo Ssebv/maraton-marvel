@@ -693,9 +693,10 @@ h2{
 .era.plegada + .era, .era.plegada{margin-top: var(--e-5)}
 
 /* ── Carrusel de un bloque plegado ── */
-.tira-plegada{display:flex; flex-direction:column; gap: var(--e-3); margin-top: var(--e-4); animation:entraVista var(--dur-media) var(--curva) both}
-/* al desplegar, el cuerpo entra con el mismo fundido corto que todo lo demás */
-.saga-cuerpo, .era-borde{animation:entraVista var(--dur-media) var(--curva) both}
+.tira-plegada{display:flex; flex-direction:column; gap: var(--e-3); margin-top: var(--e-4)}
+/* al plegar o desplegar A MANO, el bloque entra con el fundido corto; al
+   cargar no (eran 26 bloques animándose a la vez sobre las tarjetas) */
+.tira-plegada.anima, .saga-cuerpo.abre, .era-borde.abre{animation:entraVista var(--dur-media) var(--curva) both}
 .saga{min-width:0}
 .tira{
   overflow:hidden; min-width:0;
@@ -707,8 +708,8 @@ h2{
   -webkit-mask-image:linear-gradient(90deg, transparent, #000 var(--e-5), #000 calc(100% - var(--e-5)), transparent);
   mask-image:linear-gradient(90deg, transparent, #000 var(--e-5), #000 calc(100% - var(--e-5)), transparent);
 }
-.tira-pista{display:flex; width:max-content; animation:tiraMarcha calc(var(--n, 10) * 2.2s) linear infinite; will-change:transform}
-.tira:hover .tira-pista, .tira:focus-within .tira-pista, .tira.parada .tira-pista, .tira.fuera .tira-pista{animation-play-state:paused}
+.tira-pista{display:flex; width:max-content; animation:tiraMarcha calc(var(--n, 10) * 2.2s) linear infinite}
+.tira:hover .tira-pista, .tira:focus-within .tira-pista, .tira.parada .tira-pista, .tira[data-fuera="1"] .tira-pista{animation-play-state:paused}
 .tira-lote{display:flex; gap: var(--e-3); padding-right: var(--e-3)}
 /* el icono de la pestaña a la que llegas da un pequeño rebote: una cosa, 240 ms */
 @keyframes pestanaPop{from{transform:scale(.8)} to{transform:none}}
@@ -1889,10 +1890,11 @@ main.crono, main.comics, main.estreno{animation:none}
       border-color:color-mix(in srgb, var(--line) 75%, transparent);
     }
     html.barra-pegada .toolbar{box-shadow:none}
+    /* sin desenfoque propio: una tercera zona borrosa costaba fotogramas al
+       hacer scroll y, pegada al borde del cristal de la barra, no se nota */
     html.barra-pegada .toolbar-tope{
       display:block; position:absolute; left:0; right:0; bottom:100%; height:120px;
-      background:color-mix(in srgb, var(--bg) var(--cristal), transparent);
-      -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
+      background:color-mix(in srgb, var(--bg) 92%, transparent);
     }
     @media (prefers-reduced-transparency: reduce){
       .toolbar{background:var(--bg); -webkit-backdrop-filter:none; backdrop-filter:none; border-color:var(--line)}

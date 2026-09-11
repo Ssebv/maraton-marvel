@@ -4187,30 +4187,37 @@ export default function App() {
   // no la hace parpadear), nunca se esconde en la portada (primeros 160 px)
   // ni mientras se escribe en la búsqueda.
   useEffect(() => {
-    if (!window.matchMedia('(max-width:720px)').matches) return
+    if (!esMovil) return
     const raiz = document.documentElement
-    let ultimo = window.scrollY, acumulado = 0
-    const on = () => {
+    let ultimo = window.scrollY, acumulado = 0, pendiente = false
+    // la barra y su `top` pegado se leen una vez (y al cambiar de tamaño),
+    // no en cada evento de scroll; el trabajo va en un solo rAF por fotograma
+    const tb = document.querySelector('.toolbar')
+    let tope = tb ? parseFloat(getComputedStyle(tb).top) || 0 : 0
+    const alRedimensionar = () => { tope = tb ? parseFloat(getComputedStyle(tb).top) || 0 : 0 }
+    const calcula = () => {
+      pendiente = false
       const y = window.scrollY
       const d = y - ultimo
       ultimo = y
       // pegada arriba: en el iPhone la barra se queda bajo el reloj y por
       // encima quedaba una franja (la zona segura del notch) donde se veía
-      // pasar el contenido; con esta clase el CSS la tapa con el fondo
-      const tb = document.querySelector('.toolbar')
-      if (tb) {
-        const tope = parseFloat(getComputedStyle(tb).top) || 0
-        raiz.classList.toggle('barra-pegada', y > 0 && tb.getBoundingClientRect().top <= tope + 1)
-      }
+      // pasar el contenido; con esta clase el CSS la tapa
+      if (tb) raiz.classList.toggle('barra-pegada', y > 0 && tb.getBoundingClientRect().top <= tope + 1)
       const enBarra = document.activeElement && document.activeElement.closest && document.activeElement.closest('.toolbar')
       if (y < 160 || enBarra) { raiz.classList.remove('barra-oculta'); acumulado = 0; return }
       acumulado = Math.sign(d) === Math.sign(acumulado) ? acumulado + d : d
       if (acumulado > 24) raiz.classList.add('barra-oculta')
       else if (acumulado < -24) raiz.classList.remove('barra-oculta')
     }
+    const on = () => { if (!pendiente) { pendiente = true; requestAnimationFrame(calcula) } }
     window.addEventListener('scroll', on, { passive: true })
-    return () => { window.removeEventListener('scroll', on); raiz.classList.remove('barra-oculta') }
-  }, [])
+    window.addEventListener('resize', alRedimensionar)
+    return () => {
+      window.removeEventListener('scroll', on); window.removeEventListener('resize', alRedimensionar)
+      raiz.classList.remove('barra-oculta', 'barra-pegada')
+    }
+  }, [esMovil])
   // En móvil la tira de subvistas se desliza: al cambiar de vista (atrás,
   // enlace, pestaña) la activa se trae a la vista dentro de la tira, sin
   // mover la página (scrollIntoView con block:nearest también la movería)
@@ -4272,9 +4279,10 @@ export default function App() {
     })))
     return m
   }, [pais, idioma])
+  const qBusca = buscaLenta ? norm(buscaLenta) : ''
   const pasaFiltro = (item, esComic) => {
     if (buscaLenta) {
-      const p = pajares[item.id], q = norm(buscaLenta)
+      const p = pajares[item.id], q = qBusca
       if (!p) return false
       const conEps = !(sinSpoilers && !vistas[item.id])
       if (!p.base.includes(q) && !(conEps && p.eps.includes(q))) return false
@@ -4355,11 +4363,14 @@ export default function App() {
     const items = era.items.filter(it => pasaFiltro(it, sg.saga === 'comics'))
     return items.length > 0 && items.every(it => vistas[it.id])
   }
-  const ponPlegado = (clave, v) => setPlegadas(p => {
+  // el último bloque que el usuario plegó o desplegó: solo ese entra con el
+  // fundido (al cargar, las 26 sagas y eras aparecían todas animándose a la vez)
+  const [recien, setRecien] = useState(null)
+  const ponPlegado = (clave, v) => { setRecien(clave); setPlegadas(p => {
     const n = { ...p, [clave]: v ? 1 : 0 }
     try { localStorage.setItem(KEY_PLEGADAS, JSON.stringify(n)) } catch {}
     return n
-  })
+  }) }
   // Despliega la saga y la era donde vive un título, solo si están plegadas
   // tal como se ven ahora (no lo que dice el almacén): devuelve si hizo algo,
   // para que quien salte a la tarjeta espere al siguiente pintado.
@@ -5355,14 +5366,14 @@ export default function App() {
                 {plegada ? (
                   <>
                     {/* mismos filtros que la rejilla desplegada: con «Solo pendientes» no desfila lo visto */}
-                    <TiraPlegada esComic={esComic} desc={saga.desc}
+                    <TiraPlegada esComic={esComic} desc={saga.desc} anima={recien === saga.saga}
                       entradas={saga.eras.flatMap(era => era.items.filter(it => pasaFiltro(it, esComic) && !oculto(it, esComic)).map(item => ({ item, c: era.c })))}
                       detalle={resumenBloque(saga.eras.flatMap(era => era.items.filter(it => pasaFiltro(it, esComic) && !oculto(it, esComic))), esComic) + (completa ? tr(' · vista entera', ' · all watched') : '')}
                       onAbrir={(item, c) => setDetalle({ item, c, esComic })} />
                     <div className="barra" aria-hidden="true"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
                   </>
                 ) : (
-                <div className="saga-cuerpo" id={`saga-cuerpo-${saga.saga}`}>
+                <div className={`saga-cuerpo${recien === saga.saga ? ' abre' : ''}`} id={`saga-cuerpo-${saga.saga}`}>
                 <DescPlegable texto={saga.desc} />
                 {/* En móvil la descripción entra aquí, plegada con la guía en
                     un solo desplegable «Sobre esta saga»: desplegados, los dos
@@ -5411,12 +5422,12 @@ export default function App() {
                         )}
                       </div>
                       {eraPlegada && (
-                        <TiraPlegada esComic={esComic} entradas={visibles.map(item => ({ item, c: era.c }))}
+                        <TiraPlegada esComic={esComic} anima={recien === kEra} entradas={visibles.map(item => ({ item, c: era.c }))}
                           detalle={resumenBloque(visibles, esComic) + (vEra === numerados.length ? tr(' · vista entera', ' · all watched') : '')}
                           onAbrir={item => setDetalle({ item, c: era.c, esComic })} />
                       )}
                       {!eraPlegada && (
-                      <div className="era-borde" id={`era-cuerpo-${kEra.slice(4)}`}>
+                      <div className={`era-borde${recien === kEra ? ' abre' : ''}`} id={`era-cuerpo-${kEra.slice(4)}`}>
                         <div className="grid">
                           {numerados.map((item, i) =>
                             visibles.includes(item) && (
@@ -5963,7 +5974,7 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais, salie
 // mitad, así el bucle no se nota), cada una abre su ficha, y debajo una
 // línea que dice qué es y cuánto hay. Se para al pasar el ratón o al
 // enfocar; con «reducir movimiento» es un carril normal que se desliza.
-function TiraPlegada({ entradas, esComic, onAbrir, desc, detalle }) {
+function TiraPlegada({ entradas, esComic, onAbrir, desc, detalle, anima }) {
   // Copias suficientes para que el bucle no deje un hueco: la pista se
   // desplaza el ancho de UN lote (--lote), así que hace falta que los demás
   // cubran el carril entero. Una era de 4 títulos a 1.300 px necesita siete.
@@ -5989,18 +6000,19 @@ function TiraPlegada({ entradas, esComic, onAbrir, desc, detalle }) {
   // Varias tiras a la vez cansan y gastan batería: solo se mueve la que está
   // en pantalla, y un toque la para del todo (con el dedo no hay hover).
   const [parada, setParada] = useState(false)
-  const [fuera, setFuera] = useState(false)
   useEffect(() => {
     const el = ref.current
     if (!el || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver(([e]) => setFuera(!e.isIntersecting), { threshold: 0 })
+    // un data-atributo que React no gestiona: cambiarlo no re-renderiza las
+    // copias de la tira ni se pierde cuando React reescribe className
+    const io = new IntersectionObserver(([e]) => { el.dataset.fuera = e.isIntersecting ? '' : '1' }, { threshold: 0 })
     io.observe(el)
     return () => io.disconnect()
   }, [])
   if (!entradas.length) return null
   return (
-    <div className="tira-plegada">
-      <div className={`tira${parada ? ' parada' : ''}${fuera ? ' fuera' : ''}`} ref={ref} style={{ '--n': entradas.length }}
+    <div className={`tira-plegada${anima ? ' anima' : ''}`}>
+      <div className={`tira${parada ? ' parada' : ''}`} ref={ref} style={{ '--n': entradas.length }}
         role="group" aria-roledescription={tr('carrusel', 'carousel')} aria-label={tr('Carátulas del bloque', 'Covers in this block')}
         onPointerDown={() => setParada(true)}>
         <div className="tira-pista">
