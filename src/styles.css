@@ -665,6 +665,18 @@ h2{
   padding: var(--e-2) var(--e-3); border-radius:var(--r-s); background:var(--panel2); color:var(--ink2);
 }
 .saga-count{margin-left: auto; font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
+/* Plegar la saga: mismo botón discreto que «Ocultar panel». Una saga vista
+   entera arranca plegada (cabecera + barra) y deja sitio a lo que falta. */
+.saga-plegar{
+  flex:none; padding: var(--e-1) var(--e-4); margin: 0;
+  background:none; border:1px solid var(--line); border-radius:var(--r-pill);
+  color:var(--ink3); font:inherit; font-size: var(--t-s); font-weight:600; cursor:pointer;
+  position:relative;
+}
+.saga-plegar::after{content:""; position:absolute; inset:-10px 0}
+.saga-plegar:hover{border-color:var(--ink2); color:var(--ink2)}
+.saga.plegada .barra{margin-top: var(--e-4)}
+.saga.plegada + .saga{margin-top: var(--e-7)}
 .saga-desc{margin: var(--e-3) 0 0; font-size: var(--t-b); color:var(--ink2); max-width:68ch}
 /* En móvil la descripción de la saga (5-6 líneas) empujaba el primer título
    fuera de la primera pantalla: se pliega a dos líneas con «Leer más». En
@@ -1603,7 +1615,7 @@ main.crono, main.comics, main.estreno{animation:none}
 .saga-guia[open] > p:nth-of-type(6){animation-delay:150ms}
 /* Todo lo pulsable responde al dedo igual: encoge un 4 % y vuelve en 160 ms.
    Los chips, la casilla, la tarjeta y el botón principal ya lo hacían. */
-.ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .estrella, .tab,
+.ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .saga-plegar, .estrella, .tab,
 .galeria-item, .tl-card, .mv-card, .pf-item, .volver-ficha, .cine-flecha, .prov-chip, .aviso-btn, .persona .avatar{transition:transform var(--dur-corta)}
 .ep{transition:opacity var(--dur-corta), transform var(--dur-corta)}
 .ghost:active, .subvista:active, .siguiente-stat:active, .filtros-quitar:active, .proximo-cal:active,
@@ -1697,6 +1709,12 @@ main.crono, main.comics, main.estreno{animation:none}
   main.crono .saga[data-saga="xmen"]{grid-column:1; grid-row:1}
   main.crono .saga[data-saga="ucm"]{grid-column:2; grid-row:1 / span 2}
   main.crono .saga[data-saga="comics"]{grid-column:1; grid-row:2}
+  /* Con una saga plegada las dos columnas no tienen sentido: la plegada
+     dejaba media pantalla vacía debajo de su cabecera. Una sola columna,
+     la plegada arriba como una franja y la otra a todo el ancho. */
+  main.crono:has(.saga.plegada){grid-template-columns:1fr}
+  main.crono:has(.saga.plegada) .saga{grid-column:auto; grid-row:auto}
+  main.crono .saga.plegada + .saga{margin-top: var(--e-7)}
   main.estreno .grid{display:grid; grid-template-columns:1fr 1fr; gap: var(--e-4)}
   main.comics .era .grid{display:grid; grid-template-columns:1fr 1fr; gap: var(--e-4)}
 }

@@ -19,6 +19,9 @@ const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
 const KEY_NOTAS = 'maraton-marvel-notas-v1'
 const KEY_COMPACTO = 'maraton-marvel-compacto'
+// Sagas plegadas a mano: { xmen: 1 | 0 }. Sin entrada, la saga decide sola
+// (plegada si estaba completa al cargar la página).
+const KEY_PLEGADAS = 'maraton-marvel-plegadas-v1'
 // Modo sin spoilers: '1' esconde sinopsis, post-créditos y títulos de episodio
 // de lo que aún no has visto (la ficha deja mostrarlos a mano).
 const KEY_SPOILERS = 'maraton-marvel-spoilers-v1'
@@ -108,6 +111,12 @@ const saneaMarcas = x => {
     if (typeof v === 'number' && isFinite(v)) out[k] = v
     else if (v === 1 || v === true) out[k] = 1
   }
+  return out
+}
+const saneaPlegadas = x => {
+  if (!esObj(x)) return null
+  const out = {}
+  for (const [k, v] of Object.entries(x)) if (v === 0 || v === 1) out[k] = v
   return out
 }
 // { id: { p: 1-5, txt: "\u2026" } }
@@ -4160,6 +4169,27 @@ export default function App() {
     })
     return { totV, totN, mins, siguiente, porSaga }
   }, [vistas, filtros, pais, idioma])
+  // Una saga que ya has visto entera no aporta nada abierta: arranca plegada
+  // (solo la cabecera y su barra). Se decide al cargar, no al marcar el último
+  // título, para que la lista no se cierre bajo el dedo. El usuario puede
+  // plegar y desplegar cualquiera, y eso sí se recuerda. Con una búsqueda en
+  // marcha nada se pliega: escondería los resultados.
+  const [plegadas, setPlegadas] = useState(() => leeGuardado(KEY_PLEGADAS, saneaPlegadas, {}))
+  const completasAlCargar = useRef(null)
+  if (completasAlCargar.current === null) {
+    completasAlCargar.current = new Set(Object.entries(stats.porSaga).filter(([, s]) => s.n > 0 && s.v === s.n).map(([k]) => k))
+  }
+  const sagaPlegada = id => {
+    if (plegadas[id] != null) return plegadas[id] === 1
+    const s = stats.porSaga[id]
+    return !!s && completasAlCargar.current.has(id) && s.n > 0 && s.v === s.n
+  }
+  const ponSagaPlegada = (id, v) => setPlegadas(p => {
+    const n = { ...p, [id]: v ? 1 : 0 }
+    try { localStorage.setItem(KEY_PLEGADAS, JSON.stringify(n)) } catch {}
+    return n
+  })
+  const sagaDe = itemId => { const sg = DATA.find(sg => sg.eras.some(e => e.items.some(it => it.id === itemId))); return sg ? sg.saga : null }
 
   const estadisticas = useMemo(() => {
     const minutosVistos = item => {
@@ -4477,6 +4507,8 @@ export default function App() {
           {stats.siguiente && (
             <button className="stat siguiente-stat" title={tr('Ir a la tarjeta', 'Go to the card')} onClick={() => {
               if (vista !== 'crono') setVista('crono')
+              const sg = sagaDe(stats.siguiente.id)
+              if (sg && sagaPlegada(sg)) ponSagaPlegada(sg, false)
               setTimeout(() => {
                 const el = document.getElementById('card-' + stats.siguiente.id)
                 if (el) {
@@ -5093,8 +5125,10 @@ export default function App() {
             const visibles = saga.eras.reduce((acc, era) => acc + era.items.filter(it => pasaFiltro(it, esComic)).length, 0)
             if (!s.n || !visibles) return null
             let num = 0
+            const plegada = !buscaLenta.trim() && sagaPlegada(saga.saga)
+            const completa = s.n > 0 && s.v === s.n
             return (
-              <section className="saga" data-saga={saga.saga} id={`saga-${saga.saga}`} key={saga.saga}>
+              <section className={`saga${plegada ? ' plegada' : ''}`} data-saga={saga.saga} id={`saga-${saga.saga}`} key={saga.saga}>
                 <div className="saga-head">
                   {FRANJA.includes(saga.saga) && (
                     <div className="saga-franja" aria-hidden="true">
@@ -5107,9 +5141,17 @@ export default function App() {
                   <h2>{saga.titulo}</h2>
                   <span className="uni-chip">{saga.uni}</span>
                   <span className="saga-count">
-                    {s.v} / {s.n}{s.m ? tr(` · quedan ${fmtDur(s.m)}`, ` · ${fmtDur(s.m)} left`) : ''}
+                    {s.v} / {s.n}{s.m ? tr(` · quedan ${fmtDur(s.m)}`, ` · ${fmtDur(s.m)} left`) : completa ? tr(' · completa', ' · complete') : ''}
                   </span>
+                  <button type="button" className="saga-plegar" aria-expanded={!plegada} aria-controls={plegada ? undefined : `saga-cuerpo-${saga.saga}`}
+                    onClick={() => ponSagaPlegada(saga.saga, !plegada)}>
+                    {plegada ? tr('Desplegar', 'Expand') : tr('Plegar', 'Collapse')}
+                  </button>
                 </div>
+                {plegada ? (
+                  <div className="barra" aria-hidden="true"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
+                ) : (
+                <div id={`saga-cuerpo-${saga.saga}`}>
                 <DescPlegable texto={saga.desc} />
                 {/* En móvil la descripción entra aquí, plegada con la guía en
                     un solo desplegable «Sobre esta saga»: desplegados, los dos
@@ -5164,6 +5206,8 @@ export default function App() {
                     </div>
                   )
                 })}
+                </div>
+                )}
               </section>
             )
           })}
