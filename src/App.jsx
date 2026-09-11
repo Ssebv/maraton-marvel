@@ -495,10 +495,32 @@ const ACENTOS = [
 // enlaces antiguos siguen abriendo lo que abrían.
 const DESTINOS = [
   { id: 'maraton', label: 'Maratón', en: 'Marathon', vistas: ['crono', 'estreno', 'comics', 'animacion', 'galeria', 'tiempo'] },
-  { id: 'mio', label: 'Mío', en: 'Mine', vistas: ['listas', 'stats'] },
+  { id: 'mio', label: 'Perfil', en: 'Profile', vistas: ['listas', 'stats'] },
   { id: 'multiverso', label: 'Multiverso', en: 'Multiverse', vistas: ['multiverso'] },
 ]
 const destinoDe = v => (DESTINOS.find(d => d.vistas.includes(v)) || DESTINOS[0]).id
+// Iconos de la barra de pestañas del móvil (SVG de trazo, como los de los
+// enlaces de la tarjeta: nada de emoji en controles). En escritorio no se ven.
+const ICONOS_DESTINO = {
+  maraton: (
+    <svg className="tab-ico" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 9.5h18V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" />
+      <path d="M3 9.5 4.6 4.8h14.8L21 9.5M8.2 4.8l1.8 4.7M13.2 4.8l1.8 4.7" />
+    </svg>
+  ),
+  mio: (
+    <svg className="tab-ico" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20.5c0-4.2 3.6-6.8 8-6.8s8 2.6 8 6.8z" />
+    </svg>
+  ),
+  multiverso: (
+    <svg className="tab-ico" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="5" />
+      <path d="M18.2 6.6c2.6-.9 4.4-.8 4.9.3.9 1.9-3 5.9-8.7 8.9S3.7 20.1 2.8 18.2c-.5-1 .4-2.6 2.3-4.3" />
+    </svg>
+  ),
+}
 
 const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
 
@@ -4642,7 +4664,7 @@ export default function App() {
 
       <header className="toolbar">
         <div className="controles" role="group" aria-label={tr('Vista y filtros', 'View and filters')}>
-          <nav className="tabs" aria-label={tr('Secciones', 'Sections')} style={{ '--tab': Math.max(0, DESTINOS.findIndex(d => d.id === destinoDe(vista))) }}>
+          <nav className="tabs" aria-label={tr('Secciones', 'Sections')}>
             {DESTINOS.map(d => {
               // volver a un destino te devuelve donde lo dejaste
               const destino = ultimaVista[d.id] || d.vistas[0]
@@ -4656,7 +4678,8 @@ export default function App() {
                     if (destino === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
                     setVista(destino)
                   }}>
-                  {tr(d.label, d.en || d.label)}
+                  {ICONOS_DESTINO[d.id]}
+                  <span className="tab-rotulo">{tr(d.label, d.en || d.label)}</span>
                 </a>
               )
             })}

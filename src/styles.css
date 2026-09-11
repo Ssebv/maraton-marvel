@@ -590,6 +590,8 @@ h1 .rojo{color:var(--red)}
 .tab{position:relative}
 .tab::after{content:""; position:absolute; inset:-4px 0}
 a.tab{text-decoration:none}
+/* el icono solo existe en la barra de pestañas del móvil */
+.tab-ico{display:none; width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none}
 .tab[aria-pressed="true"], .tab[aria-current="page"]{background:var(--panel); color:var(--ink); box-shadow:var(--card-shadow)}
 .chip-btn{
   border:1px solid var(--line); background:transparent; color:var(--ink2);
@@ -1844,39 +1846,30 @@ main.crono, main.comics, main.estreno{animation:none}
   /* acotado al carril: .busca es también el campo de nombre de lista, el de
      comentarios del club y el del código de sincronización */
   .controles .busca{order:-1; width:168px}
+  /* Barra de pestañas (11 sep 2026): antes era una pastilla flotante con
+     tres palabras, que se leía como un selector suelto y tapaba la última
+     tarjeta. Ahora es una barra de app al estilo iOS: de borde a borde,
+     pegada abajo, línea arriba, zona segura dentro, icono + rótulo por
+     pestaña y la activa en rojo. Sin píldora que se desliza: el color dice
+     dónde estás. Los laterales llevan la zona segura para el apaisado. */
   nav.tabs{
-    /* los laterales también son zona segura: en apaisado el notch y las
-       esquinas redondeadas se comen 44-59 px de cada lado */
-    position:fixed;
-    left:calc(10px + env(safe-area-inset-left, 0px));
-    right:calc(10px + env(safe-area-inset-right, 0px));
-    bottom:calc(10px + env(safe-area-inset-bottom));
-    z-index:40; justify-content:space-between; gap: 0; padding: var(--e-2);
+    position:fixed; left:0; right:0; bottom:0; z-index:40;
+    justify-content:space-around; gap: 0;
+    padding: var(--e-2) env(safe-area-inset-right, 0px) calc(var(--e-2) + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
     background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:var(--r-l);
-    box-shadow:0 14px 34px -12px rgba(0,0,0,.5);
+    border:none; border-top:1px solid var(--line);
+    border-radius:0; box-shadow:none;
   }
   nav.tabs .tab{
-    /* con tres destinos cada celda pasa de 37 a ~125 px y el rótulo vuelve
-       a caber entero: se acabaron "Anim." y "Multi". Tercios exactos (flex 0)
-       para que la píldora que se desliza caiga siempre debajo del activo. */
-    flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center;
-    padding: var(--e-4) var(--e-2); border-radius:var(--r-m); background:transparent;
-    font-size: var(--t-m);
+    flex:1 1 0; min-width:0; min-height:49px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap: var(--e-1);
+    padding: var(--e-2) var(--e-2); border-radius:0; background:transparent;
+    font-size: var(--t-xs); font-weight:600; letter-spacing:.01em; color:var(--ink3);
   }
   nav.tabs .tab{position:relative; z-index:1}
-  /* la píldora del destino activo se desliza al siguiente en vez de saltar;
-     --tab lo pone la app (0, 1 o 2). El dock ya es position:fixed, que sirve
-     de contenedor: NO volver a ponerle position:relative, lo desclava. */
-  nav.tabs::before{
-    content:""; position:absolute; top: var(--e-2); bottom: var(--e-2); left: var(--e-2);
-    width:calc((100% - 2 * var(--e-2)) / 3); border-radius:var(--r-m);
-    background:var(--panel2);
-    transform:translateX(calc(var(--tab, 0) * 100%));
-    transition:transform var(--dur-media) var(--curva);
-  }
-  nav.tabs .tab::after{content:""; position:absolute; inset:-3px 0}
+  nav.tabs .tab-ico{display:block}
+  nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.2; fill:var(--red-soft)}
+  nav.tabs .tab::after{content:""; position:absolute; inset:0}
   /* Cristal en el dock (pedido el 3 sep 2026: excepción consciente y única a
      la regla del 18 de agosto de no usar backdrop-filter como superficie).
      Solo aquí: es una franja de 60 px que iOS desenfoca igual en sus barras.
@@ -1890,8 +1883,7 @@ main.crono, main.comics, main.estreno{animation:none}
       -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
       border-color:color-mix(in srgb, var(--line) 75%, transparent);
     }
-    nav.tabs .tab{color:color-mix(in srgb, var(--ink) 75%, var(--ink2))}
-    nav.tabs .tab[aria-current="page"]{color:var(--ink)}
+    nav.tabs .tab{color:color-mix(in srgb, var(--ink) 40%, var(--ink2))}
     @media (prefers-reduced-transparency: reduce){
       nav.tabs{background:var(--panel); -webkit-backdrop-filter:none; backdrop-filter:none; border-color:var(--line)}
     }
@@ -2235,12 +2227,6 @@ a.prov-chip:hover{border-color:var(--ink3)}
 :root[data-acento="tva"]{--red:var(--violet)}
 :root[data-acento="zombi"]{--red:var(--doom)}
 :root[data-acento="828"]{--red:var(--teal)}
-
-/* Va al final a propósito: la píldora del dock se declara dentro del bloque
-   de 720 px y esta regla tiene que venir DESPUÉS para ganar. */
-@media (prefers-reduced-motion: reduce){
-  nav.tabs::before{transition:none}
-}
 
 /* Lector de cómics: una capa a pantalla completa sobre la ficha. Los controles
    fijos llevan safe-area en los cuatro lados. */
