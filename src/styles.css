@@ -424,6 +424,10 @@ h1 .rojo{color:var(--red)}
   /* en móvil la barra debe caber en una línea: el ritmo ya está dentro del panel */
   .pr-extra{display:none}
   .panel-resumen{gap: var(--e-4); padding: 0 var(--e-5); min-height:44px; margin-top: var(--e-3)}
+  /* la sesión de hoy en su propio renglón: en la misma línea partía a media
+     palabra y dejaba la pastilla «Panel completo» flotando */
+  .pr-sesion{display:block}
+  .pr-sesion .pr-sep{display:none}
 }
 .panel-plegar{
   display:block; margin: var(--e-3) 0 0 auto; padding: var(--e-1) var(--e-4);
@@ -689,7 +693,9 @@ h2{
 .era.plegada + .era, .era.plegada{margin-top: var(--e-5)}
 
 /* ── Carrusel de un bloque plegado ── */
-.tira-plegada{display:flex; flex-direction:column; gap: var(--e-3); margin-top: var(--e-4)}
+.tira-plegada{display:flex; flex-direction:column; gap: var(--e-3); margin-top: var(--e-4); animation:entraVista var(--dur-media) var(--curva) both}
+/* al desplegar, el cuerpo entra con el mismo fundido corto que todo lo demás */
+.saga-cuerpo, .era-borde{animation:entraVista var(--dur-media) var(--curva) both}
 .saga{min-width:0}
 .tira{
   overflow:hidden; min-width:0;
@@ -1708,6 +1714,7 @@ main.crono, main.comics, main.estreno{animation:none}
    Lo que sobra es que las cosas se desplacen, giren o no paren nunca. */
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}
+  .toolbar, nav.tabs{transition:none !important}
   /* entradas y bucles: resueltos al instante, una sola vez */
   *{animation-duration:.01ms !important; animation-iteration-count:1 !important}
   /* El cielo estrellado NO se oculta: la regla de arriba ya le para el
@@ -1855,19 +1862,23 @@ main.crono, main.comics, main.estreno{animation:none}
      de pestañas (position:fixed) vive dentro de esta en el DOM y un
      transform aquí la convertía en su contenedor, así que el dock se iba
      hacia arriba con la barra al hacer scroll (visto en el iPhone, 11 sep). */
-  .toolbar{transition:top var(--dur-media) var(--curva)}
-  html.barra-oculta .toolbar{top:-90px}
-  /* y la barra de pestañas también se retira al bajar y vuelve al subir */
-  html.barra-oculta nav.tabs{transform:translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 2px))}
+  .toolbar{transition:transform var(--dur-larga) var(--curva-hoja)}
+  html.barra-oculta .toolbar{transform:translateY(calc(-100% - env(safe-area-inset-top, 0px) - 2px))}
+  /* y la barra de pestañas se retira hacia abajo, fundiéndose, con la misma
+     curva de iOS; ya no vive dentro de .toolbar (portal a body en móvil) */
+  html.barra-oculta nav.tabs{transform:translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 2px)); opacity:0}
   /* Los destinos van en el dock de abajo: el separador que los seguía quedaba
      solo al principio del carril y parecía un chip cortado. */
-  nav.tabs + .ctrl-sep{display:none}
+  nav.tabs + .ctrl-sep, .controles > .ctrl-sep:first-child{display:none}
   /* Los grupos se disuelven en el carril para poder poner la búsqueda la
      primera: estaba en la posición 11, detrás de diez chips. */
   .ctrl-grupo{display:contents}
   /* acotado al carril: .busca es también el campo de nombre de lista, el de
      comentarios del club y el del código de sincronización */
   .controles .busca{order:-1; width:168px}
+  /* Ajustes era el undécimo chip del carril, fuera de la vista: va justo
+     después de la búsqueda (mismo order; el DOM decide el empate) */
+  .controles .chip-ajustes{order:-1}
   /* Barra de pestañas (11 sep 2026): antes era una pastilla flotante con
      tres palabras, que se leía como un selector suelto y tapaba la última
      tarjeta. Ahora es una barra de app al estilo iOS: de borde a borde,
@@ -1920,8 +1931,8 @@ main.crono, main.comics, main.estreno{animation:none}
   }
   /* Con el teclado en pantalla el dock flotaba justo encima de él y tapaba
      los primeros resultados: mientras se escribe en la barra se retira */
-  nav.tabs{transition:transform var(--dur-media) var(--curva)}
-  .toolbar:has(.busca:focus) nav.tabs{transform:translateY(calc(100% + 24px))}
+  nav.tabs{transition:transform var(--dur-larga) var(--curva-hoja), opacity var(--dur-larga) var(--curva-hoja)}
+  html:has(.controles .busca:focus) nav.tabs{transform:translateY(calc(100% + 24px)); opacity:0}
 
   /* La barra ocupaba 399 px (5 filas de chips) al crecer el número de filtros.
      En móvil pasa a ser un carril de una sola fila que se desliza. */

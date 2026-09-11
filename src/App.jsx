@@ -1,4 +1,5 @@
 import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { DATA, ESTRENOS, JOYA_MIN, KEY, MULTIVERSO } from './data.js'
 import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
@@ -3636,6 +3637,17 @@ export default function App() {
   const [compacto, setCompacto] = useState(() => localStorage.getItem(KEY_COMPACTO) === '1')
   const [sinSpoilers, setSinSpoilers] = useState(() => { try { return localStorage.getItem(KEY_SPOILERS) === '1' } catch { return false } })
   const ponSinSpoilers = v => { setSinSpoilers(v); try { localStorage.setItem(KEY_SPOILERS, v ? '1' : '0') } catch {} }
+  // En móvil la barra de pestañas se dibuja directamente en <body> (portal):
+  // dentro de .toolbar, cualquier transform de la barra al retirarse la
+  // convertía en su contenedor y el dock se iba con ella (11 sep 2026).
+  const [esMovil, setEsMovil] = useState(() => !!(window.matchMedia && window.matchMedia('(max-width:720px)').matches))
+  useEffect(() => {
+    if (!window.matchMedia) return
+    const mq = window.matchMedia('(max-width:720px)')
+    const on = e => setEsMovil(e.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
   const [panelAbierto, setPanelAbierto] = useState(() => {
     try {
       const guardado = localStorage.getItem(KEY_PANEL)
@@ -4631,6 +4643,28 @@ export default function App() {
   const ultimoDetalle = useRef(null); if (detalle) ultimoDetalle.current = detalle
   if (perfil) return <PerfilView {...perfil} />
 
+  const navTabs = (
+    <nav className="tabs" aria-label={tr('Secciones', 'Sections')}>
+      {DESTINOS.map(d => {
+        // volver a un destino te devuelve donde lo dejaste
+        const destino = ultimaVista[d.id] || d.vistas[0]
+        return (
+          <a className="tab" key={d.id} href={'#' + destino}
+            aria-current={destinoDe(vista) === d.id ? 'page' : undefined}
+            onClick={e => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+              e.preventDefault()
+              // la pestaña en la que ya estás sube al principio, como en iOS
+              if (destino === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
+              setVista(destino)
+            }}>
+            {ICONOS_DESTINO[d.id]}
+            <span className="tab-rotulo">{tr(d.label, d.en || d.label)}</span>
+          </a>
+        )
+      })}
+    </nav>
+  )
   return (
     <div className="wrap">
       <a className="saltar" href="#contenido">{tr('Saltar al contenido', 'Skip to content')}</a>
@@ -4669,6 +4703,13 @@ export default function App() {
           </div>
           {stats.siguiente && (
             <button className="stat siguiente-stat" title={tr('Ir a la tarjeta', 'Go to the card')} onClick={() => {
+              // en móvil la tarjeta se lee como una fila con flecha: abre la
+              // ficha (ver, marcar), que es lo que promete; en escritorio
+              // sigue llevando a la tarjeta dentro de la lista
+              if (window.matchMedia('(max-width:640px)').matches) {
+                const d = buscaItem(stats.siguiente.id)
+                if (d) { setDetalle(d); return }
+              }
               if (vista !== 'crono') setVista('crono')
               const desplegado = despliegaPara(stats.siguiente.id)
               setTimeout(() => {
@@ -4718,7 +4759,7 @@ export default function App() {
             {/* el horario vive dentro del panel, que en móvil arranca plegado:
                 si hoy toca sesión, se dice aquí, que es lo que se ve */}
             {sesionHoy && horario && (
-              <span className="pr-sesion">{' · '}{tr(`hoy sesión a las ${horario.hora}`, `session today at ${horario.hora}`)}</span>
+              <span className="pr-sesion"><span className="pr-sep">{' · '}</span>{tr(`hoy sesión a las ${horario.hora}`, `session today at ${horario.hora}`)}</span>
             )}
           </span>
           <span className="pr-abrir">{tr('Panel completo', 'Full panel')}</span>
@@ -4757,26 +4798,7 @@ export default function App() {
 
       <header className="toolbar">
         <div className="controles" role="group" aria-label={tr('Vista y filtros', 'View and filters')}>
-          <nav className="tabs" aria-label={tr('Secciones', 'Sections')}>
-            {DESTINOS.map(d => {
-              // volver a un destino te devuelve donde lo dejaste
-              const destino = ultimaVista[d.id] || d.vistas[0]
-              return (
-                <a className="tab" key={d.id} href={'#' + destino}
-                  aria-current={destinoDe(vista) === d.id ? 'page' : undefined}
-                  onClick={e => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                    e.preventDefault()
-                    // la pestaña en la que ya estás sube al principio, como en iOS
-                    if (destino === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
-                    setVista(destino)
-                  }}>
-                  {ICONOS_DESTINO[d.id]}
-                  <span className="tab-rotulo">{tr(d.label, d.en || d.label)}</span>
-                </a>
-              )
-            })}
-          </nav>
+          {esMovil ? createPortal(navTabs, document.body) : navTabs}
           {/* los filtros solo actúan sobre las listas del maratón (crono,
               estreno, cómics, animación, galería, cine): en Mío y Multiverso
               no cambian nada y solo estorbaban en el carril */}
@@ -4812,7 +4834,7 @@ export default function App() {
           <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio, actor o año', 'Title, episode, actor or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
             enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
-          <button className="chip-btn" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
+          <button className="chip-btn chip-ajustes" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
           {/* El estado de sincronización es estado, no un botón: solo se
               muestra cuando hay algo que mirar. */}
           {syncEstado === 'error' && (
@@ -5330,7 +5352,7 @@ export default function App() {
                     <div className="barra" aria-hidden="true"><i style={{ width: `${s.n ? 100 * s.v / s.n : 0}%` }} /></div>
                   </>
                 ) : (
-                <div id={`saga-cuerpo-${saga.saga}`}>
+                <div className="saga-cuerpo" id={`saga-cuerpo-${saga.saga}`}>
                 <DescPlegable texto={saga.desc} />
                 {/* En móvil la descripción entra aquí, plegada con la guía en
                     un solo desplegable «Sobre esta saga»: desplegados, los dos
