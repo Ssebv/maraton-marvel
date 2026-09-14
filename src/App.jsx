@@ -3077,7 +3077,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
       if (e.touches.length !== 1 || refPersona.current || !refNav.current) return
       const t = e.touches[0]
       if (t.clientY - el.getBoundingClientRect().top <= 44) return
-      if (e.target.closest('.carril-personas,input,textarea')) return
+      // el carril de temporadas también se desliza solo (14 sep 2026)
+      if (e.target.closest('.carril-personas,.temporadas,input,textarea')) return
       x0 = t.clientX; y0 = t.clientY; dx = 0; modo = null; t0 = e.timeStamp
     }
     const onMove = e => {
@@ -3148,9 +3149,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   // cuántas veces se ha cambiado de título con la ficha abierta: al navegar el
   // contenido entra con un fundido corto; al abrir, no (la hoja ya entra sola)
   const [cambios, setCambios] = useState(0)
+  // temporada que se ve en la lista de episodios (null = la primera con algo pendiente)
+  const [tempVer, setTempVer] = useState(null)
   const montado = useRef(false)
   useEffect(() => {
-    setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null)
+    setVerTrailer(false); setSinAbierta(null); setEnlaceCopiado(false); setPersona(null); setTempVer(null)
     if (montado.current) setCambios(c => c + 1); else montado.current = true
   }, [item.id])
   // al volver por la pila de fichas se reabre la biografía de la que se salió
@@ -3171,6 +3174,22 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onNav, persona])
+  // Episodios por temporadas (14 sep 2026): la ficha pintaba todas seguidas
+  // (216 episodios en Spidey, 136 en Agentes de S.H.I.E.L.D.: hasta ~12.000 px
+  // de hoja en el móvil). Se ve una temporada; por defecto, la primera con algo
+  // pendiente, que es la que estás viendo. El selector lleva el indicador que viaja.
+  const listaEps = item.tipo === 'serie' ? EPISODES[item.id] : null
+  const temporadas = listaEps ? [...new Set(listaEps.map(e => e.s))] : []
+  const tempActual = temporadas.includes(tempVer) ? tempVer
+    : (temporadas.find(t => listaEps.some(e => e.s === t && !eps[`${item.id}:${e.s}:${e.n}`])) ?? temporadas[0])
+  const [tempGrupo, tempIndicador] = useIndicador(`${item.id}|${tempActual}|${persona ? 1 : 0}`)
+  // la temporada elegida, dentro del carril si hay más de las que caben
+  useEffect(() => {
+    const g = tempGrupo.current, a = g && g.querySelector('[aria-pressed="true"]')
+    if (!a || g.scrollWidth <= g.clientWidth) return
+    const r = a.getBoundingClientRect(), rg = g.getBoundingClientRect()
+    if (r.left < rg.left + 24 || r.right > rg.right - 24) g.scrollTo({ left: a.offsetLeft - 24, behavior: 'instant' })
+  }, [item.id, tempActual, persona])
   const dirLimpio = item.dir ? limpiaNombre(item.dir) : ''
   const directores = DUOS[dirLimpio]
     || dirLimpio.split(/, | y | & /).map(s => s.trim()).filter(s => s && s !== 'otros')
@@ -3368,8 +3387,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             </div>
           )}
           {item.tipo === 'serie' && EPISODES[item.id] && (() => {
-            const lista = EPISODES[item.id]
-            const temporadas = [...new Set(lista.map(e => e.s))]
+            const lista = listaEps
             const hechos = lista.filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length
             // el botón de tanda: marca lo que falte de la temporada, o la
             // vacía si ya está entera — 76 toques menos en X-Men TAS
@@ -3378,7 +3396,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               const faltan = de.some(e => !eps[`${item.id}:${e.s}:${e.n}`])
               return (
                 <button className="chip-btn" onClick={() => marcaTemporada(item.id, t, faltan)}>
-                  {faltan ? tr('Marcar todos', 'Mark all') : tr('Quitar todos', 'Clear all')}
+                  {temporadas.length > 1
+                    ? (faltan ? tr('Marcar temporada', 'Mark season') : tr('Quitar temporada', 'Clear season'))
+                    : (faltan ? tr('Marcar todos', 'Mark all') : tr('Quitar todos', 'Clear all'))}
                 </button>
               )
             }
@@ -3387,16 +3407,25 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                 <div className="episodios-head">
                   <h3>{tr('Episodios', 'Episodes')}</h3>
                   <span className="episodios-count">{hechos}/{lista.length}</span>
-                  {temporadas.length === 1 && tanda(temporadas[0])}
+                  {tanda(tempActual)}
                 </div>
-                {temporadas.map(t => (
-                  <div key={t}>
-                    {temporadas.length > 1 && (
-                      <div className="temporada">
-                        <span>{tr('Temporada', 'Season')} {t}</span>
-                        {tanda(t)}
-                      </div>
-                    )}
+                {temporadas.length > 1 && (
+                  <div className="tabs temporadas" ref={tempGrupo} role="group" aria-label={tr('Temporadas', 'Seasons')}>
+                    <span className="indicador" ref={tempIndicador} aria-hidden="true" />
+                    {temporadas.map(t => {
+                      const de = lista.filter(e => e.s === t)
+                      const h = de.filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length
+                      return (
+                        <button key={t} type="button" className="tab" aria-pressed={t === tempActual} onClick={() => setTempVer(t)}
+                          aria-label={tr(`Temporada ${t}, ${h} de ${de.length} vistos`, `Season ${t}, ${h} of ${de.length} watched`)}>
+                          T{t}<span className="temp-cuenta" aria-hidden="true">{h === de.length ? ' ✓' : ` ${h}/${de.length}`}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                {[tempActual].map(t => (
+                  <div key={t} className={temporadas.length > 1 ? 'temporada-cuerpo' : undefined}>
                     <div className="ep-lista">
                       {lista.filter(e => e.s === t).map(e => {
                         const clave = `${item.id}:${e.s}:${e.n}`
