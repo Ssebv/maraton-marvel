@@ -3190,6 +3190,10 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
     const r = a.getBoundingClientRect(), rg = g.getBoundingClientRect()
     if (r.left < rg.left + 24 || r.right > rg.right - 24) g.scrollTo({ left: a.offsetLeft - 24, behavior: 'instant' })
   }, [item.id, tempActual, persona])
+  // la temporada por defecto se fija al abrir: recalculada en cada render, al
+  // completar la que ves (marcar temporada o su último episodio) la lista
+  // saltaba a la siguiente y «Quitar temporada» ya no deshacía (revisión)
+  useEffect(() => { if (tempVer == null && temporadas.length > 1) setTempVer(tempActual) }, [item.id, tempVer])
   const dirLimpio = item.dir ? limpiaNombre(item.dir) : ''
   const directores = DUOS[dirLimpio]
     || dirLimpio.split(/, | y | & /).map(s => s.trim()).filter(s => s && s !== 'otros')
@@ -3508,12 +3512,16 @@ function Actividad({ vistas, eps }) {
   const max = Math.max(1, ...celdas.map(c => c.n))
   let racha = 0
   for (let i = celdas.length - 1; i >= 0 && celdas[i].n > 0; i--) racha++
-  const total = [...dias.values()].reduce((a, b) => a + b, 0)
+  // solo las marcas de la ventana: con todas, quien llevaba meses leía
+  // «13 marcas en 0 días de los últimos 140» (14 sep 2026)
+  const total = celdas.reduce((a, c) => a + c.n, 0)
   const diasActivos = celdas.filter(c => c.n > 0).length
   const tono = n => `color-mix(in srgb, var(--red) ${25 + 75 * n / max}%, var(--panel2))`
   // El title de cada celda no existe con el dedo: los valores viven también en
   // texto (resumen y escala), y el diario de abajo es la tabla gemela.
-  const resumen = tr(`${total} marcas en ${diasActivos} día${diasActivos === 1 ? '' : 's'} de los últimos 140`, `${total} check-offs on ${diasActivos} day${diasActivos === 1 ? '' : 's'} of the last 140`) + (max > 1 ? tr(` · máximo ${max} en un día`, ` · at most ${max} in one day`) : '')
+  const resumen = total === 0
+    ? tr('sin marcas en los últimos 140 días', 'no check-offs in the last 140 days')
+    : tr(`${total} marca${total === 1 ? '' : 's'} en ${diasActivos} día${diasActivos === 1 ? '' : 's'} de los últimos 140`, `${total} check-off${total === 1 ? '' : 's'} on ${diasActivos} day${diasActivos === 1 ? '' : 's'} of the last 140`) + (max > 1 ? tr(` · máximo ${max} en un día`, ` · at most ${max} in one day`) : '')
   return (
     <section className="grafica">
       <h3 className="grafica-titulo">{tr('Actividad del maratón', 'Marathon activity')}</h3>
