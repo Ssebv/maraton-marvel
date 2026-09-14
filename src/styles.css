@@ -77,6 +77,20 @@
   --card-shadow:0 1px 1px rgba(20,24,32,.05), 0 3px 8px rgba(20,24,32,.05);
   --card-shadow-up:0 2px 6px rgba(20,24,32,.09), 0 18px 44px rgba(20,24,32,.13);
 }
+/* Muelles (14 sep 2026): curvas de muelle calculadas por Motion, con su
+   duración dentro del token (`animation: x var(--muelle) both`). Para lo que
+   entra solo; lo que sigue al dedo va en src/movimiento.js. */
+/* muelles:inicio — generado por scripts/muelles.mjs con spring() de Motion; no editar a mano */
+:root{--muelle-hoja:.38s var(--curva-hoja); --muelle:var(--dur-media) var(--curva); --muelle-toque:var(--dur-corta) var(--curva); --muelle-pop:var(--dur-media) var(--curva-rebote)}
+@supports (animation-timing-function: linear(0, 1)){
+  :root{
+    --muelle-hoja:500ms linear(0, 0.0788, 0.2413, 0.4182, 0.577, 0.7057, 0.8034, 0.8737, 0.9223, 0.9545, 0.975, 0.9875, 0.9948, 0.9987, 1.0006, 1.0014, 1);
+    --muelle:350ms linear(0, 0.1251, 0.3554, 0.5737, 0.7411, 0.8551, 0.9259, 0.9666, 0.988, 0.9981, 1.002, 1);
+    --muelle-toque:450ms linear(0, 0.2348, 0.6075, 0.8763, 1.0076, 1.0451, 1.0389, 1.0217, 1.0079, 1.0006, 0.9981, 0.9981, 0.9988, 0.9995, 1);
+    --muelle-pop:550ms linear(0, 0.1856, 0.5333, 0.8389, 1.0263, 1.1003, 1.1002, 1.0675, 1.031, 1.0048, 0.9917, 0.9886, 0.991, 0.995, 0.9984, 1.0004, 1, 1);
+  }
+}
+/* muelles:fin */
 /* Tintes derivados: se calculan del acento que esté vigente (tema y universo) */
 :root{
   --red-soft:color-mix(in srgb, var(--red) var(--tinte), transparent);
@@ -602,7 +616,7 @@ a.tab{text-decoration:none}
 .chip-btn{
   border:1px solid var(--line); background:transparent; color:var(--ink2);
   border-radius:var(--r-pill); padding: var(--e-2) var(--e-4); font-size: var(--t-m); font-weight:500; cursor:pointer;
-  transition:transform var(--dur-corta);
+  transition:transform var(--muelle-toque);
 }
 /* El chip mide 30 px de alto. Con el ratón basta el ::after; con el dedo no
    llega: desde 30 hasta 44 hacen falta 7 px por lado y entre dos filas de
@@ -646,6 +660,21 @@ a.tab{text-decoration:none}
   .subvistas::-webkit-scrollbar{display:none}
   .subvista{flex:none}
 }
+/* Indicador que viaja (14 sep 2026): la opción activa ya no cambia de golpe,
+   una pieza sola va de la vieja a la nueva con un muelle (useIndicador en
+   src/movimiento.js, que le da posición y tamaño). Va primero en el DOM, así
+   que pinta debajo de las opciones. Con :where() para no pisar el
+   position:fixed del dock móvil. En colores forzados no se usa: los estados
+   vuelven a Highlight (bloque forced-colors del principio). */
+:where(.con-indicador){position:relative}
+.indicador{position:absolute; left:0; top:0; pointer-events:none}
+.tabs .indicador{border-radius:var(--r-pill); background:var(--panel); box-shadow:var(--card-shadow)}
+.subvistas .indicador::before{content:""; position:absolute; left:0; right:0; bottom:0; height:2px; border-radius:var(--r-s); background:var(--red)}
+@media (forced-colors: none){
+  .tabs.con-indicador .tab[aria-pressed="true"], .tabs.con-indicador .tab[aria-current="page"]{background:transparent; box-shadow:none}
+  .subvistas.con-indicador .subvista[aria-current="page"]{border-bottom-color:transparent}
+}
+@media (forced-colors: active){ .indicador{display:none} }
 
 /* Qué han hecho los filtros. Sin esto, con tres puestos no hay ninguna
    frase que diga cuántos títulos quedan ni por qué falta una saga. */
@@ -716,7 +745,7 @@ h2{
 @keyframes tiraMarcha{to{transform:translateX(calc(-1 * var(--lote, 50%)))}}
 .tira-item{
   flex:none; background:none; border:none; padding:0; margin:0; cursor:pointer;
-  border-radius:var(--r-s); transition:transform var(--dur-corta) var(--curva);
+  border-radius:var(--r-s); transition:transform var(--muelle-toque);
 }
 .tira-item:hover{transform:translateY(-3px)}
 .tira-item .cover{width:52px; height:78px; border-radius:var(--r-s); box-shadow:0 2px 6px rgba(0,0,0,.35)}
@@ -807,7 +836,7 @@ h3{
   border:none;
   border-radius:var(--r-m); padding: var(--e-5);
   box-shadow:none;
-  transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-larga);
+  transition:transform var(--muelle), box-shadow var(--dur-media), opacity var(--dur-larga);
   /* La lista entra escalonada (30 ms por tarjeta, tope 360): es LA animación
      de la vista, así que main no se funde además — ver main.crono más abajo. */
   animation:entraVista var(--dur-media) var(--curva) both;
@@ -858,10 +887,10 @@ h3{
      proyecto lo lleva; esta es la excepción y es segura porque el fondo va de
      transparente a --done, y un verde del tema anterior sigue leyéndose. */
   transition:background var(--dur-media) var(--curva-rebote),
-             transform var(--dur-media) var(--curva-rebote),
+             transform var(--muelle-pop),
              box-shadow var(--dur-media) var(--curva-rebote);
 }
-.checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:opacity var(--dur-media), transform var(--dur-media)}
+.checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:opacity var(--dur-media), transform var(--muelle-pop)}
 .checkbox:hover{border-color:var(--done); box-shadow:0 0 0 4px color-mix(in srgb, var(--done) 15%, transparent)}
 /* área táctil de 44 px: el círculo visible mide 26 y el mínimo táctil es 44 */
 .checkbox::after{content:""; position:absolute; inset:-9px; border-radius:50%}
@@ -989,7 +1018,7 @@ h3{
   --pad: var(--e-7);
   padding: var(--pad); display:flex; gap: var(--e-7);
   box-shadow:var(--card-shadow-up);
-  animation:riseIn .3s var(--curva) both;
+  animation:riseIn var(--muelle) both;
 }
 .cerrar{
   position:absolute; top:14px; right:14px; z-index:1;
@@ -1068,7 +1097,7 @@ h3{
   border:none; border-radius:var(--r-pill); padding: var(--e-4) var(--e-6); cursor:pointer;
   font-size: var(--t-b); font-weight:700; color:#fff;
   background:linear-gradient(120deg, var(--sello), var(--calido));
-  transition:transform var(--dur-corta), filter var(--dur-corta);
+  transition:transform var(--muelle-toque), filter var(--dur-corta);
   position:relative; overflow:hidden;
 }
 .accion-principal:hover{filter:brightness(1.1)}
@@ -1690,7 +1719,7 @@ main.crono, main.comics, main.estreno{animation:none}
 /* Todo lo pulsable responde al dedo igual: encoge un 4 % y vuelve en 160 ms.
    Los chips, la casilla, la tarjeta y el botón principal ya lo hacían. */
 .ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .saga-plegar, .era-plegar, .estrella, .tab,
-.galeria-item, .tl-card, .mv-card, .pf-item, .volver-ficha, .cine-flecha, .prov-chip, .aviso-btn, .persona .avatar{transition:transform var(--dur-corta)}
+.galeria-item, .tl-card, .mv-card, .pf-item, .volver-ficha, .cine-flecha, .prov-chip, .aviso-btn, .persona .avatar{transition:transform var(--muelle-toque)}
 .ep{transition:opacity var(--dur-corta), transform var(--dur-corta)}
 .ghost:active, .subvista:active, .siguiente-stat:active, .filtros-quitar:active, .proximo-cal:active,
 .saga-guia summary:active, .estrella:active, .tab:active, .cerrar:active, .ep:active,
@@ -1699,7 +1728,7 @@ main.crono, main.comics, main.estreno{animation:none}
 /* los que se colocan con transform conservan el suyo al encoger */
 .version-nueva:active{transform:translateX(-50%) scale(.96)}
 .nav-ficha:active{transform:translateY(-50%) scale(.94)}
-.version-nueva, .nav-ficha{transition:transform var(--dur-corta)}
+.version-nueva, .nav-ficha{transition:transform var(--muelle-toque)}
 /* la zona de abrir la ficha responde como una fila de iOS: se atenúa */
 .abrir{transition:opacity var(--dur-corta)}
 .abrir:active{opacity:.6}
@@ -1713,7 +1742,7 @@ main.crono, main.comics, main.estreno{animation:none}
 /* Un número que cambia rueda hacia su sitio en vez de saltar. */
 @keyframes cifraRueda{from{opacity:0; transform:translateY(.45em)} to{opacity:1; transform:none}}
 .cifra{display:inline-block}
-.cifra-cambio{animation:cifraRueda var(--dur-media) var(--curva) both}
+.cifra-cambio{animation:cifraRueda var(--muelle) both}
 /* Pasar de título dentro de la ficha (flechas o deslizar) cambiaba el contenido
    de golpe; el mismo fundido corto, solo al navegar, nunca al abrir. */
 .modal-cambio{animation:entraVista var(--dur-corta) var(--curva) both}
@@ -1730,6 +1759,14 @@ main.crono, main.comics, main.estreno{animation:none}
   main{animation:none}
   nav.tabs{view-transition-name:dock}
   .toolbar{view-transition-name:barra}
+  /* las subvistas tampoco se deslizan con la página: son navegación */
+  .subvistas{view-transition-name:subvistas}
+  /* dock y subvistas se pintan vivos durante la transición: fundir su
+     instantánea vieja con la nueva dejaba el indicador duplicado un momento
+     (uno quieto que se apaga y otro que viaja). Si las subvistas aparecen o
+     desaparecen (solo hay una de las dos imágenes) se funden como siempre. */
+  ::view-transition-old(dock), ::view-transition-old(subvistas):not(:only-child){display:none}
+  ::view-transition-new(dock), ::view-transition-new(subvistas):not(:only-child){animation:none}
   ::view-transition-group(*){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
   ::view-transition-old(root), ::view-transition-new(root){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
   html[data-vt="adelante"]::view-transition-old(root){animation-name:vtSaleIzq}
@@ -1986,7 +2023,7 @@ main.crono, main.comics, main.estreno{animation:none}
   nav.tabs .tab{position:relative; z-index:1}
   nav.tabs .tab-ico{display:block; width:16px; height:16px}
   /* activa: relleno al 35 % y trazo más grueso, para que se distinga sin color */
-  nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.4; fill:color-mix(in srgb, var(--red) 35%, transparent); animation:pestanaPop var(--dur-media) var(--curva-rebote) both}
+  nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.4; fill:color-mix(in srgb, var(--red) 35%, transparent); animation:pestanaPop var(--muelle-pop) both}
   /* 31 px de alto: la zona táctil llega a 44 creciendo hacia arriba */
   nav.tabs .tab::after{content:""; position:absolute; inset:-13px 0 0}
   /* Cristal en el dock (pedido el 3 sep 2026: excepción consciente y única a
@@ -2029,6 +2066,14 @@ main.crono, main.comics, main.estreno{animation:none}
   .ctrl-sep{align-self:center; height:22px}
   .atajos{display:none}
   nav.tabs .tab[aria-current="page"]{background:transparent; color:var(--red); box-shadow:none}
+  /* en la barra de pestañas el indicador es una cápsula tintada detrás del
+     icono y el rótulo (como la barra de iOS 26), no la píldora de escritorio */
+  nav.tabs .indicador{background:none; box-shadow:none}
+  nav.tabs .indicador::before{
+    content:""; position:absolute; left:50%; top:50%; width:min(64px, calc(100% - 8px)); height:30px;
+    transform:translate(-50%, -50%); border-radius:var(--r-pill);
+    background:color-mix(in srgb, var(--red) 13%, transparent);
+  }
 
   /* Sin blur bajo la hoja: desenfocar una página llena de carátulas mientras
      la hoja sube era el tirón más visible del móvil. Un velo más oscuro cumple. */
@@ -2037,7 +2082,7 @@ main.crono, main.comics, main.estreno{animation:none}
     max-width:none; width:100%; border-radius:var(--r-l) var(--r-l) 0 0; border-bottom:none;
     max-height:92vh; max-height:92dvh; padding-top: var(--e-6);
     padding-bottom:calc(20px + env(safe-area-inset-bottom));
-    animation:sheetUp .38s var(--curva-hoja) both;
+    animation:sheetUp var(--muelle-hoja) both;
   }
   .overlay.saliendo .modal{animation:fueraHojaMovil var(--dur-media) var(--curva-hoja) both}
   @keyframes fueraHojaMovil{to{transform:translateY(105%)}}

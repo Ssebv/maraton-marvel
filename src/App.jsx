@@ -15,6 +15,7 @@ import { EPISODIOS_EN } from './episodios-en.js'
 import { EN_TEXTOS } from './en-textos.js'
 import { clasifica, guardaArchivo, leeArchivo, borraArchivo, metaArchivo, abreComic, fmtTam, listaArchivos, persistencia, pidePersistencia, espacio } from './lector.js'
 import { NUBE, cargaGis, entraConGoogle, refrescaToken } from './nube.js'
+import { goma, muelle, useIndicador, velocimetro } from './movimiento.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
 const KEY_SYNC = 'maraton-marvel-sync-v1'
@@ -1259,6 +1260,28 @@ function gestosDeVolver() {
   }
   const arma = () => window.addEventListener('touchmove', onMove, { passive: false })
   const desarma = () => window.removeEventListener('touchmove', onMove)
+  // Física al soltar (14 sep 2026, movimiento.js): la capa vuelve o se va con
+  // la velocidad que llevaba el dedo, y pasado el tope tira como una goma.
+  // Muelles en marcha por nodo: si el dedo vuelve a coger una hoja que aún
+  // está volviendo a su sitio, se para ahí y se sigue desde donde está.
+  const vivos = new Map()
+  const retoma = el => {
+    const v = vivos.get(el)
+    if (!v) return null
+    vivos.delete(el)
+    v.ctl.stop()
+    return v
+  }
+  const dimDe = (el, modo) => modo === 'x' ? el.clientWidth : el.clientHeight
+  const posDe = (el, modo, crudo) => crudo >= 0 ? crudo : -goma(-crudo, dimDe(el, modo) / 4)
+  // el velo se aclara con el recorrido en los dos gestos, como en iOS
+  const pinta = (el, modo, p) => {
+    el.style.transform = modo === 'x' ? `translateX(${p}px)` : `translateY(${p}px)`
+    const v = velo(el)
+    if (v) v.style.setProperty('--arrastre', Math.min(1, Math.max(0, p) / Math.max(1, dimDe(el, modo))).toFixed(3))
+  }
+  const quietoVelo = el => { const v = velo(el); if (v) v.style.transition = 'none' }
+  const umbralDe = (el, modo) => modo === 'x' ? Math.min(140, el.clientWidth * 0.35) : 140
   const onStart = e => {
     if (cerrando || g || e.touches.length !== 1 || !capasAtras.length) return
     const t = e.touches[0]
@@ -1267,7 +1290,10 @@ function gestosDeVolver() {
       const el = nodoDe(capa, e.target)
       if (!el) return
       e.stopPropagation()
-      g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: null }
+      const vivo = retoma(el)
+      g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: null, base: 0, vel: velocimetro() }
+      if (vivo && vivo.modo === 'x') { g.modo = 'x'; g.base = g.p = vivo.p; agarra(el); quietoVelo(el) }
+      else if (vivo) suelta(el)
       prepara(el)
       arma()
       return
@@ -1276,17 +1302,22 @@ function gestosDeVolver() {
     // resto solo si nada entre el dedo y la hoja está desplazado, y entonces
     // el primer movimiento decide (abajo = hoja, arriba = scroll). La hoja es
     // la que se toca, y la capa a cerrar la primera desde arriba que no viva
-    // dentro de ella
+    // dentro de ella. Una hoja que aún vuelve a su sitio se agarra desde
+    // cualquier punto.
     if (!hoja()) return
     const el = e.target.closest && e.target.closest('.modal')
     if (!el || e.target.closest('input,textarea,select')) return
     const capa = [...capasAtras].reverse().find(c => !c.dentro)
     if (!capa) return
-    const enAsa = t.clientY - el.getBoundingClientRect().top <= 44 && !e.target.closest('button,a')
+    const vivo = retoma(el)
+    if (vivo && vivo.modo !== 'y') suelta(el)
+    const enMarcha = !!vivo && vivo.modo === 'y'
+    const enAsa = enMarcha || (t.clientY - el.getBoundingClientRect().top <= 44 && !e.target.closest('button,a'))
     if (!enAsa && !arribaDelTodo(e.target, el)) return
-    g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: enAsa ? 'y' : 'y?' }
+    g = { el, capa, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, t0: e.timeStamp, modo: enAsa ? 'y' : 'y?', base: enMarcha ? vivo.p : 0, vel: velocimetro() }
+    if (enMarcha) g.p = vivo.p
     prepara(el)
-    if (enAsa) agarra(el)
+    if (enAsa) { agarra(el); quietoVelo(el) }
     arma()
   }
   const onMove = e => {
@@ -1296,7 +1327,7 @@ function gestosDeVolver() {
     if (g.modo === 'y?') {
       // sin zona muerta: el primer movimiento decide y, si es hacia abajo, se
       // cancela ya el desplazamiento nativo (después Safari no lo soltaría)
-      if (g.dy > 0 && g.dy >= Math.abs(g.dx)) { g.modo = 'y'; agarra(g.el) }
+      if (g.dy > 0 && g.dy >= Math.abs(g.dx)) { g.modo = 'y'; agarra(g.el); quietoVelo(g.el) }
       else { g.el.style.willChange = ''; g = null; desarma(); return }
     }
     if (!g.modo) {
@@ -1304,20 +1335,17 @@ function gestosDeVolver() {
       if (g.dx <= 0 || g.dx < Math.abs(g.dy) * 1.2) { g.el.style.willChange = ''; g = null; desarma(); return }
       g.modo = 'x'
       agarra(g.el)
-      const v = velo(g.el); if (v) v.style.transition = 'none'
+      quietoVelo(g.el)
     }
     e.preventDefault()
+    const crudo = g.base + (g.modo === 'x' ? g.dx : g.dy)
+    g.vel.anota(e.timeStamp, crudo)
     // un tic al cruzar el punto en que soltar cierra (y otro al volver atrás
     // de él), como las hojas nativas: el dedo sabe dónde está sin mirar
-    const recorrido = g.modo === 'x' ? g.dx : g.dy
-    const umbral = g.modo === 'x' ? Math.min(140, g.el.clientWidth * 0.35) : 140
-    const fuera = recorrido > umbral
+    const fuera = crudo > umbralDe(g.el, g.modo)
     if (fuera !== !!g.cruzado) { g.cruzado = fuera; tic() }
-    if (g.modo === 'x') {
-      const dx = Math.max(0, g.dx)
-      g.el.style.transform = `translateX(${dx}px)`
-      const v = velo(g.el); if (v) v.style.setProperty('--arrastre', Math.min(1, dx / g.el.clientWidth).toFixed(3))
-    } else g.el.style.transform = `translateY(${Math.max(0, g.dy)}px)`
+    g.p = posDe(g.el, g.modo, crudo)
+    pinta(g.el, g.modo, g.p)
   }
   const onCancel = () => { if (!g) return; const { el } = g; g = null; desarma(); suelta(el) }
   // solo si la capa sigue registrada: un atrás del sistema durante los 240 ms
@@ -1325,29 +1353,41 @@ function gestosDeVolver() {
   const cierraSiSigue = capa => { if (capasAtras.includes(capa)) capa.cierra() }
   const onEnd = e => {
     if (!g) return
-    const { el, capa, modo, dx, dy, t0 } = g
+    const { el, capa, modo, vel } = g
+    const crudo = g.base + (modo === 'x' ? g.dx : g.dy)
+    const desde = g.p == null ? 0 : g.p
     g = null
     desarma()
     if (!modo || modo === 'y?') { el.style.willChange = ''; return }
-    const recorrido = modo === 'x' ? dx : dy
-    const latigazo = recorrido > 24 && recorrido / Math.max(1, e.timeStamp - t0) > 0.11
-    const umbral = modo === 'x' ? Math.min(140, el.clientWidth * 0.35) : 140
-    const v = velo(el)
-    if (recorrido > umbral || latigazo) {
+    const v = vel.lee(e.timeStamp)
+    // se va si pasó el umbral o si soltó con un latigazo (velocidad del dedo
+    // al soltar, no la media del gesto: con la media, bajar 70 px sin prisa
+    // también cerraba); no si al soltar el dedo ya volvía atrás con decisión
+    const latigazo = crudo > 24 && v > 650
+    if ((crudo > umbralDe(el, modo) || latigazo) && v > -300) {
       if (reducido()) { cierraSiSigue(capa); requestAnimationFrame(() => sueltaTrasCerrar(el)); return }
       cerrando = true
-      el.style.transition = 'transform var(--dur-media) var(--curva)'
-      el.style.transform = modo === 'x' ? 'translateX(105%)' : 'translateY(105%)'
-      if (v) { v.style.transition = 'background var(--dur-media)'; v.style.setProperty('--arrastre', '1') }
-      // se cierra antes de recolocar: si el nodo sobrevive al cierre (la
-      // biografía deja la ficha debajo) no se ve volver a su sitio un cuadro
-      setTimeout(() => { cerrando = false; cierraSiSigue(capa); requestAnimationFrame(() => sueltaTrasCerrar(el)) }, 240)
+      const destino = dimDe(el, modo) * 1.05
+      let ctl = null, hecho = false
+      // se cierra al llegar fuera, antes de recolocar: si el nodo sobrevive al
+      // cierre (la biografía deja la ficha debajo) no se ve volver un cuadro
+      const fin = () => {
+        if (hecho) return
+        hecho = true
+        if (ctl) ctl.stop()
+        cerrando = false
+        cierraSiSigue(capa)
+        requestAnimationFrame(() => sueltaTrasCerrar(el))
+      }
+      ctl = muelle(desde, destino, 'irse', Math.max(v, 900), q => { pinta(el, modo, q); if (q >= destino - 2) fin() }, fin)
+      setTimeout(fin, 700)
     } else {
-      // vuelve como un muelle: pasa unos píxeles de largo y asienta
-      el.style.transition = 'transform 280ms var(--curva-rebote)'
-      el.style.transform = ''
-      if (v) { v.style.transition = 'background var(--dur-media)'; v.style.setProperty('--arrastre', '0') }
-      setTimeout(() => { if (!g || g.el !== el) suelta(el) }, 300)
+      // vuelve como un muelle con la velocidad del dedo: pasa unos píxeles
+      // de largo y asienta; se puede volver a coger a mitad
+      const vivo = { modo, p: desde, ctl: null }
+      vivo.ctl = muelle(desde, 0, 'volver', v, q => { vivo.p = q; pinta(el, modo, q) },
+        () => { if (vivos.get(el) === vivo) vivos.delete(el); if (!g || g.el !== el) suelta(el) })
+      if (vivo.ctl) vivos.set(el, vivo)
     }
   }
   window.addEventListener('touchstart', onStart, { capture: true, passive: true })
@@ -4720,10 +4760,16 @@ export default function App() {
   const [syncMontado, syncSale] = useSaliente(syncModal)
   const [detalleMontado, detalleSale] = useSaliente(detalle)
   const ultimoDetalle = useRef(null); if (detalle) ultimoDetalle.current = detalle
+  // la opción activa se señala con una pieza que viaja (movimiento.js); antes
+  // del return temprano del perfil por las reglas de los hooks
+  const [navGrupo, navIndicador] = useIndicador(`${destinoDe(vista)}|${esMovil}`)
+  const [subGrupo, subIndicador] = useIndicador(vista)
+  const [mvGrupo, mvIndicador] = useIndicador(`${vista}|${mvModo}`)
   if (perfil) return <PerfilView {...perfil} />
 
   const navTabs = (
-    <nav className="tabs" aria-label={tr('Secciones', 'Sections')}>
+    <nav className="tabs" ref={navGrupo} aria-label={tr('Secciones', 'Sections')}>
+      <span className="indicador" ref={navIndicador} aria-hidden="true" />
       {DESTINOS.map(d => {
         // volver a un destino te devuelve donde lo dejaste
         const destino = ultimaVista[d.id] || d.vistas[0]
@@ -4937,7 +4983,8 @@ export default function App() {
         const d = DESTINOS.find(x => x.id === destinoDe(vista))
         if (!d || d.vistas.length < 2) return null
         return (
-          <nav className="subvistas" aria-label={tr(`Cómo ver ${d.label}`, `How to view ${d.en || d.label}`)}>
+          <nav className="subvistas" ref={subGrupo} aria-label={tr(`Cómo ver ${d.label}`, `How to view ${d.en || d.label}`)}>
+            <span className="indicador" ref={subIndicador} aria-hidden="true" />
             {d.vistas.map(v => {
               const p = PESTANAS.find(x => x.id === v)
               return (
@@ -5155,7 +5202,8 @@ export default function App() {
                 <p className="saga-desc mv-intro">
                   {tr(`Los universos que hay que conocer antes de ${TITULOS.doomsday}. Entra en cada Tierra para ver y marcar todo lo que ocurre en ella.`, `The universes you should know before ${TITULOS.doomsday}. Enter each Earth to see and check off everything that happens there.`)}
                 </p>
-                <div className="tabs mv-modos">
+                <div className="tabs mv-modos" ref={mvGrupo}>
+                  <span className="indicador" ref={mvIndicador} aria-hidden="true" />
                   <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>{tr('Sistema', 'System')}</button>
                   <button className="tab" aria-pressed={mvModo === 'mapa'} onClick={() => setMvModo('mapa')}>{tr('Mapa', 'Map')}</button>
                   <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>{tr('Tarjetas', 'Cards')}</button>

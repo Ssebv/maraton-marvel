@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node scripts/verifica.mjs && node scripts/gama.mjs",
-    "build": "node scripts/verifica.mjs && node scripts/gama.mjs && node scripts/webp.mjs && node scripts/gen-novedades.mjs && vite build",
+    "build": "node scripts/verifica.mjs && node scripts/gama.mjs && node scripts/muelles.mjs && node scripts/webp.mjs && node scripts/gen-novedades.mjs && vite build",
     "desplegar": "npm run build && rm -rf docs && cp -R dist docs && node scripts/verifica.mjs",
     "contrato": "node scripts/contrato.mjs",
     "plataformas": "node scripts/plataformas.mjs; node scripts/paises.mjs; node scripts/titulos.mjs; node scripts/titulos-en.mjs; node scripts/episodios.mjs; node scripts/episodios-en.mjs",
@@ -13,7 +13,8 @@
     "titulos-en": "node scripts/titulos-en.mjs",
     "episodios": "node scripts/episodios.mjs",
     "episodios-en": "node scripts/episodios-en.mjs",
-    "webp": "node scripts/webp.mjs"
+    "webp": "node scripts/webp.mjs",
+    "muelles": "node scripts/muelles.mjs"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +22,7 @@
   "type": "commonjs",
   "dependencies": {
     "fflate": "^0.8.3",
+    "motion": "^13.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
