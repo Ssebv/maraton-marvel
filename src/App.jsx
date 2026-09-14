@@ -43,6 +43,88 @@ function conTransicion(dir, fn) {
   })
   t.finished.finally(() => { if (raiz.dataset.vt === dir) delete raiz.dataset.vt })
 }
+// La carátula vuela entre la ficha y lo que tocaste (14 sep 2026): una
+// transición de elemento compartido. Al abrir, la carátula de la tarjeta (de
+// la lista, la galería, una tira, «Siguiente»…) lleva view-transition-name
+// «portada» en la instantánea vieja y la de la ficha en la nueva: el
+// navegador la hace volar de un sitio a otro por ENCIMA de todo, siguiendo a
+// la hoja mientras sube, sin que la recorte su overflow. Al cerrar, vuelve a
+// su tarjeta. El resto de la página no se funde (la raíz se pinta viva, ver
+// styles.css): la hoja entra y sale con sus animaciones de siempre. Mientras
+// vuela se esconde la pieza de ORIGEN, que en la página viva seguiría en su
+// sitio; la de destino no: un elemento con nombre no se pinta en la raíz, y
+// escondido dejaba vacía la imagen nueva del vuelo (volaba medio transparente).
+// Sin View Transitions queda el vuelo de reserva de Detalle (WAAPI).
+let vueloEnCurso = false
+let ultimoToque = null
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', e => { ultimoToque = { el: e.target, t: performance.now() } }, { capture: true, passive: true })
+}
+const enPantalla = (el, dentro) => {
+  if (!el || !el.isConnected) return false
+  const r = el.getBoundingClientRect()
+  const c = dentro ? dentro.getBoundingClientRect() : { top: 0, left: 0, bottom: window.innerHeight, right: window.innerWidth }
+  return r.width > 16 && r.height > 16 && r.bottom > c.top + 16 && r.top < c.bottom - 16 && r.right > c.left && r.left < c.right
+}
+const puedeVolar = () => typeof document !== 'undefined' && !!document.startViewTransition && !movimientoReducido()
+// la carátula de lo último que se tocó (hace menos de 1,5 s) o, si no, la de
+// la tarjeta del título en la lista
+function portadaEnLista(id) {
+  const cands = []
+  if (ultimoToque && performance.now() - ultimoToque.t < 1500 && ultimoToque.el.isConnected && !ultimoToque.el.closest('[role="dialog"]')) {
+    const cont = ultimoToque.el.closest('button, a, [role="button"], article, li')
+    if (cont) cands.push(cont.matches('.cover') ? cont : cont.querySelector('.cover'))
+  }
+  const tarjeta = document.getElementById('card-' + id)
+  if (tarjeta) cands.push(tarjeta.querySelector('.cover'))
+  return cands.find(el => enPantalla(el)) || null
+}
+function vuela(dir, desde, antes, fn, despues) {
+  const raiz = document.documentElement
+  const escondidos = []
+  let hasta = null
+  desde.style.viewTransitionName = 'portada'
+  raiz.dataset.vt = dir
+  const t = document.startViewTransition(async () => {
+    desde.style.viewTransitionName = ''
+    desde.style.visibility = 'hidden'; escondidos.push(desde)
+    if (antes) antes(escondidos)
+    enTransicion = true; vueloEnCurso = true
+    try { flushSync(fn) } finally { enTransicion = false; vueloEnCurso = false }
+    hasta = despues()
+    if (!hasta) return
+    hasta.style.viewTransitionName = 'portada'
+    // sin decodificar, la instantánea nueva saldría vacía y la carátula
+    // parpadearía al aterrizar; como mucho 120 ms de espera
+    if (hasta.decode) await Promise.race([hasta.decode().catch(() => {}), new Promise(r => setTimeout(r, 120))])
+  })
+  t.finished.finally(() => {
+    if (hasta) hasta.style.viewTransitionName = ''
+    escondidos.forEach(el => { el.style.visibility = '' })
+    if (raiz.dataset.vt === dir) delete raiz.dataset.vt
+  })
+}
+function abreConVuelo(id, abre) {
+  const desde = puedeVolar() && portadaEnLista(id)
+  if (!desde) { abre(); return }
+  ultimoOrigen = { id, el: desde }
+  vuela('portada', desde, null, abre, () => document.querySelector('.overlay:not(.saliendo) .modal-portada .cover'))
+}
+// de dónde salió la última ficha: al cerrar vuelve ahí aunque no sea una
+// tarjeta de la lista (galería, tiras, «Siguiente»), si sigue en pantalla
+let ultimoOrigen = null
+const origenDe = id => (ultimoOrigen && ultimoOrigen.id === id && enPantalla(ultimoOrigen.el) && ultimoOrigen.el) || portadaEnLista(id)
+function cierraConVuelo(id, cierra) {
+  const marco = document.querySelector('.overlay:not(.saliendo) .modal-portada')
+  const modal = marco && marco.closest('.modal')
+  const desde = marco && marco.querySelector('.cover')
+  // no si la hoja se arrastró fuera (ya se ha ido con el dedo) ni si la
+  // carátula quedó fuera de la hoja al desplazarla
+  const hasta = puedeVolar() && id && modal && !modal.style.transform && enPantalla(desde, modal) && origenDe(id)
+  if (!hasta) { cierra(); return }
+  // la ficha sale sin su carátula: la que se ve es la que vuela
+  vuela('portada-cierra', desde, esc => { marco.style.visibility = 'hidden'; esc.push(marco) }, cierra, () => hasta)
+}
 // cuántas series tiene la bóveda de animación: se cuenta, no se escribe
 const N_SERIES_BOVEDA = DATA.find(s => s.saga === 'animacion').eras.reduce((a, e) => a + e.items.length, 0)
 const ONESHOTS_PARTIDOS = ['oneshot-martillo', 'oneshot-consultor', 'oneshot-item47', 'oneshot-rey', 'oneshot-carter']
@@ -2997,6 +3079,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   React.useLayoutEffect(() => {
     // se anima el contenedor, no la <img>: React la reemplaza nada más montar
     // (la portada se vuelve a renderizar) y la animación moriría con el nodo
+    // reserva: con View Transitions la carátula ya vuela (abreConVuelo)
+    if (vueloEnCurso) return
     const destino = refPortada.current
     const origen = document.querySelector(`#card-${CSS.escape(item.id)} .cover`)
     const modal = refModal.current
@@ -3559,7 +3643,7 @@ export default function App() {
   // las apps con pestañas; solo desde Maratón se sale. La subvista en la que
   // estabas se conserva (ultimaVista). El contenido sigue al dedo en el gesto.
   useVolverCierra(!perfil && destinoDe(vista) !== 'maraton', () => conTransicion('atras', () => setVista(ultimaVista.maraton || 'crono')), () => document.querySelector('main'))
-  const [detalle, setDetalle] = useState(() => {
+  const [detalle, setDetalleEstado] = useState(() => {
     try {
       const p = new URLSearchParams(window.location.search)
       const t = p.get('t')
@@ -3582,8 +3666,17 @@ export default function App() {
   // la biografía que se reabre al volver, como estado aparte (objeto nuevo
   // cada vez: aunque el título sea el mismo —tras ‹ › de vuelta— se reabre)
   const [personaPendiente, setPersonaPendiente] = useState(null)
+  // abrir la ficha desde cerrada hace volar la carátula (abreConVuelo); con
+  // la ficha abierta (flechas, pila) o con función, cambio directo. Por ref:
+  // las tarjetas memoizadas guardan un onAbrir de un render viejo
+  const detalleAbierto = useRef(detalle)
+  detalleAbierto.current = detalle
+  const setDetalle = v => {
+    if (typeof v === 'function' || !v || !v.item || detalleAbierto.current) { setDetalleEstado(v); return }
+    abreConVuelo(v.item.id, () => setDetalleEstado(v))
+  }
   const abreDesdeFicha = (d, persona) => { setPilaFichas(p => [...p.slice(-4), { d: detalle, persona }]); setDetalle(d) }
-  const cierraFicha = () => { setDetalle(null); setPilaFichas([]); setPersonaPendiente(null) }
+  const cierraFicha = () => cierraConVuelo(detalle && detalle.item.id, () => { setDetalleEstado(null); setPilaFichas([]); setPersonaPendiente(null) })
   const vuelveFicha = () => {
     const ult = pilaFichas[pilaFichas.length - 1]
     if (!ult) return

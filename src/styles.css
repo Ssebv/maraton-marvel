@@ -81,13 +81,18 @@
    duración dentro del token (`animation: x var(--muelle) both`). Para lo que
    entra solo; lo que sigue al dedo va en src/movimiento.js. */
 /* muelles:inicio — generado por scripts/muelles.mjs con spring() de Motion; no editar a mano */
-:root{--muelle-hoja:.38s var(--curva-hoja); --muelle:var(--dur-media) var(--curva); --muelle-toque:var(--dur-corta) var(--curva); --muelle-pop:var(--dur-media) var(--curva-rebote)}
+:root{
+  --muelle-hoja:.38s var(--curva-hoja); --muelle-hoja-dur:.38s; --muelle-hoja-curva:var(--curva-hoja);
+  --muelle:var(--dur-media) var(--curva); --muelle-dur:var(--dur-media); --muelle-curva:var(--curva);
+  --muelle-toque:var(--dur-corta) var(--curva); --muelle-toque-dur:var(--dur-corta); --muelle-toque-curva:var(--curva);
+  --muelle-pop:var(--dur-media) var(--curva-rebote); --muelle-pop-dur:var(--dur-media); --muelle-pop-curva:var(--curva-rebote);
+}
 @supports (animation-timing-function: linear(0, 1)){
   :root{
-    --muelle-hoja:500ms linear(0, 0.0788, 0.2413, 0.4182, 0.577, 0.7057, 0.8034, 0.8737, 0.9223, 0.9545, 0.975, 0.9875, 0.9948, 0.9987, 1.0006, 1.0014, 1);
-    --muelle:350ms linear(0, 0.1251, 0.3554, 0.5737, 0.7411, 0.8551, 0.9259, 0.9666, 0.988, 0.9981, 1.002, 1);
-    --muelle-toque:450ms linear(0, 0.2348, 0.6075, 0.8763, 1.0076, 1.0451, 1.0389, 1.0217, 1.0079, 1.0006, 0.9981, 0.9981, 0.9988, 0.9995, 1);
-    --muelle-pop:550ms linear(0, 0.1856, 0.5333, 0.8389, 1.0263, 1.1003, 1.1002, 1.0675, 1.031, 1.0048, 0.9917, 0.9886, 0.991, 0.995, 0.9984, 1.0004, 1, 1);
+    --muelle-hoja:500ms linear(0, 0.0788, 0.2413, 0.4182, 0.577, 0.7057, 0.8034, 0.8737, 0.9223, 0.9545, 0.975, 0.9875, 0.9948, 0.9987, 1.0006, 1.0014, 1); --muelle-hoja-dur:500ms; --muelle-hoja-curva:linear(0, 0.0788, 0.2413, 0.4182, 0.577, 0.7057, 0.8034, 0.8737, 0.9223, 0.9545, 0.975, 0.9875, 0.9948, 0.9987, 1.0006, 1.0014, 1);
+    --muelle:350ms linear(0, 0.1251, 0.3554, 0.5737, 0.7411, 0.8551, 0.9259, 0.9666, 0.988, 0.9981, 1.002, 1); --muelle-dur:350ms; --muelle-curva:linear(0, 0.1251, 0.3554, 0.5737, 0.7411, 0.8551, 0.9259, 0.9666, 0.988, 0.9981, 1.002, 1);
+    --muelle-toque:450ms linear(0, 0.2348, 0.6075, 0.8763, 1.0076, 1.0451, 1.0389, 1.0217, 1.0079, 1.0006, 0.9981, 0.9981, 0.9988, 0.9995, 1); --muelle-toque-dur:450ms; --muelle-toque-curva:linear(0, 0.2348, 0.6075, 0.8763, 1.0076, 1.0451, 1.0389, 1.0217, 1.0079, 1.0006, 0.9981, 0.9981, 0.9988, 0.9995, 1);
+    --muelle-pop:550ms linear(0, 0.1856, 0.5333, 0.8389, 1.0263, 1.1003, 1.1002, 1.0675, 1.031, 1.0048, 0.9917, 0.9886, 0.991, 0.995, 0.9984, 1.0004, 1, 1); --muelle-pop-dur:550ms; --muelle-pop-curva:linear(0, 0.1856, 0.5333, 0.8389, 1.0263, 1.1003, 1.1002, 1.0675, 1.031, 1.0048, 0.9917, 0.9886, 0.991, 0.995, 0.9984, 1.0004, 1, 1);
   }
 }
 /* muelles:fin */
@@ -1767,6 +1772,16 @@ main.crono, main.comics, main.estreno{animation:none}
      desaparecen (solo hay una de las dos imágenes) se funden como siempre. */
   ::view-transition-old(dock), ::view-transition-old(subvistas):not(:only-child){display:none}
   ::view-transition-new(dock), ::view-transition-new(subvistas):not(:only-child){animation:none}
+  /* La carátula que vuela entre la tarjeta y la ficha (abreConVuelo en
+     App.jsx). Solo ella es especial: la raíz se pinta viva (la instantánea
+     vieja se oculta), así que la hoja entra y sale con sus animaciones de
+     siempre y no queda una hoja fantasma fundiéndose al cerrar. El grupo
+     sigue en cada fotograma a la carátula de la hoja mientras sube; el muelle
+     es el de la hoja y las dos imágenes se funden pronto. */
+  html[data-vt^="portada"]::view-transition-old(root){display:none}
+  html[data-vt^="portada"]::view-transition-new(root){animation:none}
+  ::view-transition-group(portada){animation-duration:var(--muelle-hoja-dur); animation-timing-function:var(--muelle-hoja-curva)}
+  ::view-transition-old(portada), ::view-transition-new(portada){animation-duration:var(--dur-media)}
   ::view-transition-group(*){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
   ::view-transition-old(root), ::view-transition-new(root){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
   html[data-vt="adelante"]::view-transition-old(root){animation-name:vtSaleIzq}
