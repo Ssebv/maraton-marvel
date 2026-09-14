@@ -1477,9 +1477,54 @@ main.galeria{margin-top: var(--e-6)}
 @media (max-width:720px){
   .sistema-wrap{padding: 0}
   .sistema{transform:scale(.48); transform-origin:center center; margin: -180px 0}
-  /* A escala .48 los 11 px de la etiqueta se quedaban en 5: se compensa */
-  .nav-nombre{font-size:calc(var(--t-xs) * 1.8)}
+  /* A escala .48 los 11 px de la etiqueta se quedaban en 5: se compensa.
+     Con ×1,8 y nombres largos se pisaban entre órbitas; con nombres cortos
+     basta ×1,7 (≈9 px en pantalla; a ×1,5 quedaban en 8, poco legibles).
+     Algún cruce momentáneo sigue siendo inevitable: giran con su planeta */
+  .nav-nombre{font-size:calc(var(--t-xs) * 1.7)}
 }
+
+/* ── Cabecera de Perfil y Multiverso (14 sep 2026) ──
+   Título grande en vez de repetir la cabecera del maratón. En móvil, la barra
+   de herramientas no se enseña fuera del maratón (solo le quedaba Ajustes,
+   que pasa aquí) y una barra compacta con el título aparece cuando el grande
+   sale por arriba, como en iOS. */
+.cabecera-destino{display:flex; align-items:flex-end; justify-content:space-between; gap: var(--e-5); padding: var(--e-8) 0 var(--e-3)}
+.cd-texto{min-width:0}
+.cd-titulo{
+  font-family:"Archivo Black","Archivo",sans-serif; font-size: var(--t-xxl); line-height:1.05;
+  letter-spacing:-.01em; margin: 0; text-transform:uppercase;
+}
+.cd-sub{margin: var(--e-3) 0 0; font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
+.cd-ajustes{display:none}
+.barra-destino{display:none}
+@media (max-width:720px){
+  .toolbar.fuera-maraton{display:none}
+  .cabecera-destino{padding: calc(var(--e-6) + env(safe-area-inset-top, 0px)) 0 var(--e-2)}
+  .cd-titulo{font-size:34px}
+  .cd-ajustes{display:inline-flex; flex:none}
+  .barra-destino{
+    display:grid; place-items:center; position:fixed; left:0; right:0; top:0; z-index:30;
+    height:calc(44px + env(safe-area-inset-top, 0px)); padding-top:env(safe-area-inset-top, 0px);
+    background:var(--panel); border-bottom:1px solid var(--line);
+    font-size: var(--t-b); font-weight:700; color:var(--ink);
+    opacity:0; transform:translateY(-6px); pointer-events:none;
+    transition:opacity var(--dur-media) var(--curva), transform var(--dur-media) var(--curva);
+  }
+  html.titulo-fuera .barra-destino{opacity:1; transform:none}
+  /* el mismo cristal que las otras dos barras móviles (pedido suyo) */
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))){
+    .barra-destino{
+      background:color-mix(in srgb, var(--panel) var(--cristal), transparent);
+      -webkit-backdrop-filter:blur(20px) saturate(1.4); backdrop-filter:blur(20px) saturate(1.4);
+      border-color:color-mix(in srgb, var(--line) 75%, transparent);
+    }
+    @media (prefers-reduced-transparency: reduce){
+      .barra-destino{background:var(--panel); -webkit-backdrop-filter:none; backdrop-filter:none; border-color:var(--line)}
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce){ .barra-destino{transition:none; transform:none} }
 
 /* ── Guía del multiverso ── */
 main.multiverso{margin-top: var(--e-6)}
@@ -1907,7 +1952,9 @@ main.crono, main.comics, main.estreno{animation:none}
   /* Rejilla de dos filas: nombre y botón arriba; años, barra y cuenta
      abajo. Con flex-wrap el botón caía solo en una segunda fila. */
   .era-head{display:grid; grid-template-columns:1fr auto auto; grid-template-rows:auto auto; row-gap: var(--e-2); column-gap: var(--e-3); align-items:center}
-  .era-head h3{grid-column:1 / 3; grid-row:1; justify-self:start; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis}
+  /* a dos líneas si no cabe: con puntos suspensivos «Las series, con
+     continuidad …» no se sabía de qué era (14 sep 2026) */
+  .era-head h3{grid-column:1 / 3; grid-row:1; justify-self:start; max-width:100%; text-wrap:balance}
   .era-head .era-plegar{grid-column:3; grid-row:1; margin-left:0}
   .era-head .era-rango{grid-column:1; grid-row:2}
   .era-head .era-prog{grid-column:2; grid-row:2; margin-left:0; justify-self:end}

@@ -608,7 +608,8 @@ const ACENTOS = [
 // enlaces antiguos siguen abriendo lo que abrían.
 const DESTINOS = [
   { id: 'maraton', label: 'Maratón', en: 'Marathon', vistas: ['crono', 'estreno', 'comics', 'animacion', 'galeria', 'tiempo'] },
-  { id: 'mio', label: 'Perfil', en: 'Profile', vistas: ['listas', 'stats'] },
+  // Perfil abre en lo tuyo (progreso, racha, logros); las listas, después
+  { id: 'mio', label: 'Perfil', en: 'Profile', vistas: ['stats', 'listas'] },
   { id: 'multiverso', label: 'Multiverso', en: 'Multiverse', vistas: ['multiverso'] },
 ]
 const destinoDe = v => (DESTINOS.find(d => d.vistas.includes(v)) || DESTINOS[0]).id
@@ -2460,6 +2461,40 @@ const ORBITAS = {
   'Tierra-616 (cómics)':[318, 330, 118,  1, 54],
   'El Vacío':           [336, 40,  150, -1, 62],
 }
+// en el sistema solar las etiquetas giran con su planeta y, a escala de
+// móvil, las largas se pisaban con las vecinas: nombre corto (el completo va
+// en el title y en la ficha de la Tierra)
+const CORTO_SISTEMA = { 'Universo Sony': 'Sony', 'Universos What If': 'What If', 'Tierra-616 (cómics)': '616 cómics', 'Marvel Zombies': 'Zombies' }
+
+// Cabecera de Perfil y Multiverso (14 sep 2026): antes repetían la del
+// maratón entera (titular, «Siguiente», progreso, panel y buscador: ~380 px
+// antes de lo suyo). Ahora un título grande, como las apps de iOS, y en móvil
+// una barra compacta con el título que aparece cuando el grande sale por
+// arriba (IntersectionObserver → html.titulo-fuera). Ajustes va aquí en
+// móvil, donde la barra de herramientas no se enseña fuera del maratón.
+function CabeceraDestino({ titulo, sub, onAjustes, esMovil }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const h = ref.current, raiz = document.documentElement
+    if (!h || !esMovil || !window.IntersectionObserver) return undefined
+    const io = new IntersectionObserver(([e]) => raiz.classList.toggle('titulo-fuera', !e.isIntersecting && e.boundingClientRect.top < 0),
+      { rootMargin: '-44px 0px 0px 0px' })
+    io.observe(h)
+    return () => { io.disconnect(); raiz.classList.remove('titulo-fuera') }
+  }, [esMovil])
+  return (
+    <>
+      <header className="cabecera-destino">
+        <div className="cd-texto">
+          <h1 className="cd-titulo" ref={ref}>{titulo}</h1>
+          {sub && <p className="cd-sub">{sub}</p>}
+        </div>
+        <button className="chip-btn cd-ajustes" onClick={onAjustes}>{tr('Ajustes', 'Settings')}</button>
+      </header>
+      {esMovil && <div className="barra-destino" aria-hidden="true"><span>{titulo}</span></div>}
+    </>
+  )
+}
 
 function PerfilView({ nombre, vistasP, epsP, notasP }) {
   const est = useMemo(() => {
@@ -2708,7 +2743,7 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
           <span className="meta">
             {esComic
               ? <><span className="hist">{item.a}</span> · {item.r}</>
-              : <><span className="hist">{item.h}</span> · {tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
+              : <>{item.h !== '—' && <><span className="hist">{item.h}</span> · </>}{tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
             {epProg && <span className="ep-prog"> · {epProg}</span>}
             {miNota && <span className="mi-nota"> · {tr('Tú', 'You')}: ★{miNota}</span>}
           </span>
@@ -3176,7 +3211,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             {item.s != null && <span className="star">★ {item.s.toFixed(1)} {tr('en IMDb', 'on IMDb')} · </span>}
             {esComic
               ? <>{item.a} · {item.r}</>
-              : <><span className="hist">{item.h}</span> · {tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
+              : <>{item.h !== '—' && <><span className="hist">{item.h}</span> · </>}{tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
           </p>
           {oculto && (item.res || item.pc != null) && (
             <div className="aviso spoiler">
@@ -4883,6 +4918,9 @@ export default function App() {
       })}
     </nav>
   )
+  // la cabecera del maratón (titular, siguiente, progreso, panel) y sus
+  // herramientas solo en Maratón; Perfil y Multiverso llevan la suya
+  const enMaraton = destinoDe(vista) === 'maraton'
   return (
     <div className="wrap">
       <a className="saltar" href="#contenido">{tr('Saltar al contenido', 'Skip to content')}</a>
@@ -4902,6 +4940,7 @@ export default function App() {
           <span className="fh-velo" />
         </div>
       )}
+      {enMaraton ? (
       <section className="hero">
         <div className="hero-titulo">
           <p className="hero-eyebrow">{tr('Guía de maratón · cronología completa', 'Marathon guide · the full chronology')}</p>
@@ -4962,9 +5001,15 @@ export default function App() {
           </span>
         </p>
       </section>
+      ) : (
+        <CabeceraDestino esMovil={esMovil} onAjustes={() => setAjustes(true)}
+          titulo={destinoDe(vista) === 'mio' ? tr('Perfil', 'Profile') : tr('Multiverso', 'Multiverse')}
+          sub={destinoDe(vista) === 'mio' ? tr(`${stats.totV} de ${stats.totN} títulos del maratón · ${pct} %`, `${stats.totV} of ${stats.totN} marathon titles · ${pct}%`) : null} />
+      )}
 
       <AvisoNuevo onProbar={stats.siguiente ? () => { const d = buscaItem(stats.siguiente.id); if (d) setDetalle(d) } : null} />
       <Novedades eps={eps} />
+      {enMaraton && (<>
       {!panelAbierto && (
         <button className="panel-resumen" aria-expanded="false" onClick={alternaPanel}>
           <span className="pr-datos">
@@ -5013,8 +5058,9 @@ export default function App() {
       {panelAbierto && (
         <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>{tr('Ocultar panel', 'Hide panel')}</button>
       )}
+      </>)}
 
-      <header className="toolbar">
+      <header className={'toolbar' + (enMaraton ? '' : ' fuera-maraton')}>
         {/* pegada arriba en móvil, cubre la zona segura del notch con el mismo cristal (CSS) */}
         <span className="toolbar-tope" aria-hidden="true" />
         <div className="controles" role="group" aria-label={tr('Vista y filtros', 'View and filters')}>
@@ -5037,6 +5083,7 @@ export default function App() {
           )}
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
+          {enMaraton && (<>
           <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>{tr('Plan de sesión', 'Session plan')}</button>
           <button className="chip-btn" aria-pressed={horarioModal} onClick={() => setHorarioModal(true)}>{tr('Horario', 'Schedule')}</button>
           <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>{tr('Modo cine', 'Cinema mode')}</button>
@@ -5054,6 +5101,7 @@ export default function App() {
           <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio, actor o año', 'Title, episode, actor or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
             enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
+          </>)}
           <button className="chip-btn chip-ajustes" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
           {/* El estado de sincronización es estado, no un botón: solo se
               muestra cuando hay algo que mirar. */}
@@ -5331,7 +5379,7 @@ export default function App() {
                                 <button className="planeta-nav" style={{ '--tc': u.c }}
                                   onClick={() => setTierra(u.num)} title={u.nombre}>
                                   <span className="planeta planeta-orbe" style={{ width: tam, height: tam }}><span className="planeta-textura" /></span>
-                                  <span className="nav-nombre">{u.num.replace('Tierra-', 'T-')}</span>
+                                  <span className="nav-nombre">{CORTO_SISTEMA[u.num] || u.num.replace('Tierra-', 'T-')}</span>
                                 </button>
                               </div>
                             </div>
