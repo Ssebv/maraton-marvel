@@ -1174,8 +1174,9 @@ h3{
 }
 .tabs.temporadas::-webkit-scrollbar{display:none}
 .temporadas .tab{flex:none; padding: var(--e-2) var(--e-4); font-variant-numeric:tabular-nums; white-space:nowrap}
-.temp-cuenta{font-weight:500; font-size: var(--t-s); color:var(--ink3)}
-.temporadas .tab[aria-pressed="true"] .temp-cuenta{color:var(--ink2)}
+/* en --ink3 quedaba en 4,51:1 sobre --panel2, en el filo del mínimo: un paso más de tinta */
+.temp-cuenta{font-weight:500; font-size: var(--t-s); color:var(--ink2)}
+.temporadas .tab[aria-pressed="true"] .temp-cuenta{color:var(--ink)}
 .temporada-cuerpo{animation:entraVista var(--dur-corta) var(--curva) both}
 .ep{
   display:flex; align-items:center; gap: var(--e-4); text-align:left;
@@ -1279,6 +1280,15 @@ h3{
 }
 .grafica-titulo{margin: 0 0 var(--e-1); font-size: var(--t-b); font-weight:700; letter-spacing:normal; text-transform:none; color:var(--ink)}
 .grafica-sub{margin: 0 0 var(--e-5); font-size: var(--t-s); color:var(--ink2)}
+/* Actividad del maratón con su selector (20 semanas | Por mes) en la cabecera */
+.grafica-cab{display:flex; align-items:center; justify-content:space-between; gap: var(--e-3) var(--e-4); flex-wrap:wrap; margin-bottom: var(--e-4)}
+.grafica-cab .grafica-titulo{margin: 0}
+.grafica-modos{flex:none}
+.grafica-modos .tab{padding: var(--e-2) var(--e-4); font-size: var(--t-s); white-space:nowrap}
+.grafica-cuerpo{animation:entraVista var(--dur-corta) var(--curva) both}
+.grafica-cuerpo .cal-cab{margin-top: 0}
+/* lo opcional sin empezar, en una línea en vez de cajas a cero */
+.stats-pendientes{margin: calc(-1 * var(--e-3)) 0 0; font-size: var(--t-s); color:var(--ink2)}
 .grafica-grupo{margin-top: var(--e-4)}
 .grafica-grupo-nombre{
   font-size: var(--t-xs); font-weight:700; letter-spacing:.1em; text-transform:uppercase;

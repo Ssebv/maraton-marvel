@@ -1021,7 +1021,7 @@ function CuentaAtras({ meta, horario, sesionHoy, sim, onHorario }) {
 // calendario de pared navegable. El día se pinta con la intensidad del mapa
 // de calor y, al tocarlo, abajo sale la lista de ese día con su hora.
 const diaClave = ts => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` }
-function Calendario({ vistas, eps, indice, onAbrir, idioma }) {
+function Calendario({ vistas, eps, indice, onAbrir, idioma, sinMarco = false }) {
   const dias = useMemo(() => {
     const m = new Map()
     const de = ts => {
@@ -1056,7 +1056,7 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma }) {
     Object.values(eps).forEach(mira)
     return isFinite(min) ? new Date(new Date(min).getFullYear(), new Date(min).getMonth(), 1) : null
   }, [vistas, eps])
-  if (!primero) return null
+  if (!primero) return sinMarco ? <p className="grafica-sub">{tr('Aún no hay marcas con fecha: las que hagas desde ahora aparecerán aquí, día a día.', 'No dated check-offs yet: the ones you make from now on will show up here, day by day.')}</p> : null
   const mesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
   const puedeAtras = mes > primero
   const puedeAlante = mes < mesActual
@@ -1082,8 +1082,7 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma }) {
     ...[...delSel.series.entries()].map(([sid, s]) => ({ ts: s.ts, d: indice[sid], sub: s.n === 1 ? tr('1 episodio', '1 episode') : tr(`${s.n} episodios`, `${s.n} episodes`) })),
   ].sort((a, b) => a.ts - b.ts) : []
   return (
-    <section className="grafica">
-      <h3 className="grafica-titulo">{tr('Calendario del maratón', 'Marathon calendar')}</h3>
+    <Marco sinMarco={sinMarco} titulo={tr('Calendario del maratón', 'Marathon calendar')}>
       <div className="cal-cab">
         <button className="ghost" onClick={() => mueve(-1)} disabled={!puedeAtras} aria-label={tr('Mes anterior', 'Previous month')}>‹</button>
         <span className="cal-mes">{etiquetaMes}</span>
@@ -1126,7 +1125,7 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma }) {
           </div>
         </div>
       )}
-    </section>
+    </Marco>
   )
 }
 
@@ -3497,7 +3496,45 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   )
 }
 
-function Actividad({ vistas, eps }) {
+// una gráfica con su sección y su título, o solo el contenido cuando va
+// dentro de otra (ActividadDelMaraton)
+function Marco({ sinMarco, titulo, children }) {
+  if (sinMarco) return <>{children}</>
+  return (
+    <section className="grafica">
+      <h3 className="grafica-titulo">{titulo}</h3>
+      {children}
+    </section>
+  )
+}
+
+// Actividad y calendario en un solo bloque (14 sep 2026): uno debajo del otro
+// contaban lo mismo (qué días marcaste) y, con poco progreso, eran dos cajas
+// grandes casi vacías seguidas. Ahora un título y un selector: las 20
+// semanas del mapa de calor o el calendario mes a mes con el detalle del día.
+function ActividadDelMaraton({ vistas, eps, indice, onAbrir, idioma }) {
+  const [modo, setModo] = useState('semanas')
+  const [grupo, indicador] = useIndicador(modo)
+  return (
+    <section className="grafica">
+      <div className="grafica-cab">
+        <h3 className="grafica-titulo">{tr('Actividad del maratón', 'Marathon activity')}</h3>
+        <div className="tabs grafica-modos" ref={grupo} role="group" aria-label={tr('Ver la actividad', 'View activity')}>
+          <span className="indicador" ref={indicador} aria-hidden="true" />
+          <button type="button" className="tab" aria-pressed={modo === 'semanas'} onClick={() => setModo('semanas')}>{tr('20 semanas', '20 weeks')}</button>
+          <button type="button" className="tab" aria-pressed={modo === 'mes'} onClick={() => setModo('mes')}>{tr('Por mes', 'By month')}</button>
+        </div>
+      </div>
+      <div className="grafica-cuerpo" key={modo}>
+        {modo === 'semanas'
+          ? <Actividad vistas={vistas} eps={eps} sinMarco />
+          : <Calendario vistas={vistas} eps={eps} indice={indice} onAbrir={onAbrir} idioma={idioma} sinMarco />}
+      </div>
+    </section>
+  )
+}
+
+function Actividad({ vistas, eps, sinMarco = false }) {
   const dias = new Map()
   const suma = t => {
     if (typeof t === 'number' && t > 1e12) {
@@ -3527,8 +3564,7 @@ function Actividad({ vistas, eps }) {
     ? tr('sin marcas en los últimos 140 días', 'no check-offs in the last 140 days')
     : tr(`${total} marca${total === 1 ? '' : 's'} en ${diasActivos} día${diasActivos === 1 ? '' : 's'} de los últimos 140`, `${total} check-off${total === 1 ? '' : 's'} on ${diasActivos} day${diasActivos === 1 ? '' : 's'} of the last 140`) + (max > 1 ? tr(` · máximo ${max} en un día`, ` · at most ${max} in one day`) : '')
   return (
-    <section className="grafica">
-      <h3 className="grafica-titulo">{tr('Actividad del maratón', 'Marathon activity')}</h3>
+    <Marco sinMarco={sinMarco} titulo={tr('Actividad del maratón', 'Marathon activity')}>
       <p className="grafica-sub">
         {tr('Últimas 20 semanas', 'Last 20 weeks')} · {resumen}{racha > 0 ? tr(` · 🔥 racha de ${racha} día${racha > 1 ? 's' : ''}`, ` · 🔥 ${racha}-day streak`) : ''}
       </p>
@@ -3546,7 +3582,7 @@ function Actividad({ vistas, eps }) {
         {max > 3 && <i style={{ background: tono(max) }} />}
         <span>{max > 1 ? tr(`${max} marcas`, `${max} check-offs`) : tr('1 marca', '1 check-off')}</span>
       </div>
-    </section>
+    </Marco>
   )
 }
 
@@ -5538,17 +5574,31 @@ export default function App() {
               <span className="stat-num">{estadisticas.epVistos}<small> / {estadisticas.epTot}</small></span>
               <span className="stat-foot">{tr('de las series con lista', 'from series with episode lists')}</span>
             </div>
+            {/* cómics y bóveda son opcionales: en cero no ocupan una caja cada uno */}
+            {estadisticas.comicsVistos > 0 && (
             <div className="stat">
               <span className="stat-label">{tr('Cómics leídos', 'Comics read')}</span>
               <span className="stat-num">{estadisticas.comicsVistos}<small> / {estadisticas.comicsTot}</small></span>
               <span className="stat-foot">{tr('lecturas esenciales', 'essential reads')}</span>
             </div>
+            )}
+            {estadisticas.bovedaEpVistos > 0 && (
             <div className="stat">
               <span className="stat-label">{tr('Bóveda de animación', 'Animation vault')}</span>
               <span className="stat-num">{estadisticas.bovedaEpVistos}<small> / {estadisticas.bovedaEpTot}</small></span>
               <span className="stat-foot">{tr(`episodios de las ${N_SERIES_BOVEDA} series`, `episodes across the ${N_SERIES_BOVEDA} series`)}</span>
             </div>
+            )}
           </div>
+          {(estadisticas.comicsVistos === 0 || estadisticas.bovedaEpVistos === 0) && (
+            <p className="stats-pendientes">
+              {tr('Sin empezar: ', 'Not started: ')}
+              {[
+                estadisticas.comicsVistos === 0 && tr(`los ${estadisticas.comicsTot} cómics`, `the ${estadisticas.comicsTot} comics`),
+                estadisticas.bovedaEpVistos === 0 && tr(`los ${estadisticas.bovedaEpTot} episodios de la bóveda de animación`, `the ${estadisticas.bovedaEpTot} animation vault episodes`),
+              ].filter(Boolean).join(' · ')}
+            </p>
+          )}
 
           {estadisticas.titulosVistos === 0 && (
             <p className="aviso info stats-vacio">
@@ -5579,9 +5629,7 @@ export default function App() {
           {club && <Club club={club} vistas={vistas} eps={eps}
             onSalir={() => guardaClub(null)} onInvitar={() => setClubInvitar(true)} />}
 
-          <Actividad vistas={vistas} eps={eps} />
-
-          <Calendario vistas={vistas} eps={eps} indice={indice} idioma={idioma}
+          <ActividadDelMaraton vistas={vistas} eps={eps} indice={indice} idioma={idioma}
             onAbrir={d => setDetalle(d)} />
 
           <Diario vistas={vistas} notas={notas} pais={pais} idioma={idioma} />
