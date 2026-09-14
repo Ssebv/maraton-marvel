@@ -4636,6 +4636,38 @@ export default function App() {
     try { localStorage.setItem(KEY_PLEGADAS, JSON.stringify(n)) } catch {}
     return n
   }) }
+  // Plegar se anima (14 sep 2026): antes el cuerpo desaparecía de golpe. Sale
+  // con un fundido corto hacia arriba (180 ms, WAAPI sobre el contenedor, que
+  // gana a su animación CSS de entrada) y después se pliega; la tira de
+  // carátulas entra con su fundido de siempre. Si la cabecera del bloque había
+  // quedado por encima de la pantalla (plegar desde la mitad de una saga larga),
+  // se trae a la vista: sin eso la página saltaba a otra saga. Un segundo toque
+  // durante la salida no hace nada; con «reducir movimiento», directo.
+  const plegando = useRef(new Set())
+  const pliega = (clave, cuerpoId) => {
+    if (plegando.current.has(clave)) return
+    const cuerpo = document.getElementById(cuerpoId)
+    const bloque = cuerpo && cuerpo.closest('.era, .saga')
+    const trae = () => {
+      if (!bloque || !bloque.isConnected) return
+      const barra = document.querySelector('.toolbar')
+      const tope = Math.max(0, barra ? barra.getBoundingClientRect().bottom : 0) + 12
+      const top = bloque.getBoundingClientRect().top
+      // fuera por arriba o por abajo: en escritorio (rejilla de dos columnas)
+      // el navegador ancla el scroll en la otra columna y el bloque plegado
+      // podía quedar miles de píxeles por debajo
+      if (top < tope || top > window.innerHeight - 80) window.scrollTo({ top: top + window.scrollY - tope, behavior: 'instant' })
+    }
+    // dos fotogramas: el primero puede llegar antes de que React pinte el plegado
+    const traeLuego = () => requestAnimationFrame(() => requestAnimationFrame(trae))
+    if (!cuerpo || !cuerpo.animate || movimientoReducido()) { ponPlegado(clave, true); traeLuego(); return }
+    plegando.current.add(clave)
+    const a = cuerpo.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }],
+      { duration: 180, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' })
+    let hecho = false
+    const fin = () => { if (hecho) return; hecho = true; plegando.current.delete(clave); ponPlegado(clave, true); traeLuego() }
+    a.onfinish = fin; a.oncancel = fin
+  }
   // Despliega la saga y la era donde vive un título, solo si están plegadas
   // tal como se ven ahora (no lo que dice el almacén): devuelve si hizo algo,
   // para que quien salte a la tarjeta espere al siguiente pintado.
@@ -5649,7 +5681,7 @@ export default function App() {
                   {!buscando && (
                   <button type="button" className="saga-plegar" aria-expanded={!plegada} aria-controls={plegada ? undefined : `saga-cuerpo-${saga.saga}`}
                     aria-label={plegada ? tr(`Desplegar ${saga.titulo}`, `Expand ${saga.titulo}`) : tr(`Plegar ${saga.titulo}`, `Collapse ${saga.titulo}`)}
-                    onClick={() => ponPlegado(saga.saga, !plegada)}>
+                    onClick={() => plegada ? ponPlegado(saga.saga, false) : pliega(saga.saga, `saga-cuerpo-${saga.saga}`)}>
                     {plegada ? tr('Desplegar', 'Expand') : tr('Plegar', 'Collapse')}
                   </button>
                   )}
@@ -5707,7 +5739,7 @@ export default function App() {
                         {!buscando && (
                         <button type="button" className="era-plegar" aria-expanded={!eraPlegada} aria-label={eraPlegada ? tr(`Desplegar ${era.era}`, `Expand ${era.era}`) : tr(`Plegar ${era.era}`, `Collapse ${era.era}`)}
                           aria-controls={eraPlegada ? undefined : `era-cuerpo-${kEra.slice(4)}`}
-                          onClick={() => ponPlegado(kEra, !eraPlegada)}>
+                          onClick={() => eraPlegada ? ponPlegado(kEra, false) : pliega(kEra, `era-cuerpo-${kEra.slice(4)}`)}>
                           {eraPlegada ? tr('Desplegar', 'Expand') : tr('Plegar', 'Collapse')}
                         </button>
                         )}
