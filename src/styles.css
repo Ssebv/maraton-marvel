@@ -442,7 +442,11 @@ h1 .rojo{color:var(--red)}
 @media (max-width:640px){
   /* en móvil la barra debe caber en una línea: el ritmo ya está dentro del panel */
   .pr-extra{display:none}
-  .panel-resumen{gap: var(--e-4); padding: 0 var(--e-5); min-height:44px; margin-top: var(--e-3)}
+  /* pegada a la línea de progreso y alineada con ella (14 sep 2026): era una
+     fila de 44 px sangrada 16 px con aire arriba y abajo; el alto táctil lo
+     completa el ::after en vez de la caja */
+  .panel-resumen{gap: var(--e-3); padding: 0; min-height:28px; margin-top: var(--e-1); font-size: var(--t-s); position:relative}
+  .panel-resumen::after{content:""; position:absolute; inset:-8px 0}
   /* la sesión de hoy en su propio renglón: en la misma línea partía a media
      palabra y dejaba la pastilla «Panel completo» flotando */
   .pr-sesion{display:block}
@@ -1112,6 +1116,33 @@ h3{
   .modal{--pad: var(--e-6); flex-direction:column; padding: var(--pad); gap: var(--e-5)}
   /* apilado no hay columna que seguir: el sticky estorbaría */
   .modal-cover{align-self:stretch; align-items:center; position:static}
+}
+/* chips, título y meta: en escritorio la caja no existe (siguen siendo
+   hijos del flex de .modal-info, con su gap) */
+.modal-cabeza{display:contents}
+/* ── Ficha compacta en el móvil (14 sep 2026) ──
+   El fotograma (210 px) y la carátula grande (285 px) llenaban la primera
+   pantalla y el título empezaba hacia los 590 px. Ahora carátula pequeña a la
+   izquierda y chips, título y meta a su lado, como una ficha de la App Store;
+   debajo, a lo ancho, «Marcar como vista», la sinopsis y las acciones. Sin
+   tocar el DOM: .modal pasa a rejilla y .modal-cover / .modal-info se
+   disuelven (display:contents), así el vuelo de la carátula, los gestos y la
+   pila de fichas siguen apuntando a los mismos nodos. */
+@media (max-width:640px){
+  .modal{display:grid; grid-template-columns:104px minmax(0, 1fr); column-gap: var(--e-5); row-gap: var(--e-4); align-content:start}
+  .modal::before{grid-column:1 / -1}
+  .modal-cover, .modal-info{display:contents}
+  /* disueltos pierden su z-index: los hijos se ponen encima del fotograma */
+  .modal-cover > *, .modal-info > *{grid-column:1 / -1; min-width:0; position:relative; z-index:1}
+  .modal-cover > .modal-portada{grid-column:1; grid-row:2; align-self:start}
+  .modal-info > .modal-cabeza{grid-column:2; grid-row:2; align-self:end; display:flex; flex-direction:column; gap: var(--e-3); min-width:0}
+  .modal-cover .cover{width:104px; height:156px; border-radius:var(--r-m)}
+  .modal-portada .sello{font-size: var(--t-s); border-width:2px; padding: var(--e-1) var(--e-3); letter-spacing:.08em}
+  .modal-titulo{font-size: var(--t-l); line-height:1.2; text-wrap:balance}
+  .modal-fondo{height:160px}
+  .modal.con-fondo .modal-portada{margin-top: var(--e-8)}
+  /* .modal-info ya no tiene caja que animar al pasar de título: sus hijos */
+  .modal-info.modal-cambio > *{animation:entraVista var(--dur-corta) var(--curva) both}
 }
 
 /* ── Episodios ── */

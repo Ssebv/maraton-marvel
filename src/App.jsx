@@ -3233,6 +3233,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             onAbrirTitulo={d => { onIrA && onIrA(d, persona); setPersona(null) }} />
         ) : (
         <div className={cambios ? 'modal-info modal-cambio' : 'modal-info'} key={cambios}>
+          {/* chips, título y meta juntos: en el móvil van a la derecha de la
+              carátula (ficha compacta, CSS); en escritorio la caja no existe */}
+          <div className="modal-cabeza">
           <div className="modal-chips">
             {item.uni && <span className="tipo uni">{item.uni}</span>}
             {item.tipo === 'serie' && <span className="tipo serie">{tr('Serie', 'Series')}</span>}
@@ -3247,6 +3250,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               ? <>{item.a} · {item.r}</>
               : <>{item.h !== '—' && <><span className="hist">{item.h}</span> · </>}{tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
           </p>
+          </div>
           {oculto && (item.res || item.pc != null) && (
             <div className="aviso spoiler">
               <p className="aviso-texto">{tr('Sinopsis, escenas post-créditos y títulos de episodio ocultos hasta que lo marques como visto.', 'Synopsis, post-credit scenes and episode titles hidden until you mark it as seen.')}</p>
