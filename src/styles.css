@@ -1131,6 +1131,11 @@ h3{
 @media (max-width:640px){
   .modal{display:grid; grid-template-columns:104px minmax(0, 1fr); column-gap: var(--e-5); row-gap: var(--e-4); align-content:start}
   .modal::before{grid-column:1 / -1}
+  /* todo lo que cuelga directamente de la hoja va a lo ancho: la biografía de
+     una persona sustituye a .modal-info y, sin esto, caía en la columna de la
+     carátula (104 px) */
+  .modal > *{grid-column:1 / -1}
+  .modal > .persona-ficha{min-width:0; position:relative; z-index:1}
   .modal-cover, .modal-info{display:contents}
   /* disueltos pierden su z-index: los hijos se ponen encima del fotograma */
   .modal-cover > *, .modal-info > *{grid-column:1 / -1; min-width:0; position:relative; z-index:1}
