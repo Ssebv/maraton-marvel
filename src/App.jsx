@@ -41,6 +41,9 @@ function conTransicion(dir, fn) {
     enTransicion = true
     try { flushSync(fn) } finally { enTransicion = false }
   })
+  // si se salta (otra transición encima, pestaña oculta), `ready` se rechaza:
+  // sin recogerlo salía «AbortError: Transition was skipped» en consola
+  t.ready.catch(() => {})
   t.finished.finally(() => { if (raiz.dataset.vt === dir) delete raiz.dataset.vt })
 }
 // La carátula vuela entre la ficha y lo que tocaste (14 sep 2026): una
@@ -98,6 +101,9 @@ function vuela(dir, desde, antes, fn, despues) {
     // parpadearía al aterrizar; como mucho 120 ms de espera
     if (hasta.decode) await Promise.race([hasta.decode().catch(() => {}), new Promise(r => setTimeout(r, 120))])
   })
+  // si se salta (otra transición encima, pestaña oculta), `ready` se rechaza:
+  // sin recogerlo salía «AbortError: Transition was skipped» en consola
+  t.ready.catch(() => {})
   t.finished.finally(() => {
     if (hasta) hasta.style.viewTransitionName = ''
     escondidos.forEach(el => { el.style.visibility = '' })
@@ -679,6 +685,11 @@ const urlTrailer = t => `https://www.youtube.com/results?search_query=${encodeUR
 const urlImdb = t => `https://www.imdb.com/find/?q=${encodeURIComponent(t)}`
 const urlPersona = n => `https://www.imdb.com/find/?q=${encodeURIComponent(limpiaNombre(n))}&s=nm`
 
+// TMDB deja en inglés los papeles genéricos aunque se pida en español
+// («Additional Voices» bajo una actriz de doblaje): se traducen al pintar
+// (la caché de TMDB guarda el texto original y no hace falta invalidarla)
+const ROLES_ES = { 'additional voices': 'Voces adicionales', 'additional voice': 'Voz adicional', himself: 'Él mismo', herself: 'Ella misma', self: 'Como sí mismo', narrator: 'Narrador', 'narrator (voice)': 'Narrador', various: 'Varios papeles', 'various characters': 'Varios papeles' }
+const rolLocal = p => tr(ROLES_ES[p.toLowerCase()] || p, p)
 const tipoSello = (item, esComic) => (esComic ? tr('CÓMIC', 'COMIC') : item.tipo === 'serie' ? tr('SERIE', 'SERIES') : item.tipo === 'esp' ? tr('ESPECIAL', 'SPECIAL') : tr('PELÍCULA', 'MOVIE'))
 
 function Cover({ item, c, esComic }) {
@@ -3228,6 +3239,42 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                 : <>{tr('Escenas en los créditos: ', 'Scenes in the credits: ')}<b>{item.pc}</b>{item.pcn ? ` · ${item.pcn}` : ''}</>}
             </p>
           )}
+          {/* las acciones van tras la sinopsis: en una serie quedaban debajo de
+              todos los episodios (en X-Men '97 a 1.800 px; en las de 60, mucho más) */}
+          {verTrailer && extra && extra.trailer && (
+            <div className="trailer-caja">
+              <iframe src={`https://www.youtube-nocookie.com/embed/${extra.trailer}?autoplay=1`}
+                title={tr(`Tráiler de ${item.t}`, `Trailer for ${item.t}`)} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+            </div>
+          )}
+          <div className="modal-acciones">
+            {!esComic && (
+              <>
+                {extra && extra.trailer
+                  ? <button className="ghost" aria-pressed={verTrailer} onClick={() => setVerTrailer(v => !v)}>
+                      {verTrailer ? <><IcoCerrar />{tr('Cerrar tráiler', 'Close trailer')}</> : <><IcoPlay />{tr('Tráiler', 'Trailer')}</>}
+                    </button>
+                  : <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer"><IcoPlay />{tr('Tráiler', 'Trailer')}</a>}
+                <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb<IcoFuera /></a>
+                {!item.tipo && (
+                  <a className="ghost" href={`https://letterboxd.com/search/films/${encodeURIComponent(item.t)}/`}
+                    target="_blank" rel="noopener noreferrer">Letterboxd<IcoFuera /></a>
+                )}
+              </>
+            )}
+            <button className="ghost" onClick={() => {
+              try {
+                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?t=${item.id}`)
+                setEnlaceCopiado(true)
+                setTimeout(() => setEnlaceCopiado(false), 2000)
+              } catch {}
+            }}>{enlaceCopiado ? tr('✓ Copiado', '✓ Copied') : <><IcoEnlace />{tr('Enlace', 'Link')}</>}</button>
+            {!!navigator.share && (
+              <button className="ghost" onClick={() => {
+                navigator.share({ url: `${window.location.origin}${window.location.pathname}?t=${item.id}`, title: item.t }).catch(() => {})
+              }}>{tr('Compartir…', 'Share…')}</button>
+            )}
+          </div>
           {(directores.length > 0 || item.cast) && (
             <section className="reparto">
               <h3 className="reparto-titulo">{tr('Dirección y reparto', 'Direction and cast')}</h3>
@@ -3261,7 +3308,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                       title={papel ? `${c.n} — ${papel}` : tr(`Ver a ${c.n} en tu maratón`, `See ${c.n} in your marathon`)}>
                       <Avatar nombre={c.n} foto={c.f} />
                       <span className="persona-nombre">{c.n}</span>
-                      <span className="persona-rol">{papel || tr('Reparto', 'Cast')}</span>
+                      <span className="persona-rol">{papel ? rolLocal(papel) : tr('Reparto', 'Cast')}</span>
                     </button>
                   )
                 })
@@ -3400,40 +3447,6 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             )
           })()}
           {club && <ComentariosClub club={club} item={item} vista={vista} />}
-          {verTrailer && extra && extra.trailer && (
-            <div className="trailer-caja">
-              <iframe src={`https://www.youtube-nocookie.com/embed/${extra.trailer}?autoplay=1`}
-                title={tr(`Tráiler de ${item.t}`, `Trailer for ${item.t}`)} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
-            </div>
-          )}
-          <div className="modal-acciones">
-            {!esComic && (
-              <>
-                {extra && extra.trailer
-                  ? <button className="ghost" aria-pressed={verTrailer} onClick={() => setVerTrailer(v => !v)}>
-                      {verTrailer ? <><IcoCerrar />{tr('Cerrar tráiler', 'Close trailer')}</> : <><IcoPlay />{tr('Tráiler', 'Trailer')}</>}
-                    </button>
-                  : <a className="ghost" href={urlTrailer(item.t)} target="_blank" rel="noopener noreferrer"><IcoPlay />{tr('Tráiler', 'Trailer')}</a>}
-                <a className="ghost" href={urlImdb(item.t)} target="_blank" rel="noopener noreferrer">IMDb<IcoFuera /></a>
-                {!item.tipo && (
-                  <a className="ghost" href={`https://letterboxd.com/search/films/${encodeURIComponent(item.t)}/`}
-                    target="_blank" rel="noopener noreferrer">Letterboxd<IcoFuera /></a>
-                )}
-              </>
-            )}
-            <button className="ghost" onClick={() => {
-              try {
-                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?t=${item.id}`)
-                setEnlaceCopiado(true)
-                setTimeout(() => setEnlaceCopiado(false), 2000)
-              } catch {}
-            }}>{enlaceCopiado ? tr('✓ Copiado', '✓ Copied') : <><IcoEnlace />{tr('Enlace', 'Link')}</>}</button>
-            {!!navigator.share && (
-              <button className="ghost" onClick={() => {
-                navigator.share({ url: `${window.location.origin}${window.location.pathname}?t=${item.id}`, title: item.t }).catch(() => {})
-              }}>{tr('Compartir…', 'Share…')}</button>
-            )}
-          </div>
           {onNav && (
             <div className="nav-ficha-pie">
               <button className="ghost" onClick={() => onNav(-1)}>{tr('‹ Anterior', '‹ Previous')}</button>
@@ -6111,7 +6124,7 @@ export default function App() {
           onIrA={abreDesdeFicha} personaPendiente={personaPendiente} saliendo={detalleSale} />
       )}
 
-      <Footer onAjustes={() => setAjustes(true)} />
+      <Footer onAjustes={() => setAjustes(true)} nota={enMaraton} />
       <VersionNueva />
     </div>
   )
@@ -6509,7 +6522,9 @@ function Datos({ onReset }) {
 // El pie de cada vista: la nota de uso, los créditos obligatorios de TMDB y,
 // si hace falta, el rescate del progreso. Las herramientas de datos viven en
 // Ajustes (Datos); aquí solo queda el camino hasta ellas.
-function Footer({ onAjustes }) {
+// la nota de uso habla de tarjetas y de la Ruta express: solo en Maratón
+// (en Perfil y Multiverso se leía como relleno); créditos y rescate, siempre
+function Footer({ onAjustes, nota = true }) {
   const [rescate, setRescate] = useState(() => {
     try {
       const g = JSON.parse(localStorage.getItem(KEY_RESCATE))
@@ -6518,11 +6533,13 @@ function Footer({ onAjustes }) {
   })
   return (
     <footer>
+      {nota && <>
       <p className="nota-pie">
         {tr(`Pulsa una tarjeta para ver su ficha completa; la casilla redonda marca vista o pendiente y se guarda en este navegador. Las estrellas son la nota de IMDb y las duraciones de las series son aproximadas. La Ruta express deja solo lo imprescindible para llegar a ${TITULOS.doomsday}.`,
         `Tap a card for its full page; the round box marks watched or pending and saves in this browser. Stars are the IMDb rating and series runtimes are approximate. The Express route keeps only what’s essential to reach ${TITULOS.doomsday}.`)}
       </p>
       <button className="chip-btn pie-ajustes" onClick={onAjustes}>{tr('Copia de seguridad y código', 'Backup and code')}</button>
+      </>}
       {rescate && Object.keys(rescate.v || {}).length > 0 && (
         <div className="aviso info en-pie" role="status">
           <p className="aviso-texto">
