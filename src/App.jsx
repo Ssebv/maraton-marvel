@@ -1525,6 +1525,19 @@ function useDialogo(ref, onEscape, activo = true) {
     bloqueaFondo()
     const onKey = e => {
       if (e.key === 'Escape') { salir.current && salir.current(); return }
+      // un grupo de opciones (role="radiogroup") se recorre con las flechas,
+      // como uno nativo: la siguiente queda elegida y con el foco
+      if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) && ref.current) {
+        const radio = document.activeElement
+        const grupo = radio && radio.getAttribute('role') === 'radio' && radio.closest('[role="radiogroup"]')
+        if (!grupo || !ref.current.contains(grupo)) return
+        const radios = [...grupo.querySelectorAll('[role="radio"]')].filter(visible)
+        const paso = /Right|Down/.test(e.key) ? 1 : -1
+        const sig = radios[(radios.indexOf(radio) + paso + radios.length) % radios.length]
+        e.preventDefault(); e.stopImmediatePropagation()
+        sig.focus(); sig.click()
+        return
+      }
       if (e.key !== 'Tab' || !ref.current) return
       const foco = [...ref.current.querySelectorAll(FOCABLES)].filter(visible)
       if (!foco.length) return
@@ -4094,6 +4107,13 @@ export default function App() {
   // Escape, Tab atrapado y el fondo (y el dock) bloqueados mientras está abierto
   const refAjustes = useRef(null)
   useDialogo(refAjustes, () => setAjustes(false), ajustes)
+  // y lo mismo el resto de ventanas del maratón
+  const refPlan = useRef(null), refPerfilM = useRef(null), refDuelo = useRef(null), refClub = useRef(null), refInvitar = useRef(null)
+  useDialogo(refPlan, () => setPlanModal(false), planModal)
+  useDialogo(refPerfilM, () => setPerfilModal(false), perfilModal)
+  useDialogo(refDuelo, () => setDueloModal(false), dueloModal)
+  useDialogo(refClub, () => setClubModal(false), clubModal)
+  useDialogo(refInvitar, () => setClubInvitar(false), !!(clubInvitar && club))
   useVolverCierra(planModal, () => setPlanModal(false))
   useVolverCierra(horarioModal, () => setHorarioModal(false))
   useVolverCierra(perfilModal, () => setPerfilModal(false))
@@ -5940,7 +5960,7 @@ export default function App() {
       })()}
 
       {dueloMontado && (
-        <div className={'overlay' + dueloSale} onClick={() => setDueloModal(false)} role="dialog" aria-modal="true" aria-label={tr('Modo duelo', 'Duel mode')}>
+        <div className={'overlay' + dueloSale} ref={refDuelo} tabIndex={-1} onClick={() => setDueloModal(false)} role="dialog" aria-modal="true" aria-label={tr('Modo duelo', 'Duel mode')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setDueloModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -5976,7 +5996,7 @@ export default function App() {
           onExpress={() => { if (!filtros.express) setF('express'); cierraBienvenida() }} />
       )}
       {clubMontado && (
-        <div className={'overlay' + clubSale} onClick={() => setClubModal(false)} role="dialog" aria-modal="true" aria-label={tr('Club de maratón', 'Marathon club')}>
+        <div className={'overlay' + clubSale} ref={refClub} tabIndex={-1} onClick={() => setClubModal(false)} role="dialog" aria-modal="true" aria-label={tr('Club de maratón', 'Marathon club')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setClubModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -6009,7 +6029,7 @@ export default function App() {
         </div>
       )}
       {invitarMontado && (
-        <div className={'overlay' + invitarSale} onClick={() => setClubInvitar(false)} role="dialog" aria-modal="true" aria-label={tr('Invitar al club', 'Invite to the club')}>
+        <div className={'overlay' + invitarSale} ref={refInvitar} tabIndex={-1} onClick={() => setClubInvitar(false)} role="dialog" aria-modal="true" aria-label={tr('Invitar al club', 'Invite to the club')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setClubInvitar(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -6024,7 +6044,7 @@ export default function App() {
         </div>
       )}
       {perfilMMontado && (
-        <div className={'overlay' + perfilMSale} onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label={tr('Perfil compartible', 'Shareable profile')}>
+        <div className={'overlay' + perfilMSale} ref={refPerfilM} tabIndex={-1} onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label={tr('Perfil compartible', 'Shareable profile')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setPerfilModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -6215,7 +6235,7 @@ export default function App() {
         </div>
       )}
       {planMontado && plan && (
-        <div className={'overlay' + planSale} onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label={tr('Plan de sesión', 'Session plan')}>
+        <div className={'overlay' + planSale} ref={refPlan} tabIndex={-1} onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label={tr('Plan de sesión', 'Session plan')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setPlanModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
@@ -6294,11 +6314,8 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais, salie
   const [codigo, setCodigo] = useState('')
   const [error, setError] = useState('')
   const [copiado, setCopiado] = useState(false)
-  useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  const ref = useRef(null)
+  useDialogo(ref, onClose)
   const crear = async () => {
     const u = normalizaDbUrl(url)
     if (!u) { setError(tr('Esa URL no parece de Firebase (debe terminar en firebaseio.com o firebasedatabase.app).', 'That URL doesn’t look like Firebase (it must end in firebaseio.com or firebasedatabase.app).')); return }
@@ -6322,7 +6339,7 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais, salie
     })
   }
   return (
-    <div className={'overlay' + (saliendo || '')} onClick={onClose} role="dialog" aria-modal="true" aria-label={tr('Sincronización', 'Sync')}>
+    <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onClose} role="dialog" aria-modal="true" aria-label={tr('Sincronización', 'Sync')}>
       <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
         <button className="cerrar" onClick={onClose} aria-label={tr('Cerrar', 'Close')}>✕</button>
         <div className="modal-info">

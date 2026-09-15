@@ -2215,6 +2215,10 @@ main.crono, main.comics, main.estreno{animation:none}
   .ctrl-sep{align-self:center; height:22px}
   .atajos{display:none}
   nav.tabs .tab[aria-current="page"]{background:transparent; color:var(--red); box-shadow:none}
+  /* el rótulo, de 11 px, sobre la cápsula roja y el cristal se quedaba en ~4:1 medido
+     en capturas reales: se mezcla con la tinta (más claro en oscuro, más hondo en
+     claro) y el icono y la cápsula siguen en rojo */
+  nav.tabs .tab[aria-current="page"] .tab-rotulo{color:color-mix(in srgb, var(--red) 55%, var(--ink))}
   /* en la barra de pestañas el indicador es una cápsula tintada detrás del
      icono y el rótulo (como la barra de iOS 26), no la píldora de escritorio */
   nav.tabs .indicador{background:none; box-shadow:none}
