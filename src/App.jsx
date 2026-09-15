@@ -3689,22 +3689,39 @@ function Marco({ sinMarco, titulo, children }) {
 // Calendario de Perfil, plegable y recordado; solo sale con marcas con fecha.
 const KEY_CAL_INICIO = 'maraton-marvel-cal-inicio-v1'
 function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
-  const [abierto, setAbierto] = useState(() => { try { return localStorage.getItem(KEY_CAL_INICIO) !== '0' } catch { return true } })
+  // Plegado por defecto (medido: abierto ocupaba 525 px en el móvil y el primer
+  // título bajaba a 1.170 px); la cabecera enseña igual la última semana. Abierto
+  // solo si el usuario lo abrió a mano alguna vez.
+  const [abierto, setAbierto] = useState(() => { try { return localStorage.getItem(KEY_CAL_INICIO) === '1' } catch { return false } })
   const resumen = useMemo(() => {
     const ahora = new Date()
     const esteMes = ts => { const d = new Date(ts); return d.getFullYear() === ahora.getFullYear() && d.getMonth() === ahora.getMonth() }
+    // los últimos 7 días, hoy a la derecha: cuántas marcas y si alguna tiene valoración
+    const semana = []
+    for (let i = 6; i >= 0; i--) {
+      const f = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - i)
+      semana.push({ k: diaClave(f.getTime()), f, n: 0, valorada: false })
+    }
+    const deSemana = new Map(semana.map(d => [d.k, d]))
     let hay = false, mes = 0, resenas = 0
     for (const [id, ts] of Object.entries(vistas)) {
       if (typeof ts !== 'number' || ts < 1e12 || !indice[id]) continue
       hay = true
-      if (esteMes(ts)) { mes++; const nt = notas[id]; if (nt && (nt.p || (nt.txt && nt.txt.trim()))) resenas++ }
+      const nt = notas[id]
+      const valorada = !!(nt && (nt.p || (nt.txt && nt.txt.trim())))
+      if (esteMes(ts)) { mes++; if (valorada) resenas++ }
+      const d = deSemana.get(diaClave(ts))
+      if (d) { d.n++; if (valorada) d.valorada = true }
     }
     for (const [clave, ts] of Object.entries(eps)) {
       if (typeof ts !== 'number' || ts < 1e12) continue
       hay = true
       if (esteMes(ts)) mes++
+      const d = deSemana.get(diaClave(ts))
+      if (d) d.n++
     }
-    return { hay, mes, resenas }
+    const maxSemana = Math.max(1, ...semana.map(d => d.n))
+    return { hay, mes, resenas, semana, maxSemana }
   }, [vistas, eps, notas, indice])
   if (!resumen.hay) return null
   return (
@@ -3717,6 +3734,15 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
             ? tr(`${resumen.mes} marca${resumen.mes === 1 ? '' : 's'} este mes`, `${resumen.mes} check-off${resumen.mes === 1 ? '' : 's'} this month`)
             : tr('nada este mes', 'nothing this month')}
           {resumen.resenas ? tr(` · ${resumen.resenas} valorada${resumen.resenas === 1 ? '' : 's'}`, ` · ${resumen.resenas} rated`) : ''}
+        </span>
+        {/* la última semana, siempre a la vista: qué días hubo maratón */}
+        <span className="cal-semana" aria-hidden="true">
+          {resumen.semana.map(d => (
+            <span key={d.k} className={`cal-semana-dia${d.n ? ' con' : ''}${d.valorada ? ' con-resena' : ''}`}
+              style={d.n ? { background: `color-mix(in srgb, var(--red) ${20 + 60 * d.n / resumen.maxSemana}%, var(--panel2))` } : undefined}>
+              <span className="cal-semana-letra">{tr(DIA_LETRA[d.f.getDay()], DIA_LETRA_EN[d.f.getDay()])}</span>
+            </span>
+          ))}
         </span>
       </summary>
       {abierto && (
