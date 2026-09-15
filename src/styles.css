@@ -301,6 +301,9 @@ h1 .rojo{color:var(--red)}
   font-variant-numeric:tabular-nums;
 }
 .stat-num small{font-size: var(--t-b); font-weight:600; color:var(--ink2)}
+/* «Sigue con T2 · E5: título» en una sola línea: el título largo se corta */
+.stat-sig-ep{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; max-width:100%}
+.siguiente-stat{min-width:0}
 .stat-sig{font-size: var(--t-b); font-weight:600; line-height:1.3; text-wrap:balance}
 .stat-foot{font-size: var(--t-s); color:var(--ink2)}
 .barra{height:6px; background:var(--panel2); border-radius:var(--r-s); margin: var(--e-3) 0 var(--e-1); overflow:hidden}
@@ -1148,6 +1151,11 @@ h3{
   .modal.con-fondo .modal-portada{margin-top: var(--e-8)}
   /* .modal-info ya no tiene caja que animar al pasar de título: sus hijos */
   .modal-info.modal-cambio > *{animation:entraVista var(--dur-corta) var(--curva) both}
+  /* con la biografía abierta la carátula y su botón dejaban un hueco vacío a
+     la derecha (la cabeza del título no está): se esconden y la biografía
+     sube, bajo el fotograma si lo hay; «Volver a…» ya dice de dónde vienes */
+  .modal:has(> .persona-ficha) > .modal-cover{display:none}
+  .modal.con-fondo > .persona-ficha{margin-top: var(--e-8)}
 }
 
 /* ── Episodios ── */

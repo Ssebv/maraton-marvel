@@ -4632,8 +4632,17 @@ export default function App() {
       // se quedara en un 68 % sin tener nada pendiente que ver.
       if (!extra) { totV += v; totN += n; mins += m }
     })
-    return { totV, totN, mins, siguiente, porSaga }
-  }, [vistas, filtros, pais, idioma])
+    // si lo siguiente es una serie empezada, el primer episodio sin ver: la
+    // tarjeta «Siguiente» dice por dónde vas, no solo qué serie (15 sep 2026)
+    let siguienteEp = null
+    if (siguiente && siguiente.tipo === 'serie' && EPISODES[siguiente.id]) {
+      const lista = EPISODES[siguiente.id]
+      const visto = e => !!eps[`${siguiente.id}:${e.s}:${e.n}`]
+      const e = lista.some(visto) && lista.find(x => !visto(x))
+      if (e) siguienteEp = { s: e.s, n: e.n, t: e.t }
+    }
+    return { totV, totN, mins, siguiente, siguienteEp, porSaga }
+  }, [vistas, eps, filtros, pais, idioma])
   // Una saga que ya has visto entera no aporta nada abierta: arranca plegada
   // (solo la cabecera y su barra). Se decide al cargar, no al marcar el último
   // título, para que la lista no se cierre bajo el dedo. El usuario puede
@@ -5106,7 +5115,11 @@ export default function App() {
               <span className="stat-sig-texto">
               <span className="stat-label">{tr('Siguiente', 'Up next')}</span>
               <span className="stat-sig">{stats.siguiente.t}</span>
-              <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>
+              {stats.siguienteEp
+                ? <span className="stat-foot stat-sig-ep" title={sinSpoilers ? undefined : stats.siguienteEp.t}>
+                    {tr('Sigue con', 'Continue with')} T{stats.siguienteEp.s} · E{stats.siguienteEp.n}{sinSpoilers ? '' : `: ${stats.siguienteEp.t}`}
+                  </span>
+                : <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>}
               </span>
               {/* solo en móvil (CSS): la flecha dice que la tarjeta se pulsa, como una fila de iOS */}
               <svg className="stat-sig-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
