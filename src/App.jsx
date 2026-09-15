@@ -2842,6 +2842,13 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
   // durante una transición de vista) no se anima luego porque otro render le
   // pase un retraso; nacida animada conserva el suyo
   const entrada = useRef(delay)
+  // el sello y el anillo celebran el momento de MARCAR, no el estado: antes se
+  // volvían a estampar en cada tarjeta vista que se montaba (volver a la
+  // lista, desplegar una saga, borrar la búsqueda). `marcada` dura lo que la
+  // animación y solo si `vista` pasó de false a true con la tarjeta montada
+  const vistaAntes = useRef(vista), marcadaEn = useRef(0)
+  if (vista !== vistaAntes.current) { if (vista) marcadaEn.current = performance.now(); vistaAntes.current = vista }
+  const marcada = vista && performance.now() - marcadaEn.current < 700
   let epProg = null
   if (esComic && lectura && lectura.t > 1 && !vista) epProg = tr(`pág. ${lectura.p + 1}/${lectura.t}`, `p. ${lectura.p + 1}/${lectura.t}`)
   if (item.tipo === 'serie' && EPISODES[item.id]) {
@@ -2850,7 +2857,7 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
     if (hechos > 0 && !vista) epProg = `${hechos}/${total} ep`
   }
   return (
-    <article className={`card${vista ? ' vista' : ''}${entrada.current == null ? ' quieta' : ''}`} id={`card-${item.id}`}
+    <article className={`card${vista ? ' vista' : ''}${marcada ? ' marcada' : ''}${entrada.current == null ? ' quieta' : ''}`} id={`card-${item.id}`}
       style={{ animationDelay: entrada.current == null ? undefined : `${entrada.current}ms`, '--glow': c[0] }}>
       <button className="checkbox" aria-pressed={vista} onClick={onToggle} aria-label={tr(`Vista: ${item.t}`, `Seen: ${item.t}`)}
         title={vista ? tr('Vista — pulsa para marcar pendiente', 'Watched — tap to mark as pending') : tr('Pendiente — pulsa para marcar vista', 'Pending — tap to mark as watched')}>
@@ -2861,7 +2868,7 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
         <span className="cover-wrap">
           <Portada item={item} c={c} esComic={esComic} />
           {item.s != null && !esComic && <span className="rating-badge">★ {item.s.toFixed(1)}</span>}
-          {vista && <span className="sello sello-mini" aria-hidden="true">{esComic ? tr('LEÍDO', 'READ') : tr('VISTA', 'SEEN')}</span>}
+          {vista && <span className={`sello sello-mini${marcada ? ' estampa' : ''}`} aria-hidden="true">{esComic ? tr('LEÍDO', 'READ') : tr('VISTA', 'SEEN')}</span>}
         </span>
         <span className="info">
           <span className="fila-titulo"><span className="num">{num}</span><span className="titulo">{item.t}</span></span>
@@ -3160,6 +3167,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   const [revela, setRevela] = useState(false)
   useEffect(() => { setRevela(false) }, [item.id])
   const oculto = !!sinSpoilers && !vista && !revela
+  // el sello grande se estampa al marcar con la ficha abierta, no cada vez
+  // que se abre la ficha de algo ya visto (lo estampaba mientras la hoja subía)
+  const selloRef = useRef({ id: item.id, vista, en: 0 })
+  if (selloRef.current.id !== item.id) selloRef.current = { id: item.id, vista, en: 0 }
+  else if (selloRef.current.vista !== vista) selloRef.current = { id: item.id, vista, en: vista ? performance.now() : 0 }
+  const estampa = vista && performance.now() - selloRef.current.en < 700
   const extra = useTmdb(item, idioma)
   // el fotograma que ya se conoce (src/fondos.js, precargado al tocar) sale sin
   // esperar a TMDB; cuando TMDB responde manda el suyo
@@ -3339,7 +3352,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
         <div className="modal-cover">
           <div className="modal-portada" ref={refPortada}>
             <Portada item={item} c={c} esComic={esComic} />
-            {vista && <span className="sello" aria-hidden="true">{esComic ? tr('LEÍDO', 'READ') : tr('VISTA', 'SEEN')}</span>}
+            {vista && <span className={`sello${estampa ? ' estampa' : ''}`} aria-hidden="true">{esComic ? tr('LEÍDO', 'READ') : tr('VISTA', 'SEEN')}</span>}
           </div>
           <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
             {vista ? tr('✓ Vista — marcar pendiente', '✓ Watched — mark pending') : esComic ? tr('Marcar como leído', 'Mark as read') : tr('Marcar como vista', 'Mark as watched')}
@@ -4628,10 +4641,12 @@ export default function App() {
   }, [])
   // En móvil la barra de herramientas (búsqueda y filtros) se retira al bajar
   // por la lista y vuelve en cuanto subes, como la barra de Safari: son 55 px
-  // de pantalla que mientras lees tarjetas no hacen nada. Hace falta un
-  // recorrido de 24 px en la misma dirección para cambiar (un dedo que tiembla
-  // no la hace parpadear), nunca se esconde en la portada (primeros 160 px)
-  // ni mientras se escribe en la búsqueda.
+  // de pantalla que mientras lees tarjetas no hacen nada. Umbrales asimétricos
+  // (15 sep 2026: «la barra de abajo se esconde muy rápido»): para irse hace
+  // falta bajar de seguido 96 px (media tarjeta; con 24 px se iba con
+  // cualquier ajuste del dedo) y haber pasado la portada (320 px); para volver
+  // basta subir 16 px, como en Safari. Nunca se esconde mientras se escribe
+  // en la búsqueda, ni al llegar al final de la página.
   useEffect(() => {
     if (!esMovil) return
     const raiz = document.documentElement
@@ -4651,10 +4666,11 @@ export default function App() {
       // pasar el contenido; con esta clase el CSS la tapa
       if (tb) raiz.classList.toggle('barra-pegada', y > 0 && tb.getBoundingClientRect().top <= tope + 1)
       const enBarra = document.activeElement && document.activeElement.closest && document.activeElement.closest('.toolbar')
-      if (y < 160 || enBarra) { raiz.classList.remove('barra-oculta'); acumulado = 0; return }
+      const alFinal = y + window.innerHeight >= document.documentElement.scrollHeight - 80
+      if (y < 320 || enBarra || alFinal) { raiz.classList.remove('barra-oculta'); acumulado = 0; return }
       acumulado = Math.sign(d) === Math.sign(acumulado) ? acumulado + d : d
-      if (acumulado > 24) raiz.classList.add('barra-oculta')
-      else if (acumulado < -24) raiz.classList.remove('barra-oculta')
+      if (acumulado > 96) raiz.classList.add('barra-oculta')
+      else if (acumulado < -16) raiz.classList.remove('barra-oculta')
     }
     const on = () => { if (!pendiente) { pendiente = true; requestAnimationFrame(calcula) } }
     window.addEventListener('scroll', on, { passive: true })
@@ -4854,8 +4870,9 @@ export default function App() {
     const traeLuego = () => requestAnimationFrame(() => requestAnimationFrame(trae))
     if (!cuerpo || !cuerpo.animate || movimientoReducido()) { ponPlegado(clave, true); traeLuego(); return }
     plegando.current.add(clave)
-    const a = cuerpo.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }],
-      { duration: 180, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' })
+    // --dur-corta y --curva: con ease-in arrancaba lento justo cuando se mira
+    const a = cuerpo.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-6px)' }],
+      { duration: 160, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'forwards' })
     let hecho = false
     const fin = () => { if (hecho) return; hecho = true; plegando.current.delete(clave); ponPlegado(clave, true); traeLuego() }
     a.onfinish = fin; a.oncancel = fin
@@ -5112,7 +5129,8 @@ export default function App() {
   // solo las 12 primeras tarjetas entran escalonadas (lo que se ve); el
   // resto aparece sin animar: eran cien animaciones vivas por cambio de vista
   const nextDelay = () => {
-    if (enTransicion || delayIdx >= 12) { delayIdx++; return null }
+    // ni mientras se busca: cada tecla montaba tarjetas nuevas escalonadas
+    if (enTransicion || buscaLenta || delayIdx >= 12) { delayIdx++; return null }
     return (delayIdx++) * 30
   }
   const pct = stats.totN ? Math.round(100 * stats.totV / stats.totN) : 0
@@ -5529,7 +5547,7 @@ export default function App() {
                         vista={!!l.prog[item.id]}
                         onToggle={() => toggleProgLista(l.id, item.id)}
                         onAbrir={() => setDetalle({ item, c, esComic })}
-                        delay={Math.min(i * 30, 300)} epHechos={epHechosDe(item)}
+                        delay={i < 12 ? i * 30 : null} epHechos={epHechosDe(item)}
                         miNota={notas[item.id] && notas[item.id].p} />
                     ))}
                   </div>
@@ -5603,7 +5621,7 @@ export default function App() {
                       vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
                       onAbrir={() => setDetalle({ item, c, esComic: item.id.startsWith('c-') })}
-                      delay={Math.min(i * 30, 300)} epHechos={epHechosDe(item)}
+                      delay={i < 12 ? i * 30 : null} epHechos={epHechosDe(item)}
                       miNota={notas[item.id] && notas[item.id].p} />
                   ))}
                 </div>

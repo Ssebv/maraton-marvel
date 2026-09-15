@@ -908,8 +908,9 @@ h3{
 .checkbox::after{content:""; position:absolute; inset:-9px; border-radius:50%}
 .card.vista .checkbox{
   background:var(--done); border-color:var(--done); color:var(--sobre-acento);
-  animation:anillo .5s var(--curva) both;
 }
+/* el anillo, como el sello, solo en el momento de marcar */
+.card.marcada .checkbox{animation:anillo .5s var(--curva) both}
 @keyframes anillo{
   from{box-shadow:0 0 0 0 color-mix(in srgb, var(--done) 55%, transparent)}
   to{box-shadow:0 0 0 14px transparent}
@@ -1017,14 +1018,15 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
   background:rgba(8,10,14,calc(.62 * (1 - var(--arrastre))));
   -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
   display:grid; place-items:center; padding: var(--e-6);
-  animation:fadeIn .2s ease both;
+  animation:fadeIn var(--dur-media) var(--curva) both;
 }
 @keyframes fadeIn{from{opacity:0} to{opacity:1}}
 /* Salida de las capas: la mitad simétrica de la entrada. Keyframes solo con
    `to` para arrancar desde donde esté el nodo (el gesto ya lo deja fuera y
    no debe volver). Mientras sale no recibe toques. */
-.overlay.saliendo, .lector.saliendo, .cine.saliendo{animation:fueraVelo var(--dur-media) ease both; pointer-events:none}
-.overlay.saliendo .modal{animation:fueraHoja var(--dur-media) var(--curva) both}
+/* salir, más rápido que entrar (entra en --dur-media) */
+.overlay.saliendo, .lector.saliendo, .cine.saliendo{animation:fueraVelo var(--dur-corta) var(--curva) both; pointer-events:none}
+.overlay.saliendo .modal{animation:fueraHoja var(--dur-corta) var(--curva) both}
 @keyframes fueraVelo{to{opacity:0}}
 @keyframes fueraHoja{to{opacity:0; transform:translateY(8px) scale(.98)}}
 .modal{
@@ -1919,7 +1921,10 @@ main.crono, main.comics, main.estreno{animation:none}
      forzado; la curva de la hoja, a la misma duración que la salida */
   html[data-vt="portada-cierra"]::view-transition-group(portada){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
   ::view-transition-group(*){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
-  ::view-transition-old(root), ::view-transition-new(root){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
+  /* cambio de pestaña: la vista vieja se va enseguida y la nueva entra un poco
+     más larga (antes las dos 360 ms: se veían las dos a medias un buen rato) */
+  ::view-transition-old(root){animation-duration:var(--dur-corta); animation-timing-function:var(--curva)}
+  ::view-transition-new(root){animation-duration:var(--dur-media); animation-timing-function:var(--curva-hoja)}
   html[data-vt="adelante"]::view-transition-old(root){animation-name:vtSaleIzq}
   html[data-vt="adelante"]::view-transition-new(root){animation-name:vtEntraDer}
   html[data-vt="atras"]::view-transition-old(root){animation-name:vtSaleDer}
@@ -2082,7 +2087,8 @@ main.crono, main.comics, main.estreno{animation:none}
 }
 
 /* ── Liquid Glass móvil: dock inferior + fichas como sheet ── */
-@keyframes sheetUp{from{transform:translateY(46%); opacity:.6}}
+/* la hoja es un objeto sólido: sube desde abajo del todo, sin fundirse */
+@keyframes sheetUp{from{transform:translateY(100%)}}
 @media (max-width:720px){
   /* Barra de app de borde a borde: la caja flotante con esquinas dejaba ver
      el texto por el hueco de arriba y por las esquinas al desplazarse. */
@@ -2096,7 +2102,8 @@ main.crono, main.comics, main.estreno{animation:none}
      de pestañas (position:fixed) vive dentro de esta en el DOM y un
      transform aquí la convertía en su contenedor, así que el dock se iba
      hacia arriba con la barra al hacer scroll (visto en el iPhone, 11 sep). */
-  .toolbar{transition:transform var(--dur-larga) var(--curva-hoja)}
+  /* volver es rápido; irse, con calma (html.barra-oculta .toolbar, más abajo) */
+  .toolbar{transition:transform var(--dur-media) var(--curva-hoja)}
   /* Pegada arriba, tapa la zona segura del notch (y lo que haya por encima
      de su borde) con una sombra sólida desplazada hacia arriba: solo con la
      clase, para no pintar sobre el panel en reposo. No usa ::before porque
@@ -2203,6 +2210,12 @@ main.crono, main.comics, main.estreno{animation:none}
   /* Con el teclado en pantalla el dock flotaba justo encima de él y tapaba
      los primeros resultados: mientras se escribe en la barra se retira */
   nav.tabs{transition:transform var(--dur-larga) var(--curva-hoja), opacity var(--dur-larga) var(--curva-hoja)}
+  /* Irse, más despacio que volver: con la curva de la hoja (casi todo el
+     recorrido en los primeros 100 ms) y la opacidad a la misma curva, la
+     barra desaparecía de golpe (y --curva también: mitad del recorrido a los 80 ms). Baja en --dur-barra con «ease», repartida, y se funde
+     tarde, cuando ya casi ha salido; vuelve con la regla de arriba, rápida. */
+  html.barra-oculta nav.tabs{transition:transform var(--dur-barra) ease, opacity var(--dur-larga) linear var(--dur-corta)}
+  html.barra-pegada.barra-oculta .toolbar{transition:transform var(--dur-barra) ease}
   html:has(.controles .busca:focus) nav.tabs{transform:translateY(calc(100% + 24px)); opacity:0}
 
   /* La barra ocupaba 399 px (5 filas de chips) al crecer el número de filtros.
@@ -2240,6 +2253,13 @@ main.crono, main.comics, main.estreno{animation:none}
     max-height:92vh; max-height:92dvh; padding-top: var(--e-6);
     padding-bottom:calc(20px + env(safe-area-inset-bottom));
     animation:sheetUp var(--muelle-hoja) both;
+  }
+  /* al abrir, el velo se oscurece por su color, como al cerrar: la opacidad
+     del .overlay (fadeIn, 200 ms) se llevaba también la hoja, que vive dentro,
+     y acababa mucho antes que su muelle de 500 ms */
+  .overlay{animation:entraVeloMovil var(--muelle-hoja-dur) var(--curva-hoja) both}
+  @keyframes entraVeloMovil{from{--arrastre:1}}
+  .modal{
   }
   /* La hoja baja entera y el velo se aclara con ella, a la misma duración y con
      la misma curva. Se anima solo el COLOR del velo (--arrastre, el mismo que
@@ -2452,9 +2472,10 @@ a.prov-chip:hover{border-color:var(--ink3)}
   font-family:"Archivo Black","Archivo",sans-serif; font-size: var(--t-l); letter-spacing:.12em;
   color:var(--done); border:3px solid var(--done); border-radius:var(--r-s); padding: var(--e-2) var(--e-4);
   background:color-mix(in srgb, var(--bg) 55%, transparent);
-  animation:sellazo .45s var(--curva) both;
   pointer-events:none;
 }
+/* solo al marcar (App.jsx: `estampa`): lo ya visto aparece estampado, quieto */
+.sello.estampa{animation:sellazo .45s var(--curva) both}
 .sello-mini{font-size: var(--t-xs); border-width:2px; padding: var(--e-1) var(--e-3); letter-spacing:.09em}
 .cover-wrap{position:relative}
 .bienvenida-pasos{margin: var(--e-2) 0 0; padding-left: var(--e-6); display:flex; flex-direction:column; gap: var(--e-4); font-size: var(--t-b); line-height:1.55}
