@@ -3751,7 +3751,14 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
   if (!resumen.hay) return null
   return (
     <details className="cal-inicio" open={abierto}
-      onToggle={e => { const v = e.currentTarget.open; setAbierto(v); try { localStorage.setItem(KEY_CAL_INICIO, v ? '1' : '0') } catch {} }}>
+      onToggle={e => {
+        const v = e.currentTarget.open
+        setAbierto(v)
+        // plegado, se olvida el día tocado en la semana: abrir luego por la
+        // cabecera debe llevar a hoy, no a aquel día (lo cazó code-review)
+        if (!v) setDiaElegido(null)
+        try { localStorage.setItem(KEY_CAL_INICIO, v ? '1' : '0') } catch {}
+      }}>
       <summary>
         <span className="cal-inicio-titulo">{tr('Tu calendario', 'Your calendar')}</span>
         <span className="cal-inicio-sub">
@@ -4671,6 +4678,9 @@ export default function App() {
   // de hoy (reescribía calendario, mapa y racha). Un aviso de 5 s lo devuelve con
   // sus fechas. Por ref: las tarjetas memoizadas guardan un toggle de otro render.
   const [deshacer, setDeshacer] = useState(null)
+  // el aviso vigente: «Serie completa» encadena su Deshacer al del episodio que
+  // la completó (antes lo pisaba y ese episodio ya no se podía deshacer)
+  const deshacerRef = useRef(null); deshacerRef.current = deshacer
   const ofreceDeshacer = (texto, restaura, ms = 5000) => setDeshacer({ id: Date.now(), texto, restaura, ms })
   const vistasRef = useRef(vistas); vistasRef.current = vistas
   const epsRef = useRef(eps); epsRef.current = eps
@@ -4720,12 +4730,18 @@ export default function App() {
       return next
     })
     const d = completas.length === 1 && buscaItem(completas[0])
-    ofreceDeshacer(d ? tr(`Serie completa: ${d.item.t}`, `Series complete: ${d.item.t}`) : tr('Serie completa', 'Series complete'), () => setVistas(prev => {
-      const next = { ...prev }
-      completas.forEach(id => { if (next[id] === ahora) delete next[id] })
-      try { localStorage.setItem(KEY, JSON.stringify(next)) } catch {}
-      return next
-    }))
+    // si la misma acción ya dejó un aviso (el episodio marcado desde «Siguiente»),
+    // deshacer la serie completa deshace también ese episodio
+    const previo = deshacerRef.current && Date.now() - deshacerRef.current.id < 1500 ? deshacerRef.current.restaura : null
+    ofreceDeshacer(d ? tr(`Serie completa: ${d.item.t}`, `Series complete: ${d.item.t}`) : tr('Serie completa', 'Series complete'), () => {
+      setVistas(prev => {
+        const next = { ...prev }
+        completas.forEach(id => { if (next[id] === ahora) delete next[id] })
+        try { localStorage.setItem(KEY, JSON.stringify(next)) } catch {}
+        return next
+      })
+      if (previo) previo()
+    })
   }, [eps])
   // toda una temporada de un golpe: marca lo pendiente o la vacía entera
   const marcaTemporadaEps = (id, s, marcar) => setEps(prev => {
@@ -5671,8 +5687,7 @@ export default function App() {
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
             // en el móvil la tecla dice «Buscar» y al pulsarla se esconde el
             // teclado, que tapaba media pantalla de resultados
-            enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter' && ES_TACTIL) e.currentTarget.blur() }}
-            enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
+            enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter' && ES_TACTIL) e.currentTarget.blur() }} />
           </>)}
           <button className="chip-btn chip-ajustes" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
           {/* El estado de sincronización es estado, no un botón: solo se
