@@ -3394,6 +3394,27 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
           <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
             {vista ? (esComic ? tr('✓ Leído — marcar pendiente', '✓ Read — mark pending') : tr('✓ Vista — marcar pendiente', '✓ Watched — mark pending')) : esComic ? tr('Marcar como leído', 'Mark as read') : tr('Marcar como vista', 'Mark as watched')}
           </button>
+          {/* Recién marcada con la ficha abierta y aún sin estrellas: valorar ahí
+              mismo. «Tu valoración» queda a ~860 px del borde de la hoja en el
+              móvil (bajo reparto y dónde verla) y el calendario de la portada
+              enseña estrellas y reseñas: el paso natural tras marcar es valorar. */}
+          {vista && selloRef.current.en > 0 && !nota.p && (
+            <div className="valora-rapido" role="group" aria-label={tr('Valorar', 'Rate')}>
+              <span className="valora-rapido-pregunta">{tr('¿Qué te pareció?', 'What did you think?')}</span>
+              <span className="estrellas">
+                {[1, 2, 3, 4, 5].map(p => (
+                  <button key={p} type="button" className="estrella" aria-label={tr(`${p} estrella${p === 1 ? '' : 's'}`, `${p} star${p === 1 ? '' : 's'}`)}
+                    onClick={() => ponNota('p', p)}>☆</button>
+                ))}
+              </span>
+              <button type="button" className="ghost valora-rapido-resena" onClick={() => {
+                const campo = refModal.current && refModal.current.querySelector('.nota-input')
+                if (!campo) return
+                campo.scrollIntoView({ block: 'center', behavior: movimientoReducido() ? 'instant' : 'smooth' })
+                campo.focus({ preventScroll: true })
+              }}>{tr('Escribir reseña', 'Write a review')}</button>
+            </div>
+          )}
           {falloTmdb && !extra && !esComic && (
             <p className="aviso-sin-red" role="status">{tr('Sin conexión con TMDB: faltan el reparto, el tráiler y dónde verla. Vuelve a abrirla con conexión.', 'Can’t reach TMDB: cast, trailer and where to watch are missing. Reopen it when you’re online.')}</p>
           )}

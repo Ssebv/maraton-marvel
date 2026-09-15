@@ -2803,3 +2803,16 @@ a.prov-chip:hover{border-color:var(--ink3)}
 }
 /* abierto, la semana sobra: el mes entero está debajo */
 .cal-inicio[open] .cal-semana{display:none}
+
+/* «¿Qué te pareció?» bajo el botón principal de la ficha, justo tras marcar */
+.valora-rapido{
+  /* dos filas: pregunta y «Escribir reseña» arriba, las estrellas debajo (en
+     flex partía en tres, ~245 px, y empujaba la sinopsis). Cada estrella sigue
+     midiendo 44 px: es su zona táctil */
+  display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; row-gap: var(--e-1); column-gap: var(--e-3);
+  padding: var(--e-2) var(--e-3) var(--e-2) var(--e-4); border-radius:var(--r-m); background:var(--gold-soft);
+  animation:entraVista var(--dur-media) var(--curva) both;
+}
+.valora-rapido-pregunta{grid-column:1; grid-row:1; font-size: var(--t-s); font-weight:700; color:var(--ink)}
+.valora-rapido-resena{grid-column:2; grid-row:1}
+.valora-rapido .estrellas{grid-column:1 / -1; grid-row:2; display:flex; margin-left:calc(-1 * var(--e-3))}
