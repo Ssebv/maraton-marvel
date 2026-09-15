@@ -1497,7 +1497,7 @@ main.galeria{margin-top: var(--e-6)}
 @media (max-width:640px){
   .planeta-grande{width:92px; height:92px; right:16px; top:20px; transform:none}
   .mv-card{padding-right: 82px}
-  .tierra-hero{padding-right: var(--e-6); padding-top: 120px}
+  /* el relleno móvil de .tierra-hero va DESPUÉS de su regla base (ver «Vista de una Tierra») */
 }
 
 /* ── Sistema solar del multiverso ── */
@@ -1656,6 +1656,13 @@ main.multiverso{margin-top: var(--e-6)}
 .tierra-barra{margin-top: var(--e-4)}
 .tierra-barra > i{background:var(--tc)}
 .tierra-count{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+/* En el móvil el planeta (92 px) va arriba a la derecha y el texto baja bajo él,
+   a lo ancho. Esta regla estaba ANTES de la base, con la misma especificidad:
+   la base ganaba y dejaba 210 px de relleno a la derecha en una pantalla de 390
+   (el texto de la Tierra en una columna de ~100 px, palabra por palabra). */
+@media (max-width:640px){
+  .tierra-hero{padding: 120px var(--e-6) var(--e-6)}
+}
 @media (min-width:1240px){
   .tierra-grid{display:grid; grid-template-columns:1fr 1fr; gap: var(--e-4)}
 }
