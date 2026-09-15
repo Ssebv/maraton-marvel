@@ -3749,7 +3749,7 @@ function leeIndice() {
     })),
   })).filter(s => s.titulo)
 }
-function DondeEstoy({ version }) {
+function DondeEstoy({ version, siguiente, onPrepara }) {
   const [donde, setDonde] = useState(null)
   const [abierto, setAbierto] = useState(false)
   const [indice, setIndice] = useState([])
@@ -3817,14 +3817,22 @@ function DondeEstoy({ version }) {
     const on = () => { if (!pend) { pend = true; requestAnimationFrame(calcula) } }
     on()
     window.addEventListener('scroll', on, { passive: true })
-    window.addEventListener('resize', on)
+    // al girar el iPhone cambia el notch (59 px en vertical, 0 en horizontal):
+    // se vuelve a medir, o la píldora quedaba desplazada (code-review)
+    const alCambiarTamano = () => { tope.current = sonda.getBoundingClientRect().top; on() }
+    window.addEventListener('resize', alCambiarTamano)
     // la barra se retira o vuelve sin scroll propio (clase en <html>)
     const obs = new MutationObserver(on)
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-    return () => { window.removeEventListener('scroll', on); window.removeEventListener('resize', on); obs.disconnect(); sonda.remove() }
+    // plegar o desplegar una era, el modo compacto o el orden cambian la lista
+    // sin scroll: sin esto la píldora se quedaba con la era vieja (code-review)
+    const main = document.querySelector('main')
+    const ro = typeof ResizeObserver !== 'undefined' && main ? new ResizeObserver(on) : null
+    if (ro) ro.observe(main)
+    return () => { window.removeEventListener('scroll', on); window.removeEventListener('resize', alCambiarTamano); obs.disconnect(); if (ro) ro.disconnect(); sonda.remove() }
   }, [version])
   const abre = () => { setIndice(leeIndice()); setAbierto(true) }
-  const salta = el => {
+  const salta = (dame, espera = 60) => {
     setAbierto(false)
     // tras cerrar (el fondo se libera al instante), la era queda bajo la píldora
     // Salto directo y corregido: las tarjetas fuera de pantalla miden lo que
@@ -3833,10 +3841,15 @@ function DondeEstoy({ version }) {
     // 650 px más abajo. Se salta, se mide otra vez y se corrige (3 veces como
     // mucho), y la cabecera de la era da un destello para situarse.
     setTimeout(() => {
+      const el = typeof dame === 'function' ? dame() : dame
+      if (!el) return
+      // el mismo borde libre que usa la píldora: bajo la barra si se ve, y si
+      // no bajo el notch (sin él, con la barra retirada la cabecera quedaba
+      // tapada por el notch y la píldora en un iPhone; code-review)
       const raya = () => {
         const tb = document.querySelector('.toolbar')
-        const tope = tb && !document.documentElement.classList.contains('barra-oculta') ? (parseFloat(getComputedStyle(tb).top) || 0) + tb.offsetHeight : 0
-        return tope + 56
+        const bajoBarra = tb && !document.documentElement.classList.contains('barra-oculta') ? (parseFloat(getComputedStyle(tb).top) || 0) + tb.offsetHeight : 0
+        return Math.max(tope.current || 0, bajoBarra) + 56
       }
       window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - raya()), behavior: 'instant' })
       let intentos = 0
@@ -3846,9 +3859,12 @@ function DondeEstoy({ version }) {
         const cab = el.querySelector('.era-head, .saga-head') || el
         cab.classList.add('destello')
         setTimeout(() => cab.classList.remove('destello'), 1600)
+        // en una tarjeta, el foco va con ella (teclado)
+        const abrir = el.querySelector(':scope > .abrir')
+        if (abrir) abrir.focus({ preventScroll: true })
       }))
       corrige()
-    }, 60)
+    }, espera)
   }
   const corta = donde && SAGA_CORTA[donde.saga]
   return (
@@ -3871,6 +3887,27 @@ function DondeEstoy({ version }) {
             <button className="cerrar" onClick={() => setAbierto(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="indice-cuerpo">
               <h2 className="modal-titulo">{tr('Índice', 'Index')}</h2>
+              {/* los dos saltos que más se buscan cuando uno se pierde */}
+              <div className="indice-atajos">
+                {siguiente && (
+                  <button type="button" className="indice-atajo" onClick={() => {
+                    // la era del siguiente puede estar plegada (o la vista ser
+                    // otra): se prepara y se espera a que la tarjeta exista
+                    const esperar = onPrepara ? onPrepara(siguiente.id) : false
+                    salta(() => document.getElementById('card-' + siguiente.id), esperar ? 240 : 60)
+                  }}>
+                    <span className="indice-atajo-titulo">{tr('Ir a lo siguiente', 'Go to up next')}</span>
+                    <span className="indice-atajo-sub">{siguiente.t}</span>
+                  </button>
+                )}
+                <button type="button" className="indice-atajo" onClick={() => {
+                  setAbierto(false)
+                  setTimeout(() => window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }), 60)
+                }}>
+                  <span className="indice-atajo-titulo">{tr('Volver arriba', 'Back to top')}</span>
+                  <span className="indice-atajo-sub">{tr('Portada y «Siguiente»', 'Home and «Up next»')}</span>
+                </button>
+              </div>
               {indice.map(s => (
                 <section key={s.id || s.titulo} className="indice-saga">
                   <button type="button" className="indice-saga-cab" onClick={() => salta(s.el)}>
@@ -6932,7 +6969,13 @@ export default function App() {
       <VersionNueva />
       <Deshacer aviso={deshacer} onCerrar={() => setDeshacer(null)} />
       {(vista === 'crono' || vista === 'comics' || vista === 'animacion') && createPortal(
-        <DondeEstoy version={`${vista}|${Object.keys(vistas).length}|${Object.keys(eps).length}|${JSON.stringify(filtros)}|${buscaLenta}|${idioma}|${pais}`} />,
+        <DondeEstoy version={`${vista}|${Object.keys(vistas).length}|${Object.keys(eps).length}|${JSON.stringify(filtros)}|${buscaLenta}|${idioma}|${pais}`}
+          siguiente={stats.siguiente ? { id: stats.siguiente.id, t: stats.siguiente.t } : null}
+          onPrepara={id => {
+            const cambia = vista !== 'crono'
+            if (cambia) setVista('crono')
+            return despliegaPara(id) || cambia
+          }} />,
         document.body
       )}
     </div>

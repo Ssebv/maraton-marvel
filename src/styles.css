@@ -2913,3 +2913,14 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   100%{box-shadow:0 0 0 2px transparent; border-radius:var(--r-m)}
 }
 @media (prefers-reduced-motion: reduce){ .era-head.destello, .saga-head.destello{animation:none} }
+/* atajos arriba del índice: ir a lo siguiente y volver arriba */
+.indice-atajos{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap: var(--e-3)}
+.indice-atajo{
+  display:flex; flex-direction:column; align-items:flex-start; gap: var(--e-1); min-height:52px; min-width:0;
+  padding: var(--e-3) var(--e-4); border-radius:var(--r-m); border:1px solid var(--line); background:transparent;
+  color:var(--ink); font:inherit; text-align:left; cursor:pointer; transition:transform var(--muelle-toque);
+}
+.indice-atajo:active{transform:scale(.97)}
+.indice-atajo-titulo{font-size: var(--t-m); font-weight:700}
+.indice-atajo-sub{font-size: var(--t-xs); color:var(--ink2); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+@media (prefers-reduced-motion: reduce){ .indice-atajo{transition:none} }
