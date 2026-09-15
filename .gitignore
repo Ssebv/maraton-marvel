@@ -2,3 +2,5 @@ node_modules/
 dist/
 .DS_Store
 .claude/skills/
+# fragmento del espejo en Artifacts (lo genera npm run desplegar; se publica a mano)
+.espejo/
