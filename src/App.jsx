@@ -4748,6 +4748,36 @@ export default function App() {
     return next
   })
 
+  // Marcar lo siguiente desde la portada (15 sep 2026): es lo que más se hace
+  // en un maratón y pedía abrir la ficha. Una película se marca vista; una
+  // serie, su siguiente episodio sin ver (la tarjeta pasa sola a lo que toca).
+  // Siempre con Deshacer: el botón está lejos del contenido que cambia.
+  const marcaSiguiente = s => {
+    if (!s) return
+    const lista = s.tipo === 'serie' ? EPISODES[s.id] : null
+    if (lista && lista.length) {
+      const e = lista.find(x => !epsRef.current[`${s.id}:${x.s}:${x.n}`])
+      if (e) {
+        const clave = `${s.id}:${e.s}:${e.n}`
+        toggleEp(clave)
+        ofreceDeshacer(tr(`Visto: ${s.t} · T${e.s}·E${e.n}`, `Watched: ${s.t} · S${e.s}·E${e.n}`), () => setEps(prev => {
+          if (!prev[clave]) return prev
+          const next = { ...prev }; delete next[clave]
+          try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
+          return next
+        }))
+        return
+      }
+    }
+    if (vistasRef.current[s.id]) return
+    toggleVista(s.id)
+    ofreceDeshacer(tr(`Vista: ${s.t}`, `Watched: ${s.t}`), () => setVistas(prev => {
+      if (!prev[s.id]) return prev
+      const next = { ...prev }; delete next[s.id]
+      try { localStorage.setItem(KEY, JSON.stringify(next)) } catch {}
+      return next
+    }))
+  }
   const toggle = id => {
     const antes = vistasRef.current[id]
     if (antes) {
@@ -5463,6 +5493,7 @@ export default function App() {
             <span className="stat-foot">{tr('de películas y series', 'of movies and series')}</span>
           </div>
           {stats.siguiente && (
+            <>
             <button className="stat siguiente-stat" title={tr('Ir a la tarjeta', 'Go to the card')} onClick={() => {
               // en móvil la tarjeta se lee como una fila con flecha: abre la
               // ficha (ver, marcar), que es lo que promete; en escritorio
@@ -5499,6 +5530,22 @@ export default function App() {
               {/* solo en móvil (CSS): la flecha dice que la tarjeta se pulsa, como una fila de iOS */}
               <svg className="stat-sig-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
             </button>
+            {/* marcar sin abrir la ficha (solo móvil, CSS): va FUERA del botón
+                de la tarjeta —un botón no puede llevar otro dentro— y el CSS lo
+                pone encima, a la derecha */}
+            {(() => {
+              const s = stats.siguiente
+              const lista = s.tipo === 'serie' ? EPISODES[s.id] : null
+              const e = lista && lista.find(x => !eps[`${s.id}:${x.s}:${x.n}`])
+              return (
+                <button type="button" className="siguiente-marcar" onClick={() => marcaSiguiente(s)}
+                  aria-label={e ? tr(`Marcar visto T${e.s}·E${e.n} de ${s.t}`, `Mark S${e.s}·E${e.n} of ${s.t} watched`) : tr(`Marcar vista: ${s.t}`, `Mark watched: ${s.t}`)}>
+                  <CheckIcon />
+                  <span>{e ? `T${e.s}·E${e.n}` : tr('Vista', 'Seen')}</span>
+                </button>
+              )
+            })()}
+            </>
           )}
         </div>
         {/* En móvil las dos cajas de cifras se resumen en esta línea (CSS las

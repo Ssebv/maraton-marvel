@@ -2820,3 +2820,35 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .cal-semana-dia.con{cursor:pointer; transition:transform var(--muelle-toque)}
 .cal-semana-dia.con:active{transform:scale(.92)}
 .cal-semana-dia.con::before{content:""; position:absolute; inset:-8px -1px}
+/* con «reducir movimiento», lo nuevo aparece sin entrar animado (medido: abrir
+   «Tu calendario» seguía animando su cuerpo) y la flecha y las casillas no giran */
+@media (prefers-reduced-motion: reduce){
+  .cal-inicio-cuerpo, .valora-rapido, .deshacer{animation:none}
+  .cal-inicio > summary::after, .cal-semana-dia.con, .deshacer button{transition:none}
+}
+
+/* ── Marcar lo siguiente sin abrir la ficha (solo móvil) ── */
+.siguiente-marcar{display:none}
+@media (max-width:640px){
+  /* el botón encima de la tarjeta, a la derecha y antes de la flecha. En el
+     móvil .stats no es rejilla (compartir celda no funcionaba: caía debajo),
+     así que va en absoluto; centrado con top/margin y no con translate, que el
+     minificador funde con transform y el :active lo pisaría */
+  .stats-inicio{position:relative}
+  /* con el botón, la flecha sobra: quedaba entre el título y el botón («› ✓
+     Vista») porque el hueco reservado la empujaba; tocar la tarjeta sigue
+     abriendo la ficha */
+  .stats .siguiente-stat{padding-right:112px}
+  .stats .siguiente-stat .stat-sig-chevron{display:none}
+  .siguiente-marcar{
+    display:inline-flex; align-items:center; gap: var(--e-2); position:absolute; z-index:1;
+    right: var(--e-4); top:50%; margin-top:-18px;
+    padding: var(--e-2) var(--e-4); min-height:36px; border-radius:var(--r-pill);
+    border:1.5px solid var(--done); background:transparent; color:var(--done);
+    font:inherit; font-size: var(--t-s); font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; cursor:pointer;
+    transition:transform var(--muelle-toque);
+  }
+  .siguiente-marcar::after{content:""; position:absolute; inset:-5px -4px}
+  .siguiente-marcar svg{width:14px; height:14px}
+  .siguiente-marcar:active{transform:scale(.96)}
+}
