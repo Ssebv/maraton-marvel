@@ -66,6 +66,9 @@
   --e-1:2px; --e-2:4px; --e-3:8px; --e-4:12px;
   --e-5:16px; --e-6:24px; --e-7:32px; --e-8:48px; --e-9:64px;
   --fondo-op:.45; --velo-a:62%; --velo-b:84%; --material:#F6F1E3;
+  /* borde de una imagen: negro o blanco puros al 10 %, nunca un neutro teñido,
+     que sobre la foto se lee como suciedad */
+  --contorno-img:#0000001A;
   --era-tinta:48%;  /* parte de color de era o de Tierra en su texto; ver .era-head h3 y .tierra-num (al 50 % el dorado quedaba en 4,50 justo) */
   /* Movimiento: una curva y tres duraciones para toda la app */
   --curva:cubic-bezier(.22, 1, .36, 1);
@@ -116,7 +119,7 @@
     --done:#4FB57A; --doom:#64B05C;
     --sobre-acento:var(--bg);
     --tinte:14%; --cristal:72%;
-    --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
+    --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28; --contorno-img:#FFFFFF1A;
     --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
     --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
     --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
@@ -131,7 +134,7 @@
   --done:#4FB57A; --doom:#64B05C;
   --sobre-acento:var(--bg);
   --tinte:14%; --cristal:72%;
-  --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28;
+  --fondo-op:1; --velo-a:34%; --velo-b:66%; --material:#1B1E28; --contorno-img:#FFFFFF1A;
   --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
   --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
   --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
@@ -154,7 +157,6 @@
   :root, :root[data-theme="light"]{--era-tinta:30%}
   :root[data-theme="dark"]{--era-tinta:45%}
   @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--era-tinta:45%} }
-  .card.vista{opacity:.85}
 }
 /* Colores forzados (alto contraste de Windows): el navegador quita los fondos,
    así que los estados que solo se decían con un fondo se dicen con los colores
@@ -305,7 +307,7 @@ h1 .rojo{color:var(--red)}
 .stat-sig-ep{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; max-width:100%}
 .siguiente-stat{min-width:0}
 .stat-sig{font-size: var(--t-b); font-weight:600; line-height:1.3; text-wrap:balance}
-.stat-foot{font-size: var(--t-s); color:var(--ink2)}
+.stat-foot{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
 .barra{height:6px; background:var(--panel2); border-radius:var(--r-s); margin: var(--e-3) 0 var(--e-1); overflow:hidden}
 .barra > i{
   display:block; height:100%; width:0%;
@@ -616,7 +618,6 @@ h1 .rojo{color:var(--red)}
 .tab{
   border:none; background:none; color:var(--ink2); cursor:pointer;
   border-radius:var(--r-pill); padding: var(--e-3) var(--e-6); font-size: var(--t-m); font-weight:600;
-  transition:box-shadow var(--dur-media);
 }
 /* 36 px dentro de una píldora con gap de 2: se crece solo a lo alto */
 .tab{position:relative}
@@ -711,7 +712,7 @@ h2{
   margin: 0; font-family:"Archivo",sans-serif; font-weight:700;
   font-size: var(--t-l); text-transform:uppercase; letter-spacing:.01em;
 }
-.saga[data-saga="xmen"] h2{color:var(--gold)}
+.saga[data-saga="xmen"] h2{color:var(--gold-texto)}
 .saga[data-saga="ucm"] h2{color:var(--red)}
 .saga[data-saga="comics"] h2{color:var(--violet)}
 .uni-chip{
@@ -867,8 +868,6 @@ h3{
    opacidad es el cuarto aviso. Con la tarjeta plana, .62 la borraba del fondo.
    El tachado del titular se quitó: en Archivo Black y a dos líneas dejaba el
    título ilegible y era el quinto aviso del mismo estado. */
-.card.vista{opacity:.68}
-.card.vista:hover{opacity:.85}
 @keyframes riseIn{
   from{opacity:0; transform:translateY(14px)}
   to{opacity:1; transform:none}
@@ -881,6 +880,7 @@ h3{
   transition:filter var(--dur-larga);
 }
 .cover.foto{object-fit:cover; background:var(--panel2)}
+.cover.foto, .stat-sig-img{outline:1px solid var(--contorno-img); outline-offset:-1px}
 .card.vista .cover{filter:grayscale(.8) brightness(.8)}
 .rating-badge{
   position:absolute; top:6px; left:6px; z-index:1;
@@ -965,6 +965,11 @@ h3{
 .meta{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
 .meta .hist{color:var(--blue); font-weight:600; white-space:nowrap}
 .res{font-size: var(--t-b); color:var(--ink2); max-width:60ch; line-height:1.5}
+/* titulares repartidos en líneas parejas y párrafos sin viuda, en todas las anchuras;
+   una palabra más larga que la columna (a 320 px) parte en vez de salirse */
+h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
+.titulo{min-width:0; overflow-wrap:anywhere}
+.res, .modal-res, .saga-desc{text-wrap:pretty}
 /* Modo sin spoilers: la sinopsis de lo no visto se sustituye por un aviso breve */
 .res.oculta{font-style:italic; color:var(--ink3); font-size: var(--t-m)}
 .aviso.spoiler{padding: var(--e-4) var(--e-5)}
@@ -1037,7 +1042,7 @@ h3{
   width:34px; height:34px; border-radius:50%;
   border:1px solid var(--line); background:var(--panel2); color:var(--ink2);
   cursor:pointer; font-size: var(--t-b); display:grid; place-items:center;
-  transition:none;
+  transition:transform var(--muelle-toque);
 }
 /* 34 px visibles, 44 táctiles: el mínimo de la HIG sin engordar el aspa */
 .cerrar::after{content:""; position:absolute; inset:-5px; border-radius:50%}
@@ -1160,7 +1165,7 @@ h3{
 
 /* ── Episodios ── */
 .episodios{margin-top: var(--e-4); border-top:1px solid var(--line); padding-top: var(--e-4)}
-.episodios-head{display:flex; align-items:baseline; gap: var(--e-4); margin-bottom: var(--e-3)}
+.episodios-head{display:flex; flex-wrap:wrap; align-items:baseline; gap: var(--e-2) var(--e-4); margin-bottom: var(--e-3)}
 .episodios-head h3{margin: 0}
 .episodios-count{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
 .temporada{
@@ -1216,6 +1221,10 @@ h3{
    Apocalypse» (X-Men TAS, T4) todas las filas se salían de la hoja */
 .ep, .ep-toggle{min-width:0}
 .ep-titulo{font-size: var(--t-s); font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+/* en táctil no hay `title` que enseñe el título entero: dos líneas antes de cortar */
+@media (hover: none), (pointer: coarse){
+  .ep-titulo{white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2}
+}
 .ep-fecha{font-size: var(--t-xs); color:var(--ink3); font-variant-numeric:tabular-nums}
 @media (max-width:640px){ .ep-lista{grid-template-columns:1fr} }
 
@@ -1850,7 +1859,7 @@ main.crono, main.comics, main.estreno{animation:none}
 .galeria-item, .tl-card, .mv-card, .pf-item, .volver-ficha, .cine-flecha, .prov-chip, .aviso-btn, .persona .avatar{transition:transform var(--muelle-toque)}
 .ep{transition:opacity var(--dur-corta), transform var(--dur-corta)}
 .ghost:active, .subvista:active, .siguiente-stat:active, .filtros-quitar:active, .proximo-cal:active,
-.saga-guia summary:active, .estrella:active, .tab:active, .cerrar:active, .ep:active,
+.saga-guia summary:active, .saga-plegar:active, .era-plegar:active, .estrella:active, .tab:active, .cerrar:active, .ep:active,
 .galeria-item:active, .tl-card:active, .mv-card:active, .pf-item:active, .volver-ficha:active,
 .cine-flecha:active:not(:disabled), .prov-chip:active, .aviso-btn:active, .persona:active .avatar{transform:scale(.96)}
 /* los que se colocan con transform conservan el suyo al encoger */

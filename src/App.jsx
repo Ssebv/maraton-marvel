@@ -600,6 +600,19 @@ const TEMAS = [
   { id: 'dark', nombre: 'Oscuro', en: 'Dark' },
 ]
 const COLOR_BARRA = { light: '#F3EDDE', dark: '#0A0C14' }
+// Cambiar de tema o de acento cambia fondo, sombra y opacidad de casi todo a la
+// vez: sin esto cada transición viva se dispara junta y el cambio se emborrona en
+// vez de saltar. Se apagan, se fuerza el cálculo de estilos con el tema nuevo ya
+// sin ellas y se devuelven en un temporizador (no en rAF: con la pestaña oculta
+// no llega nunca y se quedarían apagadas).
+function sinTransiciones(cambia) {
+  const s = document.createElement('style')
+  s.textContent = '*,*::before,*::after{transition:none!important}'
+  document.head.appendChild(s)
+  cambia()
+  getComputedStyle(document.body).backgroundColor
+  setTimeout(() => s.remove(), 1)
+}
 const ACENTOS = [
   { id: '616', nombre: 'Tierra-616', en: 'Earth-616' },
   { id: 'xmen', nombre: 'X-Men' },
@@ -2737,7 +2750,7 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
   return (
     <article className={`card${vista ? ' vista' : ''}${entrada.current == null ? ' quieta' : ''}`} id={`card-${item.id}`}
       style={{ animationDelay: entrada.current == null ? undefined : `${entrada.current}ms`, '--glow': c[0] }}>
-      <button className="checkbox" aria-pressed={vista} onClick={onToggle}
+      <button className="checkbox" aria-pressed={vista} onClick={onToggle} aria-label={tr(`Vista: ${item.t}`, `Seen: ${item.t}`)}
         title={vista ? tr('Vista — pulsa para marcar pendiente', 'Watched — tap to mark as pending') : tr('Pendiente — pulsa para marcar vista', 'Pending — tap to mark as watched')}>
         <CheckIcon />
         <span className="checkbox-label">{vista ? tr('Vista', 'Seen') : ''}</span>
@@ -3372,7 +3385,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             <span className="valoracion-label">{tr('Tu valoración', 'Your rating')}</span>
             <span className="estrellas" role="radiogroup" aria-label={tr('Tu valoración', 'Your rating')}>
               {[1, 2, 3, 4, 5].map(p => (
-                <button key={p} className={`estrella${nota.p >= p ? ' on' : ''}`}
+                <button key={p} className={`estrella${nota.p >= p ? ' on' : ''}`} role="radio" aria-checked={nota.p === p}
                   aria-label={tr(`${p} estrellas`, `${p} stars`)} onClick={() => ponNota('p', p)}>{nota.p >= p ? '★' : '☆'}</button>
               ))}
             </span>
@@ -3424,7 +3437,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                       const h = de.filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length
                       return (
                         <button key={t} type="button" className="tab" aria-pressed={t === tempActual} onClick={() => setTempVer(t)}
-                          aria-label={tr(`Temporada ${t}, ${h} de ${de.length} vistos`, `Season ${t}, ${h} of ${de.length} watched`)}>
+                          aria-label={tr(`T${t}: temporada ${t}, ${h} de ${de.length} vistos`, `T${t}: season ${t}, ${h} of ${de.length} watched`)}>
                           T{t}<span className="temp-cuenta" aria-hidden="true">{h === de.length ? ' ✓' : ` ${h}/${de.length}`}</span>
                         </button>
                       )
@@ -3442,7 +3455,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                         const abierta = sinAbierta === clave
                         return (
                           <div key={clave} className={`ep${hecho ? ' hecho' : ''}`}>
-                            <button className="ep-toggle"
+                            <button className="ep-toggle" aria-pressed={hecho}
                               onClick={() => toggleEp(clave)}
                               title={hecho ? tr('Marcar pendiente', 'Mark pending') : tr('Marcar visto', 'Mark watched')}>
                               <span className="ep-thumb" style={{ background: `linear-gradient(135deg, ${c[0]}, ${c[1]})` }}>
@@ -3460,7 +3473,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                               </span>
                             </button>
                             {sinopsis && (
-                              <button className={`ep-sin-btn${abierta ? ' on' : ''}`} aria-label={tr('Sinopsis del episodio', 'Episode synopsis')}
+                              <button className={`ep-sin-btn${abierta ? ' on' : ''}`} aria-label={tr(`Sinopsis del episodio ${e.n}`, `Episode ${e.n} synopsis`)} aria-expanded={abierta}
                                 onClick={() => setSinAbierta(abierta ? null : clave)}>ⓘ</button>
                             )}
                             {abierta && sinopsis && (
@@ -4077,6 +4090,10 @@ export default function App() {
   useVolverCierra(cine, () => setCine(false))
   useVolverCierra(!!lector, () => setLector(null))
   useVolverCierra(ajustes, () => setAjustes(false))
+  // Ajustes es un diálogo como la ficha: foco dentro y de vuelta al botón,
+  // Escape, Tab atrapado y el fondo (y el dock) bloqueados mientras está abierto
+  const refAjustes = useRef(null)
+  useDialogo(refAjustes, () => setAjustes(false), ajustes)
   useVolverCierra(planModal, () => setPlanModal(false))
   useVolverCierra(horarioModal, () => setHorarioModal(false))
   useVolverCierra(perfilModal, () => setPerfilModal(false))
@@ -4412,8 +4429,10 @@ export default function App() {
   })
   useEffect(() => {
     const raiz = document.documentElement
-    if (tema === 'sistema') raiz.removeAttribute('data-theme')
-    else raiz.setAttribute('data-theme', tema)
+    if ((raiz.getAttribute('data-theme') || 'sistema') !== tema) sinTransiciones(() => {
+      if (tema === 'sistema') raiz.removeAttribute('data-theme')
+      else raiz.setAttribute('data-theme', tema)
+    })
     // La barra del navegador: los dos <meta theme-color> de index.html van por
     // media query; con un tema fijo los dos toman el color de ese tema.
     for (const m of document.querySelectorAll('meta[name="theme-color"]')) {
@@ -4426,8 +4445,11 @@ export default function App() {
     try { return localStorage.getItem('maraton-marvel-acento-v1') || '616' } catch { return '616' }
   })
   useEffect(() => {
-    if (acento === '616') document.documentElement.removeAttribute('data-acento')
-    else document.documentElement.setAttribute('data-acento', acento)
+    const raiz = document.documentElement
+    if ((raiz.getAttribute('data-acento') || '616') !== acento) sinTransiciones(() => {
+      if (acento === '616') raiz.removeAttribute('data-acento')
+      else raiz.setAttribute('data-acento', acento)
+    })
     try { localStorage.setItem('maraton-marvel-acento-v1', acento) } catch {}
   }, [acento])
   const [bienvenida, setBienvenida] = useState(() => {
@@ -5103,7 +5125,9 @@ export default function App() {
               setTimeout(() => {
                 const el = document.getElementById('card-' + stats.siguiente.id)
                 if (el) {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  el.scrollIntoView({ behavior: movimientoReducido() ? 'instant' : 'smooth', block: 'center' })
+                  // el foco va con la vista: con teclado, la tarjeta es donde sigue
+                  el.querySelector('.abrir')?.focus({ preventScroll: true })
                   el.classList.add('destello')
                   setTimeout(() => el.classList.remove('destello'), 1600)
                 }
@@ -6043,7 +6067,7 @@ export default function App() {
       )}
 
       {ajustesMontado && (
-        <div className={'overlay' + ajustesSale} onClick={() => setAjustes(false)} role="dialog" aria-modal="true" aria-label={tr('Ajustes', 'Settings')}>
+        <div className={'overlay' + ajustesSale} ref={refAjustes} tabIndex={-1} onClick={() => setAjustes(false)} role="dialog" aria-modal="true" aria-label={tr('Ajustes', 'Settings')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
             <button className="cerrar" onClick={() => setAjustes(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
