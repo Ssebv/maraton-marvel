@@ -3725,6 +3725,187 @@ function Marco({ sinMarco, titulo, children }) {
 // contaban lo mismo (qué días marcaste) y, con poco progreso, eran dos cajas
 // grandes casi vacías seguidas. Ahora un título y un selector: las 20
 // semanas del mapa de calor o el calendario mes a mes con el detalle del día.
+// «Dónde estoy» (15 sep 2026, Sebastián: «un scroll hacia abajo y uno se
+// pierde»). La lista son ~27.000 px en el móvil sin ninguna referencia al bajar.
+// Una píldora fija bajo la barra de herramientas (o bajo el notch si la barra se
+// retiró) dice la saga, la era y su cuenta; al tocarla, un índice de sagas y eras
+// con su progreso, y un toque salta a la era. Todo se lee del DOM de la lista, así
+// que sigue a los filtros, a la búsqueda y a lo plegado sin duplicar lógica.
+const SAGA_CORTA = { xmen: ['X-Men', 'X-Men'], ucm: ['UCM', 'MCU'], comics: ['Cómics', 'Comics'], animacion: ['Animación', 'Animation'] }
+const cuentaDe = t => { const m = (t || '').match(/(\d+)\s*\/\s*(\d+)/); return m ? [+m[1], +m[2]] : null }
+function leeIndice() {
+  return [...document.querySelectorAll('main .saga')].map(s => ({
+    el: s,
+    id: s.id,
+    clave: s.dataset.saga,
+    titulo: (s.querySelector('.saga-head h2') || {}).textContent || '',
+    cuenta: cuentaDe((s.querySelector('.saga-count') || {}).textContent),
+    eras: [...s.querySelectorAll('.era')].map(e => ({
+      el: e,
+      titulo: (e.querySelector('.era-head h3') || {}).textContent || '',
+      rango: (e.querySelector('.era-rango') || {}).textContent || '',
+      cuenta: cuentaDe((e.querySelector('.era-count') || {}).textContent),
+      color: e.style.getPropertyValue('--era') || '',
+    })),
+  })).filter(s => s.titulo)
+}
+function DondeEstoy({ version }) {
+  const [donde, setDonde] = useState(null)
+  const [abierto, setAbierto] = useState(false)
+  const [indice, setIndice] = useState([])
+  const pildora = useRef(null)
+  const refIndice = useRef(null)
+  const [montado, sale] = useSaliente(abierto)
+  useDialogo(refIndice, () => setAbierto(false), abierto)
+  useVolverCierra(abierto, () => setAbierto(false))
+  // borde de arriba libre: bajo la barra de herramientas si se ve, si no bajo
+  // el notch (medido una vez con un elemento en env(safe-area-inset-top))
+  const tope = useRef(null)
+  useEffect(() => {
+    let pend = false, ultimoY = null
+    const sonda = document.createElement('div')
+    sonda.style.cssText = 'position:fixed;top:env(safe-area-inset-top,0px);left:0;width:0;height:0;visibility:hidden'
+    document.body.appendChild(sonda)
+    tope.current = sonda.getBoundingClientRect().top
+    const calcula = () => {
+      pend = false
+      const sagas = [...document.querySelectorAll('main .saga')]
+      if (!sagas.length) { setDonde(null); return }
+      // en escritorio las sagas van en dos columnas lado a lado: ahí «dónde
+      // estoy» no tiene una respuesta (medido: la píldora decía siempre UCM
+      // aunque se mirara X-Men) y las dos cabeceras ya se ven; solo con una columna
+      if (sagas.length > 1 && Math.abs(sagas[0].getBoundingClientRect().left - sagas[1].getBoundingClientRect().left) > 40) { setDonde(null); return }
+      const tb = document.querySelector('.toolbar')
+      const rb = tb ? tb.getBoundingClientRect() : null
+      const raiz = document.documentElement
+      const oculta = raiz.classList.contains('barra-oculta')
+      // pegada arriba, su borde se calcula con su `top` y su alto de layout, no
+      // con su posición en pantalla: al volver entra animada y el rect de ese
+      // instante dejaba la píldora encima de la barra (medido: 17 px con la
+      // barra acabando en 61)
+      let bajoBarra = 0
+      if (tb && !oculta) {
+        bajoBarra = raiz.classList.contains('barra-pegada') || rb.top <= (parseFloat(getComputedStyle(tb).top) || 0) + 1
+          ? (parseFloat(getComputedStyle(tb).top) || 0) + tb.offsetHeight
+          : Math.max(0, rb.bottom)
+      }
+      const y = Math.round(Math.max(tope.current || 0, bajoBarra) + 8)
+      // mientras la barra va aún en su sitio (arriba de la página, sin pegar)
+      // la píldora sobra: se veía flotando sobre la portada (medido a 465 px)
+      if (tb && !oculta && rb.top > (parseFloat(getComputedStyle(tb).top) || 0) + 1) { setDonde(null); return }
+      if (pildora.current && y !== ultimoY) { pildora.current.style.setProperty('--donde-y', y + 'px'); ultimoY = y }
+      // la píldora mide 36: cuenta como «actual» la era cuya cabecera está hasta
+      // 40 px bajo ella (cuadra con el salto del índice, que la deja a 56 px del
+      // borde libre, con la barra visible o retirada)
+      const umbral = y + 76
+      // no sale hasta que la lista llega arriba (en la portada estorbaría)
+      if (sagas[0].getBoundingClientRect().top > umbral) { setDonde(null); return }
+      let saga = sagas[0]
+      for (const s of sagas) if (s.getBoundingClientRect().top <= umbral) saga = s
+      let era = null
+      for (const e of saga.querySelectorAll('.era')) if (e.getBoundingClientRect().top <= umbral) era = e
+      const h2 = saga.querySelector('.saga-head h2')
+      const nuevo = {
+        saga: saga.dataset.saga,
+        sagaTitulo: h2 ? h2.textContent : '',
+        era: era ? (era.querySelector('.era-head h3') || {}).textContent || '' : '',
+        cuenta: era ? cuentaDe((era.querySelector('.era-count') || {}).textContent) : cuentaDe((saga.querySelector('.saga-count') || {}).textContent),
+        color: era ? era.style.getPropertyValue('--era') : '',
+      }
+      setDonde(v => (v && v.saga === nuevo.saga && v.era === nuevo.era && v.cuenta?.[0] === nuevo.cuenta?.[0] && v.cuenta?.[1] === nuevo.cuenta?.[1]) ? v : nuevo)
+    }
+    const on = () => { if (!pend) { pend = true; requestAnimationFrame(calcula) } }
+    on()
+    window.addEventListener('scroll', on, { passive: true })
+    window.addEventListener('resize', on)
+    // la barra se retira o vuelve sin scroll propio (clase en <html>)
+    const obs = new MutationObserver(on)
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => { window.removeEventListener('scroll', on); window.removeEventListener('resize', on); obs.disconnect(); sonda.remove() }
+  }, [version])
+  const abre = () => { setIndice(leeIndice()); setAbierto(true) }
+  const salta = el => {
+    setAbierto(false)
+    // tras cerrar (el fondo se libera al instante), la era queda bajo la píldora
+    // Salto directo y corregido: las tarjetas fuera de pantalla miden lo que
+    // dice contain-intrinsic-size (230 px) y en el móvil miden ~194; al
+    // pintarse durante un scroll suave todo se recolocaba y el salto acababa
+    // 650 px más abajo. Se salta, se mide otra vez y se corrige (3 veces como
+    // mucho), y la cabecera de la era da un destello para situarse.
+    setTimeout(() => {
+      const raya = () => {
+        const tb = document.querySelector('.toolbar')
+        const tope = tb && !document.documentElement.classList.contains('barra-oculta') ? (parseFloat(getComputedStyle(tb).top) || 0) + tb.offsetHeight : 0
+        return tope + 56
+      }
+      window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - raya()), behavior: 'instant' })
+      let intentos = 0
+      const corrige = () => requestAnimationFrame(() => requestAnimationFrame(() => {
+        const delta = el.getBoundingClientRect().top - raya()
+        if (Math.abs(delta) > 4 && intentos++ < 3) { window.scrollBy({ top: delta, behavior: 'instant' }); corrige(); return }
+        const cab = el.querySelector('.era-head, .saga-head') || el
+        cab.classList.add('destello')
+        setTimeout(() => cab.classList.remove('destello'), 1600)
+      }))
+      corrige()
+    }, 60)
+  }
+  const corta = donde && SAGA_CORTA[donde.saga]
+  return (
+    <>
+      <button ref={pildora} type="button" className={`donde${donde ? ' visible' : ''}`} onClick={abre}
+        aria-hidden={donde ? undefined : 'true'} tabIndex={donde ? 0 : -1} aria-haspopup="dialog"
+        aria-label={donde ? tr(`Estás en ${donde.sagaTitulo}${donde.era ? ` · ${donde.era}` : ''}. Abrir el índice de sagas y eras`, `You're in ${donde.sagaTitulo}${donde.era ? ` · ${donde.era}` : ''}. Open the saga and era index`) : undefined}>
+        {donde && <>
+          <span className="donde-punto" style={donde.color ? { background: donde.color } : undefined} aria-hidden="true" />
+          <span className="donde-saga">{corta ? tr(corta[0], corta[1]) : donde.sagaTitulo}</span>
+          {donde.era && <span className="donde-era">{donde.era}</span>}
+          {donde.cuenta && <span className="donde-cuenta">{donde.cuenta[0]}/{donde.cuenta[1]}</span>}
+          <svg className="donde-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </>}
+      </button>
+      {montado && (
+        <div className={'overlay' + sale} ref={refIndice} tabIndex={-1} onClick={() => setAbierto(false)}
+          role="dialog" aria-modal="true" aria-label={tr('Índice de sagas y eras', 'Saga and era index')}>
+          <div className="modal indice" onClick={e => e.stopPropagation()}>
+            <button className="cerrar" onClick={() => setAbierto(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
+            <div className="indice-cuerpo">
+              <h2 className="modal-titulo">{tr('Índice', 'Index')}</h2>
+              {indice.map(s => (
+                <section key={s.id || s.titulo} className="indice-saga">
+                  <button type="button" className="indice-saga-cab" onClick={() => salta(s.el)}>
+                    <span className="indice-saga-titulo">{s.titulo}</span>
+                    {s.cuenta && <span className="indice-cuenta">{s.cuenta[0]}/{s.cuenta[1]}</span>}
+                  </button>
+                  <ul className="indice-eras">
+                    {s.eras.map(e => {
+                      const aqui = donde && donde.saga === s.clave && donde.era === e.titulo
+                      const pct = e.cuenta && e.cuenta[1] ? Math.round(100 * e.cuenta[0] / e.cuenta[1]) : 0
+                      return (
+                        <li key={e.titulo}>
+                          <button type="button" className={`indice-era${aqui ? ' aqui' : ''}`} aria-current={aqui ? 'location' : undefined}
+                            style={e.color ? { '--era': e.color } : undefined} onClick={() => salta(e.el)}>
+                            <span className="indice-era-texto">
+                              <span className="indice-era-titulo">{e.titulo}</span>
+                              <span className="indice-era-sub">{e.rango}{aqui ? tr(' · Estás aquí', ' · You are here') : ''}</span>
+                            </span>
+                            {e.cuenta && <span className="indice-cuenta">{e.cuenta[0]}/{e.cuenta[1]}</span>}
+                            <span className="indice-barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // Tu calendario en la portada (15 sep 2026, pedido por Sebastián: «ver qué día
 // y qué fechas vi X películas y las reseñas que les puse»). Es el mismo
 // Calendario de Perfil, plegable y recordado; solo sale con marcas con fecha.
@@ -6750,6 +6931,10 @@ export default function App() {
       <Footer onAjustes={() => setAjustes(true)} nota={enMaraton} />
       <VersionNueva />
       <Deshacer aviso={deshacer} onCerrar={() => setDeshacer(null)} />
+      {(vista === 'crono' || vista === 'comics' || vista === 'animacion') && createPortal(
+        <DondeEstoy version={`${vista}|${Object.keys(vistas).length}|${Object.keys(eps).length}|${JSON.stringify(filtros)}|${buscaLenta}|${idioma}|${pais}`} />,
+        document.body
+      )}
     </div>
   )
 }

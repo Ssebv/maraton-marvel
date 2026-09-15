@@ -2852,3 +2852,64 @@ a.prov-chip:hover{border-color:var(--ink3)}
   .siguiente-marcar svg{width:14px; height:14px}
   .siguiente-marcar:active{transform:scale(.96)}
 }
+
+/* ── «Dónde estoy»: píldora fija con la saga y la era, abre el índice ── */
+.donde{
+  position:fixed; top:0; left:50%; z-index:35;
+  transform:translate(-50%, var(--donde-y, 8px));
+  display:flex; align-items:center; gap: var(--e-3); max-width:min(560px, calc(100vw - 32px));
+  min-height:36px; padding: var(--e-2) var(--e-3) var(--e-2) var(--e-4); border-radius:var(--r-pill);
+  background:var(--panel); color:var(--ink); border:1px solid var(--line); box-shadow:var(--card-shadow-up);
+  font:inherit; font-size: var(--t-s); cursor:pointer; white-space:nowrap;
+  opacity:0; pointer-events:none;
+  transition:opacity var(--dur-media) var(--curva), transform var(--dur-larga) var(--curva-hoja);
+}
+.donde.visible{opacity:1; pointer-events:auto}
+/* zona táctil de 44 px */
+.donde::after{content:""; position:absolute; inset:-4px -2px}
+html.capa-abierta .donde{opacity:0; pointer-events:none}
+.donde-punto{flex:none; width:8px; height:8px; border-radius:50%; background:var(--red)}
+.donde-saga{flex:none; font-size: var(--t-xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink3)}
+.donde-era{min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:700}
+.donde-cuenta{flex:none; color:var(--ink2); font-variant-numeric:tabular-nums; font-weight:600}
+.donde-flecha{flex:none; width:16px; height:16px; fill:none; stroke:var(--ink3); stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+@media (prefers-reduced-motion: reduce){ .donde{transition:none} }
+@media print{ .donde{display:none} }
+
+/* el índice: una hoja con las sagas y sus eras */
+.modal.indice{max-width:560px}
+.indice-cuerpo{flex:1; min-width:0; display:flex; flex-direction:column; gap: var(--e-5)}
+.indice-cuerpo > .modal-titulo{margin:0}
+.indice-saga{display:flex; flex-direction:column; gap: var(--e-2)}
+.indice-saga-cab{
+  display:flex; align-items:baseline; justify-content:space-between; gap: var(--e-4); position:relative;
+  background:none; border:none; padding: var(--e-2) 0; color:var(--ink); font:inherit; cursor:pointer; text-align:left;
+}
+.indice-saga-cab::after{content:""; position:absolute; inset:-6px 0}
+.indice-saga-titulo{font-size: var(--t-b); font-weight:700; text-transform:uppercase; letter-spacing:.01em}
+.indice-cuenta{flex:none; font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums; font-weight:600}
+.indice-eras{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap: var(--e-2)}
+.indice-era{
+  width:100%; display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; column-gap: var(--e-4); row-gap: var(--e-2);
+  min-height:52px; padding: var(--e-3) var(--e-4) var(--e-3) var(--e-5); position:relative;
+  border:none; border-radius:var(--r-m); background:var(--panel2); color:var(--ink); font:inherit; text-align:left; cursor:pointer;
+  transition:transform var(--muelle-toque);
+}
+/* el color de la era, como raya a la izquierda */
+.indice-era::before{content:""; position:absolute; left:0; top: var(--e-3); bottom: var(--e-3); width:3px; border-radius:var(--r-s); background:var(--era, var(--ink3))}
+.indice-era:active{transform:scale(.98)}
+.indice-era.aqui{box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--era, var(--ink)) 70%, var(--ink))}
+.indice-era-texto{display:flex; flex-direction:column; min-width:0}
+.indice-era-titulo{font-size: var(--t-m); font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.indice-era-sub{font-size: var(--t-xs); color:var(--ink2); font-variant-numeric:tabular-nums}
+.indice-era.aqui .indice-era-sub{color:var(--ink)}
+.indice-barra{grid-column:1 / -1; height:3px; border-radius:var(--r-s); background:color-mix(in srgb, var(--ink) 12%, transparent); overflow:hidden}
+.indice-barra i{display:block; height:100%; background:var(--era, var(--red))}
+@media (prefers-reduced-motion: reduce){ .indice-era{transition:none} }
+/* al saltar desde el índice, la cabecera de la era da un destello para situarse */
+.era-head.destello, .saga-head.destello{animation:destelloCabecera 1.4s var(--curva) both}
+@keyframes destelloCabecera{
+  0%, 30%{box-shadow:0 0 0 2px color-mix(in srgb, var(--era, var(--red)) 70%, transparent); border-radius:var(--r-m)}
+  100%{box-shadow:0 0 0 2px transparent; border-radius:var(--r-m)}
+}
+@media (prefers-reduced-motion: reduce){ .era-head.destello, .saga-head.destello{animation:none} }
