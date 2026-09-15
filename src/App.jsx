@@ -69,6 +69,23 @@ let ultimoToque = null
 // (`::view-transition{pointer-events:none}` no lo evita en Chrome). Así que un
 // toque durante la transición la termina ya, y el clic que cayó en <html> se
 // entrega a lo que de verdad está bajo el dedo.
+// iOS: un campo dentro de una hoja fija (tus notas en la ficha, el nombre de
+// una lista, el código de sincronización) quedaba bajo el teclado, porque
+// Safari desplaza la página y no la hoja. Cuando el teclado termina de subir
+// (~350 ms), si el campo quedó fuera de lo visible se centra en su hoja.
+if (typeof window !== 'undefined') {
+  window.addEventListener('focusin', e => {
+    const campo = e.target
+    if (!ES_TACTIL || !campo || !campo.matches || !campo.matches('input:not([type=file]):not([type=checkbox]), textarea, select')) return
+    if (!campo.closest('.overlay .modal')) return
+    setTimeout(() => {
+      if (document.activeElement !== campo) return
+      const alto = window.visualViewport ? window.visualViewport.height : window.innerHeight
+      const r = campo.getBoundingClientRect()
+      if (r.bottom > alto - 16 || r.top < 0) campo.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }, 350)
+  })
+}
 let vtActiva = null
 function vigilaTransicion(t) {
   vtActiva = t
@@ -2273,7 +2290,7 @@ function Deshacer({ aviso, onCerrar }) {
   return (
     <div className="deshacer" role="status" key={aviso.id}>
       <span className="deshacer-texto">{aviso.texto}</span>
-      <button type="button" onClick={() => { aviso.restaura(); cerrar.current() }}>{tr('Deshacer', 'Undo')}</button>
+      <button type="button" onClick={() => { tic(); aviso.restaura(); cerrar.current() }}>{tr('Deshacer', 'Undo')}</button>
     </div>
   )
 }
