@@ -28,6 +28,8 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 | ~~**Tema elegible**~~ ✅ | Hecho: Ajustes › Tema (sistema / claro / oscuro), sin destello al cargar, barra del navegador acorde | — |
 | ~~**Modo sin spoilers**~~ ✅ | Hecho: sinopsis, post-créditos y títulos de episodio ocultos hasta marcar visto; «Mostrar de todos modos» en la ficha | — |
 | ~~**Gama de color medida**~~ ✅ | Hecho: una regla OKLCH por tema y `scripts/gama.mjs` en cada build | — |
+| **Calendario en la portada** (15 sep 2026) | Pedido por Sebastián: ver al entrar qué días viste qué y las reseñas y estrellas que pusiste | Medio |
+| **Pendiente: el progreso de los amigos** (15 sep 2026) | Pedido por Sebastián, para más adelante: ver cómo van sus amigos con el maratón y cómo valoraron lo que vieron, en sus perfiles. Hay piezas: perfil compartible por enlace (bits de lo visto), modo duelo y club (Firebase). Falta: que el perfil lleve fechas y notas/reseñas (hoy solo bits), una vista «Amigos» con varios perfiles guardados y, para verlo en vivo, la cuenta de Google encendida (`src/nube.js`, `NUBE = null`: Sebastián tiene que crear el proyecto Firebase) | Alto |
 
 ## Fase 2 — Planificación del maratón
 

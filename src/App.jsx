@@ -1113,19 +1113,24 @@ function CuentaAtras({ meta, horario, sesionHoy, sim, onHorario }) {
 // calendario de pared navegable. El día se pinta con la intensidad del mapa
 // de calor y, al tocarlo, abajo sale la lista de ese día con su hora.
 const diaClave = ts => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` }
-function Calendario({ vistas, eps, indice, onAbrir, idioma, sinMarco = false }) {
+function Calendario({ vistas, eps, indice, onAbrir, idioma, notas = {}, sinMarco = false }) {
   const dias = useMemo(() => {
     const m = new Map()
     const de = ts => {
       // las marcas antiguas valen 1 (sin fecha): esas no pueden ir al calendario
       if (typeof ts !== 'number' || ts < 1e12) return null
       const k = diaClave(ts)
-      if (!m.has(k)) m.set(k, { titulos: [], series: new Map(), n: 0 })
+      if (!m.has(k)) m.set(k, { titulos: [], series: new Map(), n: 0, resenas: 0 })
       return m.get(k)
     }
     Object.entries(vistas).forEach(([id, ts]) => {
       const d = de(ts)
-      if (d && indice[id]) { d.titulos.push({ id, ts }); d.n++ }
+      if (d && indice[id]) {
+        d.titulos.push({ id, ts }); d.n++
+        // estrellas o reseña de ese título: el día lleva un punto
+        const nt = notas[id]
+        if (nt && (nt.p || (nt.txt && nt.txt.trim()))) d.resenas++
+      }
     })
     Object.entries(eps).forEach(([clave, ts]) => {
       const d = de(ts)
@@ -1137,7 +1142,7 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma, sinMarco = false }) 
       d.series.set(sid, s); d.n++
     })
     return m
-  }, [vistas, eps])
+  }, [vistas, eps, notas])
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
   const [mes, setMes] = useState(() => new Date(hoy.getFullYear(), hoy.getMonth(), 1))
   const [sel, setSel] = useState(() => (dias.has(diaClave(hoy.getTime())) ? diaClave(hoy.getTime()) : null))
@@ -1170,7 +1175,7 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma, sinMarco = false }) 
   const fechaSel = sel ? (() => { const [a, m2, d] = sel.split('-').map(Number); return new Date(a, m2, d) })() : null
   const hora = ts => new Date(ts).toLocaleTimeString(LOC(), { hour: '2-digit', minute: '2-digit' })
   const filasSel = delSel ? [
-    ...delSel.titulos.map(({ id, ts }) => ({ ts, d: indice[id], sub: indice[id].esComic ? tr('Leído', 'Read') : tr('Completa', 'In full') })),
+    ...delSel.titulos.map(({ id, ts }) => ({ ts, d: indice[id], nota: notas[id], sub: indice[id].esComic ? tr('Leído', 'Read') : tr('Completa', 'In full') })),
     ...[...delSel.series.entries()].map(([sid, s]) => ({ ts: s.ts, d: indice[sid], sub: s.n === 1 ? tr('1 episodio', '1 episode') : tr(`${s.n} episodios`, `${s.n} episodes`) })),
   ].sort((a, b) => a.ts - b.ts) : []
   return (
@@ -1188,10 +1193,10 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma, sinMarco = false }) 
           const dd = dias.get(k)
           const esHoy = f.getTime() === hoy.getTime()
           return (
-            <button key={k} className={`cal-dia${dd ? ' con' : ''}${esHoy ? ' hoy' : ''}`}
+            <button key={k} className={`cal-dia${dd ? ' con' : ''}${esHoy ? ' hoy' : ''}${dd && dd.resenas ? ' con-resena' : ''}`}
               style={dd ? { background: tono(dd.n) } : undefined}
               aria-pressed={sel === k} disabled={!dd}
-              aria-label={`${f.toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}: ${dd ? tr(`${dd.n} marca${dd.n === 1 ? '' : 's'}`, `${dd.n} check-off${dd.n === 1 ? '' : 's'}`) : tr('sin marcas', 'nothing')}`}
+              aria-label={`${f.toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}: ${dd ? tr(`${dd.n} marca${dd.n === 1 ? '' : 's'}`, `${dd.n} check-off${dd.n === 1 ? '' : 's'}`) : tr('sin marcas', 'nothing')}${dd && dd.resenas ? tr(', con valoración', ', rated') : ''}`}
               onClick={() => setSel(s => (s === k ? null : k))}>
               {f.getDate()}
             </button>
@@ -1205,12 +1210,19 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma, sinMarco = false }) 
             {' · '}{tr(`${delSel.n} marca${delSel.n === 1 ? '' : 's'}`, `${delSel.n} check-off${delSel.n === 1 ? '' : 's'}`)}
           </p>
           <div className="plan-lista">
-            {filasSel.map(({ ts, d, sub }, i) => (
+            {filasSel.map(({ ts, d, sub, nota }, i) => (
               <button key={d.item.id + i} className="ep plan-fila" onClick={() => onAbrir(d)}>
                 <span className="plan-cover"><Portada item={d.item} c={d.c} esComic={d.esComic} /></span>
                 <span className="ep-info">
                   <span className="ep-titulo">{d.item.t}</span>
                   <span className="ep-fecha">{sub} · {hora(ts)}</span>
+                  {/* lo que le pusiste: estrellas y el principio de tu reseña */}
+                  {nota && nota.p ? (
+                    <span className="cal-estrellas" aria-label={tr(`${nota.p} de 5 estrellas`, `${nota.p} out of 5 stars`)}>
+                      {'★'.repeat(nota.p)}<span aria-hidden="true" className="cal-estrellas-vacias">{'★'.repeat(5 - nota.p)}</span>
+                    </span>
+                  ) : null}
+                  {nota && nota.txt && nota.txt.trim() ? <span className="cal-resena">«{nota.txt.trim()}»</span> : null}
                 </span>
               </button>
             ))}
@@ -3672,7 +3684,52 @@ function Marco({ sinMarco, titulo, children }) {
 // contaban lo mismo (qué días marcaste) y, con poco progreso, eran dos cajas
 // grandes casi vacías seguidas. Ahora un título y un selector: las 20
 // semanas del mapa de calor o el calendario mes a mes con el detalle del día.
-function ActividadDelMaraton({ vistas, eps, indice, onAbrir, idioma }) {
+// Tu calendario en la portada (15 sep 2026, pedido por Sebastián: «ver qué día
+// y qué fechas vi X películas y las reseñas que les puse»). Es el mismo
+// Calendario de Perfil, plegable y recordado; solo sale con marcas con fecha.
+const KEY_CAL_INICIO = 'maraton-marvel-cal-inicio-v1'
+function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
+  const [abierto, setAbierto] = useState(() => { try { return localStorage.getItem(KEY_CAL_INICIO) !== '0' } catch { return true } })
+  const resumen = useMemo(() => {
+    const ahora = new Date()
+    const esteMes = ts => { const d = new Date(ts); return d.getFullYear() === ahora.getFullYear() && d.getMonth() === ahora.getMonth() }
+    let hay = false, mes = 0, resenas = 0
+    for (const [id, ts] of Object.entries(vistas)) {
+      if (typeof ts !== 'number' || ts < 1e12 || !indice[id]) continue
+      hay = true
+      if (esteMes(ts)) { mes++; const nt = notas[id]; if (nt && (nt.p || (nt.txt && nt.txt.trim()))) resenas++ }
+    }
+    for (const [clave, ts] of Object.entries(eps)) {
+      if (typeof ts !== 'number' || ts < 1e12) continue
+      hay = true
+      if (esteMes(ts)) mes++
+    }
+    return { hay, mes, resenas }
+  }, [vistas, eps, notas, indice])
+  if (!resumen.hay) return null
+  return (
+    <details className="cal-inicio" open={abierto}
+      onToggle={e => { const v = e.currentTarget.open; setAbierto(v); try { localStorage.setItem(KEY_CAL_INICIO, v ? '1' : '0') } catch {} }}>
+      <summary>
+        <span className="cal-inicio-titulo">{tr('Tu calendario', 'Your calendar')}</span>
+        <span className="cal-inicio-sub">
+          {resumen.mes
+            ? tr(`${resumen.mes} marca${resumen.mes === 1 ? '' : 's'} este mes`, `${resumen.mes} check-off${resumen.mes === 1 ? '' : 's'} this month`)
+            : tr('nada este mes', 'nothing this month')}
+          {resumen.resenas ? tr(` · ${resumen.resenas} valorada${resumen.resenas === 1 ? '' : 's'}`, ` · ${resumen.resenas} rated`) : ''}
+        </span>
+      </summary>
+      {abierto && (
+        <div className="cal-inicio-cuerpo">
+          <p className="grafica-sub">{tr('Toca un día para ver qué viste, a qué hora y lo que le pusiste. Los días con punto tienen una valoración.', 'Tap a day to see what you watched, when, and what you rated it. Days with a dot have a rating.')}</p>
+          <Calendario vistas={vistas} eps={eps} notas={notas} indice={indice} onAbrir={onAbrir} idioma={idioma} sinMarco />
+        </div>
+      )}
+    </details>
+  )
+}
+
+function ActividadDelMaraton({ vistas, eps, notas, indice, onAbrir, idioma }) {
   const [modo, setModo] = useState('semanas')
   const [grupo, indicador] = useIndicador(modo)
   return (
@@ -3688,7 +3745,7 @@ function ActividadDelMaraton({ vistas, eps, indice, onAbrir, idioma }) {
       <div className="grafica-cuerpo" key={modo}>
         {modo === 'semanas'
           ? <Actividad vistas={vistas} eps={eps} sinMarco />
-          : <Calendario vistas={vistas} eps={eps} indice={indice} onAbrir={onAbrir} idioma={idioma} sinMarco />}
+          : <Calendario vistas={vistas} eps={eps} notas={notas} indice={indice} onAbrir={onAbrir} idioma={idioma} sinMarco />}
       </div>
     </section>
   )
@@ -5397,6 +5454,7 @@ export default function App() {
             <button className="filtros-quitar" onClick={() => setFiltros(sinFiltros())}>{tr('Quitar', 'Clear')}</button>
           </p>
         )}
+        <CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />
       </section>
       ) : (
         <CabeceraDestino esMovil={esMovil} onAjustes={() => setAjustes(true)}
@@ -5904,7 +5962,7 @@ export default function App() {
           {club && <Club club={club} vistas={vistas} eps={eps}
             onSalir={() => guardaClub(null)} onInvitar={() => setClubInvitar(true)} />}
 
-          <ActividadDelMaraton vistas={vistas} eps={eps} indice={indice} idioma={idioma}
+          <ActividadDelMaraton vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma}
             onAbrir={d => setDetalle(d)} />
 
           <Diario vistas={vistas} notas={notas} pais={pais} idioma={idioma} />
