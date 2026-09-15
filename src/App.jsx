@@ -1113,7 +1113,7 @@ function CuentaAtras({ meta, horario, sesionHoy, sim, onHorario }) {
 // calendario de pared navegable. El día se pinta con la intensidad del mapa
 // de calor y, al tocarlo, abajo sale la lista de ese día con su hora.
 const diaClave = ts => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` }
-function Calendario({ vistas, eps, indice, onAbrir, idioma, notas = {}, sinMarco = false }) {
+function Calendario({ vistas, eps, indice, onAbrir, idioma, notas = {}, diaInicial = null, sinMarco = false }) {
   const dias = useMemo(() => {
     const m = new Map()
     const de = ts => {
@@ -1144,8 +1144,11 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma, notas = {}, sinMarco
     return m
   }, [vistas, eps, notas])
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
-  const [mes, setMes] = useState(() => new Date(hoy.getFullYear(), hoy.getMonth(), 1))
-  const [sel, setSel] = useState(() => (dias.has(diaClave(hoy.getTime())) ? diaClave(hoy.getTime()) : null))
+  // abre en `diaInicial` si se lo piden (un día tocado en la semana de la
+  // portada, que puede ser del mes anterior) y con ese día elegido
+  const inicio = diaInicial ? new Date(diaInicial) : hoy
+  const [mes, setMes] = useState(() => new Date(inicio.getFullYear(), inicio.getMonth(), 1))
+  const [sel, setSel] = useState(() => (dias.has(diaClave(inicio.getTime())) ? diaClave(inicio.getTime()) : null))
   const primero = useMemo(() => {
     let min = Infinity
     const mira = ts => { if (typeof ts === 'number' && ts > 1e12 && ts < min) min = ts }
@@ -3714,6 +3717,7 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
   // título bajaba a 1.170 px); la cabecera enseña igual la última semana. Abierto
   // solo si el usuario lo abrió a mano alguna vez.
   const [abierto, setAbierto] = useState(() => { try { return localStorage.getItem(KEY_CAL_INICIO) === '1' } catch { return false } })
+  const [diaElegido, setDiaElegido] = useState(null)
   const resumen = useMemo(() => {
     const ahora = new Date()
     const esteMes = ts => { const d = new Date(ts); return d.getFullYear() === ahora.getFullYear() && d.getMonth() === ahora.getMonth() }
@@ -3760,6 +3764,15 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
         <span className="cal-semana" aria-hidden="true">
           {resumen.semana.map(d => (
             <span key={d.k} className={`cal-semana-dia${d.n ? ' con' : ''}${d.valorada ? ' con-resena' : ''}`}
+              // un día con marcas abre el calendario ya en ese día, con su detalle
+              // (un toque, en vez de abrir, buscar el día y tocarlo). El teclado y
+              // el lector usan la cabecera, que abre el mes entero
+              onClick={d.n ? e => {
+                e.preventDefault()
+                setDiaElegido(d.f.getTime())
+                setAbierto(true)
+                try { localStorage.setItem(KEY_CAL_INICIO, '1') } catch {}
+              } : undefined}
               style={d.n ? { background: `color-mix(in srgb, var(--red) ${20 + 60 * d.n / resumen.maxSemana}%, var(--panel2))` } : undefined}>
               <span className="cal-semana-letra">{tr(DIA_LETRA[d.f.getDay()], DIA_LETRA_EN[d.f.getDay()])}</span>
             </span>
@@ -3769,7 +3782,7 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
       {abierto && (
         <div className="cal-inicio-cuerpo">
           <p className="grafica-sub">{tr('Toca un día para ver qué viste, a qué hora y lo que le pusiste. Los días con punto tienen una valoración.', 'Tap a day to see what you watched, when, and what you rated it. Days with a dot have a rating.')}</p>
-          <Calendario vistas={vistas} eps={eps} notas={notas} indice={indice} onAbrir={onAbrir} idioma={idioma} sinMarco />
+          <Calendario key={diaElegido || 'mes'} vistas={vistas} eps={eps} notas={notas} indice={indice} onAbrir={onAbrir} idioma={idioma} diaInicial={diaElegido} sinMarco />
         </div>
       )}
     </details>
@@ -5609,6 +5622,9 @@ export default function App() {
           }}>{tr('Sorpréndeme', 'Surprise me')}</button>
           <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio, actor o año', 'Title, episode, actor or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
+            // en el móvil la tecla dice «Buscar» y al pulsarla se esconde el
+            // teclado, que tapaba media pantalla de resultados
+            enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter' && ES_TACTIL) e.currentTarget.blur() }}
             enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
           </>)}
           <button className="chip-btn chip-ajustes" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>

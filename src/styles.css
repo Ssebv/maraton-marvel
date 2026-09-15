@@ -2816,3 +2816,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .valora-rapido-pregunta{grid-column:1; grid-row:1; font-size: var(--t-s); font-weight:700; color:var(--ink)}
 .valora-rapido-resena{grid-column:2; grid-row:1}
 .valora-rapido .estrellas{grid-column:1 / -1; grid-row:2; display:flex; margin-left:calc(-1 * var(--e-3))}
+/* un día con marcas en la semana de la cabecera se puede tocar (abre ese día) */
+.cal-semana-dia.con{cursor:pointer; transition:transform var(--muelle-toque)}
+.cal-semana-dia.con:active{transform:scale(.92)}
+.cal-semana-dia.con::before{content:""; position:absolute; inset:-8px -1px}
