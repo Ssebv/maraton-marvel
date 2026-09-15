@@ -3834,6 +3834,29 @@ function DondeEstoy({ version, siguiente, onPrepara }) {
     return () => { window.removeEventListener('scroll', on); window.removeEventListener('resize', alCambiarTamano); obs.disconnect(); if (ro) ro.disconnect(); sonda.remove() }
   }, [version])
   const abre = () => { setIndice(leeIndice()); setAbierto(true) }
+  // el índice abre con «Estás aquí» a la vista (revisión HIG): abría arriba y
+  // quien iba por las fases 5 y 6 —donde más se pierde uno— tenía que bajar a
+  // buscarse. Desplaza la hoja, no la página, y después del foco de useDialogo
+  useEffect(() => {
+    if (!montado || !abierto) return undefined
+    const t = setTimeout(() => {
+      const aqui = refIndice.current && refIndice.current.querySelector('.indice-era.aqui')
+      if (!aqui) return
+      let caja = aqui.parentElement
+      while (caja && caja !== refIndice.current.parentElement) {
+        const o = getComputedStyle(caja).overflowY
+        if ((o === 'auto' || o === 'scroll') && caja.scrollHeight > caja.clientHeight + 1) break
+        caja = caja.parentElement
+      }
+      if (!caja || caja === refIndice.current.parentElement) return
+      const rc = caja.getBoundingClientRect(), ra = aqui.getBoundingClientRect()
+      const objetivo = caja.scrollTop + (ra.top - rc.top) - (rc.height - ra.height) / 2
+      // si ya se ve entero (índice corto o primeras eras), no se mueve
+      if (ra.top >= rc.top && ra.bottom <= rc.bottom) return
+      caja.scrollTop = Math.max(0, Math.min(objetivo, caja.scrollHeight - caja.clientHeight))
+    }, 30)
+    return () => clearTimeout(t)
+  }, [montado, abierto])
   const salta = (dame, espera = 60) => {
     setAbierto(false)
     // tras cerrar (el fondo se libera al instante), la era queda bajo la píldora
