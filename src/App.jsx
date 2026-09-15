@@ -2727,6 +2727,8 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
   const pct = est.totMin ? Math.round(100 * est.vistoMin / est.totMin) : 0
   const ctx = {
     vistas: vistasP,
+    eps: epsP,
+    notas: notasP,
     horasVistas: est.vistoMin / 60,
     titulosVistos: est.titulosVistos,
     titulosTot: est.titulosTot,
@@ -4105,37 +4107,98 @@ function Actividad({ vistas, eps, sinMarco = false }) {
   )
 }
 
+// Logros por grupos (15 sep 2026, Sebastián: «agrega los de X-Men y más cosas»).
+// Los de una lista de títulos llevan `p` (progreso «2/3» mientras están
+// bloqueados). Los ids salen de las eras de data.js, así que un título nuevo en
+// una era entra solo. `v.eps` y `v.notas` pueden faltar (perfil compartido).
+const idsEra = (saga, i) => ((DATA.find(s => s.saga === saga) || { eras: [] }).eras[i] || { items: [] }).items.map(it => it.id)
+const idsSaga = saga => (DATA.find(s => s.saga === saga) || { eras: [] }).eras.flatMap(e => e.items.map(it => it.id))
+const deIds = ids => ({ f: v => ids.every(id => v.vistas[id]), p: v => [ids.filter(id => v.vistas[id]).length, ids.length] })
+// días con alguna marca con fecha (títulos o episodios)
+const marcasPorDia = v => {
+  const m = new Map()
+  for (const t of [...Object.values(v.vistas || {}), ...Object.values(v.eps || {})]) {
+    if (typeof t !== 'number' || t < 1e12) continue
+    const k = diaClave(t)
+    m.set(k, (m.get(k) || 0) + 1)
+  }
+  return m
+}
+const rachaMax = v => {
+  const dias = [...marcasPorDia(v).keys()].map(k => { const [a, m, d] = k.split('-').map(Number); return new Date(a, m, d).getTime() }).sort((a, b) => a - b)
+  let mejor = 0, actual = 0, prev = null
+  for (const t of dias) { actual = prev != null && Math.round((t - prev) / 864e5) === 1 ? actual + 1 : 1; mejor = Math.max(mejor, actual); prev = t }
+  return mejor
+}
+const GRUPOS_LOGROS = [['maraton', 'El maratón', 'The marathon'], ['xmen', 'X-Men', 'X-Men'], ['ucm', 'UCM', 'MCU'], ['papel', 'Cómics y animación', 'Comics and animation'], ['habitos', 'Tus hábitos', 'Your habits']]
 const LOGROS = [
-  { id: 'primero', e: '🎬', t: 'Primer paso', d: 'Marca tu primer título', f: (v) => Object.keys(v.vistas).some(id => !id.startsWith('c-')) },
-  { id: 'capi', e: '🛡️', t: 'Trilogía del Capi', d: 'El primer vengador, Soldado de Invierno y Civil War', f: v => ['cap1', 'cap2', 'civilwar'].every(id => v.vistas[id]) },
-  { id: 'thanos', e: '🧤', t: 'El chasquido', d: 'Infinity War y Endgame', f: v => ['infinitywar', 'endgame'].every(id => v.vistas[id]) },
-  { id: 'mutante', e: '🧬', t: 'Mutante y orgulloso', d: 'Toda la saga X-Men', f: v => v.xmenCompleto },
-  { id: 'defensores', e: '🥊', t: 'Los Defensores', d: 'Las 6 series de Netflix', f: v => ['daredevil', 'jessicajones', 'lukecage', 'ironfist', 'defenders', 'punisher'].every(id => v.vistas[id]) },
-  { id: 'express', e: '⚡', t: 'Ruta express', d: 'Todo lo imprescindible para Doomsday', f: v => v.expressCompleta },
-  { id: 'lector', e: '📚', t: 'Ratón de biblioteca', d: 'Lee 5 cómics esenciales', f: v => Object.keys(v.vistas).filter(id => id.startsWith('c-')).length >= 5 },
-  { id: 'cien', e: '💯', t: 'Cien horas', d: '100 horas de maratón vistas', f: v => v.horasVistas >= 100 },
-  { id: 'mitad', e: '🌗', t: 'Media maratón', d: 'La mitad de los títulos', f: v => v.titulosVistos >= Math.ceil(v.titulosTot / 2) },
-  { id: 'completista', e: '🏆', t: 'Completista', d: 'Absolutamente todo visto y leído', f: v => v.todoCompleto },
+  { id: 'primero', g: 'maraton', e: '🎬', t: 'Primer paso', d: 'Marca tu primer título', f: (v) => Object.keys(v.vistas).some(id => !id.startsWith('c-')) },
+  { id: 'express', g: 'maraton', e: '⚡', t: 'Ruta express', d: 'Todo lo imprescindible para Doomsday', f: v => v.expressCompleta },
+  { id: 'cien', g: 'maraton', e: '💯', t: 'Cien horas', d: '100 horas de maratón vistas', f: v => v.horasVistas >= 100, p: v => [Math.min(100, Math.floor(v.horasVistas || 0)), 100] },
+  { id: 'mitad', g: 'maraton', e: '🌗', t: 'Media maratón', d: 'La mitad de los títulos', f: v => v.titulosVistos >= Math.ceil(v.titulosTot / 2), p: v => [Math.min(v.titulosVistos, Math.ceil(v.titulosTot / 2)), Math.ceil(v.titulosTot / 2)] },
+  { id: 'completista', g: 'maraton', e: '🏆', t: 'Completista', d: 'Absolutamente todo visto y leído', f: v => v.todoCompleto },
+
+  { id: 'xmen-original', g: 'xmen', e: '🎓', t: 'Alumno de Xavier', d: 'Toda la línea original de X-Men', ...deIds(idsEra('xmen', 0)) },
+  { id: 'xmen-nueva', g: 'xmen', e: '🌀', t: 'Línea temporal nueva', d: 'Toda la línea nueva de X-Men', ...deIds(idsEra('xmen', 1)) },
+  { id: 'logan', g: 'xmen', e: '🗡️', t: 'Garras de adamantium', d: 'Las tres películas en solitario de Logan', ...deIds(['origins-wolverine', 'the-wolverine', 'logan']) },
+  { id: 'deadpool', g: 'xmen', e: '💬', t: 'Rompe la cuarta pared', d: 'Las tres películas de Deadpool', ...deIds(['deadpool1', 'deadpool2', 'deadpool3']) },
+  { id: 'xmen-series', g: 'xmen', e: '📺', t: 'Mutantes en la tele', d: 'Las cuatro series de la saga X-Men', ...deIds(idsEra('xmen', 2)) },
+  { id: 'fenix', g: 'xmen', e: '🔥', t: 'La Fénix, dos veces', d: 'Fénix Oscura en película y en cómic', ...deIds(['dark-phoenix', 'c-darkphoenix']) },
+  { id: 'futuro-pasado', g: 'xmen', e: '⏳', t: 'Futuro pasado', d: 'Días del futuro pasado en película y en cómic', ...deIds(['dofp', 'c-dofp']) },
+  { id: 'xmen-papel', g: 'xmen', e: '📖', t: 'X-Men de papel', d: 'Los cómics esenciales de X-Men', ...deIds(idsEra('comics', 0)) },
+  { id: 'mutante', g: 'xmen', e: '🧬', t: 'Mutante y orgulloso', d: 'Toda la saga X-Men', f: v => v.xmenCompleto, p: v => { const ids = idsSaga('xmen'); return [ids.filter(id => v.vistas[id]).length, ids.length] } },
+
+  { id: 'capi', g: 'ucm', e: '🛡️', t: 'Trilogía del Capi', d: 'El primer vengador, Soldado de Invierno y Civil War', ...deIds(['cap1', 'cap2', 'civilwar']) },
+  { id: 'thanos', g: 'ucm', e: '🧤', t: 'El chasquido', d: 'Infinity War y Endgame', ...deIds(['infinitywar', 'endgame']) },
+  { id: 'arana', g: 'ucm', e: '🕷️', t: 'Tu amigo y vecino', d: 'Homecoming, Lejos de casa y No Way Home', ...deIds(['homecoming', 'ffh', 'nwh']) },
+  { id: 'groot', g: 'ucm', e: '🌱', t: 'Yo soy Groot', d: 'Las tres de Guardianes de la Galaxia', ...deIds(['gotg1', 'gotg2', 'gotg3']) },
+  { id: 'variantes', g: 'ucm', e: '🕰️', t: 'Variante', d: 'Las dos temporadas de Loki y What If...?', ...deIds(['loki1', 'loki2', 'whatif']) },
+  { id: 'defensores', g: 'ucm', e: '🥊', t: 'Los Defensores', d: 'Las 6 series de Netflix', ...deIds(['daredevil', 'jessicajones', 'lukecage', 'ironfist', 'defenders', 'punisher']) },
+  { id: 'infinito', g: 'ucm', e: '💎', t: 'Saga del Infinito', d: 'Todas las eras hasta Endgame', ...deIds([0, 1, 2, 3].flatMap(i => idsEra('ucm', i))) },
+
+  { id: 'lector', g: 'papel', e: '📚', t: 'Ratón de biblioteca', d: 'Lee 5 cómics esenciales', f: v => Object.keys(v.vistas).filter(id => id.startsWith('c-')).length >= 5, p: v => [Math.min(5, Object.keys(v.vistas).filter(id => id.startsWith('c-')).length), 5] },
+  { id: 'coleccionista', g: 'papel', e: '🗃️', t: 'Coleccionista', d: 'Todos los cómics esenciales', ...deIds(idsSaga('comics')) },
+  { id: 'boveda', g: 'papel', e: '🎞️', t: 'Sábado por la mañana', d: '5 series de la bóveda de animación', f: v => idsSaga('animacion').filter(id => v.vistas[id]).length >= 5, p: v => [Math.min(5, idsSaga('animacion').filter(id => v.vistas[id]).length), 5] },
+
+  { id: 'racha', g: 'habitos', e: '📅', t: 'Una semana sin parar', d: 'Marca algo 7 días seguidos', f: v => rachaMax(v) >= 7, p: v => [Math.min(7, rachaMax(v)), 7] },
+  { id: 'maraton-dia', g: 'habitos', e: '🍿', t: 'Maratón de verdad', d: '5 títulos o episodios el mismo día', f: v => Math.max(0, ...marcasPorDia(v).values()) >= 5, p: v => [Math.min(5, Math.max(0, ...marcasPorDia(v).values())), 5] },
+  { id: 'enganchado', g: 'habitos', e: '📼', t: 'Enganchado', d: '100 episodios vistos', f: v => Object.keys(v.eps || {}).length >= 100, p: v => [Math.min(100, Object.keys(v.eps || {}).length), 100] },
+  { id: 'critico', g: 'habitos', e: '⭐', t: 'Crítico', d: 'Valora 10 títulos con estrellas', f: v => Object.values(v.notas || {}).filter(n => n && n.p).length >= 10, p: v => [Math.min(10, Object.values(v.notas || {}).filter(n => n && n.p).length), 10] },
+  { id: 'resenas', g: 'habitos', e: '✍️', t: 'Pluma afilada', d: 'Escribe 3 reseñas', f: v => Object.values(v.notas || {}).filter(n => n && n.txt && n.txt.trim()).length >= 3, p: v => [Math.min(3, Object.values(v.notas || {}).filter(n => n && n.txt && n.txt.trim()).length), 3] },
 ]
 
 function Logros({ ctx }) {
-  const desbloqueados = LOGROS.filter(l => l.f(ctx)).length
+  // se evalúa cada logro una vez por render (antes dos: contar y pintar)
+  const estado = LOGROS.map(l => ({ l, ok: !!l.f(ctx), p: l.p ? l.p(ctx) : null }))
+  const desbloqueados = estado.filter(x => x.ok).length
   return (
     <section className="grafica">
       <h3 className="grafica-titulo">{tr('Logros', 'Achievements')}</h3>
       <p className="grafica-sub">{desbloqueados} {tr('de', 'of')} {LOGROS.length} {tr('desbloqueados', 'unlocked')}</p>
-      <div className="logros">
-        {LOGROS.map(l => {
-          const ok = l.f(ctx)
-          return (
-            <div key={l.id} className={`logro${ok ? ' ok' : ''}`} title={l.d}>
-              <span className="logro-emoji">{l.e}</span>
-              <span className="logro-nombre">{l.t}</span>
-              <span className="logro-desc">{l.d}</span>
+      {GRUPOS_LOGROS.map(([g, es, en]) => {
+        const del = estado.filter(x => x.l.g === g)
+        if (!del.length) return null
+        return (
+          <div key={g} className="logros-grupo">
+            <h4 className="logros-grupo-titulo">{tr(es, en)} <span>{del.filter(x => x.ok).length}/{del.length}</span></h4>
+            <div className="logros">
+              {del.map(({ l, ok, p }) => (
+                <div key={l.id} className={`logro${ok ? ' ok' : ''}`} title={l.d}>
+                  <span className="logro-emoji" aria-hidden="true">{l.e}</span>
+                  <span className="logro-nombre">{l.t}</span>
+                  <span className="logro-desc">{l.d}</span>
+                  {/* bloqueado con progreso: cuánto falta */}
+                  {!ok && p && p[1] > 0 && p[0] > 0 && (
+                    <span className="logro-prog" aria-label={tr(`${p[0]} de ${p[1]}`, `${p[0]} of ${p[1]}`)}>
+                      <i style={{ width: `${Math.round(100 * p[0] / p[1])}%` }} /><em>{p[0]}/{p[1]}</em>
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
-          )
-        })}
-      </div>
+          </div>
+        )
+      })}
     </section>
   )
 }
@@ -5792,7 +5855,8 @@ export default function App() {
                 <button type="button" className="siguiente-marcar" onClick={() => marcaSiguiente(s)}
                   aria-label={e ? tr(`Marcar visto T${e.s}·E${e.n} de ${s.t}`, `Mark S${e.s}·E${e.n} of ${s.t} watched`) : tr(`Marcar vista: ${s.t}`, `Mark watched: ${s.t}`)}>
                   <CheckIcon />
-                  <span>{e ? `T${e.s}·E${e.n}` : tr('Vista', 'Seen')}</span>
+                  {/* verbo, no estado: en la ficha «✓ Vista» significa «ya vista» */}
+                  <span>{e ? `T${e.s}·E${e.n}` : tr('Marcar', 'Mark')}</span>
                 </button>
               )
             })()}
@@ -6336,6 +6400,8 @@ export default function App() {
 
           <Logros ctx={{
             vistas,
+            eps,
+            notas,
             horasVistas: estadisticas.vistoMin / 60,
             titulosVistos: estadisticas.titulosVistos,
             titulosTot: estadisticas.titulosTot,

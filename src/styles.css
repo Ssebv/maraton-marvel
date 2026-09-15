@@ -2924,3 +2924,23 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 .indice-atajo-titulo{font-size: var(--t-m); font-weight:700}
 .indice-atajo-sub{font-size: var(--t-xs); color:var(--ink2); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 @media (prefers-reduced-motion: reduce){ .indice-atajo{transition:none} }
+
+/* Logros por grupos, con progreso en los bloqueados */
+.logros-grupo + .logros-grupo{margin-top: var(--e-6)}
+.logros-grupo-titulo{
+  margin: 0 0 var(--e-3); font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3);
+  display:flex; align-items:baseline; gap: var(--e-3);
+}
+.logros-grupo-titulo span{font-variant-numeric:tabular-nums; letter-spacing:0; color:var(--ink2)}
+.logro-prog{
+  align-self:stretch; /* .logro centra: sin esto la barra (1fr) mide 0 */
+  display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap: var(--e-3); margin-top: var(--e-2);
+  font-size: var(--t-xs); color:var(--ink2); font-variant-numeric:tabular-nums;
+}
+.logro-prog::before, .logro-prog i{grid-column:1; grid-row:1; height:4px; border-radius:var(--r-s)}
+.logro-prog::before{content:""; background:color-mix(in srgb, var(--ink) 12%, transparent)}
+.logro-prog i{display:block; background:var(--gold)}
+.logro-prog em{font-style:normal}
+
+/* en oscuro el borde --line sobre --gold-soft casi desaparecía (revisión HIG) */
+.valora-rapido-resena{border-color:color-mix(in srgb, var(--ink) 25%, transparent)}
