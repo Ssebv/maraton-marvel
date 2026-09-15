@@ -5,6 +5,7 @@ import { POSTERS } from './posters.js'
 import { PEOPLE } from './people.js'
 import { EPISODES } from './episodes.js'
 import { TMDB, TMDB_KEY, DESPLAZA_TEMPORADA } from './tmdb.js'
+import { FOTOGRAMAS } from './fondos.js'
 import { ORDEN_CONGELADO } from './orden.js'
 import { PLATAFORMAS, PAISES } from './plataformas.js'
 import { TITULOS_LATAM } from './titulos.js'
@@ -44,6 +45,7 @@ function conTransicion(dir, fn) {
   // si se salta (otra transición encima, pestaña oculta), `ready` se rechaza:
   // sin recogerlo salía «AbortError: Transition was skipped» en consola
   t.ready.catch(() => {})
+  vigilaTransicion(t)
   t.finished.finally(() => { if (raiz.dataset.vt === dir) delete raiz.dataset.vt })
 }
 // La carátula vuela entre la ficha y lo que tocaste (14 sep 2026): una
@@ -60,8 +62,53 @@ function conTransicion(dir, fn) {
 // Sin View Transitions queda el vuelo de reserva de Detalle (WAAPI).
 let vueloEnCurso = false
 let ultimoToque = null
+// Mientras dura una View Transition (el vuelo de la carátula al cerrar, ~0,5 s;
+// el desliz al cambiar de pestaña) el navegador pone su capa encima de toda la
+// página y el toque cae en <html>, no en lo que hay debajo: cerrar la ficha y
+// volver a tocar la tarjeta enseguida hacía la animación y no abría nada
+// (`::view-transition{pointer-events:none}` no lo evita en Chrome). Así que un
+// toque durante la transición la termina ya, y el clic que cayó en <html> se
+// entrega a lo que de verdad está bajo el dedo.
+let vtActiva = null
+function vigilaTransicion(t) {
+  vtActiva = t
+  t.finished.finally(() => { if (vtActiva === t) vtActiva = null })
+}
 if (typeof window !== 'undefined') {
-  window.addEventListener('pointerdown', e => { ultimoToque = { el: e.target, t: performance.now() } }, { capture: true, passive: true })
+  let saltadaEn = -1e9
+  window.addEventListener('pointerdown', () => {
+    if (!vtActiva) return
+    try { vtActiva.skipTransition() } catch {}
+    saltadaEn = performance.now()
+  }, { capture: true, passive: true })
+  window.addEventListener('click', e => {
+    if (e.target !== document.documentElement || performance.now() - saltadaEn > 1000) return
+    e.stopPropagation()
+    const { clientX: x, clientY: y } = e
+    // la capa de la transición se retira en el siguiente pintado
+    setTimeout(() => {
+      const el = document.elementFromPoint(x, y)
+      const destino = el && el !== document.documentElement && el.closest('button, a[href], [role="button"], summary')
+      if (destino) destino.click()
+    }, 32)
+  }, { capture: true })
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', e => { ultimoToque = { el: e.target, t: performance.now() }; precargaFicha(e.target) }, { capture: true, passive: true })
+}
+// Al apoyar el dedo sobre un título (tarjeta, galería, línea temporal) se piden
+// ya sus datos de TMDB y, en cuanto llegan, su fotograma: entre el toque y que
+// la ficha termina de subir pasan ~500 ms, y sin esto el fotograma empezaba a
+// bajar solo cuando la ficha pedía los datos (medido: llegaba a ~680 ms con
+// 4G lenta). Lo ya cacheado no hace petición.
+function precargaFicha(el) {
+  const nodo = el && el.closest && el.closest('[id^="card-"], [id^="gal-"], [id^="tl-"]')
+  if (!nodo || el.closest('.checkbox')) return
+  const itemId = nodo.id.slice(nodo.id.indexOf('-') + 1)
+  const pide = ruta => { const img = new Image(); img.decoding = 'async'; img.src = `${TMDB_IMG}w780${ruta}` }
+  // el fotograma conocido (src/fondos.js) empieza a bajar ya, sin esperar a la API
+  if (FOTOGRAMAS[itemId]) pide(FOTOGRAMAS[itemId])
+  cargaTmdb(itemId).then(d => { if (d && d.fondo && d.fondo !== FOTOGRAMAS[itemId]) pide(d.fondo) }).catch(() => {})
 }
 const enPantalla = (el, dentro) => {
   if (!el || !el.isConnected) return false
@@ -82,10 +129,20 @@ function portadaEnLista(id) {
   if (tarjeta) cands.push(tarjeta.querySelector('.cover'))
   return cands.find(el => enPantalla(el)) || null
 }
+// Un vuelo puede empezar antes de que acabe el anterior (cerrar y volver a
+// abrir enseguida): el nuevo salta al viejo, y la limpieza del viejo llega
+// tarde. Por eso cada vuelo quita el nombre a lo que dejó nombrado otro (dos
+// «portada» a la vez invalidan la transición) y solo limpia lo suyo si sigue
+// siendo el último.
+let vueloGen = 0
+let conNombre = []
 function vuela(dir, desde, antes, fn, despues) {
   const raiz = document.documentElement
   const escondidos = []
   let hasta = null
+  const gen = ++vueloGen
+  conNombre.forEach(el => { if (el !== desde) el.style.viewTransitionName = '' })
+  conNombre = [desde]
   desde.style.viewTransitionName = 'portada'
   raiz.dataset.vt = dir
   const t = document.startViewTransition(async () => {
@@ -97,6 +154,7 @@ function vuela(dir, desde, antes, fn, despues) {
     hasta = despues()
     if (!hasta) return
     hasta.style.viewTransitionName = 'portada'
+    conNombre.push(hasta)
     // sin decodificar, la instantánea nueva saldría vacía y la carátula
     // parpadearía al aterrizar; como mucho 120 ms de espera
     if (hasta.decode) await Promise.race([hasta.decode().catch(() => {}), new Promise(r => setTimeout(r, 120))])
@@ -104,8 +162,9 @@ function vuela(dir, desde, antes, fn, despues) {
   // si se salta (otra transición encima, pestaña oculta), `ready` se rechaza:
   // sin recogerlo salía «AbortError: Transition was skipped» en consola
   t.ready.catch(() => {})
+  vigilaTransicion(t)
   t.finished.finally(() => {
-    if (hasta) hasta.style.viewTransitionName = ''
+    if (hasta && gen === vueloGen) hasta.style.viewTransitionName = ''
     escondidos.forEach(el => { el.style.visibility = '' })
     if (raiz.dataset.vt === dir) delete raiz.dataset.vt
   })
@@ -470,7 +529,16 @@ try {
     if (/^maraton-marvel-tmdb-v[0-9]+:/.test(k) && !k.startsWith('maraton-marvel-tmdb-v11:')) localStorage.removeItem(k)
   }
 } catch {}
-async function cargaTmdb(itemId) {
+// una sola petición en vuelo por título: la precarga al tocar y la ficha que se
+// abre enseguida piden lo mismo a la vez
+const tmdbPend = {}
+function cargaTmdb(itemId) {
+  const k = (tmdbIdioma() === 'en-US' ? 'en:' : '') + itemId
+  if (tmdbMem[k]) return Promise.resolve(tmdbMem[k])
+  if (!tmdbPend[k]) tmdbPend[k] = cargaTmdbRed(itemId).finally(() => { delete tmdbPend[k] })
+  return tmdbPend[k]
+}
+async function cargaTmdbRed(itemId) {
   const idi = tmdbIdioma()
   const k = (idi === 'en-US' ? 'en:' : '') + itemId
   if (tmdbMem[k]) return tmdbMem[k]
@@ -1475,17 +1543,29 @@ function gestosDeVolver() {
       cerrando = true
       const destino = dimDe(el, modo) * 1.05
       let ctl = null, hecho = false
-      // se cierra al llegar fuera, antes de recolocar: si el nodo sobrevive al
-      // cierre (la biografía deja la ficha debajo) no se ve volver un cuadro
+      // Una hoja entera (la que cuelga de su velo) se cierra YA al soltar y sale
+      // animada por su cuenta: si se cerraba al llegar fuera, durante ~0,7 s el
+      // velo transparente seguía encima de la página y el toque para reabrir la
+      // misma ficha caía en él (lo tomaba por «tocar fuera» y la cerraba otra
+      // vez). Cerrada, lleva `.saliendo` y no recibe toques. Lo que sobrevive al
+      // cierre (la biografía deja la ficha debajo) se sigue cerrando al llegar
+      // fuera, para no ver volver un cuadro.
+      const hojaEntera = !!velo(el)
+      if (hojaEntera) cierraSiSigue(capa)
       const fin = () => {
         if (hecho) return
         hecho = true
         if (ctl) ctl.stop()
         cerrando = false
-        cierraSiSigue(capa)
+        if (!hojaEntera) cierraSiSigue(capa)
         requestAnimationFrame(() => sueltaTrasCerrar(el))
       }
-      ctl = muelle(desde, destino, 'irse', Math.max(v, 900), q => { pinta(el, modo, q); if (q >= destino - 2) fin() }, fin)
+      ctl = muelle(desde, destino, 'irse', Math.max(v, 900), q => {
+        // reabierta mientras salía (la misma ficha, antes de desmontarse): se
+        // para y fin() la devuelve a su sitio (ya no está `.saliendo`)
+        if (hojaEntera && !el.closest('.saliendo')) { fin(); return }
+        pinta(el, modo, q); if (q >= destino - 2) fin()
+      }, fin)
       setTimeout(fin, 700)
     } else {
       // vuelve como un muelle con la velocidad del dedo: pasa unos píxeles
@@ -3072,6 +3152,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   useEffect(() => { setRevela(false) }, [item.id])
   const oculto = !!sinSpoilers && !vista && !revela
   const extra = useTmdb(item, idioma)
+  // el fotograma que ya se conoce (src/fondos.js, precargado al tocar) sale sin
+  // esperar a TMDB; cuando TMDB responde manda el suyo
+  const fondo = (extra && extra.fondo) || FOTOGRAMAS[item.id] || null
   const [verTrailer, setVerTrailer] = useState(false)
   const [sinAbierta, setSinAbierta] = useState(null)
   const [desveladas, setDesveladas] = useState({})
@@ -3235,10 +3318,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
       {/* el hueco sobre la carátula es para el fotograma: se reserva mientras
           TMDB carga (o el contenido saltaría al llegar) y no existe para los
           cómics ni cuando la respuesta viene sin fotograma */}
-      <div className={'modal' + ((extra ? !!extra.fondo : !d.esComic) ? ' con-fondo' : '')} ref={refModal} onClick={e => e.stopPropagation()}>
-        {extra?.fondo && (
+      <div className={'modal' + ((extra ? !!fondo : !d.esComic) ? ' con-fondo' : '')} ref={refModal} onClick={e => e.stopPropagation()}>
+        {fondo && (
           <div className="modal-fondo" aria-hidden="true">
-            <img src={`${TMDB_IMG}w780${extra.fondo}`} alt="" decoding="async" />
+            <img src={`${TMDB_IMG}w780${fondo}`} alt="" decoding="async"
+              onLoad={e => e.currentTarget.classList.add('lista')} />
             <span className="mf-velo" />
           </div>
         )}

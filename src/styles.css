@@ -2656,3 +2656,8 @@ a.prov-chip:hover{border-color:var(--ink3)}
     @keyframes fundidoDer{from{opacity:1} to{opacity:0}}
   }
 }
+
+/* el fotograma de la ficha llega después que la hoja: entra fundiéndose en vez
+   de aparecer de golpe */
+.modal-fondo img{transition:opacity var(--dur-larga) var(--curva)}
+.modal-fondo img:not(.lista){opacity:0}

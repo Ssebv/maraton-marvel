@@ -15,7 +15,8 @@
     "episodios-en": "node scripts/episodios-en.mjs",
     "webp": "node scripts/webp.mjs",
     "muelles": "node scripts/muelles.mjs",
-    "espejo": "node scripts/espejo.mjs"
+    "espejo": "node scripts/espejo.mjs",
+    "fondos": "node scripts/fondos.mjs"
   },
   "keywords": [],
   "author": "",
