@@ -1914,6 +1914,10 @@ main.crono, main.comics, main.estreno{animation:none}
   html[data-vt^="portada"]::view-transition-new(root){animation:none}
   ::view-transition-group(portada){animation-duration:var(--muelle-hoja-dur); animation-timing-function:var(--muelle-hoja-curva)}
   ::view-transition-old(portada), ::view-transition-new(portada){animation-duration:var(--dur-media)}
+  /* de vuelta (solo escritorio: en el móvil la carátula baja con la hoja) sin
+     rebote: aterrizar en su tarjeta con un muelle que se pasa de largo se leía
+     forzado; la curva de la hoja, a la misma duración que la salida */
+  html[data-vt="portada-cierra"]::view-transition-group(portada){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
   ::view-transition-group(*){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
   ::view-transition-old(root), ::view-transition-new(root){animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja)}
   html[data-vt="adelante"]::view-transition-old(root){animation-name:vtSaleIzq}
@@ -2237,7 +2241,14 @@ main.crono, main.comics, main.estreno{animation:none}
     padding-bottom:calc(20px + env(safe-area-inset-bottom));
     animation:sheetUp var(--muelle-hoja) both;
   }
-  .overlay.saliendo .modal{animation:fueraHojaMovil var(--dur-media) var(--curva-hoja) both}
+  /* La hoja baja entera y el velo se aclara con ella, a la misma duración y con
+     la misma curva. Se anima solo el COLOR del velo (--arrastre, el mismo que
+     aclara el gesto), no la opacidad del .overlay: la hoja vive dentro, y con
+     la opacidad se desvanecía con el velo a los ~100 ms, con un cuarto del
+     recorrido hecho (medido en capturas a velocidad real). */
+  .overlay.saliendo{animation:fueraVeloMovil var(--dur-larga) var(--curva-hoja) both}
+  .overlay.saliendo .modal{animation:fueraHojaMovil var(--dur-larga) var(--curva-hoja) both}
+  @keyframes fueraVeloMovil{to{--arrastre:1}}
   @keyframes fueraHojaMovil{to{transform:translateY(105%)}}
   .modal::before{
     content:""; position:sticky; top:-18px; display:block; margin: calc(-1 * var(--e-4)) auto var(--e-3);
@@ -2628,6 +2639,9 @@ a.prov-chip:hover{border-color:var(--ink3)}
    el dock desapareció en producción por eso. Ahí el fundido son dos
    pseudoelementos de la barra con la línea de tiempo del carril con nombre. */
 @property --fun-izq{syntax:"<length>"; inherits:false; initial-value:0px}
+/* registrado para poder animarlo al cerrar la hoja móvil (fueraVeloMovil); sin
+   registro una animación de variable salta de golpe a mitad */
+@property --arrastre{syntax:"<number>"; inherits:false; initial-value:0}
 @property --fun-der{syntax:"<length>"; inherits:false; initial-value:0px}
 @supports (animation-timeline: scroll()){
   .subvistas, .proximos, .mapa-mv-wrap, .seguir-lista{

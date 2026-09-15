@@ -180,6 +180,11 @@ function abreConVuelo(id, abre) {
 let ultimoOrigen = null
 const origenDe = id => (ultimoOrigen && ultimoOrigen.id === id && enPantalla(ultimoOrigen.el) && ultimoOrigen.el) || portadaEnLista(id)
 function cierraConVuelo(id, cierra) {
+  // En el móvil la ficha es una hoja que baja: la carátula se va con ella. El
+  // vuelo de vuelta hacía dos movimientos a la vez en sentidos opuestos (la
+  // hoja hacia abajo y la carátula hacia arriba, a su tarjeta) y durante unos
+  // cuadros se veían dos carátulas; se leía forzado. Abrir sí vuela.
+  if (window.matchMedia('(max-width:720px)').matches) { cierra(); return }
   const marco = document.querySelector('.overlay:not(.saliendo) .modal-portada')
   const modal = marco && marco.closest('.modal')
   const desde = marco && marco.querySelector('.cover')
@@ -1373,7 +1378,8 @@ const movimientoReducido = () => window.matchMedia('(prefers-reduced-motion: red
 // animaba la salida; el aspa, Escape y atrás la quitaban de golpe. Devuelve
 // [montada, clase]; reabrir durante la salida la recupera sin más. Con
 // movimiento reducido se desmonta al instante, como el resto de la app.
-const DUR_SALIDA = 240
+// = --dur-larga: la salida de la hoja móvil (baja y el velo se funde) dura eso
+const DUR_SALIDA = 360
 function useSaliente(abierto) {
   const [montada, setMontada] = useState(!!abierto)
   useEffect(() => {
@@ -1409,7 +1415,7 @@ function gestosDeVolver() {
   // en el primer touchmove y el arranque del arrastre da un tirón
   const prepara = el => { el.style.willChange = 'transform' }
   const suelta = el => {
-    el.style.transition = ''; el.style.transform = ''; el.style.animationFillMode = ''; el.style.willChange = ''
+    el.style.transition = ''; el.style.transform = ''; el.style.animationFillMode = ''; el.style.animation = ''; el.style.willChange = ''
     const v = velo(el)
     if (v) { v.style.transition = ''; v.style.removeProperty('--arrastre') }
   }
@@ -1551,7 +1557,10 @@ function gestosDeVolver() {
       // cierre (la biografía deja la ficha debajo) se sigue cerrando al llegar
       // fuera, para no ver volver un cuadro.
       const hojaEntera = !!velo(el)
-      if (hojaEntera) cierraSiSigue(capa)
+      // la hoja la sigue moviendo el muelle: sin esto `.saliendo` le pondría
+      // además su animación CSS de salida y dos animadores sobre el mismo
+      // transform pintaban cuadros con la hoja duplicada
+      if (hojaEntera) { el.style.animation = 'none'; cierraSiSigue(capa) }
       const fin = () => {
         if (hecho) return
         hecho = true
