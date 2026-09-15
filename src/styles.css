@@ -2294,6 +2294,28 @@ main.crono, main.comics, main.estreno{animation:none}
   animation:fadeIn var(--dur-media) ease both;
 }
 @media (max-width:720px){ .version-nueva{bottom:calc(56px + env(safe-area-inset-bottom, 0px))} }
+/* ── Deshacer: píldora oscura sobre todo (también sobre la ficha abierta) ── */
+.deshacer{
+  position:fixed; left:50%; transform:translateX(-50%); z-index:95;
+  bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+  display:flex; align-items:center; gap: var(--e-4); max-width:calc(100vw - 32px);
+  padding: var(--e-2) var(--e-2) var(--e-2) var(--e-5); border-radius:var(--r-pill);
+  background:var(--ink); color:var(--bg); font-size: var(--t-m); font-weight:600;
+  box-shadow:var(--card-shadow-up);
+  animation:deshacerEntra var(--muelle) both;
+}
+/* el centrado va en la base: la animación solo define el punto de partida */
+@keyframes deshacerEntra{from{opacity:0; transform:translate(-50%, 12px)}}
+.deshacer-texto{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.deshacer button{
+  flex:none; position:relative; min-height:36px; padding: var(--e-2) var(--e-4); border-radius:var(--r-pill);
+  font:inherit; font-weight:700; color:var(--bg); background:transparent; cursor:pointer;
+  border:1px solid color-mix(in srgb, var(--bg) 45%, transparent);
+  transition:transform var(--muelle-toque);
+}
+.deshacer button::after{content:""; position:absolute; inset:-4px}
+.deshacer button:active{transform:scale(.96)}
+@media (max-width:720px){ .deshacer{bottom:calc(56px + env(safe-area-inset-bottom, 0px))} }
 /* ── Recordatorios de estreno ── */
 .novedades{
   flex-direction:row; align-items:center; justify-content:space-between;

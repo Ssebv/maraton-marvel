@@ -197,6 +197,8 @@ function cierraConVuelo(id, cierra) {
 }
 // cuántas series tiene la bóveda de animación: se cuenta, no se escribe
 const N_SERIES_BOVEDA = DATA.find(s => s.saga === 'animacion').eras.reduce((a, e) => a + e.items.length, 0)
+// todos los títulos del catálogo (la bienvenida decía «117» escrito a mano)
+const N_TITULOS_TODOS = DATA.reduce((a, s) => a + s.eras.reduce((b, e) => b + e.items.length, 0), 0)
 const ONESHOTS_PARTIDOS = ['oneshot-martillo', 'oneshot-consultor', 'oneshot-item47', 'oneshot-rey', 'oneshot-carter']
 const migraMarcas = v => {
   if (!v || !v.oneshots) return v
@@ -1877,7 +1879,7 @@ function Bienvenida({ onCerrar, onExpress, pais, onPais, idioma, onIdioma, salie
           <span className="hero-eyebrow">{tr('Guía de maratón', 'Marathon guide')}</span>
           <h2 className="modal-titulo">{tr('Todo Marvel y X-Men, en orden', 'All of Marvel and X-Men, in order')}</h2>
           <ol className="bienvenida-pasos">
-            <li>{tr(<><b>117 títulos en orden cronológico</b> de la historia: la saga X-Men a un lado, el UCM al otro, los cómics en su pestaña — y una bóveda de animación aparte.</>, <><b>117 titles in chronological story order</b>: the X-Men saga on one side, the MCU on the other, comics in their own tab — plus a separate animation vault.</>)}</li>
+            <li>{tr(<><b>{N_TITULOS_TODOS} títulos en orden cronológico</b> de la historia: la saga X-Men a un lado, el UCM al otro, los cómics en su pestaña — y una bóveda de animación aparte.</>, <><b>{N_TITULOS_TODOS} titles in chronological story order</b>: the X-Men saga on one side, the MCU on the other, comics in their own tab — plus a separate animation vault.</>)}</li>
             <li>{tr(<><b>Marca lo visto</b> con la casilla redonda de cada tarjeta — o entra en la ficha para episodios, tráiler, sinopsis y escenas post-créditos.</>, <><b>Check off what you’ve watched</b> with the round box on each card — or open the title for episodes, trailer, synopsis and post-credit scenes.</>)}</li>
             <li>{tr(<><b>La cuenta atrás de Doomsday</b> te dice el ritmo que necesitas; el Plan de sesión te propone qué ver hoy.</>, <><b>The Doomsday countdown</b> tells you the pace you need; the Session plan suggests what to watch today.</>)}</li>
           </ol>
@@ -2238,6 +2240,25 @@ function AvisoNuevo({ onProbar }) {
 // recarga trae la nueva). Como mucho una consulta cada 10 minutos, y la
 // primera a los 8 s de arrancar para no competir con el arranque.
 const SELLO = typeof __BUILD__ === 'string' ? __BUILD__ : ''
+// Aviso breve con «Deshacer» (desmarcar, quitar temporada, serie completa,
+// empezar de cero). Se va solo; uno nuevo sustituye al anterior.
+function Deshacer({ aviso, onCerrar }) {
+  const cerrar = useRef(onCerrar)
+  cerrar.current = onCerrar
+  useEffect(() => {
+    if (!aviso) return undefined
+    const t = setTimeout(() => cerrar.current(), aviso.ms)
+    return () => clearTimeout(t)
+  }, [aviso])
+  if (!aviso) return null
+  return (
+    <div className="deshacer" role="status" key={aviso.id}>
+      <span className="deshacer-texto">{aviso.texto}</span>
+      <button type="button" onClick={() => { aviso.restaura(); cerrar.current() }}>{tr('Deshacer', 'Undo')}</button>
+    </div>
+  )
+}
+
 function VersionNueva() {
   const [hay, setHay] = useState(false)
   useEffect(() => {
@@ -3355,7 +3376,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             {vista && <span className={`sello${estampa ? ' estampa' : ''}`} aria-hidden="true">{esComic ? tr('LEÍDO', 'READ') : tr('VISTA', 'SEEN')}</span>}
           </div>
           <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
-            {vista ? tr('✓ Vista — marcar pendiente', '✓ Watched — mark pending') : esComic ? tr('Marcar como leído', 'Mark as read') : tr('Marcar como vista', 'Mark as watched')}
+            {vista ? (esComic ? tr('✓ Leído — marcar pendiente', '✓ Read — mark pending') : tr('✓ Vista — marcar pendiente', '✓ Watched — mark pending')) : esComic ? tr('Marcar como leído', 'Mark as read') : tr('Marcar como vista', 'Mark as watched')}
           </button>
         </div>
         {persona ? (
@@ -4521,8 +4542,62 @@ export default function App() {
     localStorage.removeItem(KEY_SYNC)
   }
 
+  // Deshacer (revisión ux-heuristics, 15 sep 2026): desmarcar un título o quitar
+  // una temporada era un toque sin vuelta atrás, y volver a marcar ponía la fecha
+  // de hoy (reescribía calendario, mapa y racha). Un aviso de 5 s lo devuelve con
+  // sus fechas. Por ref: las tarjetas memoizadas guardan un toggle de otro render.
+  const [deshacer, setDeshacer] = useState(null)
+  const ofreceDeshacer = (texto, restaura, ms = 5000) => setDeshacer({ id: Date.now(), texto, restaura, ms })
+  const vistasRef = useRef(vistas); vistasRef.current = vistas
+  const epsRef = useRef(eps); epsRef.current = eps
+  const restauraEps = guardadas => setEps(prev => {
+    const next = { ...prev, ...guardadas }
+    try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
+    return next
+  })
+  const marcaTemporada = (id, s, marcar) => {
+    if (!marcar) {
+      const guardadas = {}
+      ;(EPISODES[id] || []).filter(e => e.s === s).forEach(e => {
+        const k = `${id}:${e.s}:${e.n}`
+        if (epsRef.current[k]) guardadas[k] = epsRef.current[k]
+      })
+      const n = Object.keys(guardadas).length
+      if (n) ofreceDeshacer(tr(`${n} episodio${n === 1 ? '' : 's'} quitado${n === 1 ? '' : 's'}`, `${n} episode${n === 1 ? '' : 's'} removed`), () => restauraEps(guardadas))
+    }
+    marcaTemporadaEps(id, s, marcar)
+  }
+  // Una serie con todos sus episodios marcados cuenta como vista: antes el
+  // progreso y «Siguiente» la seguían dando por pendiente. Solo al COMPLETARLA
+  // (el cambio que la deja entera), así desmarcarla a mano no la vuelve a marcar.
+  const epsAntes = useRef(eps)
+  useEffect(() => {
+    const antes = epsAntes.current
+    epsAntes.current = eps
+    if (antes === eps) return
+    const completas = Object.keys(EPISODES).filter(id => {
+      const lista = EPISODES[id]
+      const entera = m => lista.length > 0 && lista.every(e => m[`${id}:${e.s}:${e.n}`])
+      return entera(eps) && !entera(antes) && !vistasRef.current[id]
+    })
+    if (!completas.length) return
+    const ahora = Date.now()
+    setVistas(prev => {
+      const next = { ...prev }
+      completas.forEach(id => { if (!next[id]) next[id] = ahora })
+      try { localStorage.setItem(KEY, JSON.stringify(next)) } catch {}
+      return next
+    })
+    const d = completas.length === 1 && buscaItem(completas[0])
+    ofreceDeshacer(d ? tr(`Serie completa: ${d.item.t}`, `Series complete: ${d.item.t}`) : tr('Serie completa', 'Series complete'), () => setVistas(prev => {
+      const next = { ...prev }
+      completas.forEach(id => { if (next[id] === ahora) delete next[id] })
+      try { localStorage.setItem(KEY, JSON.stringify(next)) } catch {}
+      return next
+    }))
+  }, [eps])
   // toda una temporada de un golpe: marca lo pendiente o la vacía entera
-  const marcaTemporada = (id, s, marcar) => setEps(prev => {
+  const marcaTemporadaEps = (id, s, marcar) => setEps(prev => {
     const next = { ...prev }
     ;(EPISODES[id] || []).filter(e => e.s === s).forEach(e => {
       const k = `${id}:${e.s}:${e.n}`
@@ -4542,7 +4617,21 @@ export default function App() {
     return next
   })
 
-  const toggle = id => setVistas(prev => {
+  const toggle = id => {
+    const antes = vistasRef.current[id]
+    if (antes) {
+      const d = buscaItem(id)
+      const t = d ? d.item.t : ''
+      ofreceDeshacer(tr(`Pendiente: ${t}`, `Pending: ${t}`), () => setVistas(prev => {
+        if (prev[id]) return prev
+        const next = { ...prev, [id]: antes }
+        try { localStorage.setItem(KEY, JSON.stringify(next)) } catch {}
+        return next
+      }))
+    }
+    toggleVista(id)
+  }
+  const toggleVista = id => setVistas(prev => {
     const next = { ...prev }
     if (next[id]) delete next[id]; else { next[id] = Date.now(); suenaPop() }
     tic()
@@ -6203,7 +6292,7 @@ export default function App() {
             <button className="cerrar" onClick={() => setAjustes(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
             <div className="modal-info">
               <h2 className="modal-titulo">{tr('Ajustes', 'Settings')}</h2>
-              <p className="modal-res">{tr('Se guardan en este navegador. Lo que cambies aquí no afecta a tu progreso.', 'Saved in this browser. Nothing you change here touches your progress.')}</p>
+              <p className="modal-res">{tr('Se guardan en este navegador. Salvo «Tu progreso» y «Empezar de cero», nada de aquí toca lo que llevas visto.', 'Saved in this browser. Apart from “Your progress” and “Start over”, nothing here touches what you’ve watched.')}</p>
 
               <CuentaAjuste cuenta={cuenta} estado={syncEstado} onCredencial={entrarCuenta} onSalir={salirCuenta} />
 
@@ -6295,7 +6384,17 @@ export default function App() {
                 </div>
               </div>
 
-              <Datos onReset={() => { setVistas({}); setLecturas({}); setPlegadas({}); try { localStorage.setItem(KEY, '{}'); localStorage.removeItem(KEY_PLEGADAS) } catch {} }} />
+              <Datos onReset={() => {
+                // borra también los episodios (la pista decía «lo visto» y las
+                // series seguían con «5/26 ep») y se puede deshacer 10 s
+                const copia = { v: vistas, e: eps, l: lecturas }
+                setVistas({}); setEps({}); setLecturas({}); setPlegadas({})
+                try { localStorage.setItem(KEY, '{}'); localStorage.setItem(KEY_EPS, '{}'); localStorage.removeItem(KEY_PLEGADAS) } catch {}
+                ofreceDeshacer(tr('Progreso borrado', 'Progress erased'), () => {
+                  setVistas(copia.v); setEps(copia.e); setLecturas(copia.l)
+                  try { localStorage.setItem(KEY, JSON.stringify(copia.v)); localStorage.setItem(KEY_EPS, JSON.stringify(copia.e)) } catch {}
+                }, 10000)
+              }} />
 
               <div className="ajuste">
                 <div className="ajuste-cab">
@@ -6415,6 +6514,7 @@ export default function App() {
 
       <Footer onAjustes={() => setAjustes(true)} nota={enMaraton} />
       <VersionNueva />
+      <Deshacer aviso={deshacer} onCerrar={() => setDeshacer(null)} />
     </div>
   )
 }
@@ -6788,7 +6888,7 @@ function Datos({ onReset }) {
       <div className="ajuste">
         <div className="ajuste-cab">
           <h3 className="ajuste-titulo">{tr('Empezar de cero', 'Start over')}</h3>
-          <p className="ajuste-pista">{tr('Borra lo visto y las lecturas de este navegador. Las notas, las listas y los ajustes se quedan.', 'Erases watched titles and readings from this browser. Notes, lists and settings stay.')}</p>
+          <p className="ajuste-pista">{tr('Borra lo visto (títulos y episodios) y las lecturas de este navegador; durante unos segundos se puede deshacer. Las notas, las listas y los ajustes se quedan.', 'Erases watched titles, episodes and readings from this browser; you can undo it for a few seconds. Notes, lists and settings stay.')}</p>
         </div>
         <div className="ajuste-ops">
           <button className="chip-btn" onClick={() => setConfirmando(c => !c)}>
