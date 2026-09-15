@@ -4635,10 +4635,17 @@ export default function App() {
   // progreso y «Siguiente» la seguían dando por pendiente. Solo al COMPLETARLA
   // (el cambio que la deja entera), así desmarcarla a mano no la vuelve a marcar.
   const epsAntes = useRef(eps)
+  // Solo cuando la marca la pone el usuario aquí (un episodio, una temporada):
+  // no al sincronizar (en otro dispositivo pudo desmarcar la serie a mano, y
+  // re-marcarla la subía de vuelta) ni al deshacer o restaurar (volvían a
+  // marcar con fecha de hoy series desmarcadas a mano). Lo cazó code-review.
+  const completarAlMarcar = useRef(false)
   useEffect(() => {
     const antes = epsAntes.current
     epsAntes.current = eps
     if (antes === eps) return
+    if (!completarAlMarcar.current) return
+    completarAlMarcar.current = false
     const completas = Object.keys(EPISODES).filter(id => {
       const lista = EPISODES[id]
       const entera = m => lista.length > 0 && lista.every(e => m[`${id}:${e.s}:${e.n}`])
@@ -4665,7 +4672,7 @@ export default function App() {
     const next = { ...prev }
     ;(EPISODES[id] || []).filter(e => e.s === s).forEach(e => {
       const k = `${id}:${e.s}:${e.n}`
-      if (marcar) { if (!next[k]) next[k] = Date.now() } else delete next[k]
+      if (marcar) { if (!next[k]) { next[k] = Date.now(); completarAlMarcar.current = true } } else delete next[k]
     })
     try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
     tic()
@@ -4675,7 +4682,7 @@ export default function App() {
 
   const toggleEp = clave => setEps(prev => {
     const next = { ...prev }
-    if (next[clave]) delete next[clave]; else { next[clave] = Date.now(); suenaPop() }
+    if (next[clave]) delete next[clave]; else { next[clave] = Date.now(); completarAlMarcar.current = true; suenaPop() }
     tic()
     try { localStorage.setItem(KEY_EPS, JSON.stringify(next)) } catch {}
     return next

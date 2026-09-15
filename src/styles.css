@@ -2775,3 +2775,17 @@ a.prov-chip:hover{border-color:var(--ink3)}
    crecía con la reseña y la fila, que envuelve, lo mandaba a la línea siguiente */
 .cal-detalle .plan-fila{flex-wrap:nowrap; align-items:flex-start}
 .cal-detalle .plan-fila .ep-info{flex:1 1 0; min-width:0}
+/* el detalle del día al lado de la cuadrícula (debajo dejaba media caja vacía
+   junto a un calendario de 420 px) SOLO si el bloque es ancho: por ventana no
+   vale, a 1280 px el panel lateral deja el bloque en 670 px y la columna del
+   detalle quedaba en 185 px */
+/* con container-type el bloque ya no toma el ancho de su contenido: sin width
+   se encogía a 32 px en el escritorio de dos columnas */
+.cal-inicio{container-type:inline-size; width:100%; box-sizing:border-box}
+@container (min-width: 760px){
+  .cal-inicio-cuerpo{display:grid; grid-template-columns:minmax(0, 420px) minmax(0, 1fr); column-gap: var(--e-7); align-items:start}
+  .cal-inicio-cuerpo > .grafica-sub{grid-column:1 / -1}
+  .cal-inicio-cuerpo > .cal-cab{grid-column:1; margin-top:0}
+  .cal-inicio-cuerpo > .cal-grid{grid-column:1}
+  .cal-inicio-cuerpo > .cal-detalle{grid-column:2; grid-row:2 / span 2; margin-top:0}
+}
