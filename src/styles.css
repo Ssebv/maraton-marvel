@@ -2247,7 +2247,12 @@ main.crono, main.comics, main.estreno{animation:none}
 
   /* Sin blur bajo la hoja: desenfocar una página llena de carátulas mientras
      la hoja sube era el tirón más visible del móvil. Un velo más oscuro cumple. */
-  .overlay{place-items:end center; padding: 0; -webkit-backdrop-filter:none; backdrop-filter:none; background:rgba(8,10,14,calc(.74 * (1 - var(--arrastre))))}
+  /* El velo es un ::before con OPACIDAD, no el fondo del .overlay: animar el
+     color del fondo (o la variable de la que depende) repinta la pantalla
+     entera en cada fotograma; la opacidad de una capa la mueve la GPU. El
+     gesto sigue aclarándolo con --arrastre (heredado, ver @property). */
+  .overlay{place-items:end center; padding: 0; -webkit-backdrop-filter:none; backdrop-filter:none; background:transparent}
+  .overlay::before{content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:rgba(8,10,14,.74); opacity:calc(1 - var(--arrastre))}
   .modal{
     max-width:none; width:100%; border-radius:var(--r-l) var(--r-l) 0 0; border-bottom:none;
     max-height:92vh; max-height:92dvh; padding-top: var(--e-6);
@@ -2257,8 +2262,10 @@ main.crono, main.comics, main.estreno{animation:none}
   /* al abrir, el velo se oscurece por su color, como al cerrar: la opacidad
      del .overlay (fadeIn, 200 ms) se llevaba también la hoja, que vive dentro,
      y acababa mucho antes que su muelle de 500 ms */
-  .overlay{animation:entraVeloMovil var(--muelle-hoja-dur) var(--curva-hoja) both}
-  @keyframes entraVeloMovil{from{--arrastre:1}}
+  .overlay{animation:none}
+  /* solo `from`: al acabar manda otra vez calc(1 - --arrastre) y el gesto aclara */
+  .overlay::before{animation:veloEntra var(--muelle-hoja-dur) var(--curva-hoja) both}
+  @keyframes veloEntra{from{opacity:0}}
   .modal{
   }
   /* La hoja baja entera y el velo se aclara con ella, a la misma duración y con
@@ -2266,9 +2273,9 @@ main.crono, main.comics, main.estreno{animation:none}
      aclara el gesto), no la opacidad del .overlay: la hoja vive dentro, y con
      la opacidad se desvanecía con el velo a los ~100 ms, con un cuarto del
      recorrido hecho (medido en capturas a velocidad real). */
-  .overlay.saliendo{animation:fueraVeloMovil var(--dur-larga) var(--curva-hoja) both}
+  .overlay.saliendo{animation:none}
+  .overlay.saliendo::before{animation:fueraVelo var(--dur-larga) var(--curva-hoja) both}
   .overlay.saliendo .modal{animation:fueraHojaMovil var(--dur-larga) var(--curva-hoja) both}
-  @keyframes fueraVeloMovil{to{--arrastre:1}}
   @keyframes fueraHojaMovil{to{transform:translateY(105%)}}
   .modal::before{
     content:""; position:sticky; top:-18px; display:block; margin: calc(-1 * var(--e-4)) auto var(--e-3);
@@ -2660,9 +2667,9 @@ a.prov-chip:hover{border-color:var(--ink3)}
    el dock desapareció en producción por eso. Ahí el fundido son dos
    pseudoelementos de la barra con la línea de tiempo del carril con nombre. */
 @property --fun-izq{syntax:"<length>"; inherits:false; initial-value:0px}
-/* registrado para poder animarlo al cerrar la hoja móvil (fueraVeloMovil); sin
-   registro una animación de variable salta de golpe a mitad */
-@property --arrastre{syntax:"<number>"; inherits:false; initial-value:0}
+/* registrado como número para que calc() con él valga en `opacity`; heredado
+   porque lo lee el ::before del velo (móvil) y el gesto lo pone en el .overlay */
+@property --arrastre{syntax:"<number>"; inherits:true; initial-value:0}
 @property --fun-der{syntax:"<length>"; inherits:false; initial-value:0px}
 @supports (animation-timeline: scroll()){
   .subvistas, .proximos, .mapa-mv-wrap, .seguir-lista{
