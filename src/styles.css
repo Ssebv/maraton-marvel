@@ -2944,3 +2944,40 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 
 /* en oscuro el borde --line sobre --gold-soft casi desaparecía (revisión HIG) */
 .valora-rapido-resena{border-color:color-mix(in srgb, var(--ink) 25%, transparent)}
+
+/* Solo para lectores de pantalla (el punto de logro nuevo se dice con palabras) */
+.solo-lector{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+
+/* Logro nuevo sin ver (15 sep 2026): punto rojo en la pestaña Perfil, con un
+   aro del color de la barra para separarlo del icono o del rótulo */
+.tab-insignia{
+  position:absolute; top:7px; right:12px; z-index:2; width:8px; height:8px; pointer-events:none;
+  border-radius:var(--r-pill); background:var(--red); box-shadow:0 0 0 2px var(--panel2);
+  animation:insigniaEntra var(--muelle-pop) both;
+}
+@keyframes insigniaEntra{from{transform:scale(0)}}
+@media (max-width:720px){
+  nav.tabs .tab-insignia{top:1px; right:auto; left:calc(50% + 4px); box-shadow:0 0 0 2px var(--panel)}
+}
+/* y dentro, en Logros, la tarjeta que acabas de ganar */
+.logro{position:relative}
+.logro.nuevo{border-color:var(--red)}
+/* sobre el borde de arriba, como una muesca: dentro de la tarjeta (143 px en
+   el móvil) tapaba el emoji, medido por CDP */
+.logro-nuevo{
+  position:absolute; top:0; left:50%; transform:translate(-50%, -50%); white-space:nowrap;
+  font-size: var(--t-xs); font-weight:700; letter-spacing:.04em; text-transform:uppercase; line-height:1.6;
+  padding:0 var(--e-3); border-radius:var(--r-pill); background:var(--red); color:var(--sobre-acento);
+}
+@media (prefers-reduced-motion: reduce){ .tab-insignia{animation:none} }
+
+/* Subvistas del móvil: el borde se funde por el lado donde queda más carril
+   (las clases las pone App según el scroll), para que se vea que sigue */
+@media (max-width:720px){
+  .subvistas.mas-der{-webkit-mask-image:linear-gradient(to right, #000 calc(100% - 44px), transparent); mask-image:linear-gradient(to right, #000 calc(100% - 44px), transparent)}
+  .subvistas.mas-izq{-webkit-mask-image:linear-gradient(to left, #000 calc(100% - 44px), transparent); mask-image:linear-gradient(to left, #000 calc(100% - 44px), transparent)}
+  .subvistas.mas-izq.mas-der{-webkit-mask-image:linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent); mask-image:linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent)}
+}
+
+/* la muesca «Nuevo» sobresale 9 px por arriba: sitio para que no roce el título del grupo */
+.logros{padding-top: var(--e-2)}

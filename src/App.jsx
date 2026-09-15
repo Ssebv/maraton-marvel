@@ -4190,7 +4190,8 @@ const LOGROS = [
   { id: 'resenas', g: 'habitos', e: '✍️', t: 'Pluma afilada', d: 'Escribe 3 reseñas', f: v => Object.values(v.notas || {}).filter(n => n && n.txt && n.txt.trim()).length >= 3, p: v => [Math.min(3, Object.values(v.notas || {}).filter(n => n && n.txt && n.txt.trim()).length), 3] },
 ]
 
-function Logros({ ctx }) {
+const KEY_LOGROS_VISTOS = 'maraton-marvel-logros-vistos-v1'
+function Logros({ ctx, nuevos }) {
   // se evalúa cada logro una vez por render (antes dos: contar y pintar)
   const estado = LOGROS.map(l => ({ l, ok: !!l.f(ctx), p: l.p ? l.p(ctx) : null }))
   const desbloqueados = estado.filter(x => x.ok).length
@@ -4206,7 +4207,8 @@ function Logros({ ctx }) {
             <h4 className="logros-grupo-titulo">{tr(es, en)} <span>{del.filter(x => x.ok).length}/{del.length}</span></h4>
             <div className="logros">
               {del.map(({ l, ok, p }) => (
-                <div key={l.id} className={`logro${ok ? ' ok' : ''}`} title={l.d}>
+                <div key={l.id} className={`logro${ok ? ' ok' : ''}${ok && nuevos && nuevos.includes(l.id) ? ' nuevo' : ''}`} title={l.d}>
+                  {ok && nuevos && nuevos.includes(l.id) && <span className="logro-nuevo">{tr('Nuevo', 'New')}</span>}
                   <span className="logro-emoji" aria-hidden="true">{l.e}</span>
                   <span className="logro-nombre">{l.t}</span>
                   <span className="logro-desc">{l.d}</span>
@@ -4722,6 +4724,14 @@ export default function App() {
       if (e.key === '/' && !enCampo) {
         const campo = document.querySelector('input[name="busqueda"]')
         if (campo) { e.preventDefault(); campo.focus() }
+      }
+      // 1, 2 y 3 cambian de sección, como tocar la pestaña (en la que ya
+      // estás, sube al principio). Fuera de campos y de capas.
+      if (/^[1-3]$/.test(e.key) && !enCampo && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey
+          && !document.querySelector('.overlay, .lector, .cine')) {
+        const pestana = document.querySelectorAll('nav.tabs .tab')[Number(e.key) - 1]
+        if (pestana) { e.preventDefault(); pestana.click() }
+        return
       }
       // Atajos de lista en escritorio: j/k pasan de tarjeta, v marca vista,
       // Enter (nativo del botón) abre la ficha. Fuera de campos y de capas.
@@ -5764,17 +5774,81 @@ export default function App() {
   const [navGrupo, navIndicador] = useIndicador(`${destinoDe(vista)}|${esMovil}`)
   const [subGrupo, subIndicador] = useIndicador(vista)
   const [mvGrupo, mvIndicador] = useIndicador(`${vista}|${mvModo}`)
+  // Logro nuevo (15 sep 2026): la pestaña Perfil lleva un punto cuando se ha
+  // desbloqueado algo que aún no has visto, y tocarla lleva a Estadísticas.
+  // Los vistos se guardan al SALIR de Estadísticas (o al cerrar la app en
+  // ella), para que dentro se puedan señalar con «Nuevo». La primera vez se
+  // dan por vistos los que ya había: nadie estrena la función con 12 avisos.
+  const ctxLogros = useMemo(() => ({
+    vistas,
+    eps,
+    notas,
+    horasVistas: estadisticas.vistoMin / 60,
+    titulosVistos: estadisticas.titulosVistos,
+    titulosTot: estadisticas.titulosTot,
+    xmenCompleto: DATA[0].eras.every(era => era.items.every(it => vistas[it.id])),
+    expressCompleta: DATA.slice(0, 2).every(sg => sg.eras.every(era => era.items.filter(it => it.exp).every(it => vistas[it.id]))),
+    todoCompleto: DATA.every(sg => sg.eras.every(era => era.items.every(it => vistas[it.id]))),
+  }), [vistas, eps, notas, estadisticas])
+  const logrosOk = useMemo(() => LOGROS.filter(l => l.f(ctxLogros)).map(l => l.id), [ctxLogros])
+  const [logrosVistos, setLogrosVistos] = useState(() => {
+    try { const g = JSON.parse(localStorage.getItem(KEY_LOGROS_VISTOS)); return Array.isArray(g) ? g : null } catch { return null }
+  })
+  const ultimosOk = useRef(logrosOk); ultimosOk.current = logrosOk
+  const marcaLogrosVistos = () => setLogrosVistos(v => {
+    const union = [...new Set([...(v || []), ...ultimosOk.current])]
+    try { localStorage.setItem(KEY_LOGROS_VISTOS, JSON.stringify(union)) } catch {}
+    return union
+  })
+  useEffect(() => { if (logrosVistos === null) marcaLogrosVistos() }, [logrosVistos])
+  const enStats = vista === 'stats'
+  useEffect(() => {
+    if (!enStats) return undefined
+    const alOcultar = () => { if (document.visibilityState === 'hidden') marcaLogrosVistos() }
+    window.addEventListener('pagehide', marcaLogrosVistos)
+    document.addEventListener('visibilitychange', alOcultar)
+    return () => {
+      window.removeEventListener('pagehide', marcaLogrosVistos)
+      document.removeEventListener('visibilitychange', alOcultar)
+      marcaLogrosVistos()
+    }
+  }, [enStats])
+  const nuevosLogros = logrosVistos ? logrosOk.filter(id => !logrosVistos.includes(id)) : []
+  // Subvistas en el móvil: el carril mide 513 px en 390 y «Línea temporal»
+  // quedaba fuera sin ninguna pista. El borde se funde solo por el lado donde
+  // queda más, y la activa se centra al llegar (antes podía estar fuera).
+  useEffect(() => {
+    const g = subGrupo.current
+    if (!g) return undefined
+    const act = g.querySelector('[aria-current="page"]')
+    if (act && g.scrollWidth > g.clientWidth + 1) g.scrollLeft = Math.max(0, act.offsetLeft - (g.clientWidth - act.offsetWidth) / 2)
+    const marca = () => {
+      const max = g.scrollWidth - g.clientWidth
+      g.classList.toggle('mas-izq', g.scrollLeft > 2)
+      g.classList.toggle('mas-der', max > 2 && g.scrollLeft < max - 2)
+    }
+    marca()
+    g.addEventListener('scroll', marca, { passive: true })
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(marca) : null
+    if (ro) ro.observe(g)
+    return () => { g.removeEventListener('scroll', marca); if (ro) ro.disconnect() }
+  }, [vista, idioma])
   if (perfil) return <PerfilView {...perfil} />
 
   const navTabs = (
     <nav className="tabs" ref={navGrupo} aria-label={tr('Secciones', 'Sections')}>
       <span className="indicador" ref={navIndicador} aria-hidden="true" />
-      {DESTINOS.map(d => {
-        // volver a un destino te devuelve donde lo dejaste
-        const destino = ultimaVista[d.id] || d.vistas[0]
+      {DESTINOS.map((d, i) => {
+        // un logro sin ver: punto en Perfil (salvo si ya estás en Estadísticas)
+        const insignia = d.id === 'mio' && !enStats && nuevosLogros.length > 0
+        // volver a un destino te devuelve donde lo dejaste; con logro nuevo, a
+        // Estadísticas, que es donde está
+        const destino = insignia ? 'stats' : (ultimaVista[d.id] || d.vistas[0])
         return (
           <a className="tab" key={d.id} href={'#' + destino}
             aria-current={destinoDe(vista) === d.id ? 'page' : undefined}
+            aria-keyshortcuts={String(i + 1)}
+            title={esMovil ? undefined : tr(`${d.label} (tecla ${i + 1})`, `${d.en || d.label} (key ${i + 1})`)}
             onClick={e => {
               if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
               e.preventDefault()
@@ -5784,6 +5858,10 @@ export default function App() {
             }}>
             {ICONOS_DESTINO[d.id]}
             <span className="tab-rotulo">{tr(d.label, d.en || d.label)}</span>
+            {insignia && <>
+              <span className="tab-insignia" aria-hidden="true" />
+              <span className="solo-lector">{nuevosLogros.length === 1 ? tr(', 1 logro nuevo', ', 1 new achievement') : tr(`, ${nuevosLogros.length} logros nuevos`, `, ${nuevosLogros.length} new achievements`)}</span>
+            </>}
           </a>
         )
       })}
@@ -6421,17 +6499,7 @@ export default function App() {
 
           <Diario vistas={vistas} notas={notas} pais={pais} idioma={idioma} />
 
-          <Logros ctx={{
-            vistas,
-            eps,
-            notas,
-            horasVistas: estadisticas.vistoMin / 60,
-            titulosVistos: estadisticas.titulosVistos,
-            titulosTot: estadisticas.titulosTot,
-            xmenCompleto: DATA[0].eras.every(era => era.items.every(it => vistas[it.id])),
-            expressCompleta: DATA.slice(0, 2).every(sg => sg.eras.every(era => era.items.filter(it => it.exp).every(it => vistas[it.id]))),
-            todoCompleto: DATA.every(sg => sg.eras.every(era => era.items.every(it => vistas[it.id]))),
-          }} />
+          <Logros ctx={ctxLogros} nuevos={nuevosLogros} />
 
           <section className="grafica">
             <h3 className="grafica-titulo">{tr('Horas por fase y era', 'Hours by phase and era')}</h3>
