@@ -611,15 +611,19 @@ async function cargaTmdbRed(itemId) {
 }
 function useTmdb(item, idioma) {
   const [extra, setExtra] = useState(() => tmdbMem[tmdbPref() + item.id] || null)
+  // si TMDB no responde (sin conexión, caído) la ficha lo dice en vez de dejar
+  // huecos: fotograma reservado vacío, sin «Hoy en…» y sin reparto
+  const [fallo, setFallo] = useState(false)
   useEffect(() => {
     let vivo = true
     // al cambiar de idioma se enseña lo cacheado en ese idioma (o nada)
     // mientras llega lo nuevo, nunca la mezcla
     setExtra(tmdbMem[tmdbPref() + item.id] || null)
-    cargaTmdb(item.id).then(d => { if (vivo && d) setExtra(d) }).catch(() => {})
+    setFallo(false)
+    cargaTmdb(item.id).then(d => { if (vivo && d) setExtra(d) }).catch(() => { if (vivo) setFallo(true) })
     return () => { vivo = false }
   }, [item.id, idioma])
-  return extra
+  return [extra, fallo]
 }
 
 // «Thwip» sutil al marcar (solo si el usuario lo activa en el pie)
@@ -1867,7 +1871,7 @@ function Biblioteca({ archivos, onQuitar }) {
   )
 }
 
-function Bienvenida({ onCerrar, onExpress, pais, onPais, idioma, onIdioma, saliendo }) {
+function Bienvenida({ onCerrar, onEmpezar, onExpress, pais, onPais, idioma, onIdioma, saliendo }) {
   const ref = useRef(null)
   useDialogo(ref, onCerrar)
   return (
@@ -1897,7 +1901,7 @@ function Bienvenida({ onCerrar, onExpress, pais, onPais, idioma, onIdioma, salie
             <p className="bienvenida-pais-pista">{tr('Decide en qué plataforma ves cada título y cómo se nombran las obras. Se cambia cuando quieras en Ajustes.', 'Sets which platform each title shows and how things are named. Change it any time in Settings.')}</p>
           </div>
           <div className="bienvenida-acciones">
-            <button className="accion-principal" onClick={onCerrar}>{tr('Empezar por el principio', 'Start from the beginning')}</button>
+            <button className="accion-principal" onClick={onEmpezar || onCerrar}>{tr('Empezar por el principio', 'Start from the beginning')}</button>
             <button className="chip-btn" onClick={onExpress}>{tr('Solo lo esencial para Doomsday', 'Just the essentials for Doomsday')}</button>
           </div>
           <p className="bienvenida-nota">{ui(pais, 'Consejo: desde el móvil puedes instalarla como app (menú del navegador → «Añadir a pantalla de inicio»).', 'Tip: on your phone you can install it as an app (browser menu → "Add to Home Screen").')}</p>
@@ -3194,7 +3198,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   if (selloRef.current.id !== item.id) selloRef.current = { id: item.id, vista, en: 0 }
   else if (selloRef.current.vista !== vista) selloRef.current = { id: item.id, vista, en: vista ? performance.now() : 0 }
   const estampa = vista && performance.now() - selloRef.current.en < 700
-  const extra = useTmdb(item, idioma)
+  const [extra, falloTmdb] = useTmdb(item, idioma)
   // el fotograma que ya se conoce (src/fondos.js, precargado al tocar) sale sin
   // esperar a TMDB; cuando TMDB responde manda el suyo
   const fondo = (extra && extra.fondo) || FOTOGRAMAS[item.id] || null
@@ -3361,7 +3365,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
       {/* el hueco sobre la carátula es para el fotograma: se reserva mientras
           TMDB carga (o el contenido saltaría al llegar) y no existe para los
           cómics ni cuando la respuesta viene sin fotograma */}
-      <div className={'modal' + ((extra ? !!fondo : !d.esComic) ? ' con-fondo' : '')} ref={refModal} onClick={e => e.stopPropagation()}>
+      <div className={'modal' + ((extra || falloTmdb ? !!fondo : !d.esComic) ? ' con-fondo' : '')} ref={refModal} onClick={e => e.stopPropagation()}>
         {fondo && (
           <div className="modal-fondo" aria-hidden="true">
             <img src={`${TMDB_IMG}w780${fondo}`} alt="" decoding="async"
@@ -3378,6 +3382,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
           <button className={`accion-principal${vista ? ' hecha' : ''}`} onClick={onToggle}>
             {vista ? (esComic ? tr('✓ Leído — marcar pendiente', '✓ Read — mark pending') : tr('✓ Vista — marcar pendiente', '✓ Watched — mark pending')) : esComic ? tr('Marcar como leído', 'Mark as read') : tr('Marcar como vista', 'Mark as watched')}
           </button>
+          {falloTmdb && !extra && !esComic && (
+            <p className="aviso-sin-red" role="status">{tr('Sin conexión con TMDB: faltan el reparto, el tráiler y dónde verla. Vuelve a abrirla con conexión.', 'Can’t reach TMDB: cast, trailer and where to watch are missing. Reopen it when you’re online.')}</p>
+          )}
         </div>
         {persona ? (
           <FichaPersona {...persona} idioma={idioma} itemActualId={item.id} tituloActual={item.t}
@@ -5379,6 +5386,17 @@ export default function App() {
             <b>{stats.totV}</b> / {stats.totN} {tr('completados', 'completed')} · {pct} % · {tr('te quedan', 'left:')} <b>{Math.round(stats.mins / 60)} h</b>
           </span>
         </p>
+        {/* en el móvil los filtros viven en un carril que se desliza: con uno
+            puesto (la bienvenida pone la Ruta express) faltaban títulos y
+            cambiaba «Siguiente» sin nada a la vista que lo explicara */}
+        {filtrosActivos > 0 && (
+          <p className="filtros-movil" role="status">
+            <span>{filtros.express && filtrosActivos === 1
+              ? tr('Ruta express activa', 'Express route on')
+              : tr(`${filtrosActivos} filtro${filtrosActivos === 1 ? '' : 's'} activo${filtrosActivos === 1 ? '' : 's'}`, `${filtrosActivos} filter${filtrosActivos === 1 ? '' : 's'} on`)}</span>
+            <button className="filtros-quitar" onClick={() => setFiltros(sinFiltros())}>{tr('Quitar', 'Clear')}</button>
+          </p>
+        )}
       </section>
       ) : (
         <CabeceraDestino esMovil={esMovil} onAjustes={() => setAjustes(true)}
@@ -6193,6 +6211,14 @@ export default function App() {
       )}
       {bienvenidaMontada && (
         <Bienvenida saliendo={bienvenidaSale} pais={pais} onPais={ponPais} idioma={idioma} onIdioma={ponIdioma} onCerrar={cierraBienvenida}
+          onEmpezar={() => {
+            // «Empezar por el principio» abre la ficha del primer título (qué es,
+            // dónde verlo, «Marcar como vista»): antes solo cerraba y dejaba al
+            // recién llegado delante de la lista sin un primer paso
+            const primero = stats.siguiente && buscaItem(stats.siguiente.id)
+            cierraBienvenida()
+            if (primero) setTimeout(() => setDetalle(primero), DUR_SALIDA)
+          }}
           onExpress={() => { if (!filtros.express) setF('express'); cierraBienvenida() }} />
       )}
       {clubMontado && (
@@ -6296,6 +6322,33 @@ export default function App() {
 
               <CuentaAjuste cuenta={cuenta} estado={syncEstado} onCredencial={entrarCuenta} onSalir={salirCuenta} />
 
+              {/* idioma y país arriba: la bienvenida dice «se cambia en Ajustes» y
+                  estaban al final, tras las herramientas de datos */}
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo" id="aj-idioma">{tr('Idioma', 'Language')}</h3>
+                  <p className="ajuste-pista">{tr('La interfaz, los títulos y los textos. En español, el país decide además el matiz («Lobezno» o «Wolverine»).', 'Interface, titles and texts. In Spanish, your country also picks the regional flavor ("Lobezno" vs "Wolverine").')}</p>
+                </div>
+                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-idioma">
+                  <button className="chip-btn" role="radio" aria-checked={idioma === 'es'} onClick={() => ponIdioma('es')}>Español</button>
+                  <button className="chip-btn" role="radio" aria-checked={idioma === 'en'} onClick={() => ponIdioma('en')}>English</button>
+                </div>
+              </div>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">{tr('País', 'Country')}</h3>
+                  <p className="ajuste-pista">{tr('Decide en qué plataforma aparece cada título, el filtro «En Disney+» y cómo se nombran las obras y sus personajes: como en España o como en Latinoamérica («Lobezno inmortal» o «Wolverine: Inmortal», «el Lapso» o «el Blip»). Los catálogos cambian cada mes y se revisan con la app.', 'Sets which platform each title shows, the “On Disney+” filter and, in Spanish, how works and characters are named. Catalogs change monthly and refresh with the app.')}</p>
+                </div>
+                <div className="ajuste-ops">
+                  <span className="sel-envuelto">
+                    <select className="selector" value={pais} aria-label={tr('País', 'Country')} onChange={e => ponPais(e.target.value)}>
+                      {PAISES.map(p => <option key={p.id} value={p.id}>{tr(p.nombre, PAIS_EN[p.id] || p.nombre)}</option>)}
+                    </select>
+                  </span>
+                </div>
+              </div>
+
               <div className="ajuste">
                 <div className="ajuste-cab">
                   <h3 className="ajuste-titulo" id="aj-densidad">{tr('Densidad', 'Density')}</h3>
@@ -6395,31 +6448,6 @@ export default function App() {
                   try { localStorage.setItem(KEY, JSON.stringify(copia.v)); localStorage.setItem(KEY_EPS, JSON.stringify(copia.e)) } catch {}
                 }, 10000)
               }} />
-
-              <div className="ajuste">
-                <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo" id="aj-idioma">{tr('Idioma', 'Language')}</h3>
-                  <p className="ajuste-pista">{tr('La interfaz, los títulos y los textos. En español, el país decide además el matiz («Lobezno» o «Wolverine»).', 'Interface, titles and texts. In Spanish, your country also picks the regional flavor ("Lobezno" vs "Wolverine").')}</p>
-                </div>
-                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-idioma">
-                  <button className="chip-btn" role="radio" aria-checked={idioma === 'es'} onClick={() => ponIdioma('es')}>Español</button>
-                  <button className="chip-btn" role="radio" aria-checked={idioma === 'en'} onClick={() => ponIdioma('en')}>English</button>
-                </div>
-              </div>
-
-              <div className="ajuste">
-                <div className="ajuste-cab">
-                  <h3 className="ajuste-titulo">{tr('País', 'Country')}</h3>
-                  <p className="ajuste-pista">{tr('Decide en qué plataforma aparece cada título, el filtro «En Disney+» y cómo se nombran las obras y sus personajes: como en España o como en Latinoamérica («Lobezno inmortal» o «Wolverine: Inmortal», «el Lapso» o «el Blip»). Los catálogos cambian cada mes y se revisan con la app.', 'Sets which platform each title shows, the “On Disney+” filter and, in Spanish, how works and characters are named. Catalogs change monthly and refresh with the app.')}</p>
-                </div>
-                <div className="ajuste-ops">
-                  <span className="sel-envuelto">
-                    <select className="selector" value={pais} aria-label={tr('País', 'Country')} onChange={e => ponPais(e.target.value)}>
-                      {PAISES.map(p => <option key={p.id} value={p.id}>{tr(p.nombre, PAIS_EN[p.id] || p.nombre)}</option>)}
-                    </select>
-                  </span>
-                </div>
-              </div>
 
               <Biblioteca archivos={archivos} onQuitar={async id => { try { await borraArchivo(id) } catch {} recargaBiblioteca(); setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c }) }} />
               {!YA_INSTALADA && (ES_IOS || instalable) && (
@@ -6736,6 +6764,8 @@ function Datos({ onReset }) {
   const [codigo, setCodigo] = useState('')
   const [msgImport, setMsgImport] = useState('')
   const [confirmaImport, setConfirmaImport] = useState(null)
+  const [confirmaCopia, setConfirmaCopia] = useState(null)
+  const [msgCopia, setMsgCopia] = useState('')
   const exportar = () => {
     try {
       const datos = {
@@ -6794,8 +6824,13 @@ function Datos({ onReset }) {
       a.href = URL.createObjectURL(blob)
       a.download = `maraton-marvel-copia-${new Date().toISOString().slice(0, 10)}.json`
       a.click()
-      URL.revokeObjectURL(a.href)
-    } catch {}
+      // revocar en la misma línea podía cortar la descarga (iOS la empieza
+      // después); y antes nada decía si había salido bien
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000)
+      setMsgCopia(tr(`Copia descargada: ${a.download}`, `Backup downloaded: ${a.download}`))
+    } catch {
+      setMsgCopia(tr('No se pudo descargar la copia. Prueba «Copiar código».', 'Couldn’t download the backup. Try “Copy code”.'))
+    }
   }
   const restauraCopia = ev => {
     const archivo = ev.target.files && ev.target.files[0]
@@ -6805,6 +6840,25 @@ function Datos({ onReset }) {
       try {
         const j = JSON.parse(lector.result)
         if (j.app !== 'maraton-marvel' || !j.datos) throw new Error('formato')
+        ev.target.value = ''
+        // como «Cargar código»: si ya hay progreso, antes de sustituirlo se dice
+        // cuánto tienes y cuánto trae el archivo (antes se escribía sin preguntar)
+        let tengo = 0, traen = 0
+        try { tengo = Object.keys(JSON.parse(localStorage.getItem(KEY) || '{}')).length } catch {}
+        try { traen = Object.keys(JSON.parse(j.datos[KEY] || '{}')).length } catch {}
+        setMsgCopia('')
+        if (tengo > 0) { setConfirmaCopia({ j, tengo, traen }); return }
+        aplicaCopia(j)
+      } catch {
+        ev.target.value = ''
+        setMsgImport(tr('Ese archivo no parece una copia de la app', 'That file doesn’t look like a backup from this app'))
+        setImportando(true)
+      }
+    }
+    lector.readAsText(archivo)
+  }
+  const aplicaCopia = j => {
+    try {
         Object.entries(j.datos).forEach(([k, v]) => {
           // una copia ajena no debe poder colar una sesión de cuenta (el
           // progreso se subiría al uid del archivo): en la cuenta se entra
@@ -6813,12 +6867,9 @@ function Datos({ onReset }) {
           if (k.startsWith('maraton-marvel-') || k === KEY) localStorage.setItem(k, v)
         })
         window.location.reload()
-      } catch {
-        setMsgImport(tr('Ese archivo no parece una copia de la app', 'That file doesn’t look like a backup from this app'))
-        setImportando(true)
-      }
+    } catch {
+      setMsgCopia(tr('No se pudo restaurar la copia.', 'Couldn’t restore the backup.'))
     }
-    lector.readAsText(archivo)
   }
   return (
     <>
@@ -6864,6 +6915,28 @@ function Datos({ onReset }) {
             <button className="chip-btn" onClick={importar}>{tr('Cargar', 'Load')}</button>
             {msgImport && <span className="import-error">{msgImport}</span>}
           </span>
+        )}
+        {msgCopia && <p className="ajuste-pista" role="status">{msgCopia}</p>}
+        {confirmaCopia && (
+          <div className="aviso peligro" role="alertdialog" aria-label={tr('Confirmar restaurar copia', 'Confirm restoring backup')}>
+            <p className="aviso-texto">
+              {tr(<>Restaurar esta copia <b>sustituye</b> tu progreso: pasarías de{' '}
+              <b>{confirmaCopia.tengo} título{confirmaCopia.tengo === 1 ? '' : 's'}</b> a{' '}
+              <b>{confirmaCopia.traen} título{confirmaCopia.traen === 1 ? '' : 's'}</b>
+              {confirmaCopia.j.fecha ? ` (copia del ${new Date(confirmaCopia.j.fecha).toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' })})` : ''}.</>,
+              <>Restoring this backup <b>replaces</b> your progress: you’d go from{' '}
+              <b>{confirmaCopia.tengo} title{confirmaCopia.tengo === 1 ? '' : 's'}</b> to{' '}
+              <b>{confirmaCopia.traen} title{confirmaCopia.traen === 1 ? '' : 's'}</b>
+              {confirmaCopia.j.fecha ? ` (backup from ${new Date(confirmaCopia.j.fecha).toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' })})` : ''}.</>)}
+              {confirmaCopia.traen < confirmaCopia.tengo && tr(' Esto no se puede deshacer: descarga antes una copia si quieres conservarlo.', ' This can’t be undone: download a backup first if you want to keep it.')}
+            </p>
+            <div className="aviso-acciones">
+              <button className="chip-btn peligro" onClick={() => aplicaCopia(confirmaCopia.j)}>
+                {tr('Sí, restaurar la copia', 'Yes, restore the backup')}
+              </button>
+              <button className="chip-btn" onClick={() => setConfirmaCopia(null)}>{tr('Cancelar', 'Cancel')}</button>
+            </div>
+          </div>
         )}
         {confirmaImport && (
           <div className="aviso peligro" role="alertdialog" aria-label={tr('Confirmar carga de progreso', 'Confirm loading progress')}>

@@ -2725,3 +2725,16 @@ a.prov-chip:hover{border-color:var(--ink3)}
    de aparecer de golpe */
 .modal-fondo img{transition:opacity var(--dur-larga) var(--curva)}
 .modal-fondo img:not(.lista){opacity:0}
+
+/* Filtros activos en el móvil (bajo la línea de progreso): el carril de chips
+   se desliza y un filtro puesto no se veía */
+.filtros-movil{display:none}
+@media (max-width:640px){
+  .filtros-movil{
+    display:flex; align-items:center; gap: var(--e-3); margin: var(--e-3) 0 0;
+    font-size: var(--t-s); color:var(--ink2); font-weight:600;
+  }
+  .filtros-movil > span{min-width:0}
+}
+/* La ficha sin datos de TMDB lo dice, bajo el botón principal */
+.aviso-sin-red{margin:0; font-size: var(--t-s); color:var(--ink2); line-height:1.45; text-wrap:pretty}
