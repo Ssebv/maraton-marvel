@@ -1022,7 +1022,7 @@ async function tmdbJson(ruta, idi = tmdbIdioma()) {
 //  2. si una escritura que NO es de caché no cabe, se vacían las cachés y se
 //     reintenta: el progreso manda, las fichas se vuelven a bajar solas.
 const ES_CACHE = /^maraton-marvel-(tmdb|persona)-v[0-9]+:/
-const CACHE_VIVA = { 'maraton-marvel-tmdb-v11:': 7 * 864e5, 'maraton-marvel-persona-v3:': 30 * 864e5 }
+const CACHE_VIVA = { 'maraton-marvel-tmdb-v12:': 7 * 864e5, 'maraton-marvel-persona-v3:': 30 * 864e5 }
 function podaCaches(todo = false) {
   let n = 0
   try {
@@ -1054,6 +1054,14 @@ function cargaTmdb(itemId) {
   if (!tmdbPend[k]) tmdbPend[k] = cargaTmdbRed(itemId).finally(() => { delete tmdbPend[k] })
   return tmdbPend[k]
 }
+const nombreProveedor = n => {
+  const s = n.trim().replace(/\s+(standard\s+)?with ads$/i, '')
+  const canal = s.match(/^(.+?)\s+(amazon|apple tv) channel$/i)
+  const limpio = x => x.replace(/^disney plus$/i, 'Disney+').replace(/^amazon prime video$/i, 'Prime Video')
+    .replace(/^movistartv$/i, 'Movistar TV').replace(/^vix$/i, 'ViX').replace(/^google play movies$/i, 'Google Play')
+    .replace(/^amazon video$/i, 'Prime Video').replace(/^apple tv store$/i, 'Apple TV')
+  return canal ? `${limpio(canal[1])} (${canal[2].toLowerCase() === 'amazon' ? 'Prime Video' : 'Apple TV'})` : limpio(s)
+}
 async function cargaTmdbRed(itemId) {
   const idi = tmdbIdioma()
   const k = (idi === 'en-US' ? 'en:' : '') + itemId
@@ -1064,7 +1072,9 @@ async function cargaTmdbRed(itemId) {
   // v10: loki2 pedía la temporada 1 de TMDB (fotogramas y sinopsis de Loki T1)
   // v11: provPais pasó de 6 a 19 países — una entrada v10 no trae los nuevos
   // y la ficha caía a los proveedores de España bajo «Hoy en Bolivia»
-  const claveLS = 'maraton-marvel-tmdb-v11:' + k
+  // v12: proveedores con nombre limpio, gratis con anuncios y, si no hay
+  // ninguno, el alquiler (antes Hulk en Chile no enseñaba nada)
+  const claveLS = 'maraton-marvel-tmdb-v12:' + k
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[k] = g.d; return g.d }
@@ -1076,10 +1086,19 @@ async function cargaTmdbRed(itemId) {
     || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer')
     || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser')
   const regiones = (base['watch/providers'] && base['watch/providers'].results) || {}
-  const proveedores = region => (((regiones[region] || {}).flatrate) || [])
-    .filter(p => p && typeof p.provider_name === 'string')
-    .map(p => ({ n: p.provider_name, l: typeof p.logo_path === 'string' ? p.logo_path : null }))
-    .slice(0, 4)
+  // TMDB repite plataformas («Netflix» y «Netflix Standard with Ads») y llama
+  // «Universal+ Amazon Channel» a suscribirse a Universal+ desde Prime Video
+  const proveedores = region => {
+    const r = regiones[region] || {}
+    const lista = (arr, marca) => (Array.isArray(arr) ? arr : [])
+      .filter(p => p && typeof p.provider_name === 'string')
+      .map(p => ({ n: nombreProveedor(p.provider_name), l: typeof p.logo_path === 'string' ? p.logo_path : null, ...marca }))
+    const vistos = new Set()
+    const unicos = arr => arr.filter(p => p.n && !vistos.has(p.n.toLowerCase()) && vistos.add(p.n.toLowerCase()))
+    // hasta 4 de suscripción y 2 gratis: lo gratis no se queda fuera por ir detrás
+    const ven = [...unicos(lista(r.flatrate)).slice(0, 4), ...unicos([...lista(r.free, { g: 1 }), ...lista(r.ads, { g: 1 })]).slice(0, 2)]
+    return ven.length ? ven : unicos([...lista(r.rent, { a: 1 }), ...lista(r.buy, { a: 1 })]).slice(0, 4)
+  }
   const cred = base.credits || base.aggregate_credits
   const reparto = {}
   ;((cred && cred.crew) || []).filter(c => /Director/i.test(c.job || (c.jobs && c.jobs[0] && c.jobs[0].job) || ''))
@@ -4366,6 +4385,12 @@ const platDe = (pais, item) => {
   if (!item.plat || pais === 'ES' || /panini|unlimited|^cine/i.test(item.plat)) return item.plat
   return (PLATAFORMAS[pais] && PLATAFORMAS[pais][item.id]) || item.plat
 }
+// el mapa generado viene en español: «Solo alquiler», «ViX gratis», «No está en Chile».
+// Con varias, la línea se parte solo entre plataformas, no dentro de «Movistar TV».
+const platTexto = (pais, t) => (IDIOMA_ACTUAL !== 'en' ? t
+  : /^no está en /i.test(t) ? `Not in ${nombrePaisTr(pais)}`
+  : t.replace(/^Solo alquiler$/, 'Rent only').replace(/ gratis\b/g, ' free'))
+  .split(' / ').map(x => (t.includes(' / ') ? x.replace(/ /g, '\u00a0') : x)).join(' / ')
 const nombrePais = pais => (PAISES.find(p => p.id === pais) || PAISES[0]).nombre
 // nombre inglés de cada país (el generado trae solo el español); «the» donde
 // la gramática lo pide («Today in the United States»)
@@ -4855,7 +4880,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             {item.tipo === 'serie' && <span className="tipo serie">{tr('Serie', 'Series')}</span>}
             {item.tipo === 'esp' && <span className="tipo esp">{tr('Especial', 'Special')}</span>}
             {item.opt && <span className="tipo opc">{tr('Opcional', 'Optional')}</span>}
-            {platDe(pais, item) && <span className="tipo plat">{platDe(pais, item)}</span>}
+            {platDe(pais, item) && <span className="tipo plat">{platTexto(pais, platDe(pais, item))}</span>}
           </div>
           <h2 className="modal-titulo">{sinPartir(item.t)}</h2>
           <p className="modal-meta">
@@ -4961,9 +4986,10 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
           {esComic && <DondeLeer item={item} pais={pais} />}
           {extra && (() => {
             const provs = (extra.provPais && Array.isArray(extra.provPais[pais])) ? extra.provPais[pais] : (Array.isArray(extra.prov) ? extra.prov : [])
+            const alquiler = provs.length > 0 && provs.every(pv => pv && pv.a)
             return provs.length > 0 && (
             <div className="prov">
-              <span className="prov-label">{tr('Hoy en ', 'Today in ')}{nombrePaisTr(pais)}</span>
+              <span className="prov-label">{tr('Hoy en ', 'Today in ')}{nombrePaisTr(pais)}{alquiler && tr(', solo alquiler o compra', ', rent or buy only')}</span>
               <div className="prov-lista">
                 {provs.map((pv, i) => {
                   // la caché vieja guardaba texto suelto: se acepta la forma antigua
@@ -4976,6 +5002,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                       {logo && <img className="prov-logo" src={`${TMDB_IMG}w92${logo}`}
                         alt="" width="26" height="26" loading="lazy" />}
                       {nombre}
+                      {pv && pv.g ? <span className="prov-gratis">{tr('gratis', 'free')}</span> : null}
                     </span>
                   )
                 })}

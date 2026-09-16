@@ -1060,7 +1060,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 .tipo.esp{background:var(--gold-soft); color:var(--gold-texto)}
 .tipo.opc{background:var(--panel2); color:var(--ink2)}
 .tipo.uni{background:var(--violet-soft); color:var(--violet)}
-.tipo.plat{background:var(--teal-soft); color:var(--teal)}
+.tipo.plat{background:var(--teal-soft); color:var(--teal); white-space:normal; text-wrap:balance}
 .enlaces{display:flex; gap: var(--e-3)}
 .ico{width:15px; height:15px; flex:none; display:block}
 .ghost{
@@ -2468,6 +2468,7 @@ main.crono, main.comics, main.estreno{animation:none}
 }
 a.prov-chip{text-decoration:none; padding-left: var(--e-4); cursor:pointer}
 a.prov-chip:hover{border-color:var(--ink3)}
+.prov-gratis{font-size: var(--t-xs); font-weight:700; color:var(--teal); background:var(--teal-soft); padding:1px var(--e-2); border-radius:var(--r-s)}
 .prov-nota{margin:0; font-size: var(--t-s); color:var(--ink3)}
 @media (hover: none), (pointer: coarse){ a.prov-chip{min-height:44px} }
 .trailer-caja{position:relative; width:100%; aspect-ratio:16/9; border-radius:var(--r-m); overflow:hidden; background:#000}

@@ -128,6 +128,7 @@ export const POSTERS = {
   "shangchi": "posters/shangchi.webp",
   "shehulk": "posters/shehulk.webp",
   "sony": "posters/sony.webp",
+  "fox4f": "posters/fox4f.webp",
   "the-wolverine": "posters/the-wolverine.webp",
   "thor1": "posters/thor1.webp",
   "thor2": "posters/thor2.webp",

@@ -6,7 +6,7 @@ Guía interactiva para ver **todo Marvel y X-Men en orden cronológico de la his
 
 ## Qué hace
 
-- **143 títulos**: el maratón (17 saga X-Men de Fox, 81 UCM y adyacentes, 26 cómics esenciales) más **La bóveda de animación** — 19 series animadas de Marvel verificadas en el catálogo de Disney+ España vía TMDB — en orden cronológico validado con la comunidad, con notas IMDb, duración, plataforma, reparto con foto y escenas post-créditos.
+- **144 títulos**: el maratón (17 saga X-Men de Fox, 82 UCM y adyacentes, 26 cómics esenciales) más **La bóveda de animación** — 19 series animadas de Marvel verificadas en el catálogo de Disney+ vía TMDB — en orden cronológico validado con la comunidad, con notas IMDb, duración, plataforma en 19 países (suscripción, gratis con anuncios o solo alquiler), reparto con foto y escenas post-créditos.
 - **1.618 episodios marcables** —las 51 series, sin excepción— con fotograma real, fecha y sinopsis anti-spoiler (desenfocada hasta que la pides), **y con el título en español** tal y como lo distribuye Disney España. Las listas y las fechas salen de Wikipedia para el maratón y de TMDB para la bóveda de animación; los títulos, de TMDB. Donde TMDB no tiene el español se queda el original: son 99 episodios de 1.618, casi todos de series antiguas.
 - **Tráilers embebidos y "dónde verla hoy en España"** vía TMDB, con caché de 7 días.
 - **Planificación**: cuenta atrás de Doomsday con tu ritmo real, ruta express, plan de sesión según tus horas libres, **horario de maratón** (eliges días, duración y hora; la app simula sesión a sesión qué toca cada día, cuándo terminas y si llegas al estreno, y lo exporta al calendario como evento semanal), recordatorios de estreno (aviso al abrir + notificaciones con la PWA instalada).

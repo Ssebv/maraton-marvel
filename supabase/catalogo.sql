@@ -1,5 +1,5 @@
 -- GENERADO por scripts/comunidad/catalogo.mjs (npm run comunidad:catalogo). No editar a mano.
--- 143 títulos. Se aplica DESPUÉS de la migración y cada vez que entre un título nuevo.
+-- 144 títulos. Se aplica DESPUÉS de la migración y cada vez que entre un título nuevo.
 insert into public.catalogo (id, saga, minutos, episodios) values
   ('first-class', 'xmen', 132, 0),
   ('origins-wolverine', 'xmen', 107, 0),
@@ -88,6 +88,7 @@ insert into public.catalogo (id, saga, minutos, episodios) values
   ('wonderman', 'ucm', 240, 8),
   ('quantumania', 'ucm', 125, 0),
   ('loki2', 'ucm', 300, 6),
+  ('fox4f', 'ucm', 297, 0),
   ('deadpool3', 'ucm', 128, 0),
   ('gotg3', 'ucm', 150, 0),
   ('agatha', 'ucm', 342, 9),

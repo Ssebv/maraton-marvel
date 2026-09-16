@@ -37,43 +37,94 @@ const { DATA, TMDB, TMDB_KEY } = await cargaFuentes()
 const items = DATA.flatMap(s => s.eras.flatMap(e => e.items))
 const dormir = ms => new Promise(r => setTimeout(r, ms))
 
-// TMDB los llama «Disney Plus», «Amazon Prime Video», «Max»…: nombres de la casa
-const etiqueta = n => {
-  const s = n.toLowerCase()
-  if (/disney/.test(s)) return 'Disney+'
-  if (/star plus|star\+/.test(s)) return 'Star+'
-  if (/amazon prime|prime video/.test(s)) return 'Prime Video'
-  if (/netflix/.test(s)) return 'Netflix'
-  if (/hbo|^max$|\bmax\b/.test(s)) return 'Max'
-  if (/paramount/.test(s)) return 'Paramount+'
-  if (/apple tv/.test(s)) return 'Apple TV+'
-  if (/movistar/.test(s)) return 'Movistar+'
-  if (/skyshowtime/.test(s)) return 'SkyShowtime'
-  if (/claro/.test(s)) return 'Claro video'
-  if (/mubi/.test(s)) return 'MUBI'
+// TMDB los llama «Disney Plus», «Amazon Prime Video», «Universal+ Amazon
+// Channel»…: nombres de la casa. El orden es la prioridad al enseñarlas (las
+// grandes antes que los paquetes de la tele de pago). Un «canal» dentro de
+// Prime Video o Apple TV es suscribirse a esa plataforma por otra vía: cuenta
+// como ella; sin marca conocida (Cinemax, Tivify, fuboTV…) no se enseña.
+const MARCAS = [
+  [/^disney/, 'Disney+'], [/^netflix/, 'Netflix'], [/^amazon prime video|^prime video/, 'Prime Video'],
+  [/^hbo max|^max$/, 'HBO Max'], [/^paramount/, 'Paramount+'], [/^apple tv(\+| plus)$/, 'Apple TV+'],
+  [/^hulu/, 'Hulu'], [/^peacock/, 'Peacock'], [/^universal\+/, 'Universal+'], [/^vix/, 'ViX'],
+  [/^star ?\+|^star plus/, 'Star+'], [/^skyshowtime/, 'SkyShowtime'], [/^starz/, 'Starz'],
+  [/^filmin/, 'Filmin'], [/^mubi/, 'MUBI'], [/^movistar/, 'Movistar'], [/^claro video/, 'Claro video'],
+]
+// gratis con anuncios: solo servicios de verdad abiertos a todo el mundo
+const GRATIS = [[/^mercado play/, 'Mercado Play'], [/^vix/, 'ViX'], [/^pluto/, 'Pluto TV'], [/^tubi/, 'Tubi'], [/^the roku channel/, 'The Roku Channel'], [/^rtve/, 'RTVE Play']]
+const marca = (lista, nombre) => {
+  const s = nombre.trim().toLowerCase().replace(/ (amazon|apple tv|roku premium) channel$/, '').replace(/ (standard )?with ads$/, '')
+  const i = lista.findIndex(([re]) => re.test(s))
+  return i < 0 ? null : { i, n: lista[i][1] }
+}
+const nombres = (lista, provs) => [...new Map((provs || []).map(x => marca(lista, x.provider_name)).filter(Boolean).sort((a, b) => a.i - b.i).map(m => [m.n, m])).keys()]
+
+// Plataformas de un título en un país: de pago (en orden de prioridad) y gratis
+function listas(pais, id) {
+  const pago = nombres(MARCAS, pais.flatrate).map(n => (n === 'Movistar' ? (id === 'ES' ? 'Movistar+' : 'Movistar TV') : n))
+  const gratis = nombres(GRATIS, [...(pais.ads || []), ...(pais.free || [])]).filter(n => !pago.includes(n)).map(n => n + ' gratis')
+  return { pago, gratis }
+}
+// Lo que se enseña: hasta 3 nombres, y si además se puede ver gratis se dice
+// (ocupa el último sitio). null si ni siquiera se alquila.
+function etiquetaPais(pais, id) {
+  const { pago, gratis } = listas(pais, id)
+  const partes = gratis.length ? [...pago.slice(0, 2), gratis[0]] : pago.slice(0, 3)
+  if (partes.length) return partes.join(' / ')
+  if ((pais.rent || []).length || (pais.buy || []).length) return 'Solo alquiler'
   return null
 }
-// canales dentro de otra plataforma y variantes con anuncios no son «estar en»
-const esCanal = n => /channel|with ads|amazon channel|apple tv channel/i.test(n)
+
+// Los bloques de varias películas no tienen ficha propia en TMDB: se consulta
+// cada una y se enseñan las plataformas que tienen más
+const BLOQUES = {
+  // Spider-Man 1–3, The Amazing 1–2, Venom 1–3, Morbius, Madame Web, Kraven
+  sony: [557, 558, 559, 1930, 102382, 335983, 580489, 526896, 634492, 912649, 539972],
+  // Los 4 Fantásticos (2005), y Silver Surfer (2007), Cuatro Fantásticos (2015)
+  fox4f: [9738, 1979, 166424],
+}
+
+const pide = async (tipo, id) => {
+  try {
+    return (await (await fetch(`https://api.themoviedb.org/3/${tipo}/${id}/watch/providers?api_key=${TMDB_KEY}`)).json()).results || {}
+  } catch { console.error('  (sin red para ' + id + ')'); return null }
+}
 
 const salida = Object.fromEntries(PAISES.map(p => [p.id, {}]))
 let hechos = 0
 for (const it of items) {
   const m = TMDB[it.id]
   if (!m) continue
-  let r
-  try {
-    r = await (await fetch(`https://api.themoviedb.org/3/${m[1]}/${m[0]}/watch/providers?api_key=${TMDB_KEY}`)).json()
-  } catch { console.error('  (sin red para ' + it.id + ')'); continue }
+  const r = await pide(m[1], m[0])
+  if (!r) continue
   for (const p of PAISES) {
-    const pais = (r.results && r.results[p.id]) || {}
-    const flat = [...new Set((pais.flatrate || []).filter(x => !esCanal(x.provider_name)).map(x => etiqueta(x.provider_name)).filter(Boolean))]
-    if (flat.length) salida[p.id][it.id] = flat.slice(0, 2).join(' / ')
-    else if ((pais.rent || []).length || (pais.buy || []).length) salida[p.id][it.id] = 'Solo alquiler'
-    else salida[p.id][it.id] = 'No está en ' + p.nombre
+    const e = etiquetaPais(r[p.id] || {}, p.id)
+    if (e) salida[p.id][it.id] = e
+    // Sin ninguna oferta en ese país: si en España tampoco está, no está. Si
+    // no, casi siempre es un hueco de JustWatch (cortos y especiales que Disney+
+    // tiene en toda la región): se queda el dato curado de data.js.
+    else if (!r[p.id] && /^no est/i.test(it.plat || '')) salida[p.id][it.id] = 'No está en ' + p.nombre
+    else if (r[p.id]) salida[p.id][it.id] = 'No está en ' + p.nombre
   }
   hechos++
   await dormir(60)
+}
+
+for (const [bloque, ids] of Object.entries(BLOQUES)) {
+  const res = []
+  for (const id of ids) { const r = await pide('movie', id); if (r) res.push(r); await dormir(60) }
+  if (res.length < ids.length) continue // sin red a medias: se queda el dato curado
+  const minimo = Math.min(3, ids.length)
+  for (const p of PAISES) {
+    const cuenta = new Map()
+    for (const r of res) {
+      const { pago, gratis } = listas(r[p.id] || {}, p.id)
+      for (const n of [...pago, ...gratis]) cuenta.set(n, (cuenta.get(n) || 0) + 1)
+    }
+    // las que tienen al menos 3 de las películas (todas si son menos), de más a menos
+    const top = [...cuenta].filter(([, c]) => c >= minimo).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([n]) => n)
+    salida[p.id][bloque] = top.length ? top.join(' / ') : 'Solo alquiler'
+  }
+  hechos++
 }
 
 const raiz = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -89,6 +140,6 @@ export const PLATAFORMAS = ${JSON.stringify(salida, null, 1)}
 writeFileSync(join(raiz, 'src', 'plataformas.js'), cuerpo)
 const resumen = PAISES.map(p => {
   const v = Object.values(salida[p.id])
-  return `${p.nombre}: ${v.filter(x => x === 'Disney+' || x.startsWith('Disney+')).length} en Disney+ de ${v.length}`
+  return `${p.nombre}: ${v.filter(x => x.startsWith('Disney+')).length} en Disney+ de ${v.length}`
 }).join(' · ')
 console.log(`${hechos} títulos consultados → src/plataformas.js\n${resumen}`)

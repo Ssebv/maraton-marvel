@@ -1,5 +1,9 @@
 // Generado por scripts/download-people.py — fotos de actores y directores
 export const PEOPLE = {
+  "Jessica Alba": "people/jessica-alba.webp",
+  "Ioan Gruffudd": "people/ioan-gruffudd.webp",
+  "Josh Trank": "people/josh-trank.webp",
+  "Tim Story": "people/tim-story.webp",
   "Matt Nix": "people/matt-nix.webp",
   "Stephen Moyer": "people/stephen-moyer.webp",
   "Amy Acker": "people/amy-acker.webp",
