@@ -2599,6 +2599,28 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .chip-btn.peligro:hover{color:var(--peligro); border-color:var(--peligro)}
 /* crear el perfil */
 .crea-perfil .modal-info{gap: var(--e-3)}
+/* el perfil de la comunidad */
+.perfil-hoja{max-width:880px}
+.perfil-hoja .modal-info{gap: var(--e-4)}
+.perfil-cab{display:flex; align-items:center; gap: var(--e-5)}
+.perfil-avatar{width:72px; height:72px; border-radius:var(--r-pill); object-fit:cover; object-position:center 20%; background:var(--panel2); flex:none}
+.perfil-textos{display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
+.perfil-textos .modal-titulo{overflow-wrap:anywhere}
+.perfil-visible{margin:0; font-size: var(--t-b); color:var(--ink2)}
+.perfil-cuenta{margin:0; font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+.perfil-cuenta b{color:var(--ink)}
+.perfil-bio{white-space:pre-line}
+.perfil-cuerpo{display:flex; flex-direction:column; gap: var(--e-5)}
+.perfil-cuerpo .stats{margin-top: 0; grid-template-columns:repeat(2, minmax(0, 1fr))}
+/* la hoja ya es --panel: las tarjetas y el mapa, un escalón más arriba, o no se distinguen */
+.perfil-cuerpo .stat, .perfil-cuerpo .mapa{background:var(--panel2)}
+/* el aviso centrado trae márgenes de página vacía: dentro de la hoja, más recogido */
+.aviso.centrado.perfil-privado{margin-top: var(--e-2); padding: var(--e-6) var(--e-5)}
+.cuenta-buscar{display:flex; flex-direction:column; gap: var(--e-2)}
+.cuenta-sigo{display:flex; flex-direction:column; gap: var(--e-2)}
+.cuenta-sigo-lista{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap: var(--e-3)}
+.cuenta-sigo-item{display:flex; align-items:center; gap: var(--e-3); min-height:44px; padding: var(--e-2) var(--e-4) var(--e-2) var(--e-2); border:1px solid var(--line); border-radius:var(--r-pill); background:transparent; color:var(--ink); font:inherit; font-size: var(--t-m); font-weight:600; cursor:pointer}
+.cuenta-sigo-item img, .cuenta-sigo-item .perfil-avatar{width:30px; height:30px; border-radius:var(--r-pill); object-fit:cover; object-position:center 20%}
 .crea-nombre-fila{display:flex; align-items:center; gap: var(--e-2)}
 .crea-arroba{font-size: var(--t-l); font-weight:700; color:var(--ink3)}
 .crea-nombre-fila .busca{flex:1; width:auto}

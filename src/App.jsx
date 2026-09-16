@@ -266,6 +266,11 @@ const RETORNO_CUENTA = (() => {
     return error ? { error: error.slice(0, 200) } : null
   } catch { return null }
 })()
+// #u/nombre abre el perfil de esa persona en la comunidad (enlace compartido)
+const PERFIL_EN_URL = (() => {
+  try { const m = window.location.hash.match(/^#u\/([a-z0-9_]{3,20})$/); return m ? m[1] : null } catch { return null }
+})()
+const enlacePerfil = nombre => `${window.location.origin}${window.location.pathname}#u/${nombre}`
 // El perfil público de la comunidad (tabla perfiles)
 const CAMPOS_PERFIL = 'id,nombre,nombre_visible,avatar,bio,saga_favorita,priv_progreso,priv_resenas,priv_logros'
 const PRIVACIDADES = ['publico', 'seguidores', 'privado']
@@ -1875,8 +1880,22 @@ const ui = (pais, texto, en) => (IDIOMA_ACTUAL === 'en' && en !== undefined ? en
 // Ajustes › Cuenta (fase 2 de la comunidad, 16 sep 2026): entrar con Google o
 // con un enlace por correo, el perfil público, su privacidad y los derechos de
 // la Ley 21.719 (descargar y borrar). Solo existe si NUBE está configurado.
-function CuentaAjuste({ cuenta, perfil, estado, aviso, onEnlace, onCrearPerfil, onPrivacidad, onDescargar, onBorrar, onSalir }) {
+function CuentaAjuste({ cuenta, perfil, estado, aviso, token, onEnlace, onCrearPerfil, onPrivacidad, onDescargar, onBorrar, onSalir, onVerPerfil }) {
   const [correo, setCorreo] = useState('')
+  const [busco, setBusco] = useState('')
+  // a quién sigues (con su avatar), para volver a sus perfiles
+  const [sigo, setSigo] = useState(null)
+  useEffect(() => {
+    if (!NUBE || !cuenta || !perfil) { setSigo(null); return undefined }
+    let vivo = true
+    ;(async () => {
+      try {
+        const filas = await rest(await token(), `seguimientos?seguidor=eq.${cuenta.uid}&select=seguido:perfiles!seguimientos_seguido_fkey(nombre,avatar)&order=desde.desc&limit=60`)
+        if (vivo) setSigo((Array.isArray(filas) ? filas : []).map(f => f && esObj(f.seguido) && typeof f.seguido.nombre === 'string' ? f.seguido : null).filter(Boolean))
+      } catch { if (vivo) setSigo([]) }
+    })()
+    return () => { vivo = false }
+  }, [cuenta && cuenta.uid, perfil && perfil.id])
   const [envio, setEnvio] = useState(null) // null | 'enviando' | 'enviado' | 'error'
   const [borrando, setBorrando] = useState(false)
   const [yendo, setYendo] = useState(false)
@@ -1936,6 +1955,36 @@ function CuentaAjuste({ cuenta, perfil, estado, aviso, onEnlace, onCrearPerfil, 
             </span>
             <button className="ghost" onClick={onSalir}>{tr('Salir', 'Sign out')}</button>
           </div>
+          <div className="ajuste-ops">
+            <button className="chip-btn" onClick={() => onVerPerfil(perfil.nombre)}>{tr('Ver mi perfil', 'View my profile')}</button>
+          </div>
+          <form className="cuenta-buscar" onSubmit={e => {
+            e.preventDefault()
+            const n = busco.trim().replace(/^@/, '').toLowerCase()
+            if (/^[a-z0-9_]{3,20}$/.test(n)) onVerPerfil(n)
+          }}>
+            <label className="ajuste-pista" htmlFor="cuenta-buscar">{tr('Buscar a alguien por su nombre de usuario', 'Find someone by username')}</label>
+            <div className="cuenta-correo-fila">
+              <input id="cuenta-buscar" className="busca" autoCapitalize="none" autoComplete="off" spellCheck={false} enterKeyHint="search"
+                placeholder="@nombre" value={busco} onChange={e => setBusco(e.target.value)} />
+              <button className="chip-btn" type="submit">{tr('Ver perfil', 'View profile')}</button>
+            </div>
+          </form>
+          {sigo && sigo.length > 0 && (
+            <div className="cuenta-sigo">
+              <p className="ajuste-pista">{tr(`Sigues a ${sigo.length}`, `You follow ${sigo.length}`)}</p>
+              <ul className="cuenta-sigo-lista">
+                {sigo.map(p => (
+                  <li key={p.nombre}>
+                    <button className="cuenta-sigo-item" onClick={() => onVerPerfil(p.nombre)}>
+                      {POSTERS[p.avatar] ? <img src={POSTERS[p.avatar]} alt="" loading="lazy" /> : <span className="perfil-avatar" aria-hidden="true" />}
+                      <span>@{p.nombre}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="cuenta-privacidad">
             <p className="ajuste-pista">{tr('Quién ve cada parte de tu perfil', 'Who sees each part of your profile')}</p>
             {BLOQUES.map(([campo, rotulo]) => (
@@ -1965,6 +2014,107 @@ function CuentaAjuste({ cuenta, perfil, estado, aviso, onEnlace, onCrearPerfil, 
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+// El perfil de una persona en la comunidad (#u/nombre): cabecera, seguir, y
+// sus cifras, mapa, logros y valoraciones SOLO en los bloques que su
+// privacidad deja ver a quien mira (lo decide la base: rpc/perfil_publico).
+// Se ve también sin cuenta (lo público); seguir pide entrar.
+function PerfilPublico({ saliendo, nombre, cuenta, token, onCerrar, onEntrar }) {
+  const ref = useRef(null)
+  useDialogo(ref, onCerrar)
+  const [datos, setDatos] = useState(null) // null cargando · false no existe · 'error' · objeto
+  const [ocupado, setOcupado] = useState(false)
+  const [copiado, setCopiado] = useState(false)
+  const carga = async () => {
+    try {
+      const j = await rest(cuenta ? await token() : null, 'rpc/perfil_publico', { method: 'POST', body: { nombre_in: nombre } })
+      const p = esObj(j) && saneaPerfil({ ...j, priv_progreso: 'publico', priv_resenas: 'publico', priv_logros: 'publico' })
+      if (!p) { setDatos(false); return }
+      const notas = j.notas == null ? null : (saneaNotas(j.notas) || {})
+      setDatos({
+        ...p,
+        seguidores: Number(j.seguidores) || 0, siguiendo: Number(j.siguiendo) || 0, loSigo: j.lo_sigo === true,
+        vistas: j.vistas == null ? null : (saneaMarcas(j.vistas) || {}),
+        eps: j.eps == null ? null : (saneaMarcas(j.eps) || {}),
+        notasP: notas && Object.fromEntries(Object.entries(notas).filter(([, n]) => n.p).map(([id, n]) => [id, n.p])),
+        logros: j.logros_visibles === true,
+      })
+    } catch { setDatos('error') }
+  }
+  useEffect(() => { setDatos(null); carga() }, [nombre, cuenta && cuenta.uid])
+  const ok = esObj(datos)
+  const { est, pct, ctx } = usePerfilEst(ok && datos.vistas || {}, ok && datos.eps || {}, ok && datos.notasP || {})
+  const propio = ok && cuenta && datos.id === cuenta.uid
+  const sigue = async () => {
+    if (!cuenta) { onEntrar(); return }
+    const ya = datos.loSigo
+    setOcupado(true)
+    setDatos(d => ({ ...d, loSigo: !ya, seguidores: d.seguidores + (ya ? -1 : 1) }))
+    try {
+      const t = await token()
+      if (ya) await rest(t, `seguimientos?seguidor=eq.${cuenta.uid}&seguido=eq.${datos.id}`, { method: 'DELETE', prefer: 'return=minimal' })
+      else await rest(t, 'seguimientos', { method: 'POST', prefer: 'return=minimal', body: { seguidor: cuenta.uid, seguido: datos.id } })
+      // lo que comparte «con seguidores» aparece (o se va) al momento
+      await carga()
+    } catch {
+      setDatos(d => ({ ...d, loSigo: ya, seguidores: d.seguidores + (ya ? 1 : -1) }))
+    } finally { setOcupado(false) }
+  }
+  return (
+    <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onCerrar} role="dialog" aria-modal="true" aria-label={tr(`Perfil de @${nombre}`, `@${nombre}’s profile`)}>
+      <div className="modal perfil-hoja" onClick={e => e.stopPropagation()}>
+        <button className="cerrar" onClick={onCerrar} aria-label={tr('Cerrar', 'Close')}>✕</button>
+        <div className="modal-info">
+          {datos === null && <p className="modal-res" role="status">{tr('Cargando perfil…', 'Loading profile…')}</p>}
+          {datos === false && <p className="modal-res" role="status">{tr(`No hay nadie con el nombre @${nombre}.`, `There’s nobody called @${nombre}.`)}</p>}
+          {datos === 'error' && <p className="aviso-sin-red" role="status">{tr('No se pudo cargar el perfil. Revisa la conexión.', 'Could not load the profile. Check your connection.')}</p>}
+          {ok && (
+            <>
+              <header className="perfil-cab">
+                {POSTERS[datos.avatar] ? <img className="perfil-avatar" src={POSTERS[datos.avatar]} alt="" /> : <span className="perfil-avatar" aria-hidden="true" />}
+                <div className="perfil-textos">
+                  <h2 className="modal-titulo">@{datos.nombre}</h2>
+                  {datos.nombre_visible && <p className="perfil-visible">{datos.nombre_visible}</p>}
+                  <p className="perfil-cuenta">
+                    <b>{datos.seguidores}</b> {datos.seguidores === 1 ? tr('seguidor', 'follower') : tr('seguidores', 'followers')} · <b>{datos.siguiendo}</b> {tr('siguiendo', 'following')}
+                  </p>
+                </div>
+              </header>
+              {datos.bio && <p className="modal-res perfil-bio">{datos.bio}</p>}
+              <div className="modal-acciones">
+                {!propio && (
+                  <button className={datos.loSigo ? 'chip-btn' : 'accion-principal'} aria-pressed={datos.loSigo} disabled={ocupado} onClick={sigue}>
+                    {!cuenta ? tr('Entra para seguir', 'Sign in to follow') : datos.loSigo ? tr('Siguiendo', 'Following') : tr('Seguir', 'Follow')}
+                  </button>
+                )}
+                <button className="chip-btn" onClick={() => {
+                  const url = enlacePerfil(datos.nombre)
+                  if (navigator.share) navigator.share({ url, title: `@${datos.nombre}` }).catch(() => {})
+                  else navigator.clipboard.writeText(url).then(() => { setCopiado(true); setTimeout(() => setCopiado(false), 2500) })
+                }}>{copiado ? tr('¡Enlace copiado!', 'Link copied!') : tr('Compartir perfil', 'Share profile')}</button>
+              </div>
+              {propio && <p className="ajuste-pista">{tr('Así ves tu perfil tú. Los demás ven cada parte según tu privacidad (Ajustes › Cuenta).', 'This is how you see your profile. Others see each part according to your privacy (Settings › Account).')}</p>}
+              {datos.vistas ? (
+                <div className="perfil-cuerpo">
+                  <PerfilCifras est={est} pct={pct} />
+                  <PerfilMapa est={est} vistasP={datos.vistas} />
+                  {datos.logros && <Logros ctx={ctx} />}
+                  {datos.notasP && <PerfilValoradas est={est} />}
+                </div>
+              ) : (
+                <p className="aviso centrado perfil-privado">
+                  <span className="aviso-texto">{datos.loSigo
+                    ? tr('Su progreso es privado.', 'Their progress is private.')
+                    : tr('No comparte su progreso contigo. Si lo comparte con sus seguidores, lo verás al seguirle.', 'They don’t share their progress with you. If they share it with followers, you’ll see it once you follow.')}</span>
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -2915,7 +3065,8 @@ function CabeceraDestino({ titulo, sub, onAjustes, esMovil }) {
   )
 }
 
-function PerfilView({ nombre, vistasP, epsP, notasP }) {
+// Las cifras de un perfil ajeno (enlace compartido o perfil de la comunidad)
+function usePerfilEst(vistasP, epsP, notasP) {
   const est = useMemo(() => {
     let totMin = 0, vistoMin = 0, titulosVistos = 0, titulosTot = 0
     let comicsVistos = 0, comicsTot = 0, bovedaVistos = 0, bovedaTot = 0
@@ -2973,6 +3124,77 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
     expressCompleta: DATA.slice(0, 2).every(sg => sg.eras.every(era => era.items.filter(it => it.exp).every(it => vistasP[it.id]))),
     todoCompleto: DATA.every(sg => sg.eras.every(era => era.items.every(it => vistasP[it.id]))),
   }
+  return { est, pct, ctx }
+}
+
+function PerfilCifras({ est, pct }) {
+  return (
+    <div className="stats">
+      <div className="stat">
+        <span className="stat-label">{tr('Horas vistas', 'Hours watched')}</span>
+        <span className="stat-num"><Cifra n={Math.round(est.vistoMin / 60)} /><small> / {Math.round(est.totMin / 60)} h</small></span>
+        <div className="barra"><i style={{ width: `${pct}%` }} /></div>
+        <span className="stat-foot">{pct}{tr('% del maratón', '% of the marathon')}</span>
+      </div>
+      <div className="stat">
+        <span className="stat-label">{tr('Títulos vistos', 'Titles watched')}</span>
+        <span className="stat-num"><Cifra n={est.titulosVistos} /><small> / {est.titulosTot}</small></span>
+        <span className="stat-foot">{tr('películas, series y especiales', 'movies, series and specials')}</span>
+      </div>
+      <div className="stat">
+        <span className="stat-label">{tr('Cómics leídos', 'Comics read')}</span>
+        <span className="stat-num"><Cifra n={est.comicsVistos} /><small> / {est.comicsTot}</small></span>
+        <span className="stat-foot">{tr('lecturas esenciales', 'essential reads')}</span>
+      </div>
+      <div className="stat">
+        <span className="stat-label">{tr('Bóveda de animación', 'Animation vault')}</span>
+        <span className="stat-num"><Cifra n={est.bovedaVistos} /><small> / {est.bovedaTot}</small></span>
+        <span className="stat-foot">{tr(`episodios de las ${N_SERIES_BOVEDA} series`, `episodes across the ${N_SERIES_BOVEDA} series`)}</span>
+      </div>
+    </div>
+  )
+}
+
+function PerfilMapa({ est, vistasP }) {
+  return (
+    <div className="mapa" aria-label={tr('Mapa de progreso', 'Progress map')}>
+      {est.sagas.map(sg => (
+        <div className="mapa-fila" key={sg.saga}>
+          <span className="mapa-label">
+            {sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? tr('UCM', 'MCU') : sg.saga === 'animacion' ? 'Anim.' : tr('Cómics', 'Comics')}
+          </span>
+          <div className="mapa-dots">
+            {sg.items.map(({ item, c }) => (
+              <span key={item.id} className={`dot${vistasP[item.id] ? ' on' : ''}`}
+                style={{ '--dc': c[0] }} title={item.t} />
+            ))}
+          </div>
+          <span className="mapa-count">{sg.v}/{sg.items.length}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function PerfilValoradas({ est, titulo }) {
+  if (!est.valoradas.length) return null
+  return (
+      <section className="grafica">
+        <h3 className="grafica-titulo">{titulo || tr('Sus valoraciones', 'Their ratings')}</h3>
+        <div className="galeria-grid perfil-valoradas">
+          {est.valoradas.map(({ item, c, punt, esComic }) => (
+            <div key={item.id} className="galeria-item perfil-item" title={item.t}>
+              <Portada item={item} c={c} esComic={esComic} />
+              <span className="perfil-estrellas">{'★'.repeat(punt)}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+  )
+}
+
+function PerfilView({ nombre, vistasP, epsP, notasP }) {
+  const { est, pct, ctx } = usePerfilEst(vistasP, epsP, notasP)
 
   return (
     <div className="wrap">
@@ -2981,61 +3203,12 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
           <p className="hero-eyebrow">{tr('Perfil compartido · solo lectura', 'Shared profile · read-only')}</p>
           <h1>{tr('El maratón de', 'The marathon of')} <span className="rojo">{nombre}</span></h1>
         </div>
-        <div className="stats">
-          <div className="stat">
-            <span className="stat-label">{tr('Horas vistas', 'Hours watched')}</span>
-            <span className="stat-num"><Cifra n={Math.round(est.vistoMin / 60)} /><small> / {Math.round(est.totMin / 60)} h</small></span>
-            <div className="barra"><i style={{ width: `${pct}%` }} /></div>
-            <span className="stat-foot">{pct}{tr('% del maratón', '% of the marathon')}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">{tr('Títulos vistos', 'Titles watched')}</span>
-            <span className="stat-num"><Cifra n={est.titulosVistos} /><small> / {est.titulosTot}</small></span>
-            <span className="stat-foot">{tr('películas, series y especiales', 'movies, series and specials')}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">{tr('Cómics leídos', 'Comics read')}</span>
-            <span className="stat-num"><Cifra n={est.comicsVistos} /><small> / {est.comicsTot}</small></span>
-            <span className="stat-foot">{tr('lecturas esenciales', 'essential reads')}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">{tr('Bóveda de animación', 'Animation vault')}</span>
-            <span className="stat-num"><Cifra n={est.bovedaVistos} /><small> / {est.bovedaTot}</small></span>
-            <span className="stat-foot">{tr(`episodios de las ${N_SERIES_BOVEDA} series`, `episodes across the ${N_SERIES_BOVEDA} series`)}</span>
-          </div>
-        </div>
-        <div className="mapa" aria-label={tr('Mapa de progreso', 'Progress map')}>
-          {est.sagas.map(sg => (
-            <div className="mapa-fila" key={sg.saga}>
-              <span className="mapa-label">
-                {sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? tr('UCM', 'MCU') : sg.saga === 'animacion' ? 'Anim.' : tr('Cómics', 'Comics')}
-              </span>
-              <div className="mapa-dots">
-                {sg.items.map(({ item, c }) => (
-                  <span key={item.id} className={`dot${vistasP[item.id] ? ' on' : ''}`}
-                    style={{ '--dc': c[0] }} title={item.t} />
-                ))}
-              </div>
-              <span className="mapa-count">{sg.v}/{sg.items.length}</span>
-            </div>
-          ))}
-        </div>
+        <PerfilCifras est={est} pct={pct} />
+        <PerfilMapa est={est} vistasP={vistasP} />
       </section>
       <main className="stats-vista">
         <Logros ctx={ctx} />
-        {est.valoradas.length > 0 && (
-          <section className="grafica">
-            <h3 className="grafica-titulo">{tr('Sus valoraciones', 'Their ratings')}</h3>
-            <div className="galeria-grid perfil-valoradas">
-              {est.valoradas.map(({ item, c, punt, esComic }) => (
-                <div key={item.id} className="galeria-item perfil-item" title={item.t}>
-                  <Portada item={item} c={c} esComic={esComic} />
-                  <span className="perfil-estrellas">{'★'.repeat(punt)}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        <PerfilValoradas est={est} />
       </main>
       <footer>
         <p className="nota-pie">{tr(`Esta página es una instantánea de solo lectura del progreso de ${nombre}.`, `This page is a read-only snapshot of ${nombre}’s progress.`)}</p>
@@ -4619,6 +4792,13 @@ export default function App() {
     if (perfil) return
     const onHash = () => {
       const h = window.location.hash.replace('#', '')
+      // #u/nombre no es una vista: abre ese perfil encima y deja la URL como estaba
+      const u = h.match(/^u\/([a-z0-9_]{3,20})$/)
+      if (u) {
+        if (NUBE) setPerfilPublico(u[1])
+        if (urlEstado) history.replaceState(history.state, '', urlEstado)
+        return
+      }
       conTransicion('atras', () => setVista(VISTAS_VALIDAS.includes(h) ? h : 'crono'))
     }
     window.addEventListener('hashchange', onHash)
@@ -5029,6 +5209,8 @@ export default function App() {
   const [perfilCuenta, setPerfilCuenta] = useState(null)
   const [creaPerfil, setCreaPerfil] = useState(false)
   const [cuentaAviso, setCuentaAviso] = useState(null)
+  // el perfil de la comunidad abierto (#u/nombre)
+  const [perfilPublico, setPerfilPublico] = useState(() => (NUBE ? PERFIL_EN_URL : null))
   // recién entrado: primero se funde lo local con lo remoto, y hasta que
   // termina no arranca la sincronización normal (su primer tirón pisaría lo
   // local con lo remoto viejo)
@@ -6111,6 +6293,10 @@ export default function App() {
   const [invitarMontado, invitarSale] = useSaliente(clubInvitar && club)
   const [perfilMMontado, perfilMSale] = useSaliente(perfilModal)
   const [creaPerfilMontado, creaPerfilSale] = useSaliente(creaPerfil && !!cuenta && perfilCuenta === false)
+  const [perfilPubMontado, perfilPubSale] = useSaliente(!!perfilPublico)
+  const perfilPubUltimo = useRef(perfilPublico)
+  if (perfilPublico) perfilPubUltimo.current = perfilPublico
+  useVolverCierra(perfilPublico, () => setPerfilPublico(null))
   useVolverCierra(creaPerfil && !!cuenta && perfilCuenta === false, () => setCreaPerfil(false))
   const [ajustesMontado, ajustesSale] = useSaliente(ajustes)
   const [horarioMontado, horarioSale] = useSaliente(horarioModal)
@@ -7230,6 +7416,11 @@ export default function App() {
           </div>
         </div>
       )}
+      {perfilPubMontado && NUBE && (
+        <PerfilPublico key={perfilPubUltimo.current} saliendo={perfilPubSale} nombre={perfilPubUltimo.current} cuenta={cuentaLista ? cuenta : null}
+          token={tokenCuenta} onCerrar={() => setPerfilPublico(null)}
+          onEntrar={() => { setPerfilPublico(null); setAjustes(true) }} />
+      )}
       {creaPerfilMontado && cuenta && (
         <CreaPerfil saliendo={creaPerfilSale} cuenta={cuenta} token={tokenCuenta}
           onCerrar={() => setCreaPerfil(false)}
@@ -7286,7 +7477,8 @@ export default function App() {
               <h2 className="modal-titulo">{tr('Ajustes', 'Settings')}</h2>
               <p className="modal-res">{tr('Se guardan en este navegador. Salvo «Tu progreso» y «Empezar de cero», nada de aquí toca lo que llevas visto.', 'Saved in this browser. Apart from “Your progress” and “Start over”, nothing here touches what you’ve watched.')}</p>
 
-              <CuentaAjuste cuenta={cuenta} perfil={perfilCuenta} estado={syncEstado} aviso={cuentaAviso}
+              <CuentaAjuste cuenta={cuenta} perfil={perfilCuenta} estado={syncEstado} aviso={cuentaAviso} token={tokenCuenta}
+                onVerPerfil={n => { setAjustes(false); setPerfilPublico(n) }}
                 onEnlace={enviaEnlace} onCrearPerfil={() => setCreaPerfil(true)} onPrivacidad={cambiaPrivacidad}
                 onDescargar={descargaMisDatos} onBorrar={borraMiCuenta} onSalir={salirCuenta} />
 
