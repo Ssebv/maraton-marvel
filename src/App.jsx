@@ -546,13 +546,41 @@ async function tmdbJson(ruta, idi = tmdbIdioma()) {
   if (!r.ok) throw new Error('tmdb ' + r.status)
   return r.json()
 }
-// Subir la versión de la caché deja atrás ~106 entradas por usuario; se barren
-// una vez para no dejarle megas muertos en el navegador.
+// Las cachés de TMDB (fichas y biografías) viven en el MISMO localStorage que
+// el progreso, y el cupo es de ~5 MB en Safari. Con todo el catálogo abierto
+// en los dos idiomas ocupan ~1,7 MB más las biografías (medido el 16 sep
+// 2026), y lo caducado no se borraba nunca: solo se pisaba al reabrir esa
+// ficha. Si el cupo se llenaba, marcar un título fallaba EN SILENCIO (todas
+// las escrituras van en try/catch). Dos defensas:
+//  1. al arrancar, en un momento libre, se barren las versiones viejas de la
+//     caché y las entradas caducadas (la fecha va al principio del JSON: se
+//     lee con una regex, sin parsear megas);
+//  2. si una escritura que NO es de caché no cabe, se vacían las cachés y se
+//     reintenta: el progreso manda, las fichas se vuelven a bajar solas.
+const ES_CACHE = /^maraton-marvel-(tmdb|persona)-v[0-9]+:/
+const CACHE_VIVA = { 'maraton-marvel-tmdb-v11:': 7 * 864e5, 'maraton-marvel-persona-v3:': 30 * 864e5 }
+function podaCaches(todo = false) {
+  let n = 0
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (!ES_CACHE.test(k)) continue
+      const viva = Object.keys(CACHE_VIVA).find(p => k.startsWith(p))
+      const t = !todo && viva && +(/^\{"t":(\d+)/.exec(localStorage.getItem(k) || '') || [])[1]
+      if (!t || Date.now() - t > CACHE_VIVA[viva]) { localStorage.removeItem(k); n++ }
+    }
+  } catch {}
+  return n
+}
 try {
-  for (const k of Object.keys(localStorage)) {
-    if (/^maraton-marvel-tmdb-v[0-9]+:/.test(k) && !k.startsWith('maraton-marvel-tmdb-v11:')) localStorage.removeItem(k)
+  const escribe = Storage.prototype.setItem
+  Storage.prototype.setItem = function (k, v) {
+    try { return escribe.call(this, k, v) } catch (e) {
+      if (this !== localStorage || ES_CACHE.test(k) || !podaCaches(true)) throw e
+      return escribe.call(this, k, v)
+    }
   }
 } catch {}
+;(window.requestIdleCallback || (f => setTimeout(f, 3000)))(() => podaCaches())
 // una sola petición en vuelo por título: la precarga al tocar y la ficha que se
 // abre enseguida piden lo mismo a la vez
 const tmdbPend = {}
@@ -2278,20 +2306,37 @@ function AvisoNuevo({ onProbar }) {
 const SELLO = typeof __BUILD__ === 'string' ? __BUILD__ : ''
 // Aviso breve con «Deshacer» (desmarcar, quitar temporada, serie completa,
 // empezar de cero). Se va solo; uno nuevo sustituye al anterior.
+// Revisión HIG (16 sep 2026): la región viva va SIEMPRE montada y el aviso
+// visible aparte — VoiceOver no lee una región role=status que nace ya con
+// texto, y cada aviso nuevo era un nodo nuevo (key). Y mientras el dedo, el
+// ratón o el foco están sobre el aviso, no se va: 5 s no dan para llegar al
+// botón con VoiceOver (WCAG 2.2.1); al salir quedan al menos 3 s.
 function Deshacer({ aviso, onCerrar }) {
   const cerrar = useRef(onCerrar)
   cerrar.current = onCerrar
+  const [quieto, setQuieto] = useState(false)
+  const resto = useRef(0)
+  useEffect(() => { resto.current = aviso ? aviso.ms : 0; setQuieto(false) }, [aviso])
   useEffect(() => {
-    if (!aviso) return undefined
-    const t = setTimeout(() => cerrar.current(), aviso.ms)
-    return () => clearTimeout(t)
-  }, [aviso])
-  if (!aviso) return null
+    if (!aviso || quieto) return undefined
+    const desde = Date.now()
+    const t = setTimeout(() => cerrar.current(), resto.current)
+    return () => { clearTimeout(t); resto.current = Math.max(3000, resto.current - (Date.now() - desde)) }
+  }, [aviso, quieto])
+  const para = () => setQuieto(true)
+  // relatedTarget puede ser null o la ventana (salir del documento): solo un
+  // nodo de DENTRO del aviso lo mantiene quieto
+  const sigue = e => { const r = e.relatedTarget; if (!(r instanceof Node && e.currentTarget.contains(r))) setQuieto(false) }
   return (
-    <div className="deshacer" role="status" key={aviso.id}>
-      <span className="deshacer-texto">{aviso.texto}</span>
-      <button type="button" onClick={() => { tic(); aviso.restaura(); cerrar.current() }}>{tr('Deshacer', 'Undo')}</button>
-    </div>
+    <>
+      <span className="solo-lector" role="status">{aviso ? `${aviso.texto}. ${tr('Deshacer disponible', 'Undo available')}` : ''}</span>
+      {aviso && (
+        <div className="deshacer" key={aviso.id} onPointerEnter={para} onPointerDown={para} onPointerLeave={sigue} onFocus={para} onBlur={sigue}>
+          <span className="deshacer-texto">{aviso.texto}</span>
+          <button type="button" onClick={() => { tic(); aviso.restaura(); cerrar.current() }}>{tr('Deshacer', 'Undo')}</button>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -3232,6 +3277,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   if (selloRef.current.id !== item.id) selloRef.current = { id: item.id, vista, en: 0 }
   else if (selloRef.current.vista !== vista) selloRef.current = { id: item.id, vista, en: vista ? performance.now() : 0 }
   const estampa = vista && performance.now() - selloRef.current.en < 700
+  // «¿Qué te pareció?» se queda mientras la ficha siga abierta: antes se iba
+  // al tocar la primera estrella y la valoración no se veía confirmada
+  // (revisión HIG, 16 sep 2026)
+  const valoraRef = useRef({ id: item.id, visto: false })
+  if (valoraRef.current.id !== item.id) valoraRef.current = { id: item.id, visto: false }
+  if (vista && selloRef.current.en > 0 && !nota.p) valoraRef.current.visto = true
   const [extra, falloTmdb] = useTmdb(item, idioma)
   // el fotograma que ya se conoce (src/fondos.js, precargado al tocar) sale sin
   // esperar a TMDB; cuando TMDB responde manda el suyo
@@ -3420,13 +3471,14 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               mismo. «Tu valoración» queda a ~860 px del borde de la hoja en el
               móvil (bajo reparto y dónde verla) y el calendario de la portada
               enseña estrellas y reseñas: el paso natural tras marcar es valorar. */}
-          {vista && selloRef.current.en > 0 && !nota.p && (
+          {vista && valoraRef.current.visto && (
             <div className="valora-rapido" role="group" aria-label={tr('Valorar', 'Rate')}>
-              <span className="valora-rapido-pregunta">{tr('¿Qué te pareció?', 'What did you think?')}</span>
-              <span className="estrellas">
+              <span className="valora-rapido-pregunta">{nota.p ? tr('Tu valoración', 'Your rating') : tr('¿Qué te pareció?', 'What did you think?')}</span>
+              <span className="estrellas" role="radiogroup" aria-label={tr('Tu valoración', 'Your rating')}>
                 {[1, 2, 3, 4, 5].map(p => (
-                  <button key={p} type="button" className="estrella" aria-label={tr(`${p} estrella${p === 1 ? '' : 's'}`, `${p} star${p === 1 ? '' : 's'}`)}
-                    onClick={() => ponNota('p', p)}>☆</button>
+                  <button key={p} type="button" className={`estrella${nota.p >= p ? ' on' : ''}`} role="radio" aria-checked={nota.p === p}
+                    aria-label={tr(`${p} estrella${p === 1 ? '' : 's'}`, `${p} star${p === 1 ? '' : 's'}`)}
+                    onClick={() => ponNota('p', p)}>{nota.p >= p ? '★' : '☆'}</button>
                 ))}
               </span>
               <button type="button" className="ghost valora-rapido-resena" onClick={() => {
@@ -3937,7 +3989,12 @@ function DondeEstoy({ version, siguiente, onPrepara }) {
                 <section key={s.id || s.titulo} className="indice-saga">
                   <button type="button" className="indice-saga-cab" onClick={() => salta(s.el)}>
                     <span className="indice-saga-titulo">{s.titulo}</span>
-                    {s.cuenta && <span className="indice-cuenta">{s.cuenta[0]}/{s.cuenta[1]}</span>}
+                    {/* la cabecera también salta (al principio de la saga): sin
+                        flecha parecía un rótulo y nadie la tocaba (revisión HIG) */}
+                    <span className="indice-saga-fin">
+                      {s.cuenta && <span className="indice-cuenta">{s.cuenta[0]}/{s.cuenta[1]}</span>}
+                      <svg className="indice-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                    </span>
                   </button>
                   <ul className="indice-eras">
                     {s.eras.map(e => {
