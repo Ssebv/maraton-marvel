@@ -271,6 +271,29 @@ const PERFIL_EN_URL = (() => {
   try { const m = window.location.hash.match(/^#u\/([a-z0-9_]{3,20})$/); return m ? m[1] : null } catch { return null }
 })()
 const enlacePerfil = nombre => `${window.location.origin}${window.location.pathname}#u/${nombre}`
+// #c/direccion abre una comunidad; #i/codigo es una invitación
+const COMUNIDAD_EN_URL = (() => {
+  try { const m = window.location.hash.match(/^#c\/([a-z0-9-]{3,30})$/); return m ? m[1] : null } catch { return null }
+})()
+const INVITACION_EN_URL = (() => {
+  try { const m = window.location.hash.match(/^#i\/([a-f0-9]{16,40})$/); return m ? m[1] : null } catch { return null }
+})()
+const enlaceComunidad = d => `${window.location.origin}${window.location.pathname}#c/${d}`
+const enlaceInvitacion = c => `${window.location.origin}${window.location.pathname}#i/${c}`
+const TIPOS_COMUNIDAD = [
+  ['publica', 'Pública', 'Public', 'Cualquiera la encuentra y entra.', 'Anyone can find it and join.'],
+  ['invitacion', 'Con invitación', 'Invite only', 'Cualquiera la ve; para entrar hace falta un enlace de invitación.', 'Anyone can see it; joining needs an invite link.'],
+  ['privada', 'Privada', 'Private', 'Solo la ven sus miembros; se entra con invitación.', 'Only members can see it; joining needs an invite.'],
+]
+const CAMPOS_COMUNIDAD = 'id,direccion,nombre,descripcion,portada,tipo,dueno,miembros,creado'
+const saneaComunidad = x => (esObj(x) && typeof x.id === 'string' && typeof x.direccion === 'string' && typeof x.nombre === 'string' ? {
+  id: x.id, direccion: x.direccion.slice(0, 30), nombre: x.nombre.slice(0, 60),
+  descripcion: typeof x.descripcion === 'string' ? x.descripcion.slice(0, 500) : '',
+  portada: typeof x.portada === 'string' ? x.portada : null,
+  tipo: ['publica', 'invitacion', 'privada'].includes(x.tipo) ? x.tipo : 'publica',
+  dueno: typeof x.dueno === 'string' ? x.dueno : null, miembros: Number(x.miembros) || 0,
+} : null)
+const direccionDe = nombre => nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30).replace(/-+$/, '')
 // El perfil público de la comunidad (tabla perfiles)
 const CAMPOS_PERFIL = 'id,nombre,nombre_visible,avatar,bio,saga_favorita,priv_progreso,priv_resenas,priv_logros'
 const PRIVACIDADES = ['publico', 'seguidores', 'privado']
@@ -787,7 +810,8 @@ const ACENTOS = [
 const DESTINOS = [
   { id: 'maraton', label: 'Maratón', en: 'Marathon', vistas: ['crono', 'estreno', 'comics', 'animacion', 'galeria', 'tiempo'] },
   // Perfil abre en lo tuyo (progreso, racha, logros); las listas, después
-  { id: 'mio', label: 'Perfil', en: 'Profile', vistas: ['stats', 'listas'] },
+  // Comunidades solo existe con la cuenta encendida (src/nube.js)
+  { id: 'mio', label: 'Perfil', en: 'Profile', vistas: NUBE ? ['stats', 'listas', 'comunidades'] : ['stats', 'listas'] },
   { id: 'multiverso', label: 'Multiverso', en: 'Multiverse', vistas: ['multiverso'] },
 ]
 const destinoDe = v => (DESTINOS.find(d => d.vistas.includes(v)) || DESTINOS[0]).id
@@ -831,9 +855,10 @@ function fmtDur(d) {
 }
 
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
-const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo']
+const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo', ...(NUBE ? ['comunidades'] : [])]
 const PESTANAS = [
   { id: 'crono', label: 'Cronológico', en: 'Chronological' },
+  { id: 'comunidades', label: 'Comunidades', en: 'Communities' },
   { id: 'estreno', label: 'Por estreno', en: 'By release' },
   { id: 'comics', label: 'Cómics', en: 'Comics' },
   { id: 'animacion', label: 'Animación', en: 'Animation' },
@@ -2115,6 +2140,344 @@ function PerfilPublico({ saliendo, nombre, cuenta, token, onCerrar, onEntrar }) 
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Comunidades (fase 3, estilo Strava) ──
+// Perfil › Comunidades: las tuyas, descubrir las públicas, crear una y entrar
+// con código. Sin cuenta se ven las públicas y se invita a entrar.
+function ComunidadTarjeta({ c, papel, onAbrir }) {
+  const tipo = TIPOS_COMUNIDAD.find(t => t[0] === c.tipo)
+  return (
+    <li>
+      <button className="comunidad-tarjeta" onClick={() => onAbrir(c.direccion)}>
+        {c.portada && POSTERS[c.portada] ? <img src={POSTERS[c.portada]} alt="" loading="lazy" decoding="async" /> : <span className="comunidad-sin-portada" aria-hidden="true" />}
+        <span className="comunidad-textos">
+          <span className="comunidad-nombre">{c.nombre}</span>
+          <span className="comunidad-meta">{c.miembros === 1 ? tr('1 miembro', '1 member') : tr(`${c.miembros} miembros`, `${c.miembros} members`)} · {tipo ? tr(tipo[1], tipo[2]) : ''}</span>
+        </span>
+        {papel && papel !== 'miembro' && <span className="tipo opc">{papel === 'dueno' ? tr('Dueño', 'Owner') : tr('Moderas', 'Moderator')}</span>}
+      </button>
+    </li>
+  )
+}
+
+function Comunidades({ cuenta, token, recarga, onEntrar, onAbrir, onCrear, onCodigo }) {
+  const [mias, setMias] = useState(null)
+  const [publicas, setPublicas] = useState(null)
+  const [codigo, setCodigo] = useState('')
+  const [errorCodigo, setErrorCodigo] = useState('')
+  useEffect(() => {
+    let vivo = true
+    ;(async () => {
+      try {
+        const t = cuenta ? await token() : null
+        const [m, p] = await Promise.all([
+          cuenta ? rest(t, `membresias?usuario=eq.${cuenta.uid}&select=papel,comunidad:comunidades(${CAMPOS_COMUNIDAD})&order=desde.desc`) : Promise.resolve([]),
+          rest(t, `comunidades?tipo=eq.publica&oculta=eq.false&select=${CAMPOS_COMUNIDAD}&order=miembros.desc,creado.desc&limit=30`),
+        ])
+        if (!vivo) return
+        const lm = (Array.isArray(m) ? m : []).map(f => { const c = saneaComunidad(f && f.comunidad); return c && { c, papel: f.papel } }).filter(Boolean)
+        setMias(lm)
+        const ids = new Set(lm.map(x => x.c.id))
+        setPublicas((Array.isArray(p) ? p : []).map(saneaComunidad).filter(c => c && !ids.has(c.id)))
+      } catch { if (vivo) { setMias(m => m || []); setPublicas(p => p || []) } }
+    })()
+    return () => { vivo = false }
+  }, [cuenta && cuenta.uid, recarga])
+  return (
+    <div className="comunidades">
+      <header className="comunidades-cab">
+        <p className="saga-desc">{tr('Grupos para ver el maratón juntos: ranking semanal de horas, retos y lo que va marcando cada uno.', 'Groups to watch the marathon together: weekly hours ranking, challenges and what everyone is marking.')}</p>
+        {cuenta
+          ? <button className="accion-principal" onClick={onCrear}>{tr('Crear comunidad', 'Create community')}</button>
+          : <button className="accion-principal" onClick={onEntrar}>{tr('Entra para unirte o crear una', 'Sign in to join or create one')}</button>}
+      </header>
+      {cuenta && (
+        <form className="cuenta-buscar comunidades-codigo" onSubmit={async e => {
+          e.preventDefault()
+          const m = codigo.trim().match(/([a-f0-9]{16,40})\s*$/i)
+          if (!m) { setErrorCodigo(tr('Pega el enlace o el código de la invitación.', 'Paste the invite link or code.')); return }
+          setErrorCodigo('')
+          const r = await onCodigo(m[1].toLowerCase())
+          if (r) setErrorCodigo(r)
+          else setCodigo('')
+        }}>
+          <label className="ajuste-pista" htmlFor="comunidad-codigo">{tr('¿Te invitaron? Pega el enlace o el código', 'Invited? Paste the link or code')}</label>
+          <div className="cuenta-correo-fila">
+            <input id="comunidad-codigo" className="busca" autoCapitalize="none" autoComplete="off" spellCheck={false}
+              placeholder={tr('Enlace o código', 'Link or code')} value={codigo} onChange={e => setCodigo(e.target.value)} />
+            <button className="chip-btn" type="submit">{tr('Entrar', 'Join')}</button>
+          </div>
+          {errorCodigo && <span className="import-error" role="status">{errorCodigo}</span>}
+        </form>
+      )}
+      {cuenta && (
+        <section className="comunidades-bloque">
+          <h3 className="grafica-titulo">{tr('Tus comunidades', 'Your communities')}</h3>
+          {mias === null ? <p className="ajuste-pista" role="status">{tr('Cargando…', 'Loading…')}</p>
+            : mias.length === 0 ? <p className="ajuste-pista">{tr('Aún no estás en ninguna. Crea una para tus amigos o entra en una pública.', 'You’re not in any yet. Create one for your friends or join a public one.')}</p>
+            : <ul className="comunidades-lista">{mias.map(({ c, papel }) => <ComunidadTarjeta key={c.id} c={c} papel={papel} onAbrir={onAbrir} />)}</ul>}
+        </section>
+      )}
+      <section className="comunidades-bloque">
+        <h3 className="grafica-titulo">{tr('Descubrir', 'Discover')}</h3>
+        {publicas === null ? <p className="ajuste-pista" role="status">{tr('Cargando…', 'Loading…')}</p>
+          : publicas.length === 0 ? <p className="ajuste-pista">{tr('No hay comunidades públicas todavía.', 'No public communities yet.')}</p>
+          : <ul className="comunidades-lista">{publicas.map(c => <ComunidadTarjeta key={c.id} c={c} onAbrir={onAbrir} />)}</ul>}
+      </section>
+    </div>
+  )
+}
+
+// Una comunidad (#c/direccion): cabecera, entrar o salir, invitar, el
+// ranking de horas de la semana o del mes (calculado en la base con los
+// minutos del catálogo) y tus preferencias de miembro.
+function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerfil, onCambio, onEntrar }) {
+  const ref = useRef(null)
+  useDialogo(ref, onCerrar)
+  const [c, setC] = useState(null) // null cargando · false no existe o privada · 'error' · objeto
+  const [yo, setYo] = useState(null) // membresía propia o null
+  const [ventana, setVentana] = useState('semana')
+  const [ranking, setRanking] = useState(null)
+  const [invitacion, setInvitacion] = useState(null)
+  const [copiado, setCopiado] = useState(false)
+  const [ocupado, setOcupado] = useState(false)
+  const [grupo, indicador] = useIndicador(ventana)
+  const carga = async () => {
+    try {
+      const t = cuenta ? await token() : null
+      const filas = await rest(t, `comunidades?direccion=eq.${direccion}&select=${CAMPOS_COMUNIDAD}`)
+      const k = Array.isArray(filas) && saneaComunidad(filas[0])
+      if (!k) { setC(false); return }
+      setC(k)
+      if (cuenta) {
+        const m = await rest(t, `membresias?comunidad=eq.${k.id}&usuario=eq.${cuenta.uid}&select=papel,muro_activo,en_ranking`)
+        setYo(Array.isArray(m) && esObj(m[0]) ? m[0] : null)
+      }
+    } catch { setC('error') }
+  }
+  useEffect(() => { setC(null); setYo(null); carga() }, [direccion, cuenta && cuenta.uid])
+  const ok = esObj(c)
+  useEffect(() => {
+    if (!ok) return undefined
+    let vivo = true
+    setRanking(null)
+    ;(async () => {
+      try {
+        const desde = new Date(Date.now() - (ventana === 'semana' ? 7 : 30) * 864e5).toISOString()
+        const filas = await rest(cuenta ? await token() : null, 'rpc/ranking', { method: 'POST', body: { comunidad_in: c.id, desde_in: desde } })
+        if (vivo) setRanking((Array.isArray(filas) ? filas : []).filter(f => esObj(f) && typeof f.nombre === 'string'))
+      } catch { if (vivo) setRanking([]) }
+    })()
+    return () => { vivo = false }
+  }, [ok && c.id, ventana, yo && yo.en_ranking])
+  const accion = async fn => {
+    setOcupado(true)
+    try { await fn(await token()); await carga(); onCambio() } catch { /* el estado se queda como estaba */ } finally { setOcupado(false) }
+  }
+  const puedeInvitar = yo && (yo.papel === 'dueno' || yo.papel === 'moderador')
+  const tipo = ok && TIPOS_COMUNIDAD.find(t => t[0] === c.tipo)
+  return (
+    <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onCerrar} role="dialog" aria-modal="true" aria-label={ok ? c.nombre : tr('Comunidad', 'Community')}>
+      <div className="modal comunidad-hoja" onClick={e => e.stopPropagation()}>
+        <button className="cerrar" onClick={onCerrar} aria-label={tr('Cerrar', 'Close')}>✕</button>
+        <div className="modal-info">
+          {c === null && <p className="modal-res" role="status">{tr('Cargando comunidad…', 'Loading community…')}</p>}
+          {c === false && <p className="modal-res" role="status">{tr('Esta comunidad no existe o es privada.', 'This community doesn’t exist or is private.')}</p>}
+          {c === 'error' && <p className="aviso-sin-red" role="status">{tr('No se pudo cargar. Revisa la conexión.', 'Could not load. Check your connection.')}</p>}
+          {ok && (
+            <>
+              <header className="perfil-cab">
+                {c.portada && POSTERS[c.portada] ? <img className="comunidad-portada" src={POSTERS[c.portada]} alt="" /> : <span className="comunidad-portada comunidad-sin-portada" aria-hidden="true" />}
+                <div className="perfil-textos">
+                  <h2 className="modal-titulo">{c.nombre}</h2>
+                  <p className="perfil-cuenta"><b>{c.miembros}</b> {c.miembros === 1 ? tr('miembro', 'member') : tr('miembros', 'members')} · {tipo ? tr(tipo[1], tipo[2]) : ''}</p>
+                </div>
+              </header>
+              {c.descripcion && <p className="modal-res perfil-bio">{c.descripcion}</p>}
+              <div className="modal-acciones">
+                {!cuenta && <button className="accion-principal" onClick={onEntrar}>{tr('Entra para unirte', 'Sign in to join')}</button>}
+                {cuenta && !yo && c.tipo === 'publica' && (
+                  <button className="accion-principal" disabled={ocupado} onClick={() => accion(t => rest(t, 'membresias', { method: 'POST', prefer: 'return=minimal', body: { comunidad: c.id, usuario: cuenta.uid } }))}>
+                    {tr('Unirme', 'Join')}
+                  </button>
+                )}
+                {cuenta && !yo && c.tipo !== 'publica' && <p className="ajuste-pista">{tr('Para entrar hace falta una invitación de alguien de dentro.', 'You need an invite from someone inside to join.')}</p>}
+                {puedeInvitar && (
+                  <button className="chip-btn" disabled={ocupado} onClick={() => accion(async t => {
+                    const filas = await rest(t, 'invitaciones?select=codigo', { method: 'POST', prefer: 'return=representation', body: { comunidad: c.id, creada_por: cuenta.uid } })
+                    const cod = Array.isArray(filas) && filas[0] && filas[0].codigo
+                    if (typeof cod === 'string') setInvitacion(enlaceInvitacion(cod))
+                  })}>{tr('Invitar', 'Invite')}</button>
+                )}
+                <button className="chip-btn" onClick={() => {
+                  const url = enlaceComunidad(c.direccion)
+                  if (navigator.share) navigator.share({ url, title: c.nombre }).catch(() => {})
+                  else navigator.clipboard.writeText(url).then(() => { setCopiado(true); setTimeout(() => setCopiado(false), 2500) })
+                }}>{copiado ? tr('¡Enlace copiado!', 'Link copied!') : tr('Compartir', 'Share')}</button>
+              </div>
+              {invitacion && (
+                <div className="sync-codigo comunidad-invitacion">
+                  <span className="ajuste-pista">{tr('Enlace de invitación (vale 14 días y 25 usos):', 'Invite link (valid 14 days, 25 uses):')}</span>
+                  <code>{invitacion}</code>
+                  <button className="chip-btn" onClick={() => {
+                    if (navigator.share) navigator.share({ url: invitacion, title: tr(`Únete a ${c.nombre}`, `Join ${c.nombre}`) }).catch(() => {})
+                    else navigator.clipboard.writeText(invitacion)
+                  }}>{tr('Enviar invitación', 'Send invite')}</button>
+                </div>
+              )}
+              <section className="comunidad-ranking">
+                <div className="grafica-cab">
+                  <h3 className="grafica-titulo">{tr('Ranking', 'Leaderboard')}</h3>
+                  <div className="tabs grafica-modos" ref={grupo} role="group" aria-label={tr('Periodo del ranking', 'Leaderboard period')}>
+                    <span className="indicador" ref={indicador} aria-hidden="true" />
+                    <button type="button" className="tab" aria-pressed={ventana === 'semana'} onClick={() => setVentana('semana')}>{tr('7 días', '7 days')}</button>
+                    <button type="button" className="tab" aria-pressed={ventana === 'mes'} onClick={() => setVentana('mes')}>{tr('30 días', '30 days')}</button>
+                  </div>
+                </div>
+                {ranking === null ? <p className="ajuste-pista" role="status">{tr('Calculando…', 'Calculating…')}</p>
+                  : ranking.length === 0 ? <p className="ajuste-pista">{tr('Nadie aparece todavía.', 'Nobody shows up yet.')}</p>
+                  : (
+                    <ol className="ranking-lista">
+                      {ranking.map((f, i) => (
+                        <li key={f.usuario} className={cuenta && f.usuario === cuenta.uid ? 'yo' : undefined}>
+                          <button className="ranking-fila" onClick={() => onVerPerfil(f.nombre)}>
+                            <span className="ranking-pos">{i + 1}</span>
+                            {POSTERS[f.avatar] ? <img className="ranking-avatar" src={POSTERS[f.avatar]} alt="" loading="lazy" /> : <span className="ranking-avatar" aria-hidden="true" />}
+                            <span className="ranking-nombre">@{f.nombre}{cuenta && f.usuario === cuenta.uid ? tr(' · tú', ' · you') : ''}
+                              <small>{tr(`${f.titulos} ${f.titulos === 1 ? 'título' : 'títulos'} · ${f.episodios} ${f.episodios === 1 ? 'episodio' : 'episodios'}`, `${f.titulos} ${f.titulos === 1 ? 'title' : 'titles'} · ${f.episodios} ${f.episodios === 1 ? 'episode' : 'episodes'}`)}</small>
+                            </span>
+                            <span className="ranking-horas">{f.minutos > 0 ? fmtDur(f.minutos) : '—'}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+              </section>
+              {yo && (
+                <section className="comunidad-yo">
+                  <h3 className="grafica-titulo">{tr('Tú en esta comunidad', 'You in this community')}</h3>
+                  <label className="crea-edad">
+                    <input type="checkbox" checked={yo.en_ranking} disabled={ocupado}
+                      onChange={e => { const v = e.target.checked; accion(t => rest(t, `membresias?comunidad=eq.${c.id}&usuario=eq.${cuenta.uid}`, { method: 'PATCH', prefer: 'return=minimal', body: { en_ranking: v } })) }} />
+                    <span>{tr('Aparecer en el ranking', 'Show me on the leaderboard')}</span>
+                  </label>
+                  {/* «Compartir en el muro» llega con el muro: sin él, sería un interruptor que no hace nada */}
+                  {yo.papel !== 'dueno' && (
+                    <button className="chip-btn peligro" disabled={ocupado} onClick={() => accion(t => rest(t, `membresias?comunidad=eq.${c.id}&usuario=eq.${cuenta.uid}`, { method: 'DELETE', prefer: 'return=minimal' }))}>
+                      {tr('Salir de la comunidad', 'Leave community')}
+                    </button>
+                  )}
+                </section>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Crear una comunidad: nombre, dirección (#c/…) libre, descripción, tipo y
+// portada del catálogo. Quien la crea es su dueño (lo pone la base).
+function CreaComunidad({ saliendo, cuenta, token, onCreada, onCerrar }) {
+  const ref = useRef(null)
+  useDialogo(ref, onCerrar)
+  const [nombre, setNombre] = useState('')
+  const [direccion, setDireccion] = useState('')
+  const [tocada, setTocada] = useState(false)
+  const [descripcion, setDescripcion] = useState('')
+  const [tipo, setTipo] = useState('invitacion')
+  const [portada, setPortada] = useState(AVATARES[0])
+  const [libre, setLibre] = useState(null)
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const dir = tocada ? direccion : direccionDe(nombre)
+  const valida = /^[a-z0-9-]{3,30}$/.test(dir) && nombre.trim().length >= 3
+  useEffect(() => {
+    if (!/^[a-z0-9-]{3,30}$/.test(dir)) { setLibre(null); return undefined }
+    setLibre('mirando')
+    let vivo = true
+    const id = setTimeout(async () => {
+      try {
+        // ojo: una privada ajena no se ve; si la dirección está cogida, lo dirá la base al crear
+        const filas = await rest(await token(), `comunidades?direccion=eq.${dir}&select=id`)
+        if (vivo) setLibre(!(Array.isArray(filas) && filas.length))
+      } catch { if (vivo) setLibre(null) }
+    }, 400)
+    return () => { vivo = false; clearTimeout(id) }
+  }, [dir])
+  const crea = async e => {
+    e.preventDefault()
+    if (!valida || libre === false) return
+    setEnviando(true); setError('')
+    try {
+      const filas = await rest(await token(), `comunidades?select=${CAMPOS_COMUNIDAD}`, {
+        method: 'POST', prefer: 'return=representation',
+        body: { direccion: dir, nombre: nombre.trim(), descripcion: descripcion.trim() || null, tipo, portada, dueno: cuenta.uid },
+      })
+      const k = Array.isArray(filas) && saneaComunidad(filas[0])
+      if (!k) throw new Error('respuesta')
+      onCreada(k)
+    } catch (er) {
+      setEnviando(false)
+      setError(er && er.codigo === '23505' ? tr('Esa dirección ya está en uso.', 'That address is already taken.')
+        : er && /límite/.test(er.message) ? tr('Has llegado al máximo de comunidades por ahora.', 'You’ve reached the community limit for now.')
+        : tr('No se pudo crear. Inténtalo otra vez.', 'Could not create it. Try again.'))
+    }
+  }
+  return (
+    <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onCerrar} role="dialog" aria-modal="true" aria-labelledby="crea-comunidad-titulo">
+      <form className="modal modal-sync crea-perfil crea-comunidad" onClick={e => e.stopPropagation()} onSubmit={crea}>
+        <button type="button" className="cerrar" onClick={onCerrar} aria-label={tr('Cerrar', 'Close')}>✕</button>
+        <div className="modal-info">
+          <h2 className="modal-titulo" id="crea-comunidad-titulo">{tr('Nueva comunidad', 'New community')}</h2>
+          <label className="valoracion-label" htmlFor="comunidad-nombre">{tr('Nombre', 'Name')}</label>
+          <input id="comunidad-nombre" className="busca sync-input" maxLength={60} autoComplete="off" value={nombre}
+            onChange={e => setNombre(e.target.value)} placeholder={tr('Los del Multiverso', 'The Multiverse crew')} />
+          <label className="valoracion-label" htmlFor="comunidad-direccion">{tr('Dirección', 'Address')}</label>
+          <div className="crea-nombre-fila">
+            <span className="crea-arroba" aria-hidden="true">#c/</span>
+            <input id="comunidad-direccion" className="busca sync-input" maxLength={30} autoCapitalize="none" spellCheck={false} value={dir}
+              onChange={e => { setTocada(true); setDireccion(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')) }} aria-describedby="comunidad-direccion-estado" />
+          </div>
+          <span id="comunidad-direccion-estado" className={`crea-estado${libre === false ? ' mal' : ''}`} role="status">
+            {!dir ? tr('Se forma con el nombre: letras, números y guiones', 'Built from the name: letters, numbers and hyphens')
+              : !/^[a-z0-9-]{3,30}$/.test(dir) ? tr('Entre 3 y 30: letras, números y guiones', '3 to 30: letters, numbers and hyphens')
+              : libre === 'mirando' ? tr('Mirando si está libre…', 'Checking if it’s free…')
+              : libre === false ? tr('Esa dirección ya está en uso', 'That address is taken') : libre === true ? tr('Libre', 'Available') : ''}
+          </span>
+          <label className="valoracion-label" htmlFor="comunidad-descripcion">{tr('De qué va (opcional)', 'What it’s about (optional)')}</label>
+          <textarea id="comunidad-descripcion" className="busca sync-input comunidad-descripcion" maxLength={500} rows={3} value={descripcion} onChange={e => setDescripcion(e.target.value)} />
+          <span className="valoracion-label" id="comunidad-tipo">{tr('Quién puede entrar', 'Who can join')}</span>
+          <div className="comunidad-tipos" role="radiogroup" aria-labelledby="comunidad-tipo">
+            {TIPOS_COMUNIDAD.map(([id, es, en, des, den]) => (
+              <button type="button" key={id} className="comunidad-tipo" role="radio" aria-checked={tipo === id} onClick={() => setTipo(id)}>
+                <b>{tr(es, en)}</b><span>{tr(des, den)}</span>
+              </button>
+            ))}
+          </div>
+          <span className="valoracion-label" id="comunidad-portada">{tr('Portada', 'Cover')}</span>
+          <div className="crea-avatares" role="radiogroup" aria-labelledby="comunidad-portada">
+            {AVATARES.filter(id => POSTERS[id]).map(id => {
+              const it = buscaItem(id)
+              return (
+                <button type="button" key={id} className="crea-avatar" role="radio" aria-checked={portada === id} aria-label={it ? it.item.t : id} onClick={() => setPortada(id)}>
+                  <img src={POSTERS[id]} alt="" loading="lazy" decoding="async" />
+                </button>
+              )
+            })}
+          </div>
+          {error && <p className="import-error" role="alert">{error}</p>}
+          <div className="modal-acciones">
+            <button type="submit" className="accion-principal" disabled={!valida || libre === false || libre === 'mirando' || enviando}>
+              {enviando ? tr('Creando…', 'Creating…') : tr('Crear comunidad', 'Create community')}
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   )
 }
@@ -4794,8 +5157,12 @@ export default function App() {
       const h = window.location.hash.replace('#', '')
       // #u/nombre no es una vista: abre ese perfil encima y deja la URL como estaba
       const u = h.match(/^u\/([a-z0-9_]{3,20})$/)
-      if (u) {
-        if (NUBE) setPerfilPublico(u[1])
+      const k = h.match(/^c\/([a-z0-9-]{3,30})$/)
+      const inv = h.match(/^i\/([a-f0-9]{16,40})$/)
+      if (u || k || inv) {
+        if (NUBE && u) setPerfilPublico(u[1])
+        if (NUBE && k) setComunidadAbierta(k[1])
+        if (NUBE && inv) setInvitacionPendiente(inv[1])
         if (urlEstado) history.replaceState(history.state, '', urlEstado)
         return
       }
@@ -5211,6 +5578,11 @@ export default function App() {
   const [cuentaAviso, setCuentaAviso] = useState(null)
   // el perfil de la comunidad abierto (#u/nombre)
   const [perfilPublico, setPerfilPublico] = useState(() => (NUBE ? PERFIL_EN_URL : null))
+  const [comunidadAbierta, setComunidadAbierta] = useState(() => (NUBE ? COMUNIDAD_EN_URL : null))
+  const [creaComunidad, setCreaComunidad] = useState(false)
+  const [recargaComunidades, setRecargaComunidades] = useState(0)
+  // una invitación (#i/código) se canjea en cuanto hay cuenta con perfil
+  const [invitacionPendiente, setInvitacionPendiente] = useState(() => (NUBE ? INVITACION_EN_URL : null))
   // recién entrado: primero se funde lo local con lo remoto, y hasta que
   // termina no arranca la sincronización normal (su primer tirón pisaría lo
   // local con lo remoto viejo)
@@ -5463,6 +5835,29 @@ export default function App() {
     })()
     return () => { vivo = false }
   }, [cuenta, perfilCuenta, fusionando])
+  // entrar con una invitación: devuelve un mensaje de error o null
+  const usaInvitacion = async codigo => {
+    try {
+      const id = await rest(await tokenCuenta(), 'rpc/unirse_con_codigo', { method: 'POST', body: { codigo_in: codigo } })
+      if (typeof id !== 'string') throw new Error('respuesta')
+      const filas = await rest(await tokenCuenta(), `comunidades?id=eq.${id}&select=direccion`)
+      setRecargaComunidades(n => n + 1)
+      if (Array.isArray(filas) && filas[0]) setComunidadAbierta(filas[0].direccion)
+      return null
+    } catch (er) {
+      return er && /expulsaron/.test(er.message) ? tr('Te expulsaron de esa comunidad.', 'You were removed from that community.')
+        : er && /no válida/.test(er.message) ? tr('La invitación no vale: caducó, se agotó o no existe.', 'That invite isn’t valid: expired, used up or doesn’t exist.')
+        : tr('No se pudo entrar. Inténtalo otra vez.', 'Could not join. Try again.')
+    }
+  }
+  useEffect(() => {
+    if (!invitacionPendiente || !NUBE) return
+    if (!cuenta) { setCuentaAviso(tr('Entra (y crea tu perfil) para aceptar la invitación.', 'Sign in (and create your profile) to accept the invite.')); setAjustes(true); return }
+    if (!cuentaLista) return
+    const cod = invitacionPendiente
+    setInvitacionPendiente(null)
+    usaInvitacion(cod).then(err => { if (err) { setCuentaAviso(err); setAjustes(true) } })
+  }, [invitacionPendiente, cuentaLista])
   const cambiaPrivacidad = async (campo, valor) => {
     if (!perfilCuenta || !PRIVACIDADES.includes(valor)) return
     const antes = perfilCuenta[campo]
@@ -6294,6 +6689,12 @@ export default function App() {
   const [perfilMMontado, perfilMSale] = useSaliente(perfilModal)
   const [creaPerfilMontado, creaPerfilSale] = useSaliente(creaPerfil && !!cuenta && perfilCuenta === false)
   const [perfilPubMontado, perfilPubSale] = useSaliente(!!perfilPublico)
+  const [comunidadMontada, comunidadSale] = useSaliente(!!comunidadAbierta)
+  const comunidadUltima = useRef(comunidadAbierta)
+  if (comunidadAbierta) comunidadUltima.current = comunidadAbierta
+  useVolverCierra(comunidadAbierta, () => setComunidadAbierta(null))
+  const [creaComunidadMontada, creaComunidadSale] = useSaliente(creaComunidad && !!cuentaLista)
+  useVolverCierra(creaComunidad && !!cuentaLista, () => setCreaComunidad(false))
   const perfilPubUltimo = useRef(perfilPublico)
   if (perfilPublico) perfilPubUltimo.current = perfilPublico
   useVolverCierra(perfilPublico, () => setPerfilPublico(null))
@@ -6780,6 +7181,12 @@ export default function App() {
               </div>
             )
           })()}
+        </main>
+      ) : vista === 'comunidades' ? (
+        <main className="comunidades-vista">
+          <Comunidades cuenta={cuentaLista ? cuenta : null} token={tokenCuenta} recarga={recargaComunidades}
+            onEntrar={() => setAjustes(true)} onAbrir={d => setComunidadAbierta(d)}
+            onCrear={() => setCreaComunidad(true)} onCodigo={usaInvitacion} />
         </main>
       ) : vista === 'listas' ? (
         <main className="listas-vista">
@@ -7415,6 +7822,16 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+      {comunidadMontada && NUBE && (
+        <ComunidadHoja key={comunidadUltima.current} saliendo={comunidadSale} direccion={comunidadUltima.current}
+          cuenta={cuentaLista ? cuenta : null} token={tokenCuenta} onCerrar={() => setComunidadAbierta(null)}
+          onVerPerfil={n => setPerfilPublico(n)} onCambio={() => setRecargaComunidades(n => n + 1)}
+          onEntrar={() => { setComunidadAbierta(null); setAjustes(true) }} />
+      )}
+      {creaComunidadMontada && cuenta && (
+        <CreaComunidad saliendo={creaComunidadSale} cuenta={cuenta} token={tokenCuenta} onCerrar={() => setCreaComunidad(false)}
+          onCreada={k => { setCreaComunidad(false); setRecargaComunidades(n => n + 1); setComunidadAbierta(k.direccion) }} />
       )}
       {perfilPubMontado && NUBE && (
         <PerfilPublico key={perfilPubUltimo.current} saliendo={perfilPubSale} nombre={perfilPubUltimo.current} cuenta={cuentaLista ? cuenta : null}
