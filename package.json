@@ -9,6 +9,8 @@
     "desplegar": "npm run build && rm -rf docs && cp -R dist docs && node scripts/verifica.mjs && node scripts/espejo.mjs",
     "sonda": "node scripts/sondas/todas.mjs",
     "produccion": "node scripts/sondas/produccion.mjs",
+    "comunidad:rls": "node scripts/comunidad/rls.mjs",
+    "comunidad:catalogo": "node scripts/comunidad/catalogo.mjs",
     "contrato": "node scripts/contrato.mjs",
     "plataformas": "node scripts/plataformas.mjs; node scripts/paises.mjs; node scripts/titulos.mjs; node scripts/titulos-en.mjs; node scripts/episodios.mjs; node scripts/episodios-en.mjs",
     "titulos": "node scripts/titulos.mjs",

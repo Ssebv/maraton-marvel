@@ -164,6 +164,8 @@ npm test        # comprueba el contrato, el dataset, los archivos y las reglas d
 npm run desplegar   # verifica → compila → copia a docs/ → vuelve a verificar
 npm run sonda       # Chrome sin cabeza contra dist/: humo, cupo, HIG, detalles, barra, fluidez y memoria
 npm run produccion  # tras el push: espera a que Pages sirva el md5 de docs/
+npm run comunidad:rls       # reglas de la base de la comunidad en un PostgreSQL local (67 comprobaciones)
+npm run comunidad:catalogo  # regenera supabase/catalogo.sql cuando entra un título
 ```
 
 `npm run desplegar` es el flujo entero: si algo no cuadra, para antes de tocar `docs/`. Tras él quedan commit y push, y GitHub Pages sirve `docs/` de `main`. El `.nojekyll` es necesario (sin él, Jekyll rompe el build).
@@ -189,6 +191,8 @@ npm run produccion  # tras el push: espera a que Pages sirva el md5 de docs/
 7. **`memoria`**: seis vueltas por todas las vistas abriendo y cerrando fichas; falla si entre la vuelta de la mitad y la última crecen el heap (>5 %), los nodos, los oyentes o los intervalos vivos. Medido el 16 de septiembre de 2026: 6 MB de heap, 3.637 nodos y 3 intervalos, planos: sin fugas.
 
 Se corre una sola con `node scripts/sondas/<nombre>.mjs`. `lib.mjs` trae `abre`, `navega`, `memoria`, `toca` y `captura` para escribir una nueva.
+
+**Comunidades** (fase 1 del plan del 16 de septiembre de 2026, `supabase/`): la base de cuentas, perfiles, comunidades, discusiones y moderación está escrita y probada, pero aún **no está conectada a la app**. Todo en planes gratuitos: Supabase Free (Postgres con reglas por fila, sin Cloud Functions: contadores, límites por hora, filtro de enlaces pirata, avisos y moderación con disparadores y funciones SQL), Google OAuth y una tarea de GitHub Actions (`.github/workflows/comunidad-viva.yml`) que cada 3 días evita la pausa por inactividad y poda lo viejo. `npm run comunidad:rls` levanta un PostgreSQL 16 temporal por socket, le pone lo que Supabase trae de serie (roles `anon`/`authenticated`, `auth.uid()` del JWT y sus permisos por defecto, que la migración quita y devuelve por columna) y comprueba 67 reglas con cuentas de prueba: suplantación, privacidad por bloques, comunidades privadas e invitaciones, votos y contadores que solo lleva la base, niveles de respuesta, avisos y menciones, foros de título a las 24 h, límites por hora, bloqueos, moderación con registro, expulsión, suspensión, ranking con minutos del catálogo, muro opt-in, descarga y borrado de cuenta en cascada. Dos fallos que cazó: el `returning` de crear una comunidad privada no la veía (la membresía del dueño aún no existía) y el ranking salía a cero porque el parámetro `desde` quedaba tapado por la columna `membresias.desde`. Poner en marcha: `supabase/LEEME.md`. Normas, privacidad y términos en borrador: `comunidad/`.
 
 **Mantenimiento automático**: una rutina mensual en la nube (Claude Code) investiga estrenos nuevos, actualiza datos/notas/carátulas/episodios, recompila y publica.
 

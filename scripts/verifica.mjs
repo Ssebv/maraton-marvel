@@ -156,6 +156,19 @@ for (const carpeta of ['dist', 'docs']) {
 }
 bien.push('ni dist/ ni docs/ llevan páginas de prueba')
 
+// ── 8 · Catálogo de la comunidad al día ──
+// La base calcula las horas del ranking con supabase/catalogo.sql: un título
+// nuevo que no esté ahí cuenta 0 minutos y sus hilos no se pueden abrir.
+{
+  const f = join(raiz, 'supabase', 'catalogo.sql')
+  if (existsSync(f)) {
+    const sql = readFileSync(f, 'utf8')
+    const faltan = items.filter(it => !sql.includes(`('${it.id}', '${it.saga}', ${Math.round(it.d || 0)}, ${(EPISODES[it.id] || []).length})`))
+    if (faltan.length) ojo(`supabase/catalogo.sql desfasado en ${faltan.length} título(s) (${faltan.slice(0, 3).map(x => x.id).join(', ')}…): npm run comunidad:catalogo y aplícalo en el SQL Editor`)
+    else bien.push(`catálogo de la comunidad al día (${items.length} títulos)`)
+  }
+}
+
 // ── informe ──
 for (const b of bien) console.log('  ✓ ' + b)
 for (const a of avisos) console.log('  · ' + a)

@@ -31,7 +31,9 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 | **Calendario en la portada** (15 sep 2026) | Pedido por Sebastián: ver al entrar qué días viste qué y las reseñas y estrellas que pusiste | Medio |
 | **Pendiente: el progreso de los amigos** (15 sep 2026) | Pedido por Sebastián, para más adelante: ver cómo van sus amigos con el maratón y cómo valoraron lo que vieron, en sus perfiles. Hay piezas: perfil compartible por enlace (bits de lo visto), modo duelo y club (Firebase). Falta: que el perfil lleve fechas y notas/reseñas (hoy solo bits), una vista «Amigos» con varios perfiles guardados y, para verlo en vivo, la cuenta de Google encendida (`src/nube.js`, `NUBE = null`: Sebastián tiene que crear el proyecto Firebase) | Alto |
 
-## Fase 7 — Comunidades (plan del 16 sep 2026, pendiente de decisiones)
+## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
+
+**Estado:** fase 1 hecha en el repo (`supabase/`, `comunidad/`, `npm run comunidad:rls` 67/67). Falta que Sebastián cree el proyecto (supabase/LEEME.md) para conectar la app en la fase 2.
 
 Pedido por Sebastián: cuentas y comunidades «como Strava y Reddit» para discutir. Plan completo en https://claude.ai/artifact/UmawtDJQyyyoTF2z8qm7qc. Recomendado: Supabase (Postgres + RLS + Auth Google/correo + Realtime) en vez del Firebase apagado de `src/nube.js`; edad mínima 14 (Ley 21.719); solo votos a favor al principio; muro de actividad opcional.
 
