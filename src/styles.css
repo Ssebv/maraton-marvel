@@ -1882,7 +1882,13 @@ main.tiempo{margin-top: var(--e-6)}
   .cine-poster .cover{width:min(220px, 52vw)}
   .cine-info{align-items:center}
   .cine-centro{gap: var(--e-4)}
+  /* los dos botones centrados uno bajo otro y el principal sin partirse:
+     «Ver ficha» quedaba descolgado a la izquierda */
+  .cine-info .modal-acciones{flex-direction:column; align-items:center}
+  .cine-info .accion-principal{white-space:nowrap}
 }
+/* con el dedo no hay flechas ni Enter ni Esc */
+@media (hover: none){ .cine-ayuda{display:none} }
 
 /* ── Vista por estreno ── */
 .anio{margin-top: var(--e-7)}
@@ -2876,6 +2882,10 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .lector-pag img{max-width:100%; max-height:100%; object-fit:contain; display:block; background:var(--material)}
 .lector.ancho .lector-pag{align-items:flex-start}
 .lector.ancho .lector-pag img{width:100%; height:auto; max-height:none}
+/* centrada si cabe y desplazable si no (el margen automático no recorta como
+   align-items:center): en el móvil la página quedaba pegada arriba con una
+   franja vacía debajo */
+.lector.ancho .lector-pag:not(.doble) img{margin-block:auto}
 .lector-pdf{flex:1; width:100%; border:0; background:var(--material)}
 .lector-barra{
   display:flex; align-items:center; gap: var(--e-3); flex-wrap:wrap;
