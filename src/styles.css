@@ -2665,6 +2665,54 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .muro-aplaudir.hecho{color:var(--sobre-acento); background:var(--red); border-color:var(--red)}
 .muro-aplausos-propio{font-size: var(--t-xs); color:var(--ink2); white-space:nowrap}
 
+/* discusiones (fase 4) */
+.comunidad-hilos{display:flex; flex-direction:column; gap: var(--e-3)}
+.comunidad-hilos .grafica-cab{display:flex; align-items:center; justify-content:space-between; gap: var(--e-3)}
+.foro-hoja, .hilo-hoja{max-width:760px}
+.foro-hoja .modal-info, .hilo-hoja .modal-info{gap: var(--e-4)}
+.foro-hoja .valoracion-label{margin:0}
+.foro-hoja .modal-acciones{align-items:center}
+.hilos-lista{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap: var(--e-2)}
+.hilo-fila{width:100%; display:flex; flex-direction:column; gap: var(--e-2); padding: var(--e-3) var(--e-4); text-align:left; border:none;
+  border-radius:var(--r-m); background:var(--panel2); color:var(--ink); font:inherit; cursor:pointer}
+.hilo-fila.oculto{opacity:.6}
+.hilo-fila-cab{display:flex; flex-wrap:wrap; align-items:center; gap: var(--e-2)}
+.hilo-fila-titulo{font-weight:700; font-size: var(--t-b); line-height:1.3; text-wrap:pretty}
+.hilo-fila-meta{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+.hilo-ref{font-size: var(--t-s); color:var(--gold-texto); font-weight:600}
+.nuevo-hilo, .respuesta-form{display:flex; flex-direction:column; gap: var(--e-3); padding: var(--e-4); border-radius:var(--r-m); background:var(--panel2)}
+.respuesta-form{padding: var(--e-3); background:transparent; border:1px solid var(--line)}
+.hilo-cuerpo, .respuesta-cuerpo{margin:0; white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.55; text-wrap:pretty}
+.respuesta-cuerpo{font-size: var(--t-m)}
+/* alto mínimo: con un texto corto, «Ver igual» se salía de la caja */
+.hilo-velado{position:relative; border-radius:var(--r-m); overflow:hidden; min-height:150px}
+.hilo-cuerpo.borroso{filter:blur(7px); user-select:none; pointer-events:none; min-height:150px}
+.hilo-velo{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: var(--e-3);
+  padding: var(--e-4); text-align:center; font-weight:600; background:color-mix(in srgb, var(--panel) 55%, transparent)}
+.spoiler{display:inline; padding:0 var(--e-1); border:none; border-radius:var(--r-s); background:var(--ink3); color:transparent; font:inherit; cursor:pointer}
+.spoiler span{color:transparent}
+/* destapado: color propio (heredar del botón traía su transparente) */
+.spoiler.visto{background:var(--panel2); color:var(--ink); cursor:text}
+.spoiler.visto span{color:var(--ink)}
+.mencion{display:inline; padding:0; border:none; background:none; font:inherit; font-weight:600; color:var(--blue); cursor:pointer}
+.hilo-acciones, .respuesta-acciones{display:flex; flex-wrap:wrap; align-items:center; gap: var(--e-2) var(--e-4)}
+.hilo-accion{min-height:36px; padding: var(--e-2) 0; border:none; background:none; font:inherit; font-size: var(--t-s); font-weight:600; color:var(--ink2); cursor:pointer}
+.hilo-accion:hover{color:var(--ink)}
+.voto{font-variant-numeric:tabular-nums}
+.voto.hecho{color:var(--red)}
+.chip-btn.voto.hecho{border-color:var(--red)}
+.hilo-respuestas{display:flex; flex-direction:column; gap: var(--e-3)}
+.respuestas{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap: var(--e-3)}
+.respuestas .respuestas{padding-left: var(--e-5); border-left:2px solid var(--line); margin-top: var(--e-3)}
+.respuesta{display:flex; flex-direction:column; gap: var(--e-1)}
+.respuesta.oculto{opacity:.55}
+.respuesta-cab{display:flex; align-items:baseline; gap: var(--e-3); flex-wrap:wrap}
+.reportar{display:inline-flex; align-items:center; gap: var(--e-2)}
+.reportar .selector{min-height:36px; font-size: var(--t-s)}
+.aviso-fila{width:100%; display:flex; flex-direction:column; gap: var(--e-1); padding: var(--e-3) var(--e-4); text-align:left; border:none; border-radius:var(--r-m);
+  background:var(--panel); color:var(--ink); font:inherit; font-size: var(--t-m); cursor:pointer}
+.tab-insignia-texto{display:inline-grid; place-items:center; min-width:22px; height:22px; padding:0 var(--e-2); border-radius:var(--r-pill); background:var(--red); color:var(--sobre-acento); font-size: var(--t-xs); vertical-align:middle}
+
 /* el perfil de la comunidad */
 .perfil-hoja{max-width:880px}
 .perfil-hoja .modal-info{gap: var(--e-4)}

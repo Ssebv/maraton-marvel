@@ -301,6 +301,392 @@ const PLANTILLAS_RETO = [
   { id: 'infinito', es: 'La Saga del Infinito', en: 'The Infinity Saga', ids: () => { const u = idsDeSaga('ucm'); const i = u.indexOf('endgame'); return i >= 0 ? u.slice(0, i + 1) : u } },
   { id: 'ucm', es: 'Todo el UCM', en: 'The whole MCU', ids: () => idsDeSaga('ucm') },
 ]
+// ── Discusiones (fase 4) ──
+const ETIQUETAS_HILO = [['charla', 'Charla', 'Chat'], ['teoria', 'Teoría', 'Theory'], ['resena', 'Reseña', 'Review'], ['pregunta', 'Pregunta', 'Question'], ['noticia', 'Noticia', 'News'], ['meme', 'Meme', 'Meme']]
+const CAMPOS_HILO = 'id,comunidad,titulo,etiqueta,titulo_ref,episodio_ref,votos,respuestas,fijado,oculto,creado,autor:perfiles!hilos_autor_fkey(id,nombre,avatar)'
+const saneaHilo = x => (esObj(x) && typeof x.id === 'number' && typeof x.titulo === 'string' ? {
+  id: x.id, comunidad: typeof x.comunidad === 'string' ? x.comunidad : null, titulo: x.titulo.slice(0, 140),
+  etiqueta: ETIQUETAS_HILO.some(e => e[0] === x.etiqueta) ? x.etiqueta : 'charla',
+  titulo_ref: typeof x.titulo_ref === 'string' ? x.titulo_ref : null, episodio_ref: typeof x.episodio_ref === 'string' ? x.episodio_ref : null,
+  votos: Number(x.votos) || 0, respuestas: Number(x.respuestas) || 0, fijado: x.fijado === true, oculto: x.oculto === true,
+  creado: Date.parse(x.creado) || Date.now(), cuerpo: typeof x.cuerpo === 'string' ? x.cuerpo.slice(0, 10000) : '',
+  editado: typeof x.editado === 'string',
+  autor: esObj(x.autor) && typeof x.autor.nombre === 'string' ? { id: x.autor.id, nombre: x.autor.nombre, avatar: x.autor.avatar } : { id: null, nombre: '?', avatar: null },
+} : null)
+// El velo es una cortesía, no un secreto (el texto llega al teléfono): un hilo
+// de un episodio o título que aún no marcaste sale borroso hasta que lo marques
+// o pidas verlo igual.
+const hiloVelado = (h, vistas, eps) => (h.episodio_ref ? !(eps[h.episodio_ref] || (h.titulo_ref && vistas[h.titulo_ref]))
+  : h.titulo_ref ? !vistas[h.titulo_ref] : false)
+// «T2·E6», o solo «E6» si el título tiene una sola temporada en data.js: Loki
+// (T2) guarda sus episodios como temporada 1 y decía «Loki (T2) · T1·E6»
+const etiquetaEp = (id, t, n) => {
+  const l = EPISODES[id] || []
+  return l.length && l.every(e => e.s === l[0].s) ? `E${n}` : `${tr('T', 'S')}${t}·E${n}`
+}
+const nombreRef = h => {
+  const d = h.titulo_ref && buscaItem(h.titulo_ref)
+  if (!d) return ''
+  const partes = h.episodio_ref ? h.episodio_ref.split(':') : null
+  return partes && partes.length === 3 ? `${d.item.t} · ${etiquetaEp(partes[0], partes[1], partes[2])}` : d.item.t
+}
+
+// >!spoiler!< tapado hasta tocarlo, y @menciones que abren el perfil
+function Spoiler({ texto }) {
+  const [ver, setVer] = useState(false)
+  return (
+    <button type="button" className={`spoiler${ver ? ' visto' : ''}`} aria-expanded={ver} onClick={() => setVer(true)}>
+      <span aria-hidden={!ver}>{texto}</span>
+      {!ver && <span className="solo-lector">{tr('Spoiler oculto: toca para verlo', 'Hidden spoiler: tap to reveal')}</span>}
+    </button>
+  )
+}
+function CuerpoTexto({ texto, onPerfil, className = 'hilo-cuerpo' }) {
+  const partes = []
+  const re = />!([\s\S]+?)!<|@([a-z0-9_]{3,20})/g
+  let i = 0, m, k = 0
+  while ((m = re.exec(texto))) {
+    if (m.index > i) partes.push(texto.slice(i, m.index))
+    const nombre = m[2]
+    partes.push(m[1] != null ? <Spoiler key={k++} texto={m[1]} />
+      : <button key={k++} type="button" className="mencion" onClick={() => onPerfil(nombre)}>@{nombre}</button>)
+    i = re.lastIndex
+  }
+  if (i < texto.length) partes.push(texto.slice(i))
+  return <p className={className}>{partes}</p>
+}
+
+function HilosLista({ hilos, vistas, eps, onAbrir, conRef = true }) {
+  return (
+    <ul className="hilos-lista">
+      {hilos.map(h => {
+        const velado = hiloVelado(h, vistas, eps)
+        const et = ETIQUETAS_HILO.find(e => e[0] === h.etiqueta)
+        return (
+          <li key={h.id}>
+            <button className={`hilo-fila${h.oculto ? ' oculto' : ''}`} onClick={() => onAbrir(h.id)}>
+              <span className="hilo-fila-cab">
+                <span className="tipo opc">{et ? tr(et[1], et[2]) : ''}</span>
+                {h.fijado && <span className="tipo esp">{tr('Fijado', 'Pinned')}</span>}
+                {velado && <span className="tipo serie">{tr('Sin ver', 'Unwatched')}</span>}
+                {h.oculto && <span className="tipo plat">{tr('Oculto', 'Hidden')}</span>}
+              </span>
+              <span className="hilo-fila-titulo">{h.titulo}</span>
+              <span className="hilo-fila-meta">
+                @{h.autor.nombre} · {haceCuanto(h.creado)}{conRef && h.titulo_ref ? ` · ${nombreRef(h)}` : ''}
+                {' · '}▲ {h.votos} · {h.respuestas === 1 ? tr('1 respuesta', '1 reply') : tr(`${h.respuestas} respuestas`, `${h.respuestas} replies`)}
+              </span>
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+// Un foro: el abierto de un título (desde su ficha) o el de una comunidad.
+function ForoHoja({ saliendo, foro, cuenta, token, vistas, eps, recarga, onCerrar, onAbrirHilo, onEntrar, onCreado }) {
+  const ref = useRef(null)
+  useDialogo(ref, onCerrar)
+  const [orden, setOrden] = useState('nuevos')
+  const [hilos, setHilos] = useState(null)
+  const [escribiendo, setEscribiendo] = useState(false)
+  const [puede, setPuede] = useState(null)
+  const [grupo, indicador] = useIndicador(orden)
+  const d = foro.tipo === 'titulo' ? buscaItem(foro.id) : null
+  const episodios = d && EPISODES[foro.id] ? EPISODES[foro.id] : null
+  useEffect(() => {
+    let vivo = true
+    setHilos(null)
+    ;(async () => {
+      try {
+        const t = cuenta ? await token() : null
+        const filtro = foro.tipo === 'titulo' ? `comunidad=is.null&titulo_ref=eq.${foro.id}` : `comunidad=eq.${foro.id}`
+        const filas = await rest(t, `hilos?${filtro}&select=${CAMPOS_HILO}&order=${orden === 'nuevos' ? 'fijado.desc,creado.desc' : 'fijado.desc,votos.desc,respuestas.desc'}&limit=40`)
+        if (vivo) setHilos((Array.isArray(filas) ? filas : []).map(saneaHilo).filter(Boolean))
+      } catch { if (vivo) setHilos([]) }
+    })()
+    return () => { vivo = false }
+  }, [foro.tipo, foro.id, orden, recarga, cuenta && cuenta.uid])
+  // en una comunidad escriben sus miembros; en el foro abierto, cuentas de más de 24 h (lo decide la base)
+  useEffect(() => {
+    if (!cuenta || foro.tipo !== 'comunidad') { setPuede(!!cuenta); return undefined }
+    let vivo = true
+    token().then(t => rest(t, `membresias?comunidad=eq.${foro.id}&usuario=eq.${cuenta.uid}&select=papel`))
+      .then(f => { if (vivo) setPuede(Array.isArray(f) && f.length > 0) }).catch(() => { if (vivo) setPuede(false) })
+    return () => { vivo = false }
+  }, [foro.id, cuenta && cuenta.uid])
+  const titulo = foro.tipo === 'titulo' ? (d ? d.item.t : foro.id) : foro.nombre
+  return (
+    <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onCerrar} role="dialog" aria-modal="true" aria-labelledby="foro-titulo">
+      <div className="modal foro-hoja" onClick={e => e.stopPropagation()}>
+        <button className="cerrar" onClick={onCerrar} aria-label={tr('Cerrar', 'Close')}>✕</button>
+        <div className="modal-info">
+          <p className="valoracion-label">{foro.tipo === 'titulo' ? tr('Conversación sobre', 'Conversation about') : tr('Conversación en', 'Conversation in')}</p>
+          <h2 className="modal-titulo" id="foro-titulo">{titulo}</h2>
+          <div className="modal-acciones">
+            {!cuenta && <button className="accion-principal" onClick={onEntrar}>{tr('Entra para escribir', 'Sign in to post')}</button>}
+            {cuenta && puede && !escribiendo && <button className="accion-principal" onClick={() => setEscribiendo(true)}>{tr('Nuevo hilo', 'New thread')}</button>}
+            {cuenta && puede === false && <p className="ajuste-pista">{tr('Únete a la comunidad para escribir.', 'Join the community to post.')}</p>}
+            <div className="tabs grafica-modos" ref={grupo} role="group" aria-label={tr('Orden', 'Order')}>
+              <span className="indicador" ref={indicador} aria-hidden="true" />
+              <button type="button" className="tab" aria-pressed={orden === 'nuevos'} onClick={() => setOrden('nuevos')}>{tr('Nuevos', 'New')}</button>
+              <button type="button" className="tab" aria-pressed={orden === 'populares'} onClick={() => setOrden('populares')}>{tr('Populares', 'Top')}</button>
+            </div>
+          </div>
+          {escribiendo && <NuevoHilo foro={foro} episodios={episodios} cuenta={cuenta} token={token} onCancelar={() => setEscribiendo(false)}
+            onCreado={id => { setEscribiendo(false); onCreado(); onAbrirHilo(id) }} />}
+          {hilos === null ? <p className="ajuste-pista" role="status">{tr('Cargando…', 'Loading…')}</p>
+            : hilos.length === 0 ? <p className="ajuste-pista">{tr('Aún no hay hilos. Abre el primero.', 'No threads yet. Start the first one.')}</p>
+            : <HilosLista hilos={hilos} vistas={vistas} eps={eps} onAbrir={onAbrirHilo} conRef={foro.tipo !== 'titulo'} />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function NuevoHilo({ foro, episodios, cuenta, token, onCancelar, onCreado }) {
+  const [etiqueta, setEtiqueta] = useState('charla')
+  const [titulo, setTitulo] = useState('')
+  const [cuerpo, setCuerpo] = useState('')
+  const [episodio, setEpisodio] = useState('')
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const publica = async e => {
+    e.preventDefault()
+    if (titulo.trim().length < 3) return
+    setEnviando(true); setError('')
+    try {
+      const body = { autor: cuenta.uid, etiqueta, titulo: titulo.trim(), cuerpo: cuerpo.trim() }
+      if (foro.tipo === 'titulo') { body.titulo_ref = foro.id; if (episodio) body.episodio_ref = `${foro.id}:${episodio}` }
+      else body.comunidad = foro.id
+      const filas = await rest(await token(), 'hilos?select=id', { method: 'POST', prefer: 'return=representation', body })
+      if (!Array.isArray(filas) || typeof filas[0].id !== 'number') throw new Error('respuesta')
+      onCreado(filas[0].id)
+    } catch (er) {
+      setEnviando(false)
+      setError(er && /24 h/.test(er.message) ? tr('Los foros abiertos se abren a las 24 h de crear la cuenta. Mientras, escribe en tus comunidades.', 'Open forums unlock 24 h after creating your account. Meanwhile, post in your communities.')
+        : er && /enlace no permitido/.test(er.message) ? tr('Ese enlace no se puede publicar (sitios de piratería).', 'That link can’t be posted (piracy sites).')
+        : er && /límite/.test(er.message) ? tr('Has publicado mucho en poco rato: espera un poco.', 'You’ve posted a lot in a short time: wait a bit.')
+        : tr('No se pudo publicar. Inténtalo otra vez.', 'Could not post. Try again.'))
+    }
+  }
+  return (
+    <form className="nuevo-hilo" onSubmit={publica}>
+      <span className="ajuste-ops" role="radiogroup" aria-label={tr('Tipo de hilo', 'Thread type')}>
+        {ETIQUETAS_HILO.map(([id, es, en]) => (
+          <button type="button" key={id} className="chip-btn" role="radio" aria-checked={etiqueta === id} onClick={() => setEtiqueta(id)}>{tr(es, en)}</button>
+        ))}
+      </span>
+      {episodios && (
+        <label className="crea-edad">
+          <span>{tr('Sobre', 'About')}</span>
+          <select className="selector" value={episodio} onChange={e => setEpisodio(e.target.value)}>
+            <option value="">{tr('La serie entera', 'The whole series')}</option>
+            {episodios.map(ep => <option key={`${ep.s}:${ep.n}`} value={`${ep.s}:${ep.n}`}>{`${etiquetaEp(foro.id, ep.s, ep.n)} · ${ep.t}`}</option>)}
+          </select>
+        </label>
+      )}
+      <input className="busca sync-input" maxLength={140} placeholder={tr('Título del hilo', 'Thread title')} aria-label={tr('Título del hilo', 'Thread title')} value={titulo} onChange={e => setTitulo(e.target.value)} />
+      <textarea className="busca sync-input comunidad-descripcion" maxLength={10000} rows={5} aria-label={tr('Texto', 'Text')}
+        placeholder={tr('Escribe… Para esconder un spoiler: >!así!<', 'Write… To hide a spoiler: >!like this!<')} value={cuerpo} onChange={e => setCuerpo(e.target.value)} />
+      {error && <p className="import-error" role="alert">{error}</p>}
+      <span className="ajuste-ops">
+        <button className="accion-principal" type="submit" disabled={titulo.trim().length < 3 || enviando}>{enviando ? tr('Publicando…', 'Posting…') : tr('Publicar', 'Post')}</button>
+        <button className="chip-btn" type="button" onClick={onCancelar}>{tr('Cancelar', 'Cancel')}</button>
+      </span>
+    </form>
+  )
+}
+
+const MOTIVOS_REPORTE = [['spoiler', 'Spoiler sin avisar', 'Unmarked spoiler'], ['acoso', 'Acoso o insultos', 'Harassment or insults'], ['odio', 'Odio', 'Hate'], ['spam', 'Spam', 'Spam'], ['pirateria', 'Piratería', 'Piracy'], ['sexual', 'Contenido sexual', 'Sexual content'], ['datos', 'Datos personales', 'Personal data'], ['otro', 'Otro', 'Other']]
+function Reportar({ tipo, refId, comunidad, cuenta, token }) {
+  const [abierto, setAbierto] = useState(false)
+  const [hecho, setHecho] = useState(false)
+  if (!cuenta) return null
+  if (hecho) return <span className="ajuste-pista" role="status">{tr('Reportado. Gracias.', 'Reported. Thanks.')}</span>
+  if (!abierto) return <button type="button" className="hilo-accion" onClick={() => setAbierto(true)}>{tr('Reportar', 'Report')}</button>
+  return (
+    <span className="reportar">
+      <select className="selector" aria-label={tr('Motivo', 'Reason')} defaultValue="" onChange={async e => {
+        const motivo = e.target.value
+        if (!motivo) return
+        try {
+          await rest(await token(), 'reportes', { method: 'POST', prefer: 'return=minimal', body: { reportante: cuenta.uid, tipo, ref: String(refId), comunidad: comunidad || null, motivo } })
+          setHecho(true)
+        } catch { setAbierto(false) }
+      }}>
+        <option value="" disabled>{tr('¿Por qué?', 'Why?')}</option>
+        {MOTIVOS_REPORTE.map(([id, es, en]) => <option key={id} value={id}>{tr(es, en)}</option>)}
+      </select>
+      <button type="button" className="hilo-accion" onClick={() => setAbierto(false)}>{tr('Cancelar', 'Cancel')}</button>
+    </span>
+  )
+}
+
+function RespuestaForm({ hilo, padre, cuenta, token, onHecha, onCancelar, autoFocus }) {
+  const [texto, setTexto] = useState('')
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  return (
+    <form className="respuesta-form" onSubmit={async e => {
+      e.preventDefault()
+      if (!texto.trim()) return
+      setEnviando(true); setError('')
+      try {
+        await rest(await token(), 'respuestas', { method: 'POST', prefer: 'return=minimal', body: { hilo, padre: padre || null, autor: cuenta.uid, cuerpo: texto.trim() } })
+        setTexto(''); setEnviando(false); onHecha()
+      } catch (er) {
+        setEnviando(false)
+        setError(er && /enlace no permitido/.test(er.message) ? tr('Ese enlace no se puede publicar.', 'That link can’t be posted.')
+          : er && /límite/.test(er.message) ? tr('Has respondido mucho en poco rato: espera un poco.', 'You’ve replied a lot in a short time: wait a bit.')
+          : tr('No se pudo responder.', 'Could not reply.'))
+      }
+    }}>
+      <textarea className="busca sync-input comunidad-descripcion" rows={3} maxLength={5000} autoFocus={autoFocus} aria-label={tr('Tu respuesta', 'Your reply')}
+        placeholder={tr('Responde… (>!spoiler!<, @nombre)', 'Reply… (>!spoiler!<, @name)')} value={texto} onChange={e => setTexto(e.target.value)} />
+      {error && <span className="import-error" role="alert">{error}</span>}
+      <span className="ajuste-ops">
+        <button className="chip-btn destacado" type="submit" disabled={!texto.trim() || enviando}>{enviando ? tr('Enviando…', 'Sending…') : tr('Responder', 'Reply')}</button>
+        {onCancelar && <button className="chip-btn" type="button" onClick={onCancelar}>{tr('Cancelar', 'Cancel')}</button>}
+      </span>
+    </form>
+  )
+}
+
+// Un hilo (#h/id): el texto (velado si toca), votos, respuestas en árbol de 3
+// niveles, reportar y, para quien modera, ocultar y fijar.
+function HiloHoja({ saliendo, id, cuenta, token, vistas, eps, onCerrar, onVerPerfil, onEntrar, onCambio }) {
+  const ref = useRef(null)
+  useDialogo(ref, onCerrar)
+  const [h, setH] = useState(null)
+  const [resp, setResp] = useState([])
+  const [votados, setVotados] = useState({ hilo: false, resp: {} })
+  const [modera, setModera] = useState(false)
+  const [revela, setRevela] = useState(false)
+  const [respondiendo, setRespondiendo] = useState(null)
+  const carga = async () => {
+    try {
+      const t = cuenta ? await token() : null
+      const filas = await rest(t, `hilos?id=eq.${id}&select=${CAMPOS_HILO},cuerpo,editado`)
+      const hilo = Array.isArray(filas) && saneaHilo(filas[0])
+      if (!hilo) { setH(false); return }
+      setH(hilo)
+      const rs = await rest(t, `respuestas?hilo=eq.${id}&select=id,padre,profundidad,cuerpo,votos,hijos,oculto,creado,autor:perfiles!respuestas_autor_fkey(id,nombre,avatar)&order=creado.asc&limit=300`)
+      const lista = (Array.isArray(rs) ? rs : []).filter(r => esObj(r) && typeof r.id === 'number' && typeof r.cuerpo === 'string' && esObj(r.autor))
+      setResp(lista)
+      if (cuenta) {
+        const [vh, vr, mod] = await Promise.all([
+          rest(t, `votos_hilos?usuario=eq.${cuenta.uid}&hilo=eq.${id}&select=hilo`),
+          lista.length ? rest(t, `votos_respuestas?usuario=eq.${cuenta.uid}&respuesta=in.(${lista.map(r => r.id).join(',')})&select=respuesta`) : Promise.resolve([]),
+          hilo.comunidad ? rest(t, 'rpc/modera', { method: 'POST', body: { c: hilo.comunidad } }) : rest(t, 'rpc/es_admin', { method: 'POST', body: {} }),
+        ])
+        setVotados({ hilo: Array.isArray(vh) && vh.length > 0, resp: Object.fromEntries((Array.isArray(vr) ? vr : []).map(v => [v.respuesta, true])) })
+        setModera(mod === true)
+      }
+    } catch { setH('error') }
+  }
+  useEffect(() => { setH(null); carga() }, [id, cuenta && cuenta.uid])
+  const ok = esObj(h)
+  const velado = ok && !revela && hiloVelado(h, vistas, eps)
+  const vota = async (tipo, rid) => {
+    if (!cuenta) { onEntrar(); return }
+    const ya = tipo === 'hilo' ? votados.hilo : !!votados.resp[rid]
+    const t = await token()
+    try {
+      if (tipo === 'hilo') {
+        if (ya) await rest(t, `votos_hilos?usuario=eq.${cuenta.uid}&hilo=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' })
+        else await rest(t, 'votos_hilos', { method: 'POST', prefer: 'return=minimal', body: { usuario: cuenta.uid, hilo: id } })
+      } else if (ya) await rest(t, `votos_respuestas?usuario=eq.${cuenta.uid}&respuesta=eq.${rid}`, { method: 'DELETE', prefer: 'return=minimal' })
+      else await rest(t, 'votos_respuestas', { method: 'POST', prefer: 'return=minimal', body: { usuario: cuenta.uid, respuesta: rid } })
+      await carga()
+    } catch {}
+  }
+  const moderar = async (tipo, rid, accion) => {
+    try { await rest(await token(), 'rpc/moderar', { method: 'POST', body: { tipo_in: tipo, id_in: rid, accion_in: accion } }); await carga(); onCambio() } catch {}
+  }
+  const borrar = async (tipo, rid) => {
+    try {
+      await rest(await token(), `${tipo === 'hilo' ? 'hilos' : 'respuestas'}?id=eq.${rid}`, { method: 'DELETE', prefer: 'return=minimal' })
+      onCambio()
+      if (tipo === 'hilo') onCerrar(); else await carga()
+    } catch {}
+  }
+  const hijos = padre => resp.filter(r => (r.padre || null) === padre)
+  const pintaRespuesta = r => {
+    const propia = cuenta && r.autor.id === cuenta.uid
+    return (
+      <li key={r.id} className={`respuesta${r.oculto ? ' oculto' : ''}`}>
+        <div className="respuesta-cab">
+          <button className="muro-quien" onClick={() => onVerPerfil(r.autor.nombre)}>@{r.autor.nombre}</button>
+          <span className="muro-cuando">{haceCuanto(Date.parse(r.creado))}{r.oculto ? tr(' · oculta por moderación', ' · hidden by moderators') : ''}</span>
+        </div>
+        <CuerpoTexto texto={r.cuerpo} onPerfil={onVerPerfil} className="respuesta-cuerpo" />
+        <div className="respuesta-acciones">
+          <button type="button" className={`hilo-accion voto${votados.resp[r.id] ? ' hecho' : ''}`} aria-pressed={!!votados.resp[r.id]} onClick={() => vota('respuesta', r.id)}
+            aria-label={tr(`Votar a favor, ${r.votos} votos`, `Upvote, ${r.votos} votes`)}>▲ {r.votos}</button>
+          {cuenta && r.profundidad < 2 && <button type="button" className="hilo-accion" onClick={() => setRespondiendo(r.id)}>{tr('Responder', 'Reply')}</button>}
+          {!propia && <Reportar tipo="respuesta" refId={r.id} comunidad={h.comunidad} cuenta={cuenta} token={token} />}
+          {propia && r.hijos === 0 && <button type="button" className="hilo-accion" onClick={() => borrar('respuesta', r.id)}>{tr('Borrar', 'Delete')}</button>}
+          {modera && <button type="button" className="hilo-accion" onClick={() => moderar('respuesta', r.id, r.oculto ? 'mostrar' : 'ocultar')}>{r.oculto ? tr('Mostrar', 'Unhide') : tr('Ocultar', 'Hide')}</button>}
+        </div>
+        {respondiendo === r.id && <RespuestaForm hilo={id} padre={r.id} cuenta={cuenta} token={token} autoFocus onCancelar={() => setRespondiendo(null)} onHecha={() => { setRespondiendo(null); carga(); onCambio() }} />}
+        {hijos(r.id).length > 0 && <ul className="respuestas">{hijos(r.id).map(pintaRespuesta)}</ul>}
+      </li>
+    )
+  }
+  const et = ok && ETIQUETAS_HILO.find(e => e[0] === h.etiqueta)
+  return (
+    <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onCerrar} role="dialog" aria-modal="true" aria-label={ok ? h.titulo : tr('Hilo', 'Thread')}>
+      <div className="modal hilo-hoja" onClick={e => e.stopPropagation()}>
+        <button className="cerrar" onClick={onCerrar} aria-label={tr('Cerrar', 'Close')}>✕</button>
+        <div className="modal-info">
+          {h === null && <p className="modal-res" role="status">{tr('Cargando hilo…', 'Loading thread…')}</p>}
+          {h === false && <p className="modal-res" role="status">{tr('Este hilo no existe o no puedes verlo.', 'This thread doesn’t exist or you can’t see it.')}</p>}
+          {h === 'error' && <p className="aviso-sin-red" role="status">{tr('No se pudo cargar. Revisa la conexión.', 'Could not load. Check your connection.')}</p>}
+          {ok && (
+            <>
+              <span className="hilo-fila-cab">
+                <span className="tipo opc">{et ? tr(et[1], et[2]) : ''}</span>
+                {h.fijado && <span className="tipo esp">{tr('Fijado', 'Pinned')}</span>}
+                {h.oculto && <span className="tipo plat">{tr('Oculto por moderación', 'Hidden by moderators')}</span>}
+                {h.titulo_ref && <span className="hilo-ref">{nombreRef(h)}</span>}
+              </span>
+              <h2 className="modal-titulo">{h.titulo}</h2>
+              <p className="perfil-cuenta">
+                <button className="muro-quien" onClick={() => onVerPerfil(h.autor.nombre)}>@{h.autor.nombre}</button> · {haceCuanto(h.creado)}{h.editado ? tr(' · editado', ' · edited') : ''}
+              </p>
+              {h.cuerpo && (velado ? (
+                <div className="hilo-velado">
+                  <p className="hilo-cuerpo borroso" aria-hidden="true">{h.cuerpo.slice(0, 280)}</p>
+                  <div className="hilo-velo">
+                    <span>{tr(`Lo verás cuando marques ${nombreRef(h)}`, `You’ll see it once you mark ${nombreRef(h)}`)}</span>
+                    <button className="chip-btn" onClick={() => setRevela(true)}>{tr('Ver igual', 'Show anyway')}</button>
+                  </div>
+                </div>
+              ) : <CuerpoTexto texto={h.cuerpo} onPerfil={onVerPerfil} />)}
+              <div className="respuesta-acciones hilo-acciones">
+                <button type="button" className={`chip-btn voto${votados.hilo ? ' hecho' : ''}`} aria-pressed={votados.hilo} onClick={() => vota('hilo')}>▲ {h.votos}</button>
+                {cuenta && h.autor.id !== cuenta.uid && <Reportar tipo="hilo" refId={h.id} comunidad={h.comunidad} cuenta={cuenta} token={token} />}
+                {cuenta && h.autor.id === cuenta.uid && h.respuestas === 0 && <button type="button" className="hilo-accion" onClick={() => borrar('hilo', h.id)}>{tr('Borrar hilo', 'Delete thread')}</button>}
+                {modera && <button type="button" className="hilo-accion" onClick={() => moderar('hilo', h.id, h.fijado ? 'desfijar' : 'fijar')}>{h.fijado ? tr('Desfijar', 'Unpin') : tr('Fijar', 'Pin')}</button>}
+                {modera && <button type="button" className="hilo-accion" onClick={() => moderar('hilo', h.id, h.oculto ? 'mostrar' : 'ocultar')}>{h.oculto ? tr('Mostrar', 'Unhide') : tr('Ocultar', 'Hide')}</button>}
+              </div>
+              <section className="hilo-respuestas">
+                <h3 className="grafica-titulo">{h.respuestas === 1 ? tr('1 respuesta', '1 reply') : tr(`${h.respuestas} respuestas`, `${h.respuestas} replies`)}</h3>
+                {velado && resp.length > 0 ? <p className="ajuste-pista">{tr('Las respuestas también están veladas.', 'Replies are hidden too.')}</p>
+                  : <ul className="respuestas">{hijos(null).map(pintaRespuesta)}</ul>}
+                {cuenta ? (!h.oculto && respondiendo === null && <RespuestaForm hilo={id} cuenta={cuenta} token={token} onHecha={() => { carga(); onCambio() }} />)
+                  : <button className="chip-btn" onClick={onEntrar}>{tr('Entra para responder', 'Sign in to reply')}</button>}
+              </section>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const haceCuanto = ts => {
   const s = (Date.now() - ts) / 1000
   const f = new Intl.RelativeTimeFormat(LOC(), { numeric: 'auto' })
@@ -2179,7 +2565,19 @@ function ComunidadTarjeta({ c, papel, onAbrir }) {
   )
 }
 
-function Comunidades({ cuenta, token, recarga, onEntrar, onAbrir, onCrear, onCodigo }) {
+function Comunidades({ cuenta, token, recarga, onEntrar, onAbrir, onCrear, onCodigo, onAbrirHilo }) {
+  const [avisos, setAvisos] = useState([])
+  useEffect(() => {
+    if (!cuenta) { setAvisos([]); return undefined }
+    let vivo = true
+    ;(async () => {
+      try {
+        const filas = await rest(await token(), 'avisos?leido=is.false&select=id,tipo,hilo,creado,de:perfiles!avisos_de_fkey(nombre),h:hilos(titulo)&order=creado.desc&limit=20')
+        if (vivo) setAvisos((Array.isArray(filas) ? filas : []).filter(a => esObj(a) && typeof a.hilo === 'number'))
+      } catch {}
+    })()
+    return () => { vivo = false }
+  }, [cuenta && cuenta.uid, recarga])
   const [mias, setMias] = useState(null)
   const [publicas, setPublicas] = useState(null)
   const [codigo, setCodigo] = useState('')
@@ -2229,6 +2627,25 @@ function Comunidades({ cuenta, token, recarga, onEntrar, onAbrir, onCrear, onCod
           {errorCodigo && <span className="import-error" role="status">{errorCodigo}</span>}
         </form>
       )}
+      {cuenta && avisos.length > 0 && (
+        <section className="comunidades-bloque">
+          <h3 className="grafica-titulo">{tr('Avisos', 'Notifications')} <span className="tab-insignia-texto">{avisos.length}</span></h3>
+          <ul className="muro-lista">
+            {avisos.map(a => (
+              <li key={a.id}>
+                <button className="aviso-fila" onClick={async () => {
+                  setAvisos(l => l.filter(x => x.id !== a.id))
+                  onAbrirHilo(a.hilo)
+                  try { await rest(await token(), `avisos?id=eq.${a.id}`, { method: 'PATCH', prefer: 'return=minimal', body: { leido: true } }) } catch {}
+                }}>
+                  <b>@{esObj(a.de) ? a.de.nombre : '?'}</b> {a.tipo === 'mencion' ? tr('te mencionó en', 'mentioned you in') : tr('te respondió en', 'replied to you in')} «{esObj(a.h) ? a.h.titulo : ''}»
+                  <span className="muro-cuando">{haceCuanto(Date.parse(a.creado))}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {cuenta && (
         <section className="comunidades-bloque">
           <h3 className="grafica-titulo">{tr('Tus comunidades', 'Your communities')}</h3>
@@ -2250,7 +2667,7 @@ function Comunidades({ cuenta, token, recarga, onEntrar, onAbrir, onCrear, onCod
 // Una comunidad (#c/direccion): cabecera, entrar o salir, invitar, el
 // ranking de horas de la semana o del mes (calculado en la base con los
 // minutos del catálogo) y tus preferencias de miembro.
-function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerfil, onCambio, onEntrar }) {
+function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerfil, onCambio, onEntrar, onForo, onAbrirHilo, vistas, eps, recargaHilos }) {
   const ref = useRef(null)
   useDialogo(ref, onCerrar)
   const [c, setC] = useState(null) // null cargando · false no existe o privada · 'error' · objeto
@@ -2267,6 +2684,7 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
   const [fechaReto, setFechaReto] = useState(() => (ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now()) || { fecha: new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10) }).fecha)
   const [muro, setMuro] = useState(null)
   const [hayMas, setHayMas] = useState(false)
+  const [hilos, setHilos] = useState(null)
   const carga = async () => {
     try {
       const t = cuenta ? await token() : null
@@ -2317,6 +2735,17 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
     } catch { setMuro(m => m || []) }
   }
   useEffect(() => { if (ok) cargaRetos() }, [ok && c.id, yo && yo.en_ranking])
+  useEffect(() => {
+    if (!ok) return undefined
+    let vivo = true
+    ;(async () => {
+      try {
+        const filas = await rest(cuenta ? await token() : null, `hilos?comunidad=eq.${c.id}&select=${CAMPOS_HILO}&order=fijado.desc,creado.desc&limit=5`)
+        if (vivo) setHilos((Array.isArray(filas) ? filas : []).map(saneaHilo).filter(Boolean))
+      } catch { if (vivo) setHilos([]) }
+    })()
+    return () => { vivo = false }
+  }, [ok && c.id, recargaHilos, !!yo])
   useEffect(() => { if (ok && yo) cargaMuro(); else setMuro(null) }, [ok && c.id, !!yo, yo && yo.muro_activo])
   const aplaude = async a => {
     const ya = a.aplaudido
@@ -2412,6 +2841,15 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
                     </ol>
                   )}
               </section>
+              <section className="comunidad-hilos">
+                <div className="grafica-cab">
+                  <h3 className="grafica-titulo">{tr('Conversación', 'Conversation')}</h3>
+                  <button className="chip-btn" onClick={() => onForo({ tipo: 'comunidad', id: c.id, nombre: c.nombre })}>{yo ? tr('Ver todo y escribir', 'See all and post') : tr('Ver todo', 'See all')}</button>
+                </div>
+                {hilos === null ? <p className="ajuste-pista" role="status">{tr('Cargando…', 'Loading…')}</p>
+                  : hilos.length === 0 ? <p className="ajuste-pista">{tr('Aún no hay hilos.', 'No threads yet.')}</p>
+                  : <HilosLista hilos={hilos} vistas={vistas} eps={eps} onAbrir={onAbrirHilo} />}
+              </section>
               <section className="comunidad-retos">
                 <div className="grafica-cab">
                   <h3 className="grafica-titulo">{tr('Retos', 'Challenges')}</h3>
@@ -2484,7 +2922,7 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
                         {muro.map(a => {
                           const d = buscaItem(a.ref.split(':')[0])
                           const titulo = d ? d.item.t : a.ref
-                          const ep = a.tipo === 'episodio' && a.ref.split(':').length === 3 ? ` · ${tr('T', 'S')}${a.ref.split(':')[1]}·E${a.ref.split(':')[2]}` : ''
+                          const ep = a.tipo === 'episodio' && a.ref.split(':').length === 3 ? ` · ${etiquetaEp(...a.ref.split(':'))}` : ''
                           const propio = cuenta && a.usuario === cuenta.uid
                           return (
                             <li key={a.id} className="muro-item">
@@ -4153,7 +4591,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   )
 }
 
-function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca, saliendo, sinSpoilers }) {
+function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca, saliendo, sinSpoilers, onForo }) {
   const { item, c, esComic } = d
   // Sin spoilers: lo que no has visto se esconde, salvo que lo pidas para ESTA ficha
   const [revela, setRevela] = useState(false)
@@ -4535,6 +4973,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               value={nota.txt || ''} maxLength={280} spellCheck={true}
               onChange={e => ponNota('txt', e.target.value)} aria-label={tr('Tus notas', 'Your notes')} />
           </div>
+          {onForo && (
+            <div className="valoracion">
+              <span className="valoracion-label">{tr('Conversación', 'Conversation')}</span>
+              <button className="chip-btn" onClick={onForo}>{tr('Hablar de este título', 'Talk about this title')}</button>
+            </div>
+          )}
           {listas && listas.length > 0 && (
             <div className="valoracion">
               <span className="valoracion-label">{tr('Listas', 'Lists')}</span>
@@ -5319,6 +5763,8 @@ export default function App() {
       const u = h.match(/^u\/([a-z0-9_]{3,20})$/)
       const k = h.match(/^c\/([a-z0-9-]{3,30})$/)
       const inv = h.match(/^i\/([a-f0-9]{16,40})$/)
+      const hi = h.match(/^h\/(\d{1,12})$/)
+      if (hi && NUBE) { setHiloAbierto(Number(hi[1])); if (urlEstado) history.replaceState(history.state, '', urlEstado); return }
       if (u || k || inv) {
         if (NUBE && u) setPerfilPublico(u[1])
         if (NUBE && k) setComunidadAbierta(k[1])
@@ -5746,6 +6192,11 @@ export default function App() {
   const [comunidadAbierta, setComunidadAbierta] = useState(() => (NUBE ? COMUNIDAD_EN_URL : null))
   const [creaComunidad, setCreaComunidad] = useState(false)
   const [recargaComunidades, setRecargaComunidades] = useState(0)
+  const [foroAbierto, setForoAbierto] = useState(null) // { tipo: 'titulo' | 'comunidad', id, nombre? }
+  const [hiloAbierto, setHiloAbierto] = useState(() => {
+    if (!NUBE) return null
+    try { const m = window.location.hash.match(/^#h\/(\d{1,12})$/); return m ? Number(m[1]) : null } catch { return null }
+  })
   // una invitación (#i/código) se canjea en cuanto hay cuenta con perfil
   const [invitacionPendiente, setInvitacionPendiente] = useState(() => (NUBE ? INVITACION_EN_URL : null))
   // ¿comparte su muro en alguna comunidad? Solo entonces se publica actividad
@@ -6886,6 +7337,14 @@ export default function App() {
   const [creaPerfilMontado, creaPerfilSale] = useSaliente(creaPerfil && !!cuenta && perfilCuenta === false)
   const [perfilPubMontado, perfilPubSale] = useSaliente(!!perfilPublico)
   const [comunidadMontada, comunidadSale] = useSaliente(!!comunidadAbierta)
+  const [foroMontado, foroSale] = useSaliente(!!foroAbierto)
+  const foroUltimo = useRef(foroAbierto)
+  if (foroAbierto) foroUltimo.current = foroAbierto
+  useVolverCierra(foroAbierto && `${foroAbierto.tipo}:${foroAbierto.id}`, () => setForoAbierto(null))
+  const [hiloMontado, hiloSale] = useSaliente(!!hiloAbierto)
+  const hiloUltimo = useRef(hiloAbierto)
+  if (hiloAbierto) hiloUltimo.current = hiloAbierto
+  useVolverCierra(hiloAbierto, () => setHiloAbierto(null))
   const comunidadUltima = useRef(comunidadAbierta)
   if (comunidadAbierta) comunidadUltima.current = comunidadAbierta
   useVolverCierra(comunidadAbierta, () => setComunidadAbierta(null))
@@ -7382,7 +7841,7 @@ export default function App() {
         <main className="comunidades-vista">
           <Comunidades cuenta={cuentaLista ? cuenta : null} token={tokenCuenta} recarga={recargaComunidades}
             onEntrar={() => setAjustes(true)} onAbrir={d => setComunidadAbierta(d)}
-            onCrear={() => setCreaComunidad(true)} onCodigo={usaInvitacion} />
+            onCrear={() => setCreaComunidad(true)} onCodigo={usaInvitacion} onAbrirHilo={id => setHiloAbierto(id)} />
         </main>
       ) : vista === 'listas' ? (
         <main className="listas-vista">
@@ -8021,6 +8480,8 @@ export default function App() {
       )}
       {comunidadMontada && NUBE && (
         <ComunidadHoja key={comunidadUltima.current} saliendo={comunidadSale} direccion={comunidadUltima.current}
+          vistas={vistas} eps={eps} recargaHilos={recargaComunidades}
+          onForo={f => setForoAbierto(f)} onAbrirHilo={id => setHiloAbierto(id)}
           cuenta={cuentaLista ? cuenta : null} token={tokenCuenta} onCerrar={() => setComunidadAbierta(null)}
           onVerPerfil={n => setPerfilPublico(n)} onCambio={() => setRecargaComunidades(n => n + 1)}
           onEntrar={() => { setComunidadAbierta(null); setAjustes(true) }} />
@@ -8028,11 +8489,6 @@ export default function App() {
       {creaComunidadMontada && cuenta && (
         <CreaComunidad saliendo={creaComunidadSale} cuenta={cuenta} token={tokenCuenta} onCerrar={() => setCreaComunidad(false)}
           onCreada={k => { setCreaComunidad(false); setRecargaComunidades(n => n + 1); setComunidadAbierta(k.direccion) }} />
-      )}
-      {perfilPubMontado && NUBE && (
-        <PerfilPublico key={perfilPubUltimo.current} saliendo={perfilPubSale} nombre={perfilPubUltimo.current} cuenta={cuentaLista ? cuenta : null}
-          token={tokenCuenta} onCerrar={() => setPerfilPublico(null)}
-          onEntrar={() => { setPerfilPublico(null); setAjustes(true) }} />
       )}
       {creaPerfilMontado && cuenta && (
         <CreaPerfil saliendo={creaPerfilSale} cuenta={cuenta} token={tokenCuenta}
@@ -8310,7 +8766,27 @@ export default function App() {
           nota={notas[ultimoDetalle.current.item.id] || {}}
           ponNota={(campo, valor) => ponNota(ultimoDetalle.current.item.id, campo, valor)}
           listas={listas} toggleEnLista={toggleEnLista} club={club} onNav={navegaDetalle}
-          onIrA={abreDesdeFicha} personaPendiente={personaPendiente} saliendo={detalleSale} />
+          onIrA={abreDesdeFicha} personaPendiente={personaPendiente} saliendo={detalleSale}
+          onForo={NUBE ? () => setForoAbierto({ tipo: 'titulo', id: ultimoDetalle.current.item.id }) : null} />
+      )}
+      {/* la conversación se abre encima de la ficha y de la comunidad, y un
+          perfil encima de todo: por eso van después en el DOM */}
+      {foroMontado && NUBE && (
+        <ForoHoja key={`${foroUltimo.current.tipo}:${foroUltimo.current.id}`} saliendo={foroSale} foro={foroUltimo.current}
+          cuenta={cuentaLista ? cuenta : null} token={tokenCuenta} vistas={vistas} eps={eps} recarga={recargaComunidades}
+          onCerrar={() => setForoAbierto(null)} onAbrirHilo={id => setHiloAbierto(id)} onCreado={() => setRecargaComunidades(n => n + 1)}
+          onEntrar={() => { setForoAbierto(null); setAjustes(true) }} />
+      )}
+      {hiloMontado && NUBE && (
+        <HiloHoja key={hiloUltimo.current} saliendo={hiloSale} id={hiloUltimo.current}
+          cuenta={cuentaLista ? cuenta : null} token={tokenCuenta} vistas={vistas} eps={eps}
+          onCerrar={() => setHiloAbierto(null)} onVerPerfil={n => setPerfilPublico(n)} onCambio={() => setRecargaComunidades(n => n + 1)}
+          onEntrar={() => { setHiloAbierto(null); setAjustes(true) }} />
+      )}
+      {perfilPubMontado && NUBE && (
+        <PerfilPublico key={perfilPubUltimo.current} saliendo={perfilPubSale} nombre={perfilPubUltimo.current} cuenta={cuentaLista ? cuenta : null}
+          token={tokenCuenta} onCerrar={() => setPerfilPublico(null)}
+          onEntrar={() => { setPerfilPublico(null); setAjustes(true) }} />
       )}
 
       <Footer onAjustes={() => setAjustes(true)} nota={enMaraton} />
