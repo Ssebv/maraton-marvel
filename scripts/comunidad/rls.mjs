@@ -233,6 +233,24 @@ try {
   r = como('beto', `insert into aplausos (usuario, actividad) select '${U.beto}', id from actividad`)
   r = como('ana', `select aplausos from actividad`)
   prueba(r.out === '1', `aplausos contados: ${r.out}`)
+  // muro de ESTA comunidad (fase 3, parte 2)
+  r = como('beto', `select count(*) || ':' || bool_and(aplaudido) from muro('${publica}')`)
+  prueba(r.ok && r.out === '1:true', `muro: beto (miembro) ve la actividad de ana y su aplauso (${r.out || r.err})`)
+  r = como('carla', `select count(*) from muro('${publica}')`)
+  prueba(r.ok && r.out === '0', `muro: carla, que no es miembro, no ve nada (${r.out || r.err})`)
+  r = como('anon', `select count(*) from muro('${publica}')`)
+  prueba(!r.ok && /permission denied/.test(r.err), `muro: sin sesión, nada (${r.err})`)
+  // retos: los crea la moderación; el progreso respeta «aparecer en el ranking»
+  r = como('carla', `insert into retos (comunidad, nombre, titulos, hasta, creado_por) values ('${publica}', 'Colado', '{logan}', current_date + 7, '${U.carla}')`)
+  prueba(!r.ok && /row-level security/.test(r.err), `quien no modera no crea retos (${r.err})`)
+  r = como('ana', `insert into retos (comunidad, nombre, titulos, hasta, creado_por) values ('${publica}', 'Logan y compañía', '{logan,first-class,deadpool2}', current_date + 30, '${U.ana}') returning id`)
+  const reto = r.out
+  prueba(r.ok && +reto > 0, `la dueña crea un reto ${r.ok ? '' : r.err}`)
+  r = como('anon', `select nombre || ':' || hechos || '/' || total from progreso_reto(${reto || 0})`)
+  prueba(r.ok && r.out === 'ana:2/3', `progreso del reto: ${r.out || r.err} (beto salió del ranking y no cuenta)`)
+  let publicadas = 0
+  for (let i = 0; i < 61; i++) { r = como('ana', `insert into actividad (usuario, tipo, ref) values ('${U.ana}', 'episodio', 'loki2:1:${i + 1}')`); if (r.ok) publicadas++ }
+  prueba(publicadas === 59 && /límite/.test(r.err), `muro: como mucho 60 por hora (${publicadas} más tras la primera; ${r.err})`)
   r = como('ana', `select jsonb_typeof(mis_datos() -> 'progreso') || ':' || jsonb_array_length(mis_datos() -> 'respuestas')`)
   prueba(r.out === 'object:2', `descargar mis datos: ${r.out}`)
   r = como('anon', `select (mantenimiento() ->> 'bytes')::bigint > 0`)

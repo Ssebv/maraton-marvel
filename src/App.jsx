@@ -293,6 +293,22 @@ const saneaComunidad = x => (esObj(x) && typeof x.id === 'string' && typeof x.di
   tipo: ['publica', 'invitacion', 'privada'].includes(x.tipo) ? x.tipo : 'publica',
   dueno: typeof x.dueno === 'string' ? x.dueno : null, miembros: Number(x.miembros) || 0,
 } : null)
+// Retos: plantillas sacadas de data.js (un título nuevo entra solo)
+const idsDeSaga = saga => (DATA.find(s => s.saga === saga) || { eras: [] }).eras.flatMap(e => e.items.map(i => i.id))
+const PLANTILLAS_RETO = [
+  { id: 'express', es: 'Ruta express', en: 'Express route', ids: () => DATA.filter(s => s.saga === 'xmen' || s.saga === 'ucm').flatMap(s => s.eras.flatMap(e => e.items.filter(i => i.exp).map(i => i.id))) },
+  { id: 'xmen', es: 'Toda la saga X-Men', en: 'The whole X-Men saga', ids: () => idsDeSaga('xmen') },
+  { id: 'infinito', es: 'La Saga del Infinito', en: 'The Infinity Saga', ids: () => { const u = idsDeSaga('ucm'); const i = u.indexOf('endgame'); return i >= 0 ? u.slice(0, i + 1) : u } },
+  { id: 'ucm', es: 'Todo el UCM', en: 'The whole MCU', ids: () => idsDeSaga('ucm') },
+]
+const haceCuanto = ts => {
+  const s = (Date.now() - ts) / 1000
+  const f = new Intl.RelativeTimeFormat(LOC(), { numeric: 'auto' })
+  if (s < 60) return f.format(0, 'second')
+  if (s < 3600) return f.format(-Math.round(s / 60), 'minute')
+  if (s < 86400) return f.format(-Math.round(s / 3600), 'hour')
+  return f.format(-Math.round(s / 86400), 'day')
+}
 const direccionDe = nombre => nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30).replace(/-+$/, '')
 // El perfil público de la comunidad (tabla perfiles)
 const CAMPOS_PERFIL = 'id,nombre,nombre_visible,avatar,bio,saga_favorita,priv_progreso,priv_resenas,priv_logros'
@@ -2245,6 +2261,12 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
   const [copiado, setCopiado] = useState(false)
   const [ocupado, setOcupado] = useState(false)
   const [grupo, indicador] = useIndicador(ventana)
+  const [retos, setRetos] = useState(null)
+  const [creaReto, setCreaReto] = useState(false)
+  const [plantilla, setPlantilla] = useState('express')
+  const [fechaReto, setFechaReto] = useState(() => (ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now()) || { fecha: new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10) }).fecha)
+  const [muro, setMuro] = useState(null)
+  const [hayMas, setHayMas] = useState(false)
   const carga = async () => {
     try {
       const t = cuenta ? await token() : null
@@ -2273,6 +2295,40 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
     })()
     return () => { vivo = false }
   }, [ok && c.id, ventana, yo && yo.en_ranking])
+  const cargaRetos = async () => {
+    try {
+      const t = cuenta ? await token() : null
+      const hoy = new Date().toISOString().slice(0, 10)
+      const filas = await rest(t, `retos?comunidad=eq.${c.id}&hasta=gte.${hoy}&select=id,nombre,titulos,hasta&order=hasta.asc&limit=10`)
+      const lista = (Array.isArray(filas) ? filas : []).filter(r => esObj(r) && typeof r.nombre === 'string' && Array.isArray(r.titulos))
+      const conProgreso = await Promise.all(lista.map(async r => {
+        const p = await rest(t, 'rpc/progreso_reto', { method: 'POST', body: { reto_in: r.id } }).catch(() => [])
+        return { ...r, progreso: (Array.isArray(p) ? p : []).filter(x => esObj(x) && typeof x.nombre === 'string') }
+      }))
+      setRetos(conProgreso)
+    } catch { setRetos([]) }
+  }
+  const cargaMuro = async (antes = null) => {
+    try {
+      const filas = await rest(await token(), 'rpc/muro', { method: 'POST', body: { comunidad_in: c.id, antes_in: antes } })
+      const lista = (Array.isArray(filas) ? filas : []).filter(a => esObj(a) && typeof a.nombre === 'string' && typeof a.ref === 'string')
+      setMuro(m => (antes ? [...(m || []), ...lista] : lista))
+      setHayMas(lista.length === 40)
+    } catch { setMuro(m => m || []) }
+  }
+  useEffect(() => { if (ok) cargaRetos() }, [ok && c.id, yo && yo.en_ranking])
+  useEffect(() => { if (ok && yo) cargaMuro(); else setMuro(null) }, [ok && c.id, !!yo, yo && yo.muro_activo])
+  const aplaude = async a => {
+    const ya = a.aplaudido
+    setMuro(m => m.map(x => (x.id === a.id ? { ...x, aplaudido: !ya, aplausos: x.aplausos + (ya ? -1 : 1) } : x)))
+    try {
+      const t = await token()
+      if (ya) await rest(t, `aplausos?usuario=eq.${cuenta.uid}&actividad=eq.${a.id}`, { method: 'DELETE', prefer: 'return=minimal' })
+      else await rest(t, 'aplausos', { method: 'POST', prefer: 'return=minimal', body: { usuario: cuenta.uid, actividad: a.id } })
+    } catch {
+      setMuro(m => m.map(x => (x.id === a.id ? { ...x, aplaudido: ya, aplausos: x.aplausos + (ya ? 1 : -1) } : x)))
+    }
+  }
   const accion = async fn => {
     setOcupado(true)
     try { await fn(await token()); await carga(); onCambio() } catch { /* el estado se queda como estaba */ } finally { setOcupado(false) }
@@ -2356,6 +2412,106 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
                     </ol>
                   )}
               </section>
+              <section className="comunidad-retos">
+                <div className="grafica-cab">
+                  <h3 className="grafica-titulo">{tr('Retos', 'Challenges')}</h3>
+                  {puedeInvitar && !creaReto && <button className="chip-btn" onClick={() => setCreaReto(true)}>{tr('Nuevo reto', 'New challenge')}</button>}
+                </div>
+                {creaReto && (
+                  <form className="reto-nuevo" onSubmit={e => {
+                    e.preventDefault()
+                    const pl = PLANTILLAS_RETO.find(x => x.id === plantilla)
+                    if (!pl || !/^\d{4}-\d{2}-\d{2}$/.test(fechaReto)) return
+                    accion(t => rest(t, 'retos', { method: 'POST', prefer: 'return=minimal', body: { comunidad: c.id, nombre: tr(pl.es, pl.en), titulos: pl.ids(), hasta: fechaReto, creado_por: cuenta.uid } }))
+                      .then(() => { setCreaReto(false); cargaRetos() })
+                  }}>
+                    <span className="ajuste-ops" role="radiogroup" aria-label={tr('Qué hay que ver', 'What to watch')}>
+                      {PLANTILLAS_RETO.map(pl => (
+                        <button type="button" key={pl.id} className="chip-btn" role="radio" aria-checked={plantilla === pl.id} onClick={() => setPlantilla(pl.id)}>
+                          {tr(pl.es, pl.en)} <span className="reto-cuenta">{pl.ids().length}</span>
+                        </button>
+                      ))}
+                    </span>
+                    <label className="crea-edad reto-fecha">
+                      <span>{tr('Hasta el', 'Until')}</span>
+                      <input className="busca" type="date" value={fechaReto} min={new Date().toISOString().slice(0, 10)} onChange={e => setFechaReto(e.target.value)} />
+                    </label>
+                    <span className="ajuste-ops">
+                      <button className="accion-principal" type="submit" disabled={ocupado}>{tr('Crear reto', 'Create challenge')}</button>
+                      <button className="chip-btn" type="button" onClick={() => setCreaReto(false)}>{tr('Cancelar', 'Cancel')}</button>
+                    </span>
+                  </form>
+                )}
+                {retos === null ? <p className="ajuste-pista" role="status">{tr('Cargando…', 'Loading…')}</p>
+                  : retos.length === 0 ? <p className="ajuste-pista">{puedeInvitar ? tr('Sin retos activos. Propón uno con fecha: la Ruta express antes del próximo estreno, por ejemplo.', 'No active challenges. Set one with a deadline: the express route before the next premiere, for example.') : tr('Sin retos activos.', 'No active challenges.')}</p>
+                  : (
+                    <ul className="retos-lista">
+                      {retos.map(r => {
+                        const mio = cuenta && r.progreso.find(x => x.usuario === cuenta.uid)
+                        const logrados = r.progreso.filter(x => x.hechos >= x.total).length
+                        // contados como la cuenta atrás de la portada (hasta el comienzo de ese día), para que no digan cosas distintas
+                        const dias = Math.max(0, Math.ceil((new Date(r.hasta + 'T00:00:00') - Date.now()) / 864e5))
+                        return (
+                          <li key={r.id} className="reto">
+                            <div className="reto-cab">
+                              <span className="reto-nombre">{r.nombre}</span>
+                              <span className="reto-plazo">{dias === 0 ? tr('termina hoy', 'ends today') : dias === 1 ? tr('queda 1 día', '1 day left') : tr(`quedan ${dias} días`, `${dias} days left`)}</span>
+                            </div>
+                            <span className="reto-grupo">{tr(`${logrados} de ${r.progreso.length} lo completaron · ${r.titulos.length} títulos`, `${logrados} of ${r.progreso.length} completed · ${r.titulos.length} titles`)}</span>
+                            {mio && (
+                              <span className="reto-mio">
+                                <span className="barra" aria-hidden="true"><i style={{ width: `${Math.round(100 * mio.hechos / (mio.total || 1))}%` }} /></span>
+                                <span>{tr(`Tú: ${mio.hechos} de ${mio.total}`, `You: ${mio.hechos} of ${mio.total}`)}</span>
+                              </span>
+                            )}
+                            {puedeInvitar && (
+                              <button className="chip-btn peligro reto-quitar" disabled={ocupado}
+                                onClick={() => accion(t => rest(t, `retos?id=eq.${r.id}`, { method: 'DELETE', prefer: 'return=minimal' })).then(cargaRetos)}>{tr('Quitar reto', 'Remove challenge')}</button>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+              </section>
+              {yo && (
+                <section className="comunidad-muro">
+                  <h3 className="grafica-titulo">{tr('Actividad', 'Activity')}</h3>
+                  {muro === null ? <p className="ajuste-pista" role="status">{tr('Cargando…', 'Loading…')}</p>
+                    : muro.length === 0 ? <p className="ajuste-pista">{yo.muro_activo ? tr('Aún no hay nada. Lo que marques y valores aparecerá aquí.', 'Nothing yet. What you mark and rate will show up here.') : tr('Aún no hay nada. Activa «Compartir en el muro» para que aparezca lo que marques.', 'Nothing yet. Turn on «Share on the feed» so what you mark shows up.')}</p>
+                    : (
+                      <ul className="muro-lista">
+                        {muro.map(a => {
+                          const d = buscaItem(a.ref.split(':')[0])
+                          const titulo = d ? d.item.t : a.ref
+                          const ep = a.tipo === 'episodio' && a.ref.split(':').length === 3 ? ` · ${tr('T', 'S')}${a.ref.split(':')[1]}·E${a.ref.split(':')[2]}` : ''
+                          const propio = cuenta && a.usuario === cuenta.uid
+                          return (
+                            <li key={a.id} className="muro-item">
+                              {d && POSTERS[d.item.id] ? <img className="muro-cartel" src={POSTERS[d.item.id]} alt="" loading="lazy" /> : <span className="muro-cartel" aria-hidden="true" />}
+                              <span className="muro-texto">
+                                <span><button className="muro-quien" onClick={() => onVerPerfil(a.nombre)}>@{a.nombre}</button>{' '}
+                                  {a.tipo === 'resena' ? tr('valoró', 'rated') : d && d.esComic ? tr('leyó', 'read') : tr('vio', 'watched')}{' '}
+                                  <b>{titulo}{ep}</b>{a.estrellas ? <span className="muro-estrellas" aria-label={tr(`${a.estrellas} estrellas`, `${a.estrellas} stars`)}> {'★'.repeat(a.estrellas)}</span> : null}
+                                </span>
+                                <span className="muro-cuando">{haceCuanto(Date.parse(a.creado))}</span>
+                              </span>
+                              {propio
+                                ? (a.aplausos > 0 && <span className="muro-aplausos-propio">{a.aplausos === 1 ? tr('1 aplauso', '1 clap') : tr(`${a.aplausos} aplausos`, `${a.aplausos} claps`)}</span>)
+                                : (
+                                  <button className={`chip-btn muro-aplaudir${a.aplaudido ? ' hecho' : ''}`} aria-pressed={a.aplaudido} onClick={() => aplaude(a)}
+                                    aria-label={tr(`Aplaudir a @${a.nombre}`, `Clap for @${a.nombre}`)}>
+                                    {tr('Aplaudir', 'Clap')}{a.aplausos > 0 ? ` · ${a.aplausos}` : ''}
+                                  </button>
+                                )}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  {hayMas && muro && <button className="chip-btn" onClick={() => cargaMuro(muro[muro.length - 1].creado)}>{tr('Ver más', 'Show more')}</button>}
+                </section>
+              )}
               {yo && (
                 <section className="comunidad-yo">
                   <h3 className="grafica-titulo">{tr('Tú en esta comunidad', 'You in this community')}</h3>
@@ -2364,7 +2520,11 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
                       onChange={e => { const v = e.target.checked; accion(t => rest(t, `membresias?comunidad=eq.${c.id}&usuario=eq.${cuenta.uid}`, { method: 'PATCH', prefer: 'return=minimal', body: { en_ranking: v } })) }} />
                     <span>{tr('Aparecer en el ranking', 'Show me on the leaderboard')}</span>
                   </label>
-                  {/* «Compartir en el muro» llega con el muro: sin él, sería un interruptor que no hace nada */}
+                  <label className="crea-edad">
+                    <input type="checkbox" checked={yo.muro_activo} disabled={ocupado}
+                      onChange={e => { const v = e.target.checked; accion(t => rest(t, `membresias?comunidad=eq.${c.id}&usuario=eq.${cuenta.uid}`, { method: 'PATCH', prefer: 'return=minimal', body: { muro_activo: v } })) }} />
+                    <span>{tr('Compartir en el muro lo que marco y valoro', 'Share what I mark and rate on the feed')}</span>
+                  </label>
                   {yo.papel !== 'dueno' && (
                     <button className="chip-btn peligro" disabled={ocupado} onClick={() => accion(t => rest(t, `membresias?comunidad=eq.${c.id}&usuario=eq.${cuenta.uid}`, { method: 'DELETE', prefer: 'return=minimal' }))}>
                       {tr('Salir de la comunidad', 'Leave community')}
@@ -5440,7 +5600,12 @@ export default function App() {
     return n
   })
   const [notas, setNotas] = useState(() => leeGuardado(KEY_NOTAS, saneaNotas, {}))
-  const ponNota = (id, campo, valor) => setNotas(prev => {
+  const ponNota = (id, campo, valor) => {
+    // poner estrellas (no quitarlas) se publica en el muro si está activo
+    if (campo === 'p' && typeof valor === 'number' && (!notas[id] || notas[id].p !== valor)) publicaRef.current && publicaRef.current({ tipo: 'resena', ref: id, estrellas: valor })
+    guardaNota(id, campo, valor)
+  }
+  const guardaNota = (id, campo, valor) => setNotas(prev => {
     const item = { ...(prev[id] || {}) }
     if (valor === undefined || valor === '' || (campo === 'p' && item.p === valor)) delete item[campo]
     else item[campo] = valor
@@ -5583,6 +5748,9 @@ export default function App() {
   const [recargaComunidades, setRecargaComunidades] = useState(0)
   // una invitación (#i/código) se canjea en cuanto hay cuenta con perfil
   const [invitacionPendiente, setInvitacionPendiente] = useState(() => (NUBE ? INVITACION_EN_URL : null))
+  // ¿comparte su muro en alguna comunidad? Solo entonces se publica actividad
+  const [muroActivo, setMuroActivo] = useState(false)
+  const publicaRef = useRef(null)
   // recién entrado: primero se funde lo local con lo remoto, y hasta que
   // termina no arranca la sincronización normal (su primer tirón pisaría lo
   // local con lo remoto viejo)
@@ -5744,6 +5912,17 @@ export default function App() {
     }
   }, [sync, cuentaLista])
 
+  // El muro: lo que se acaba de marcar AQUÍ (fecha de hace menos de 2 min y no
+  // traído por la sincronización) se publica si hay muro activo. Va antes del
+  // efecto de empujar, que es quien consume aplicandoRemoto.
+  const vistasPrevias = useRef(null)
+  useEffect(() => {
+    const antes = vistasPrevias.current
+    vistasPrevias.current = vistas
+    if (!antes || aplicandoRemoto.current || !muroActivo || !cuentaLista) return
+    const nuevas = Object.entries(vistas).filter(([id, ts]) => !antes[id] && typeof ts === 'number' && Date.now() - ts < 120000).slice(0, 5)
+    for (const [id] of nuevas) publicaRef.current && publicaRef.current({ tipo: 'titulo', ref: id })
+  }, [vistas])
   useEffect(() => {
     if (perfil || !fuenteSync) return
     if (aplicandoRemoto.current) { aplicandoRemoto.current = false; return }
@@ -5835,6 +6014,23 @@ export default function App() {
     })()
     return () => { vivo = false }
   }, [cuenta, perfilCuenta, fusionando])
+  useEffect(() => {
+    if (!cuentaLista) { setMuroActivo(false); return undefined }
+    let vivo = true
+    ;(async () => {
+      try {
+        const filas = await rest(await tokenCuenta(), `membresias?usuario=eq.${cuentaLista.uid}&muro_activo=is.true&select=comunidad&limit=1`)
+        if (vivo) setMuroActivo(Array.isArray(filas) && filas.length > 0)
+      } catch {}
+    })()
+    return () => { vivo = false }
+  }, [cuentaLista && cuentaLista.uid, recargaComunidades])
+  publicaRef.current = async ({ tipo, ref, estrellas }) => {
+    if (!cuentaLista || !muroActivo) return
+    try {
+      await rest(await tokenCuenta(), 'actividad', { method: 'POST', prefer: 'return=minimal', body: { usuario: cuentaLista.uid, tipo, ref, estrellas: estrellas || null } })
+    } catch {}
+  }
   // entrar con una invitación: devuelve un mensaje de error o null
   const usaInvitacion = async codigo => {
     try {

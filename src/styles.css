@@ -2637,6 +2637,34 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .comunidad-tipo[aria-checked="true"]{border-color:var(--red); box-shadow:inset 0 0 0 1px var(--red)}
 textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-height:80px; font:inherit; line-height:1.45; padding: var(--e-3) var(--e-4)}
 
+/* retos y muro */
+.comunidad-retos, .comunidad-muro{display:flex; flex-direction:column; gap: var(--e-3)}
+.comunidad-retos .grafica-cab{display:flex; align-items:center; justify-content:space-between; gap: var(--e-3)}
+.reto-nuevo{display:flex; flex-direction:column; gap: var(--e-3); padding: var(--e-4); border-radius:var(--r-m); background:var(--panel2)}
+.reto-cuenta{font-variant-numeric:tabular-nums; opacity:.7}
+.reto-fecha{align-items:center}
+.reto-fecha .busca{width:auto}
+.retos-lista, .muro-lista{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap: var(--e-2)}
+.reto{display:flex; flex-direction:column; gap: var(--e-2); padding: var(--e-4); border-radius:var(--r-m); background:var(--panel2)}
+.reto-cab{display:flex; align-items:baseline; justify-content:space-between; gap: var(--e-3); flex-wrap:wrap}
+.reto-nombre{font-weight:700; font-size: var(--t-b)}
+.reto-plazo{font-size: var(--t-s); color:var(--gold-texto); font-weight:600; white-space:nowrap}
+.reto-grupo{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+.reto-mio{display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap: var(--e-3); font-size: var(--t-s); font-variant-numeric:tabular-nums}
+/* el carril de la barra es --panel2, como la tarjeta del reto: un escalón por debajo para que se vea */
+.reto-mio .barra{margin:0; display:block; width:100%; background:var(--panel)}
+.reto-quitar{align-self:flex-start}
+.muro-item{display:grid; grid-template-columns:36px minmax(0, 1fr) auto; align-items:center; gap: var(--e-3); padding: var(--e-2) var(--e-3); border-radius:var(--r-m); background:var(--panel2)}
+.muro-cartel{width:36px; height:54px; border-radius:var(--r-s); object-fit:cover; background:var(--panel)}
+.muro-texto{display:flex; flex-direction:column; gap: var(--e-1); min-width:0; font-size: var(--t-m); line-height:1.35}
+.muro-quien{background:none; border:none; padding:0; font:inherit; font-weight:700; color:var(--ink); cursor:pointer}
+.muro-quien:hover{text-decoration:underline}
+.muro-estrellas{color:var(--gold-texto)}
+.muro-cuando{font-size: var(--t-xs); color:var(--ink3)}
+.muro-aplaudir{white-space:nowrap}
+.muro-aplaudir.hecho{color:var(--sobre-acento); background:var(--red); border-color:var(--red)}
+.muro-aplausos-propio{font-size: var(--t-xs); color:var(--ink2); white-space:nowrap}
+
 /* el perfil de la comunidad */
 .perfil-hoja{max-width:880px}
 .perfil-hoja .modal-info{gap: var(--e-4)}
