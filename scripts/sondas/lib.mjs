@@ -10,7 +10,7 @@
 //    about:blank (cambiar solo el hash no relee lo sembrado);
 //  - foco emulado (sin él, focus/focusin no se disparan).
 import { spawn } from 'node:child_process'
-import { createServer } from 'node:http'
+import { createServer, request as httpRequest } from 'node:http'
 import { gzipSync } from 'node:zlib'
 import { mkdtempSync, rmSync, existsSync, readFileSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -26,9 +26,21 @@ const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'applic
 
 export const espera = ms => new Promise(r => setTimeout(r, ms))
 
-function servidor() {
+function servidor({ puerto = 0, proxy = null } = {}) {
   if (!existsSync(join(DIST, 'index.html'))) throw new Error('dist/ no está construido: npm run build')
   const srv = createServer((req, res) => {
+    // proxy: rutas como /auth/v1 y /rest/v1 a otro servidor (el Supabase local)
+    const pref = proxy && Object.keys(proxy).find(p => req.url.startsWith(p + '/') || req.url.startsWith(p + '?'))
+    if (pref) {
+      const destino = new URL(proxy[pref] + req.url.slice(pref.length))
+      const sub = httpRequest(destino, { method: req.method, headers: { ...req.headers, host: destino.host } }, r => {
+        res.writeHead(r.statusCode, r.headers)
+        r.pipe(res)
+      })
+      sub.on('error', e => { res.writeHead(502); res.end(String(e)) })
+      req.pipe(sub)
+      return
+    }
     let ruta = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
     let f = join(DIST, ruta)
     if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html')
@@ -40,7 +52,7 @@ function servidor() {
     res.writeHead(200, { 'content-type': tipo, 'cache-control': 'no-store', ...(comprime ? { 'content-encoding': 'gzip' } : {}) })
     res.end(comprime ? gzipSync(cuerpo) : cuerpo)
   })
-  return new Promise(r => srv.listen(0, 'localhost', () => r(srv)))
+  return new Promise(r => srv.listen(puerto, 'localhost', () => r(srv)))
 }
 
 // Mensajes JSON separados por NUL sobre las tuberías de Chrome.
@@ -110,8 +122,8 @@ export const SIEMBRA_BASE = {
 }
 
 // abre({ movil, siembra }) → { cdp, url, navega, cierra, errores }
-export async function abre({ movil = true, ancho = 390, alto = 844, siembra = {} } = {}) {
-  const srv = await servidor()
+export async function abre({ movil = true, ancho = 390, alto = 844, siembra = {}, puerto = 0, proxy = null } = {}) {
+  const srv = await servidor({ puerto, proxy })
   const url = `http://localhost:${srv.address().port}/`
   const perfil = mkdtempSync(join(tmpdir(), 'sonda-maraton-'))
   // CDP por tubería (fd 3 y 4), no por red: este Mac no tiene 127.0.0.1 en

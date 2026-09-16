@@ -71,6 +71,13 @@ try {
   r = como('ana', `insert into progreso (usuario, vistas, eps, notas) values ('${U.ana}',
     '{"first-class": ${ts(1)}, "logan": ${ts(2)}, "deadpool1": ${ts(30)}}', '{"loki2:2:6": ${ts(1)}}', '{"logan": {"p": 5, "txt": "obra maestra"}}')`)
   prueba(r.ok, `ana guarda su progreso ${r.ok ? '' : r.err}`)
+  // la forma exacta del upsert de PostgREST (on_conflict + merge-duplicates):
+  // se cazó contra el Supabase real, no contra esta imitación
+  r = como('ana', `insert into progreso (usuario, vistas, actualizado) values ('${U.ana}', '{"logan": ${ts(2)}, "first-class": ${ts(1)}, "deadpool1": ${ts(30)}}', now())
+    on conflict (usuario) do update set usuario = excluded.usuario, vistas = excluded.vistas, actualizado = excluded.actualizado`)
+  prueba(r.ok, `ana actualiza su progreso con upsert ${r.ok ? '' : r.err}`)
+  r = como('beto', `insert into progreso (usuario, vistas) values ('${U.ana}', '{}') on conflict (usuario) do update set usuario = excluded.usuario, vistas = excluded.vistas`)
+  prueba(!r.ok && /row-level security/.test(r.err), `beto no pisa el progreso de ana con upsert (${r.err})`)
   r = como('beto', `insert into progreso (usuario) values ('${U.beto}')`)
   r = como('beto', `select count(*) from progreso where usuario = '${U.ana}'`)
   prueba(r.ok && r.out === '0', 'beto no lee el progreso de ana')

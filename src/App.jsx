@@ -15,7 +15,7 @@ import { EPISODIOS_LATAM } from './episodios-latam.js'
 import { EPISODIOS_EN } from './episodios-en.js'
 import { EN_TEXTOS } from './en-textos.js'
 import { clasifica, guardaArchivo, leeArchivo, borraArchivo, metaArchivo, abreComic, fmtTam, listaArchivos, persistencia, pidePersistencia, espacio } from './lector.js'
-import { NUBE, cargaGis, entraConGoogle, refrescaToken } from './nube.js'
+import { NUBE, urlGoogle, enviaEnlace, canjeaCodigo, refrescaToken, salirNube, rest } from './nube.js'
 import { goma, muelle, useIndicador, velocimetro } from './movimiento.js'
 
 const KEY_EPS = 'maraton-marvel-eps-v1'
@@ -252,8 +252,38 @@ function leePosicion(vista) {
     return { [vista]: { id: typeof g.id === 'string' ? g.id : null, dy: Number(g.dy) || 0, y: Number(g.y) || 0 } }
   } catch { return {} }
 }
-// sesión de la cuenta de Google: { uid, rt, nombre, email, foto }
+// sesión de la cuenta (Supabase): { uid, rt, nombre, email, foto }
 const KEY_CUENTA = 'maraton-marvel-cuenta-v1'
+// Entrar con Google o con enlace por correo vuelve a la app con ?code= (o
+// ?error=). Se lee al cargar el módulo: el efecto de la URL la reescribe al
+// montar y se lo llevaría por delante.
+const RETORNO_CUENTA = (() => {
+  try {
+    const p = new URLSearchParams(window.location.search)
+    const code = p.get('code')
+    if (code && /^[\w-]{8,100}$/.test(code)) return { code }
+    const error = p.get('error_description') || p.get('error')
+    return error ? { error: error.slice(0, 200) } : null
+  } catch { return null }
+})()
+// El perfil público de la comunidad (tabla perfiles)
+const CAMPOS_PERFIL = 'id,nombre,nombre_visible,avatar,bio,saga_favorita,priv_progreso,priv_resenas,priv_logros'
+const PRIVACIDADES = ['publico', 'seguidores', 'privado']
+const saneaPerfil = x => {
+  if (!esObj(x) || typeof x.id !== 'string' || typeof x.nombre !== 'string') return null
+  const priv = v => (PRIVACIDADES.includes(v) ? v : 'privado')
+  return {
+    id: x.id, nombre: x.nombre.slice(0, 20),
+    nombre_visible: typeof x.nombre_visible === 'string' ? x.nombre_visible.slice(0, 40) : '',
+    avatar: typeof x.avatar === 'string' ? x.avatar.slice(0, 40) : 'logan',
+    bio: typeof x.bio === 'string' ? x.bio.slice(0, 280) : '',
+    priv_progreso: priv(x.priv_progreso), priv_resenas: priv(x.priv_resenas), priv_logros: priv(x.priv_logros),
+  }
+}
+// los avatares son carátulas del catálogo: no se suben fotos (nada que
+// moderar ni que almacenar en el plan gratuito)
+const AVATARES = ['logan', 'deadpool2', 'xmen97', 'first-class', 'ironman1', 'cap1', 'blackpanther', 'gotg1',
+  'ragnarok', 'nwh', 'loki1', 'wandavision', 'msmarvel', 'moonknight', 'drstrange', 'xmen-tas']
 // idioma de la app: 'es' (con el matiz del país) o 'en'
 const KEY_IDIOMA = 'maraton-marvel-idioma-v1'
 
@@ -1842,56 +1872,190 @@ function sinPartir(texto) {
 // interfaz en inglés gana el tercer argumento
 const ui = (pais, texto, en) => (IDIOMA_ACTUAL === 'en' && en !== undefined ? en : pais === 'ES' || IDIOMA_ACTUAL === 'en' ? texto : latiniza(texto))
 
-// Ajustes › Cuenta: entrar con Google para que el progreso siga a la persona.
-// Solo existe si el proyecto central (NUBE) está configurado; sin él la app
-// ni lo menciona. El botón lo pinta Google (GIS), que se carga al llegar aquí.
-function CuentaAjuste({ cuenta, estado, onCredencial, onSalir }) {
-  const ref = useRef(null)
-  const [falloGis, setFalloGis] = useState(false)
-  // el botón se registra una vez pero debe llamar al entrarCuenta del render
-  // ACTUAL: con el cierre del montaje, la fusión partiría de un estado viejo
-  // (lo que un tirón de fondo trajo mientras Ajustes estaba abierto se
-  // perdería al subir la unión)
-  const credencial = useRef(onCredencial)
-  credencial.current = onCredencial
-  useEffect(() => {
-    if (!NUBE || cuenta) return
-    let vivo = true
-    cargaGis().then(() => {
-      if (!vivo || !ref.current || !(window.google && window.google.accounts)) return
-      window.google.accounts.id.initialize({
-        client_id: NUBE.clientId,
-        callback: r => { if (r && typeof r.credential === 'string') credencial.current(r.credential) },
-      })
-      window.google.accounts.id.renderButton(ref.current, { type: 'standard', theme: 'outline', size: 'large', text: 'signin_with' })
-    }).catch(() => { if (vivo) setFalloGis(true) })
-    return () => { vivo = false }
-  }, [cuenta])
+// Ajustes › Cuenta (fase 2 de la comunidad, 16 sep 2026): entrar con Google o
+// con un enlace por correo, el perfil público, su privacidad y los derechos de
+// la Ley 21.719 (descargar y borrar). Solo existe si NUBE está configurado.
+function CuentaAjuste({ cuenta, perfil, estado, aviso, onEnlace, onCrearPerfil, onPrivacidad, onDescargar, onBorrar, onSalir }) {
+  const [correo, setCorreo] = useState('')
+  const [envio, setEnvio] = useState(null) // null | 'enviando' | 'enviado' | 'error'
+  const [borrando, setBorrando] = useState(false)
+  const [yendo, setYendo] = useState(false)
   if (!NUBE) return null
+  const PRIV = [['publico', tr('Público', 'Public')], ['seguidores', tr('Seguidores', 'Followers')], ['privado', tr('Solo yo', 'Only me')]]
+  const BLOQUES = [['priv_progreso', tr('Lo que has visto', 'What you’ve watched')], ['priv_resenas', tr('Estrellas y reseñas', 'Stars and reviews')], ['priv_logros', tr('Logros', 'Achievements')]]
   return (
-    <div className="ajuste">
+    <div className="ajuste cuenta-ajuste">
       <div className="ajuste-cab">
         <h3 className="ajuste-titulo">{tr('Cuenta', 'Account')}</h3>
         <p className="ajuste-pista">
           {cuenta
             ? (estado === 'error'
               ? tr('Dentro, pero ahora mismo sin conexión. Se reintenta al volver a la app.', 'Signed in, but offline right now. It retries when you come back.')
-              : tr('Dentro. Tu progreso, notas, listas, horario y páginas de lectura te siguen a cualquier dispositivo donde entres.', 'Signed in. Your progress, notes, lists, schedule and reading pages follow you to any device you sign into.'))
-            : tr('Entra con Google y tu progreso te sigue a cualquier dispositivo. Sin cuenta, todo se guarda igual en este navegador.', 'Sign in with Google and your progress follows you to any device. Without an account, everything still saves in this browser.')}
+              : tr('Tu progreso, notas, listas, horario y páginas de lectura te siguen a cualquier dispositivo donde entres.', 'Your progress, notes, lists, schedule and reading pages follow you to any device you sign into.'))
+            : tr('Entra y tu progreso te sigue a cualquier dispositivo, y podrás unirte a comunidades. Sin cuenta, todo se guarda igual en este navegador.', 'Sign in and your progress follows you to any device, and you can join communities. Without an account, everything still saves in this browser.')}
         </p>
+        {aviso && <p className="aviso-sin-red" role="status">{aviso}</p>}
       </div>
-      {cuenta ? (
-        <div className="ajuste-ops cuenta-fila">
-          {cuenta.foto && <img className="cuenta-foto" src={cuenta.foto} alt="" referrerPolicy="no-referrer" />}
-          <span className="cuenta-nombre">{cuenta.nombre || cuenta.email}</span>
-          <button className="ghost" onClick={onSalir}>{tr('Salir', 'Sign out')}</button>
-        </div>
-      ) : (
-        <div className="ajuste-ops">
-          <div ref={ref} className="cuenta-google" />
-          {falloGis && <span className="import-error">{tr('No se pudo cargar el acceso de Google. Prueba a recargar.', 'Could not load Google sign-in. Try reloading.')}</span>}
+      {!cuenta && (
+        <div className="cuenta-entrar">
+          <button className="accion-principal" disabled={yendo} onClick={async () => {
+            setYendo(true)
+            try { window.location.assign(await urlGoogle()) } catch { setYendo(false) }
+          }}>{tr('Entrar con Google', 'Sign in with Google')}</button>
+          <form className="cuenta-correo" onSubmit={async e => {
+            e.preventDefault()
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())) { setEnvio('error'); return }
+            setEnvio('enviando')
+            try { await onEnlace(correo.trim()); setEnvio('enviado') } catch { setEnvio('error') }
+          }}>
+            <label className="ajuste-pista" htmlFor="cuenta-correo">{tr('O con un enlace a tu correo', 'Or with a link to your email')}</label>
+            <div className="cuenta-correo-fila">
+              <input id="cuenta-correo" className="busca" type="email" inputMode="email" autoComplete="email" enterKeyHint="send"
+                placeholder={tr('tu@correo.cl', 'you@email.com')} value={correo} onChange={e => { setCorreo(e.target.value); setEnvio(null) }} />
+              <button className="chip-btn" type="submit" disabled={envio === 'enviando'}>{envio === 'enviando' ? tr('Enviando…', 'Sending…') : tr('Enviar enlace', 'Send link')}</button>
+            </div>
+            {envio === 'enviado' && <span className="ajuste-pista" role="status">{tr('Listo: abre el enlace del correo en este mismo navegador.', 'Done: open the email link in this same browser.')}</span>}
+            {envio === 'error' && <span className="import-error" role="status">{tr('No se pudo enviar. Revisa la dirección e inténtalo otra vez.', 'Could not send. Check the address and try again.')}</span>}
+          </form>
         </div>
       )}
+      {cuenta && !perfil && (
+        <div className="ajuste-ops cuenta-fila">
+          <span className="cuenta-nombre">{cuenta.email || cuenta.nombre}</span>
+          <button className="chip-btn destacado" onClick={onCrearPerfil}>{tr('Crear mi perfil', 'Create my profile')}</button>
+          <button className="ghost" onClick={onSalir}>{tr('Salir', 'Sign out')}</button>
+        </div>
+      )}
+      {cuenta && perfil && (
+        <>
+          <div className="cuenta-fila">
+            {POSTERS[perfil.avatar] && <img className="cuenta-foto" src={POSTERS[perfil.avatar]} alt="" />}
+            <span className="cuenta-textos">
+              <span className="cuenta-nombre">@{perfil.nombre}</span>
+              <span className="cuenta-correo-txt">{cuenta.email}</span>
+            </span>
+            <button className="ghost" onClick={onSalir}>{tr('Salir', 'Sign out')}</button>
+          </div>
+          <div className="cuenta-privacidad">
+            <p className="ajuste-pista">{tr('Quién ve cada parte de tu perfil', 'Who sees each part of your profile')}</p>
+            {BLOQUES.map(([campo, rotulo]) => (
+              <div className="cuenta-priv-fila" key={campo}>
+                <span className="cuenta-priv-rotulo" id={`priv-${campo}`}>{rotulo}</span>
+                <span className="ajuste-ops" role="radiogroup" aria-labelledby={`priv-${campo}`}>
+                  {PRIV.map(([v, t]) => (
+                    <button key={v} className="chip-btn" role="radio" aria-checked={perfil[campo] === v} onClick={() => onPrivacidad(campo, v)}>{t}</button>
+                  ))}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="ajuste-ops">
+            <button className="chip-btn" onClick={onDescargar}>{tr('Descargar mis datos', 'Download my data')}</button>
+            {!borrando
+              ? <button className="chip-btn peligro" onClick={() => setBorrando(true)}>{tr('Borrar mi cuenta', 'Delete my account')}</button>
+              : (
+                <span className="aviso peligro cuenta-borrar" role="alert">
+                  <span className="aviso-texto">{tr('Se borran tu perfil, tu progreso en la nube, tus hilos y respuestas. Lo de este navegador se queda. No se puede deshacer.', 'Your profile, cloud progress, threads and replies are deleted. What’s in this browser stays. This can’t be undone.')}</span>
+                  <span className="aviso-acciones">
+                    <button className="chip-btn peligro" onClick={() => { setBorrando(false); onBorrar() }}>{tr('Sí, borrar', 'Yes, delete')}</button>
+                    <button className="chip-btn" onClick={() => setBorrando(false)}>{tr('Cancelar', 'Cancel')}</button>
+                  </span>
+                </span>
+              )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// Crear el perfil la primera vez: @nombre único, avatar de la galería y la
+// edad mínima (14, Ley 21.719). Sin perfil no se sincroniza (la base lo exige).
+function CreaPerfil({ saliendo, cuenta, token, onCreado, onCerrar }) {
+  const ref = useRef(null)
+  useDialogo(ref, onCerrar)
+  const sugerido = (cuenta.email || '').split('@')[0].toLowerCase().normalize('NFD').replace(/[^a-z0-9_]/g, '').slice(0, 20)
+  const [nombre, setNombre] = useState(sugerido.length >= 3 ? sugerido : '')
+  const [avatar, setAvatar] = useState(AVATARES[0])
+  const [edad, setEdad] = useState(false)
+  const [libre, setLibre] = useState(null) // null | 'mirando' | true | false
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const valido = /^[a-z0-9_]{3,20}$/.test(nombre)
+  useEffect(() => {
+    if (!valido) { setLibre(null); return undefined }
+    setLibre('mirando')
+    let vivo = true
+    const id = setTimeout(async () => {
+      try {
+        const filas = await rest(await token(), `perfiles?nombre=eq.${nombre}&select=id`)
+        if (vivo) setLibre(!(Array.isArray(filas) && filas.length))
+      } catch { if (vivo) setLibre(null) }
+    }, 400)
+    return () => { vivo = false; clearTimeout(id) }
+  }, [nombre])
+  const crea = async e => {
+    e.preventDefault()
+    if (!valido || !edad || libre === false) return
+    setEnviando(true); setError('')
+    try {
+      const filas = await rest(await token(), `perfiles?select=${CAMPOS_PERFIL}`, {
+        method: 'POST', prefer: 'return=representation',
+        body: { id: cuenta.uid, nombre, avatar, edad_confirmada_en: new Date().toISOString() },
+      })
+      const p = Array.isArray(filas) && saneaPerfil(filas[0])
+      if (!p) throw new Error('respuesta')
+      onCreado(p)
+    } catch (er) {
+      setEnviando(false)
+      setError(er && er.codigo === '23505' ? tr('Ese nombre ya lo tiene alguien.', 'Someone already has that name.') : tr('No se pudo crear el perfil. Inténtalo otra vez.', 'Could not create the profile. Try again.'))
+    }
+  }
+  return (
+    <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onCerrar} role="dialog" aria-modal="true" aria-labelledby="crea-perfil-titulo">
+      <form className="modal modal-sync crea-perfil" onClick={e => e.stopPropagation()} onSubmit={crea}>
+        <button type="button" className="cerrar" onClick={onCerrar} aria-label={tr('Cerrar', 'Close')}>✕</button>
+        <div className="modal-info">
+          <h2 className="modal-titulo" id="crea-perfil-titulo">{tr('Crea tu perfil', 'Create your profile')}</h2>
+          <p className="modal-res">{tr('Así te verán en las comunidades. Tu progreso y tus reseñas empiezan privados: tú decides qué se ve.', 'This is how people see you in communities. Your progress and reviews start private: you decide what’s shown.')}</p>
+          <label className="valoracion-label" htmlFor="crea-nombre">{tr('Tu nombre de usuario', 'Your username')}</label>
+          <div className="crea-nombre-fila">
+            <span className="crea-arroba" aria-hidden="true">@</span>
+            <input id="crea-nombre" className="busca sync-input" autoComplete="username" autoCapitalize="none" spellCheck={false} maxLength={20}
+              value={nombre} onChange={e => setNombre(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              aria-describedby="crea-nombre-estado" />
+          </div>
+          <span id="crea-nombre-estado" className={`crea-estado${libre === false || (nombre && !valido) ? ' mal' : ''}`} role="status">
+            {!nombre ? tr('Entre 3 y 20: letras, números y _', '3 to 20: letters, numbers and _')
+              : !valido ? tr('Mínimo 3 caracteres: letras, números y _', 'At least 3 characters: letters, numbers and _')
+              : libre === 'mirando' ? tr('Mirando si está libre…', 'Checking if it’s free…')
+              : libre === false ? tr('Ese nombre ya lo tiene alguien', 'Someone already has that name')
+              : libre === true ? tr('Libre', 'Available') : ''}
+          </span>
+          <span className="valoracion-label" id="crea-avatar">{tr('Tu avatar', 'Your avatar')}</span>
+          <div className="crea-avatares" role="radiogroup" aria-labelledby="crea-avatar">
+            {AVATARES.filter(id => POSTERS[id]).map(id => {
+              const it = buscaItem(id)
+              return (
+                <button type="button" key={id} className="crea-avatar" role="radio" aria-checked={avatar === id}
+                  aria-label={it ? it.item.t : id} onClick={() => setAvatar(id)}>
+                  <img src={POSTERS[id]} alt="" loading="lazy" decoding="async" />
+                </button>
+              )
+            })}
+          </div>
+          <label className="crea-edad">
+            <input type="checkbox" checked={edad} onChange={e => setEdad(e.target.checked)} />
+            <span>{tr('Tengo 14 años o más y acepto las normas de la comunidad.', 'I am 14 or older and accept the community rules.')}</span>
+          </label>
+          {error && <p className="import-error" role="alert">{error}</p>}
+          <div className="modal-acciones">
+            <button type="submit" className="accion-principal" disabled={!valido || !edad || libre === false || libre === 'mirando' || enviando}>
+              {enviando ? tr('Creando…', 'Creating…') : tr('Crear perfil', 'Create profile')}
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   )
 }
@@ -4855,15 +5019,28 @@ export default function App() {
   const aplicandoRemoto = React.useRef(false)
   const ultimoAplicado = React.useRef(0)
 
-  // ── La cuenta de Google (si el proyecto NUBE está configurado) ──
-  // El progreso de cada cuenta vive en usuarios/{uid} del Firebase central y
-  // reutiliza la misma maquinaria de empujar/tirar que la base propia. Si hay
-  // cuenta, manda la cuenta; la base propia queda como alternativa sin cuenta.
+  // ── La cuenta de la comunidad (si el proyecto NUBE de Supabase está configurado) ──
+  // El progreso de cada cuenta vive en la tabla progreso y reutiliza la misma
+  // maquinaria de empujar/tirar que la base propia. Si hay cuenta, manda la
+  // cuenta; la base propia queda como alternativa sin cuenta. La base exige
+  // un perfil antes del progreso: sin perfil creado no se sincroniza.
   const [cuenta, setCuenta] = useState(() => (NUBE ? leeGuardado(KEY_CUENTA, saneaCuenta, null) : null))
+  // null = sin cargar · false = aún no lo ha creado · objeto = listo
+  const [perfilCuenta, setPerfilCuenta] = useState(null)
+  const [creaPerfil, setCreaPerfil] = useState(false)
+  const [cuentaAviso, setCuentaAviso] = useState(null)
+  // recién entrado: primero se funde lo local con lo remoto, y hasta que
+  // termina no arranca la sincronización normal (su primer tirón pisaría lo
+  // local con lo remoto viejo)
+  const [fusionando, setFusionando] = useState(false)
+  const cuentaLista = cuenta && perfilCuenta && !fusionando ? cuenta : null
   // el token de sesión dura una hora y no se persiste: se renueva del rt
   const tokenNube = useRef({ t: null, hasta: 0 })
   const salirCuenta = () => {
+    if (tokenNube.current.t) salirNube(tokenNube.current.t)
     setCuenta(null)
+    setPerfilCuenta(null)
+    setFusionando(false)
     tokenNube.current = { t: null, hasta: 0 }
     setSyncEstado(sync ? 'ok' : 'off')
     try { localStorage.removeItem(KEY_CUENTA) } catch {}
@@ -4872,8 +5049,8 @@ export default function App() {
     if (tokenNube.current.t && tokenNube.current.hasta > Date.now() + 60000) return tokenNube.current.t
     const r = await refrescaToken(cuenta.rt)
     tokenNube.current = { t: r.token, hasta: Date.now() + r.dura * 1000 }
-    // Google puede rotar el token de refresco: quedarse con el viejo dejaría
-    // la sesión muerta en el siguiente arranque
+    // Supabase rota el token de refresco en cada uso: quedarse con el viejo
+    // dejaría la sesión muerta en el siguiente arranque
     if (r.rt && r.rt !== cuenta.rt) {
       const cta = { ...cuenta, rt: r.rt }
       setCuenta(cta)
@@ -4882,9 +5059,17 @@ export default function App() {
     return r.token
   }
 
-  const endpoint = async s => (s.cuenta
-    ? `${NUBE.db}/usuarios/${s.cuenta.uid}.json?auth=${await tokenCuenta()}`
-    : `${s.url}/maraton/${s.room}.json`)
+  const endpoint = async s => `${s.url}/maraton/${s.room}.json`
+  // la fila de progreso de la cuenta, con la forma de siempre ({v, e, n, …, t})
+  const leeProgresoCuenta = async c => {
+    const filas = await rest(await tokenCuenta(), `progreso?usuario=eq.${c.uid}&select=vistas,eps,notas,listas,lecturas,horario,actualizado`)
+    const f = Array.isArray(filas) && filas[0]
+    return f ? { v: f.vistas, e: f.eps, n: f.notas, l: f.listas, lec: f.lecturas, h: f.horario, t: Date.parse(f.actualizado) } : null
+  }
+  const escribeProgresoCuenta = async (c, x) => rest(await tokenCuenta(), 'progreso?on_conflict=usuario', {
+    method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal',
+    body: { usuario: c.uid, vistas: x.v, eps: x.e, notas: x.n, listas: x.l, lecturas: x.lec || {}, horario: x.h || null, actualizado: new Date(x.t).toISOString() },
+  })
   // una sesión de cuenta que ya no vale (revocada, caducada) cierra la sesión
   // en vez de reintentar para siempre contra un muro
   const trataFallo = (conf, er) => {
@@ -4900,12 +5085,16 @@ export default function App() {
       // base propia conserva su forma de siempre, que otros dispositivos ya
       // saben leer
       const cuerpo = { v, e, n: n || notas, l: l || listas, t }
-      if (conf.cuenta) { cuerpo.h = horario; cuerpo.lec = lecturas }
-      const r = await fetch(await endpoint(conf), {
-        method: 'PUT',
-        body: JSON.stringify(cuerpo),
-      })
-      if (!r.ok) throw new Error(r.status)
+      if (conf.cuenta) {
+        cuerpo.h = horario; cuerpo.lec = lecturas
+        await escribeProgresoCuenta(conf.cuenta, cuerpo)
+      } else {
+        const r = await fetch(await endpoint(conf), {
+          method: 'PUT',
+          body: JSON.stringify(cuerpo),
+        })
+        if (!r.ok) throw new Error(r.status)
+      }
       ultimoAplicado.current = t
       setSyncEstado('ok')
     } catch (er) { trataFallo(conf, er) }
@@ -4913,9 +5102,13 @@ export default function App() {
 
   const tirar = async conf => {
     try {
-      const r = await fetch(await endpoint(conf))
-      if (!r.ok) throw new Error(r.status)
-      const datos = await r.json()
+      let datos
+      if (conf.cuenta) datos = await leeProgresoCuenta(conf.cuenta)
+      else {
+        const r = await fetch(await endpoint(conf))
+        if (!r.ok) throw new Error(r.status)
+        datos = await r.json()
+      }
       if (esObj(datos) && typeof datos.t === 'number' && datos.t > ultimoAplicado.current) {
         // El remoto puede llegar con la forma equivocada (escritura a medias,
         // base manipulada, código de sincronización de un desconocido). Se sanea
@@ -4964,8 +5157,8 @@ export default function App() {
     } catch (er) { trataFallo(conf, er) }
   }
 
-  // la fuente de sincronización: la cuenta si la hay, si no la base propia
-  const fuenteSync = cuenta ? { cuenta } : sync
+  // la fuente de sincronización: la cuenta si la hay (con perfil), si no la base propia
+  const fuenteSync = cuentaLista ? { cuenta: cuentaLista } : sync
 
   // El intervalo vive fijado a [sync, cuenta], así que sin esto llamaría a un
   // tirar() de un render VIEJO: su red de rescate compararía contra el estado
@@ -4975,8 +5168,8 @@ export default function App() {
 
   useEffect(() => {
     if (perfil) return
-    const conf = cuenta ? { cuenta } : sync
-    if (!conf) { setSyncEstado('off'); return }
+    const conf = cuentaLista ? { cuenta: cuentaLista } : sync
+    if (!conf) { if (!cuenta) setSyncEstado('off'); return }
     // Entre TUS dispositivos (base propia) cada 25 s está bien; contra el
     // proyecto central de la comunidad sería un derroche del cupo gratuito
     // de descarga (10 GB/mes en Spark): con cuenta se refresca cada 2 min y,
@@ -4995,7 +5188,7 @@ export default function App() {
       window.removeEventListener('focus', alFoco)
       document.removeEventListener('visibilitychange', alFoco)
     }
-  }, [sync, cuenta])
+  }, [sync, cuentaLista])
 
   useEffect(() => {
     if (perfil || !fuenteSync) return
@@ -5004,56 +5197,119 @@ export default function App() {
     return () => clearTimeout(id)
     // cuenta y sync también: al salir de la cuenta (o entrar) el temporizador
     // pendiente se cancela en vez de escribir en el destino ANTERIOR
-  }, [vistas, eps, notas, listas, horario, lecturas, cuenta, sync])
+  }, [vistas, eps, notas, listas, horario, lecturas, cuentaLista, sync])
 
-  // Entrar con Google: cambia el carné por una sesión, FUSIONA lo remoto con
-  // lo local (lo local manda por clave, como al unirse a una sala) y sube la
-  // unión. Sin nada remoto, el primer PUT estrena la cuenta con lo local.
-  const entrarCuenta = async credencial => {
+  // Entrar (Google o enlace por correo): el ?code= de la URL por una sesión.
+  // Después se carga el perfil; con perfil, se FUNDE lo remoto con lo local
+  // (lo local manda por clave, como al unirse a una sala) y se sube la unión.
+  const entrarCuenta = async codigo => {
     try {
-      const c = await entraConGoogle(credencial)
+      setSyncEstado('syncing')
+      const c = await canjeaCodigo(codigo)
       tokenNube.current = { t: c.token, hasta: Date.now() + c.dura * 1000 }
-      // La lectura inicial DEBE distinguir «cuenta vacía» (RTDB responde un
-      // null legítimo) de «no se pudo leer»: tratarlas igual estrenaba la
-      // cuenta con solo lo local y el PUT de abajo PISABA el progreso remoto.
-      // Si no se puede leer o escribir, no se entra: nada cambia en ningún
-      // lado y el usuario ve «error» en vez de una fusión a medias.
-      const r = await fetch(`${NUBE.db}/usuarios/${c.uid}.json?auth=${c.token}`)
-      if (!r.ok) throw new Error(r.status)
-      const datos = await r.json()
-      const v = { ...(esObj(datos) && saneaMarcas(datos.v) || {}), ...vistas }
-      const e = { ...(esObj(datos) && saneaMarcas(datos.e) || {}), ...eps }
-      const n = { ...(esObj(datos) && saneaNotas(datos.n) || {}), ...notas }
-      const lRemoto = (esObj(datos) && saneaListas(datos.l)) || []
-      const l = [...lRemoto, ...listas.filter(x => !lRemoto.some(r2 => r2.id === x.id))]
-      const h = horario || (esObj(datos) ? saneaHorario(datos.h) : null)
-      const lec = { ...(esObj(datos) && saneaLector(datos.lec) || {}), ...lecturas }
-      const t = Date.now()
-      const w = await fetch(`${NUBE.db}/usuarios/${c.uid}.json?auth=${c.token}`, {
-        method: 'PUT',
-        body: JSON.stringify({ v, e, n, l, h, lec, t }),
-      })
-      if (!w.ok) throw new Error(w.status)
-      // El orden importa: el marcador va ANTES de setCuenta, porque setCuenta
-      // relanza el intervalo y su primer tirón no debe re-aplicar un remoto
-      // más viejo que la unión que se acaba de subir.
-      ultimoAplicado.current = t
-      aplicandoRemoto.current = true
-      setVistas(v); setEps(e); setNotas(n); setListas(l); setLecturas(lec)
-      if (h) guardaHorario(h)
-      try {
-        localStorage.setItem(KEY, JSON.stringify(v))
-        localStorage.setItem(KEY_EPS, JSON.stringify(e))
-        localStorage.setItem(KEY_NOTAS, JSON.stringify(n))
-        localStorage.setItem(KEY_LISTAS, JSON.stringify(l))
-      } catch {}
       const cta = { uid: c.uid, rt: c.rt, nombre: c.nombre, email: c.email, foto: c.foto }
+      setFusionando(true)
       setCuenta(cta)
       // el rt es una llave de larga duración: se guarda aquí y A PROPÓSITO
       // queda fuera de la copia de seguridad descargable y de la restaurable
       try { localStorage.setItem(KEY_CUENTA, JSON.stringify(cta)) } catch {}
-      setSyncEstado('ok')
-    } catch { setSyncEstado('error') }
+      setCuentaAviso(null)
+    } catch (er) {
+      setSyncEstado('error')
+      setCuentaAviso(er && er.otroNavegador
+        ? tr('Abre el enlace en el mismo navegador donde lo pediste.', 'Open the link in the same browser where you requested it.')
+        : tr('No se pudo entrar. Vuelve a intentarlo.', 'Could not sign in. Try again.'))
+      setAjustes(true)
+    }
+  }
+  // al volver del acceso (una sola vez por carga)
+  useEffect(() => {
+    if (!NUBE || !RETORNO_CUENTA || perfil) return
+    if (RETORNO_CUENTA.code) entrarCuenta(RETORNO_CUENTA.code)
+    else { setCuentaAviso(tr(`No se pudo entrar: ${RETORNO_CUENTA.error}`, `Could not sign in: ${RETORNO_CUENTA.error}`)); setAjustes(true) }
+  }, [])
+  // el perfil de la cuenta: sin él la base no deja guardar el progreso
+  useEffect(() => {
+    if (!NUBE || !cuenta || perfil) { setPerfilCuenta(null); return undefined }
+    let vivo = true
+    ;(async () => {
+      try {
+        const filas = await rest(await tokenCuenta(), `perfiles?id=eq.${cuenta.uid}&select=${CAMPOS_PERFIL}`)
+        if (!vivo) return
+        const p = Array.isArray(filas) && filas[0] ? saneaPerfil(filas[0]) : false
+        setPerfilCuenta(p || false)
+        if (!p) setCreaPerfil(true)
+      } catch (er) { if (vivo) trataFallo({ cuenta }, er) }
+    })()
+    return () => { vivo = false }
+  }, [cuenta && cuenta.uid])
+  // la fusión de después de entrar, en cuanto hay perfil
+  useEffect(() => {
+    if (!cuenta || !perfilCuenta || !fusionando) return undefined
+    let vivo = true
+    ;(async () => {
+      try {
+        // La lectura inicial DEBE distinguir «sin progreso» (lista vacía) de
+        // «no se pudo leer» (excepción): tratarlas igual estrenaba la cuenta
+        // con solo lo local y PISABA el progreso remoto.
+        const datos = await leeProgresoCuenta(cuenta)
+        const v = { ...(esObj(datos) && saneaMarcas(datos.v) || {}), ...vistas }
+        const e = { ...(esObj(datos) && saneaMarcas(datos.e) || {}), ...eps }
+        const n = { ...(esObj(datos) && saneaNotas(datos.n) || {}), ...notas }
+        const lRemoto = (esObj(datos) && saneaListas(datos.l)) || []
+        const l = [...lRemoto, ...listas.filter(x => !lRemoto.some(r2 => r2.id === x.id))]
+        const h = horario || (esObj(datos) ? saneaHorario(datos.h) : null)
+        const lec = { ...(esObj(datos) && saneaLector(datos.lec) || {}), ...lecturas }
+        const t = Date.now()
+        await escribeProgresoCuenta(cuenta, { v, e, n, l, h, lec, t })
+        if (!vivo) return
+        // el marcador ANTES de soltar la sincronización: su primer tirón no
+        // debe re-aplicar un remoto más viejo que la unión recién subida
+        ultimoAplicado.current = t
+        aplicandoRemoto.current = true
+        setVistas(v); setEps(e); setNotas(n); setListas(l); setLecturas(lec)
+        if (h) guardaHorario(h)
+        try {
+          localStorage.setItem(KEY, JSON.stringify(v))
+          localStorage.setItem(KEY_EPS, JSON.stringify(e))
+          localStorage.setItem(KEY_NOTAS, JSON.stringify(n))
+          localStorage.setItem(KEY_LISTAS, JSON.stringify(l))
+        } catch {}
+        setFusionando(false)
+        setSyncEstado('ok')
+      } catch (er) { if (vivo) { setFusionando(false); trataFallo({ cuenta }, er) } }
+    })()
+    return () => { vivo = false }
+  }, [cuenta, perfilCuenta, fusionando])
+  const cambiaPrivacidad = async (campo, valor) => {
+    if (!perfilCuenta || !PRIVACIDADES.includes(valor)) return
+    const antes = perfilCuenta[campo]
+    setPerfilCuenta(p => ({ ...p, [campo]: valor }))
+    try {
+      await rest(await tokenCuenta(), `perfiles?id=eq.${cuenta.uid}`, { method: 'PATCH', prefer: 'return=minimal', body: { [campo]: valor } })
+    } catch (er) {
+      setPerfilCuenta(p => ({ ...p, [campo]: antes }))
+      trataFallo({ cuenta }, er)
+    }
+  }
+  // Ley 21.719: acceso (todo en un JSON) y supresión
+  const descargaMisDatos = async () => {
+    try {
+      const datos = await rest(await tokenCuenta(), 'rpc/mis_datos', { method: 'POST', body: {} })
+      const blob = new Blob([JSON.stringify({ app: 'maraton-marvel', cuenta: cuenta.email, fecha: new Date().toISOString(), datos }, null, 1)], { type: 'application/json' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `maraton-marvel-mis-datos-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000)
+    } catch (er) { trataFallo({ cuenta }, er) }
+  }
+  const borraMiCuenta = async () => {
+    try {
+      await rest(await tokenCuenta(), 'rpc/borrar_mi_cuenta', { method: 'POST', body: {} })
+      salirCuenta()
+      setCuentaAviso(tr('Cuenta borrada. Lo de este navegador sigue aquí.', 'Account deleted. What’s in this browser is still here.'))
+    } catch (er) { trataFallo({ cuenta }, er) }
   }
 
   const activarSync = async (url, roomExistente) => {
@@ -5854,6 +6110,8 @@ export default function App() {
   const [clubMontado, clubSale] = useSaliente(clubModal)
   const [invitarMontado, invitarSale] = useSaliente(clubInvitar && club)
   const [perfilMMontado, perfilMSale] = useSaliente(perfilModal)
+  const [creaPerfilMontado, creaPerfilSale] = useSaliente(creaPerfil && !!cuenta && perfilCuenta === false)
+  useVolverCierra(creaPerfil && !!cuenta && perfilCuenta === false, () => setCreaPerfil(false))
   const [ajustesMontado, ajustesSale] = useSaliente(ajustes)
   const [horarioMontado, horarioSale] = useSaliente(horarioModal)
   const [syncMontado, syncSale] = useSaliente(syncModal)
@@ -6972,6 +7230,11 @@ export default function App() {
           </div>
         </div>
       )}
+      {creaPerfilMontado && cuenta && (
+        <CreaPerfil saliendo={creaPerfilSale} cuenta={cuenta} token={tokenCuenta}
+          onCerrar={() => setCreaPerfil(false)}
+          onCreado={p => { setCreaPerfil(false); setPerfilCuenta(p) }} />
+      )}
       {perfilMMontado && (
         <div className={'overlay' + perfilMSale} ref={refPerfilM} tabIndex={-1} onClick={() => setPerfilModal(false)} role="dialog" aria-modal="true" aria-label={tr('Perfil compartible', 'Shareable profile')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
@@ -7023,7 +7286,9 @@ export default function App() {
               <h2 className="modal-titulo">{tr('Ajustes', 'Settings')}</h2>
               <p className="modal-res">{tr('Se guardan en este navegador. Salvo «Tu progreso» y «Empezar de cero», nada de aquí toca lo que llevas visto.', 'Saved in this browser. Apart from “Your progress” and “Start over”, nothing here touches what you’ve watched.')}</p>
 
-              <CuentaAjuste cuenta={cuenta} estado={syncEstado} onCredencial={entrarCuenta} onSalir={salirCuenta} />
+              <CuentaAjuste cuenta={cuenta} perfil={perfilCuenta} estado={syncEstado} aviso={cuentaAviso}
+                onEnlace={enviaEnlace} onCrearPerfil={() => setCreaPerfil(true)} onPrivacidad={cambiaPrivacidad}
+                onDescargar={descargaMisDatos} onBorrar={borraMiCuenta} onSalir={salirCuenta} />
 
               {/* idioma y país arriba: la bienvenida dice «se cambia en Ajustes» y
                   estaban al final, tras las herramientas de datos */}

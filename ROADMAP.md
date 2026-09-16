@@ -33,7 +33,7 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 
-**Estado:** fase 1 hecha en el repo (`supabase/`, `comunidad/`, `npm run comunidad:rls` 67/67). Falta que Sebastián cree el proyecto (supabase/LEEME.md) para conectar la app en la fase 2.
+**Estado:** fases 1 y 2 hechas y probadas contra un Supabase local (`npm run comunidad:sonda`: reglas 69/69 y cuenta de punta a punta). La cuenta está en la app, apagada: se enciende pegando Project URL + anon key en `src/nube.js` tras crear el proyecto (supabase/LEEME.md). Siguiente: perfil público `#u/…` y seguir (resto de la fase 2), luego comunidades (fase 3).
 
 Pedido por Sebastián: cuentas y comunidades «como Strava y Reddit» para discutir. Plan completo en https://claude.ai/artifact/UmawtDJQyyyoTF2z8qm7qc. Recomendado: Supabase (Postgres + RLS + Auth Google/correo + Realtime) en vez del Firebase apagado de `src/nube.js`; edad mínima 14 (Ley 21.719); solo votos a favor al principio; muro de actividad opcional.
 

@@ -2583,7 +2583,36 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .cover-wrap{position:relative}
 .bienvenida-pasos{margin: var(--e-2) 0 0; padding-left: var(--e-6); display:flex; flex-direction:column; gap: var(--e-4); font-size: var(--t-b); line-height:1.55}
 /* ── Cuenta de Google ── */
-.cuenta-fila{display:flex; align-items:center; gap: var(--e-4)}
+.cuenta-fila{display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap}
+.cuenta-textos{display:flex; flex-direction:column; min-width:0; flex:1}
+.cuenta-correo-txt{font-size: var(--t-s); color:var(--ink3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cuenta-entrar{display:flex; flex-direction:column; align-items:flex-start; gap: var(--e-5)}
+.cuenta-correo{display:flex; flex-direction:column; gap: var(--e-2); width:100%}
+.cuenta-correo-fila{display:flex; gap: var(--e-3); flex-wrap:wrap}
+.cuenta-correo-fila .busca{flex:1 1 200px; width:auto}
+.cuenta-privacidad{display:flex; flex-direction:column; gap: var(--e-3)}
+/* rótulo siempre encima: en fila, «Logros» cabía y las otras dos no, y las tres se veían distintas */
+.cuenta-priv-fila{display:flex; flex-direction:column; align-items:flex-start; gap: var(--e-2)}
+.cuenta-priv-rotulo{font-size: var(--t-m); font-weight:600}
+.cuenta-borrar{width:100%}
+.chip-btn.peligro{color:var(--peligro); border-color:color-mix(in srgb, var(--peligro) 45%, var(--line))}
+.chip-btn.peligro:hover{color:var(--peligro); border-color:var(--peligro)}
+/* crear el perfil */
+.crea-perfil .modal-info{gap: var(--e-3)}
+.crea-nombre-fila{display:flex; align-items:center; gap: var(--e-2)}
+.crea-arroba{font-size: var(--t-l); font-weight:700; color:var(--ink3)}
+.crea-nombre-fila .busca{flex:1; width:auto}
+.crea-estado{font-size: var(--t-s); color:var(--ink2); min-height:1lh}
+.crea-estado.mal{color:var(--peligro)}
+/* 16 avatares: 4×4 en el móvil y 8×2 en escritorio, sin uno huérfano */
+.crea-avatares{display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap: var(--e-3)}
+@media (min-width:641px){ .crea-avatares{grid-template-columns:repeat(8, minmax(0, 1fr))} }
+.crea-avatar{position:relative; aspect-ratio:2 / 3; padding:0; border:2px solid transparent; border-radius:var(--r-m); overflow:hidden; background:var(--panel2); cursor:pointer; transition:transform var(--muelle-toque)}
+.crea-avatar img{width:100%; height:100%; object-fit:cover; display:block}
+.crea-avatar[aria-checked="true"]{border-color:var(--red)}
+.crea-avatar:active{transform:scale(.96)}
+.crea-edad{display:flex; align-items:flex-start; gap: var(--e-3); font-size: var(--t-m); line-height:1.4; cursor:pointer}
+.crea-edad input{width:20px; height:20px; margin-top:1px; accent-color:var(--red); flex:none}
 .cuenta-foto{width:32px; height:32px; border-radius:var(--r-pill); object-fit:cover}
 .cuenta-nombre{font-size: var(--t-m); font-weight:600; color:var(--ink)}
 /* el botón lo pinta Google en un iframe; que no desborde el modal */

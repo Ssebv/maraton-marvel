@@ -651,7 +651,9 @@ grant insert (id, nombre, nombre_visible, avatar, bio, saga_favorita, priv_progr
 grant update (nombre, nombre_visible, avatar, bio, saga_favorita, priv_progreso, priv_resenas, priv_logros)
   on public.perfiles to authenticated;
 grant insert (usuario, vistas, eps, notas, listas, lecturas, horario, actualizado) on public.progreso to authenticated;
-grant update (vistas, eps, notas, listas, lecturas, horario, actualizado) on public.progreso to authenticated;
+-- «usuario» también: el upsert de PostgREST (on_conflict) reescribe todas las
+-- columnas enviadas; la regla por fila impide que cambie a otra persona
+grant update (usuario, vistas, eps, notas, listas, lecturas, horario, actualizado) on public.progreso to authenticated;
 grant insert, delete on public.seguimientos, public.bloqueos to authenticated;
 grant insert (direccion, nombre, descripcion, portada, tipo, dueno) on public.comunidades to authenticated;
 grant update (nombre, descripcion, portada, tipo) on public.comunidades to authenticated;
