@@ -585,6 +585,64 @@ h1 .rojo{color:var(--red)}
 .accion-principal:disabled:hover{filter:none}
 
 /* ── Barra de herramientas fija ── */
+/* ── Barra de la app en escritorio (16 sep 2026) ──
+   Maratón, Perfil y Multiverso fijos arriba, separados de filtros y
+   herramientas (que siguen en .toolbar, solo en Maratón). Solo se dibuja
+   fuera del móvil (esMovil). Sobre el banner de arriba es transparente y al
+   bajar toma el fondo con su raya: el fondo es un ::before que se funde con
+   el scroll (animation-timeline, sin JavaScript); sin soporte, fondo fijo.
+   El fondo llega de borde a borde con una sombra de expansión recortada: un
+   100vw contaría la barra de scroll y abriría scroll horizontal. */
+.barra-app{
+  --alto-app:60px;
+  position:sticky; top:0; z-index:12; height:var(--alto-app);
+  display:grid; grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); align-items:center; gap: var(--e-5);
+}
+.barra-app::before{
+  content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:var(--bg);
+  box-shadow:0 0 0 100vmax var(--bg), 0 1px 0 100vmax var(--line);
+  clip-path:inset(0 -100vmax -1px -100vmax);
+}
+@supports (animation-timeline: scroll()){
+  .barra-app::before{
+    opacity:0;
+    animation-name:barraAppFondo; animation-duration:1ms; animation-timing-function:linear;
+    animation-fill-mode:both; animation-timeline:scroll(root block); animation-range:0 48px;
+  }
+}
+@keyframes barraAppFondo{to{opacity:1}}
+/* en Maratón el titular grande está justo debajo: la marca aparece cuando él
+   se va bajo la barra, como los títulos grandes de iOS */
+@supports (animation-timeline: scroll()){
+  .barra-app.en-maraton .barra-app-marca{
+    animation-name:barraAppFondo; animation-duration:1ms; animation-timing-function:linear;
+    animation-fill-mode:both; animation-timeline:scroll(root block); animation-range:70px 150px;
+    opacity:0;
+  }
+}
+/* con los grupos en filas propias el separador quedaba colgando al final */
+.barra-app ~ .toolbar .ctrl-sep{display:none}
+.barra-app-marca{
+  justify-self:start; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-family:"Archivo Black","Archivo",sans-serif; font-size: var(--t-b); text-transform:uppercase; letter-spacing:.01em;
+  color:var(--ink); text-decoration:none; padding: var(--e-3) 0;
+}
+.barra-app-marca .rojo{color:var(--red)}
+.barra-app-marca:hover{color:var(--ink2)}
+.barra-app nav.tabs{justify-self:center}
+.barra-app-fin{justify-self:end; display:flex; align-items:center; gap: var(--e-3)}
+/* la barra de herramientas pega bajo la de la app; fuera del maratón no
+   queda nada en ella (Ajustes está arriba) y no se dibuja */
+.barra-app ~ .toolbar{top:calc(60px + var(--e-3))}
+.toolbar.fuera-maraton{display:none}
+.controles > .ctrl-sep:first-child{display:none}
+/* sin :has() en html: se reevalúa en cada cambio del DOM */
+@media (min-width:721px){ html{scroll-padding-top:156px} }
+.barra-app ~ .hero, .barra-app ~ .cabecera-destino{padding-top: var(--e-5)}
+@media (max-width:1100px){ .barra-app-marca{font-size: var(--t-m)} }
+@media (max-width:860px){ .barra-app-marca{display:none} .barra-app{grid-template-columns:1fr auto 1fr} .barra-app nav.tabs{grid-column:2} .barra-app-fin{grid-column:3} }
+
 .toolbar{
   position:sticky; top:calc(env(safe-area-inset-top, 0px) + 10px); z-index:10;
   margin: var(--e-5) 0 var(--e-2); padding: var(--e-4) var(--e-5);
@@ -1897,6 +1955,7 @@ main.crono, main.comics, main.estreno{animation:none}
 @supports (view-transition-name: none){
   main{animation:none}
   nav.tabs{view-transition-name:dock}
+  .barra-app{view-transition-name:barra-app}
   .toolbar{view-transition-name:barra}
   /* las subvistas tampoco se deslizan con la página: son navegación */
   .subvistas{view-transition-name:subvistas}

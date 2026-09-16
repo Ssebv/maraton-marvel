@@ -17,7 +17,8 @@ import { join, extname, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const RAIZ = fileURLToPath(new URL('../../', import.meta.url))
-const DIST = join(RAIZ, 'dist')
+// DIST=<carpeta> sirve otra build (p. ej. una sin minificar para perfilar)
+const DIST = process.env.DIST || join(RAIZ, 'dist')
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css',
   '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' }

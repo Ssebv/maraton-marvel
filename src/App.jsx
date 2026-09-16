@@ -4179,6 +4179,9 @@ function Actividad({ vistas, eps, sinMarco = false }) {
   const total = celdas.reduce((a, c) => a + c.n, 0)
   const diasActivos = celdas.filter(c => c.n > 0).length
   const tono = n => `color-mix(in srgb, var(--red) ${25 + 75 * n / max}%, var(--panel2))`
+  // un formateador para las 140 celdas: toLocaleDateString crea uno por
+  // llamada y eran 31 ms al abrir Perfil con la CPU a ×4 (16 sep 2026)
+  const fecha = new Intl.DateTimeFormat(LOC(), { day: 'numeric', month: 'short' })
   // El title de cada celda no existe con el dedo: los valores viven también en
   // texto (resumen y escala), y el diario de abajo es la tabla gemela.
   const resumen = total === 0
@@ -4192,7 +4195,7 @@ function Actividad({ vistas, eps, sinMarco = false }) {
       <div className="heatmap" role="img" aria-label={tr(`Calendario de actividad: ${resumen}`, `Activity calendar: ${resumen}`)}>
         {celdas.map(c => (
           <span key={c.t} className="hm-celda"
-            title={`${c.f.toLocaleDateString(LOC(), { day: 'numeric', month: 'short' })}: ${tr(`${c.n} marca${c.n === 1 ? '' : 's'}`, `${c.n} check-off${c.n === 1 ? '' : 's'}`)}`}
+            title={`${fecha.format(c.f)}: ${tr(`${c.n} marca${c.n === 1 ? '' : 's'}`, `${c.n} check-off${c.n === 1 ? '' : 's'}`)}`}
             style={c.n ? { background: tono(c.n) } : undefined} />
         ))}
       </div>
@@ -4434,10 +4437,12 @@ export default function App() {
     const h = window.location.hash.replace('#', '')
     return VISTAS_VALIDAS.includes(h) ? h : 'crono'
   })
-  const [ultimaVista, setUltimaVista] = useState({})
-  useEffect(() => {
-    setUltimaVista(u => (u[destinoDe(vista)] === vista ? u : { ...u, [destinoDe(vista)]: vista }))
-  }, [vista])
+  // la última subvista de cada destino, en un ref que se actualiza al pintar:
+  // como estado en un efecto provocaba un SEGUNDO render de toda la app justo
+  // en mitad de la animación de cambio de sección (19 ms con la CPU a ×4,
+  // perfilado el 16 sep 2026). Solo se lee al pintar las pestañas y al volver.
+  const ultimaVista = useRef({}).current
+  ultimaVista[destinoDe(vista)] = vista
   useEffect(() => {
     if (perfil) return
     const onHash = () => {
@@ -5912,6 +5917,15 @@ export default function App() {
   }, [vista, idioma])
   if (perfil) return <PerfilView {...perfil} />
 
+  // ir a un destino como lo hace su pestaña (la marca de la barra de
+  // escritorio lleva a Maratón igual)
+  const irADestino = (d, destino, e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+    e.preventDefault()
+    // la pestaña en la que ya estás sube al principio, como en iOS
+    if (destino === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
+    conTransicion(DESTINOS.findIndex(x => x.id === d.id) > DESTINOS.findIndex(x => x.id === destinoDe(vista)) ? 'adelante' : 'atras', () => setVista(destino))
+  }
   const navTabs = (
     <nav className="tabs" ref={navGrupo} aria-label={tr('Secciones', 'Sections')}>
       <span className="indicador" ref={navIndicador} aria-hidden="true" />
@@ -5926,13 +5940,7 @@ export default function App() {
             aria-current={destinoDe(vista) === d.id ? 'page' : undefined}
             aria-keyshortcuts={String(i + 1)}
             title={esMovil ? undefined : tr(`${d.label} (tecla ${i + 1})`, `${d.en || d.label} (key ${i + 1})`)}
-            onClick={e => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-              e.preventDefault()
-              // la pestaña en la que ya estás sube al principio, como en iOS
-              if (destino === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
-              conTransicion(DESTINOS.findIndex(x => x.id === d.id) > DESTINOS.findIndex(x => x.id === destinoDe(vista)) ? 'adelante' : 'atras', () => setVista(destino))
-            }}>
+            onClick={e => irADestino(d, destino, e)}>
             {ICONOS_DESTINO[d.id]}
             <span className="tab-rotulo">{tr(d.label, d.en || d.label)}</span>
             {insignia && <>
@@ -5947,9 +5955,32 @@ export default function App() {
   // la cabecera del maratón (titular, siguiente, progreso, panel) y sus
   // herramientas solo en Maratón; Perfil y Multiverso llevan la suya
   const enMaraton = destinoDe(vista) === 'maraton'
+  const botonAjustes = <button className="chip-btn chip-ajustes" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
+  // El estado de sincronización es estado, no un botón: solo se muestra
+  // cuando hay algo que mirar.
+  const botonSync = syncEstado === 'error' && (
+    <button className="chip-btn sync-btn error" aria-live="polite" onClick={() => setSyncModal(true)}>
+      {tr('Sin conexión', 'Offline')}
+    </button>
+  )
   return (
     <div className="wrap">
       <a className="saltar" href="#contenido">{tr('Saltar al contenido', 'Skip to content')}</a>
+      {/* Escritorio (16 sep 2026): las secciones viven en una barra propia,
+          fija arriba y separada de los filtros, como en una app. Antes
+          compartían bloque con filtros y herramientas, y fuera del maratón
+          ese bloque era solo pestañas + Ajustes. En el móvil siguen en la
+          barra de abajo. */}
+      {!esMovil && (
+        <header className={'barra-app' + (enMaraton ? ' en-maraton' : '')}>
+          <a className="barra-app-marca" href={'#' + (ultimaVista.maraton || 'crono')}
+            onClick={e => irADestino(DESTINOS[0], ultimaVista.maraton || 'crono', e)}>
+            {tr(<>Maratón <span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span></>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}
+          </a>
+          {navTabs}
+          <div className="barra-app-fin">{botonSync}{botonAjustes}</div>
+        </header>
+      )}
       {fondo === 'banner' && proxEstreno?.img && (
         <div className="fondo-hero fh-banner" aria-hidden="true">
           <img src={proxEstreno.img} alt="" decoding="async"
@@ -6126,7 +6157,7 @@ export default function App() {
         {/* pegada arriba en móvil, cubre la zona segura del notch con el mismo cristal (CSS) */}
         <span className="toolbar-tope" aria-hidden="true" />
         <div className="controles" role="group" aria-label={tr('Vista y filtros', 'View and filters')}>
-          {esMovil ? createPortal(navTabs, document.body) : navTabs}
+          {esMovil && createPortal(navTabs, document.body)}
           {/* los filtros solo actúan sobre las listas del maratón (crono,
               estreno, cómics, animación, galería, cine): en Mío y Multiverso
               no cambian nada y solo estorbaban en el carril */}
@@ -6166,14 +6197,8 @@ export default function App() {
             // teclado, que tapaba media pantalla de resultados
             enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter' && ES_TACTIL) e.currentTarget.blur() }} />
           </>)}
-          <button className="chip-btn chip-ajustes" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{tr('Ajustes', 'Settings')}</button>
-          {/* El estado de sincronización es estado, no un botón: solo se
-              muestra cuando hay algo que mirar. */}
-          {syncEstado === 'error' && (
-            <button className="chip-btn sync-btn error" aria-live="polite" onClick={() => setSyncModal(true)}>
-              {tr('Sin conexión', 'Offline')}
-            </button>
-          )}
+          {esMovil && botonAjustes}
+          {esMovil && botonSync}
           </div>
           {vista === 'crono' && (
             <nav className="atajos">
@@ -7319,12 +7344,18 @@ function SyncModal({ sync, estado, onActivar, onDesactivar, onClose, pais, salie
 // mitad, así el bucle no se nota), cada una abre su ficha, y debajo una
 // línea que dice qué es y cuánto hay. Se para al pasar el ratón o al
 // enfocar; con «reducir movimiento» es un carril normal que se desliza.
+const MEDIDAS_TIRA = new Map()
 function TiraPlegada({ entradas, esComic, onAbrir, desc, detalle, anima }) {
   // Copias suficientes para que el bucle no deje un hueco: la pista se
   // desplaza el ancho de UN lote (--lote), así que hace falta que los demás
   // cubran el carril entero. Una era de 4 títulos a 1.300 px necesita siete.
   const ref = useRef(null)
-  const [copias, setCopias] = useState(2)
+  // la medida se recuerda por tira y ancho de ventana: al volver a Maratón
+  // cada tira se medía otra vez con getBoundingClientRect y forzaba la
+  // maquetación de toda la página dentro del cambio de sección (15 ms con la
+  // CPU a ×4, 16 sep 2026). El ResizeObserver sigue midiendo, ya sin forzar.
+  const claveMedida = `${entradas.map(e => e.item.id).join(',')}|${typeof window !== 'undefined' ? window.innerWidth : 0}`
+  const [copias, setCopias] = useState(() => (MEDIDAS_TIRA.get(claveMedida) || { copias: 2 }).copias)
   React.useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
@@ -7333,15 +7364,19 @@ function TiraPlegada({ entradas, esComic, onAbrir, desc, detalle, anima }) {
       if (!lote) return
       const w = lote.getBoundingClientRect().width
       if (!w) return
+      const n = Math.max(2, Math.ceil(el.clientWidth / w) + 1)
+      MEDIDAS_TIRA.set(claveMedida, { w, copias: n })
       el.style.setProperty('--lote', w + 'px')
-      setCopias(Math.max(2, Math.ceil(el.clientWidth / w) + 1))
+      setCopias(n)
     }
-    mide()
+    const sabida = MEDIDAS_TIRA.get(claveMedida)
+    if (sabida) el.style.setProperty('--lote', sabida.w + 'px')
+    else mide()
     if (typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(mide)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [entradas.length])
+  }, [claveMedida])
   // Varias tiras a la vez cansan y gastan batería: solo se mueve la que está
   // en pantalla, y un toque la para del todo (con el dedo no hay hover).
   const [parada, setParada] = useState(false)
@@ -7397,15 +7432,24 @@ function resumenBloque(items, esComic) {
   return partes.join(' · ')
 }
 
+// «¿es larga?» se recuerda por texto y ancho: medirla al montar forzaba la
+// maquetación de toda la página dentro del cambio de sección (10 ms con la CPU
+// a ×4, 16 sep 2026); el ResizeObserver mide igual, tras maquetar, sin forzar
+const LARGAS_DESC = new Map()
 function DescPlegable({ texto }) {
   const [abierta, setAbierta] = useState(false)
-  const [larga, setLarga] = useState(false)
+  const claveLarga = `${texto}|${typeof window !== 'undefined' ? window.innerWidth : 0}`
+  const [larga, setLarga] = useState(() => !!LARGAS_DESC.get(claveLarga))
   const ref = useRef(null)
   React.useLayoutEffect(() => {
     const p = ref.current
     if (!p) return
-    const mide = () => setLarga(p.scrollHeight > p.clientHeight + 1)
-    mide()
+    const mide = () => {
+      const l = p.scrollHeight > p.clientHeight + 1
+      if (!abierta) LARGAS_DESC.set(claveLarga, l)
+      setLarga(l)
+    }
+    if (!LARGAS_DESC.has(claveLarga)) mide()
     // la caja plegada mide dos líneas con cualquier fuente: hay que volver a
     // medir cuando entra la de verdad, que puede partir el texto distinto
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(mide)
@@ -7413,7 +7457,7 @@ function DescPlegable({ texto }) {
     const ro = new ResizeObserver(mide)
     ro.observe(p)
     return () => ro.disconnect()
-  }, [texto, abierta])
+  }, [claveLarga, abierta])
   return (
     <div className={`saga-desc-wrap${abierta ? ' abierta' : ''}${larga || abierta ? ' larga' : ''}`}>
       <p className="saga-desc" ref={ref}>{texto}</p>

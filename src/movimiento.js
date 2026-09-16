@@ -6,8 +6,8 @@
 //  · soltar una hoja o una capa arrastrada: vuelve o se va con la VELOCIDAD
 //    que llevaba el dedo, no con una duración fija;
 //  · tirar más allá del tope: goma elástica, como el scroll de iOS;
-//  · el indicador de la opción activa, que viaja de una a otra con un muelle
-//    y se puede interrumpir a mitad sin saltos.
+//  (el indicador de la opción activa se movía aquí con un muelle en JS; desde
+//  el 16 sep 2026 es una animación WAAPI en el compositor: ver useIndicador)
 // Solo se importa `animateValue`, el motor de muelles (7 kB comprimido): el
 // `animate` completo de Motion pesaba 21 kB y aquí no hacía falta nada más.
 import { useLayoutEffect, useRef } from 'react'
@@ -18,11 +18,10 @@ export const reducido = () => typeof window !== 'undefined' && !!window.matchMed
 
 // Muelles con rigidez y amortiguación (no duración): así heredan la velocidad
 // del gesto. `volver` pasa unos píxeles de largo y asienta; `irse` no rebota
-// (sale de la pantalla); `indicador` apenas se pasa.
+// (sale de la pantalla).
 export const MUELLE = {
   volver: { type: 'spring', stiffness: 520, damping: 34 },
   irse: { type: 'spring', stiffness: 280, damping: 34 },
-  indicador: { type: 'spring', stiffness: 560, damping: 42 },
 }
 
 // La goma de iOS: cuanto más tiras, menos se mueve; nunca pasa de `dim`.
@@ -58,79 +57,91 @@ export function muelle(desde, hasta, tipo, velocidad, pinta, alAcabar) {
   return animateValue(opciones(tipo, desde, hasta, velocidad, pinta, alAcabar))
 }
 
-// Un valor que persigue a su destino con muelle y, si el destino cambia a
-// mitad de camino, sale desde donde esté con la velocidad que llevaba.
-function pista(alCambiar) {
-  const p = { v: null, destino: null, vel: 0, anim: null }
-  const para = () => { if (p.anim) { p.anim.stop(); p.anim = null } }
-  p.salta = n => { para(); p.v = p.destino = n; p.vel = 0 }
-  p.va = n => {
-    if (p.v == null || reducido()) { p.salta(n); alCambiar(); return }
-    if (n === p.destino) return
-    para()
-    p.destino = n
-    if (n === p.v) { p.vel = 0; return }
-    let tAnt = performance.now(), vAnt = p.v
-    p.anim = animateValue(opciones('indicador', p.v, n, p.vel, x => {
-      const t = performance.now()
-      if (t > tAnt) { p.vel = (x - vAnt) / (t - tAnt) * 1000; tAnt = t; vAnt = x }
-      p.v = x
-      alCambiar()
-    }, () => { p.v = n; p.vel = 0; p.anim = null; alCambiar() }))
-  }
-  p.para = para
-  return p
-}
-
 // Indicador de la opción activa de un grupo (pestañas, subvistas, modos).
 // Uso: const [grupo, indicador] = useIndicador(clave) — `ref={grupo}` en el
 // contenedor y `<span className="indicador" ref={indicador} aria-hidden />`
 // como PRIMER hijo. La activa es la que lleva aria-current="page" o
 // aria-pressed="true". Se coloca sin animar la primera vez (y cuando el grupo
-// se vuelve a montar, p. ej. el dock al pasar a <body> en móvil) y con muelle
-// en cada cambio de `clave`. Se mueve con transform; el ancho solo se escribe
-// si cambia (en el dock todas las pestañas miden lo mismo y no se toca nunca),
-// y cuando cambia es la excepción consciente a «solo transform y opacity»: es
-// un elemento absoluto sin hijos y su ancho no recoloca a nadie.
+// se vuelve a montar, p. ej. el dock al pasar a <body> en móvil) y viajando en
+// cada cambio de `clave`.
+//
+// 16 sep 2026 («al cambiar de Maratón a Perfil va a trompicones»): antes lo
+// movía un muelle de Motion en JavaScript, un estilo por fotograma en el hilo
+// principal, justo el que está ocupado pintando la sección nueva (medido con
+// la CPU a ×4: 64 ms de render a Perfil). Ahora es una animación WAAPI solo de
+// `transform`, que corre en el compositor aunque el hilo principal esté
+// ocupado: el tamaño final se escribe una vez y el viaje es FLIP (translate +
+// scale desde la caja vieja). A mitad de camino se estira en horizontal y se
+// afina un poco, como una gota, con la curva del token --muelle. Si se toca
+// otra opción a mitad, sale desde donde se ve en ese instante.
+const cajaVisible = (i, final) => {
+  const m = new DOMMatrixReadOnly(getComputedStyle(i).transform === 'none' ? undefined : getComputedStyle(i).transform)
+  return { x: m.e, y: m.f, w: final.w * m.a, h: final.h * m.d }
+}
+const curvaMuelle = () => {
+  const cs = getComputedStyle(document.documentElement)
+  // «350ms» con muelles, «.24s» en la reserva sin linear()
+  const txt = cs.getPropertyValue('--muelle-dur').trim()
+  const dur = (parseFloat(txt) || 0.35) * (/ms$/.test(txt) ? 1 : 1000)
+  const curva = cs.getPropertyValue('--muelle-curva').trim()
+  const vale = curva && typeof CSS !== 'undefined' && CSS.supports('animation-timing-function', curva)
+  return { duration: dur, easing: vale ? curva : 'cubic-bezier(.22, 1, .36, 1)' }
+}
 export function useIndicador(clave) {
   const grupo = useRef(null)
   const indicador = useRef(null)
-  const estado = useRef(null)
+  const ultimo = useRef(null) // { el, d } — la caja final escrita
   useLayoutEffect(() => {
     const g = grupo.current, i = indicador.current
     if (!g || !i) return undefined
     g.classList.add('con-indicador')
-    const nuevo = !estado.current || estado.current.el !== i
-    if (nuevo) {
-      if (estado.current) ['x', 'y', 'w', 'h'].forEach(k => estado.current[k].para())
-      const escrito = { t: '', w: '', h: '' }
-      const escribe = () => {
-        const s = estado.current
-        const t = `translate(${s.x.v}px, ${s.y.v}px)`, w = s.w.v + 'px', h = s.h.v + 'px'
-        if (t !== escrito.t) i.style.transform = escrito.t = t
-        if (w !== escrito.w) i.style.width = escrito.w = w
-        if (h !== escrito.h) i.style.height = escrito.h = h
-      }
-      estado.current = { el: i, escribe, x: pista(escribe), y: pista(escribe), w: pista(escribe), h: pista(escribe) }
+    i.style.transformOrigin = '0 0'
+    const escribe = d => {
+      i.style.width = d.w + 'px'
+      i.style.height = d.h + 'px'
+      i.style.transform = `translate(${d.x}px, ${d.y}px)`
     }
-    const s = estado.current
     const coloca = animar => {
       const act = g.querySelector('[aria-current="page"], [aria-pressed="true"]')
-      if (!act || !act.offsetWidth) { i.style.opacity = '0'; return }
+      const previo = ultimo.current && ultimo.current.el === i ? ultimo.current.d : null
+      if (!act || !act.offsetWidth) { i.style.opacity = '0'; ultimo.current = { el: i, d: null }; return }
       const d = { x: act.offsetLeft, y: act.offsetTop, w: act.offsetWidth, h: act.offsetHeight }
-      const aparece = i.style.opacity === '0'
+      const aparece = i.style.opacity === '0' || !previo
       i.style.opacity = ''
-      if (!animar || aparece) { for (const k in d) s[k].salta(d[k]); s.escribe() }
-      else for (const k in d) s[k].va(d[k])
+      if (previo && previo.x === d.x && previo.y === d.y && previo.w === d.w && previo.h === d.h) return
+      // lo que se ve AHORA (quizá a mitad de un viaje) antes de cortar
+      const desde = !aparece && animar && !reducido() && i.animate ? cajaVisible(i, previo) : null
+      i.getAnimations().forEach(a => a.cancel())
+      escribe(d)
+      ultimo.current = { el: i, d }
+      if (!desde || !d.w || !d.h) return
+      const dx = d.x - desde.x
+      if (Math.abs(dx) < 1 && Math.abs(d.y - desde.y) < 1 && Math.abs(d.w - desde.w) < 1) return
+      const fl = c => `translate(${c.x}px, ${c.y}px) scale(${c.w / d.w}, ${c.h / d.h})`
+      // la gota: a medio viaje, más ancha según la distancia y un poco más fina
+      const wMedio = (desde.w + d.w) / 2, hMedio = (desde.h + d.h) / 2
+      const estira = 1 + Math.min(0.35, Math.abs(dx) / (wMedio * 4))
+      const afina = hMedio >= 16 ? 1 - (estira - 1) * 0.3 : 1
+      const medio = { w: wMedio * estira, h: hMedio * afina }
+      medio.x = (desde.x + d.x) / 2 - (medio.w - wMedio) / 2
+      medio.y = (desde.y + d.y) / 2 + (hMedio - medio.h) / 2
+      i.animate([
+        { transform: fl(desde) },
+        { transform: fl(medio), offset: 0.45 },
+        { transform: fl(d) },
+      ], curvaMuelle())
     }
-    coloca(!nuevo)
+    // se mide en el fotograma siguiente, cuando el navegador maqueta de todas
+    // formas: medir aquí mismo (efecto de layout) forzaba maquetar la página
+    // nueva entera dentro del cambio de sección (21 ms con la CPU a ×4)
+    const raf = requestAnimationFrame(() => coloca(true))
     // las fuentes que llegan tarde, el giro del móvil o cambiar de idioma
     // cambian el ancho de las opciones: se recoloca sin animar
     let primera = true
     const ro = new ResizeObserver(() => { if (primera) { primera = false; return } coloca(false) })
     ro.observe(g)
     for (const n of g.children) if (n !== i) ro.observe(n)
-    return () => ro.disconnect()
+    return () => { cancelAnimationFrame(raf); ro.disconnect() }
   }, [clave])
   return [grupo, indicador]
 }
