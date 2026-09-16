@@ -1503,12 +1503,14 @@ main.galeria{margin-top: var(--e-6)}
 .galeria-item:hover{transform:translateY(-3px) scale(1.03)}
 .galeria-item .cover{width:100%; height:auto; aspect-ratio:2/3}
 .galeria-item.vista .cover{filter:grayscale(.75) brightness(.8)}
+/* arriba a la derecha y más pequeña: abajo tapaba el título impreso de casi
+   todas las carátulas; la carátula vista ya va además en gris */
 .galeria-check{
-  position:absolute; right:6px; bottom:6px; width:24px; height:24px;
+  position:absolute; right:5px; top:5px; width:20px; height:20px;
   background:var(--done); border-radius:50%; border:2px solid var(--panel);
   color:var(--sobre-acento); display:grid; place-items:center;
 }
-.galeria-check svg{width:12px; height:12px}
+.galeria-check svg{width:10px; height:10px}
 
 /* ── Cielo estrellado (elemento de uiverse adaptado) ── */
 .cielo{position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden}
@@ -1896,6 +1898,9 @@ main.tiempo{margin-top: var(--e-6)}
 footer{margin-top: var(--e-9); border-top:1px solid var(--line); padding-top: var(--e-6);
   display:flex; align-items:center; gap: var(--e-5); flex-wrap:wrap}
 .nota-pie{font-size: var(--t-m); color:var(--ink2); max-width:58ch; margin: 0}
+/* sin esto el enlace de sugerencias salía con el azul por defecto del navegador */
+.nota-pie:not(.nota-creditos) a{color:var(--blue); font-weight:600; text-decoration-thickness:1px; text-underline-offset:3px}
+.nota-pie:not(.nota-creditos) a:hover{color:var(--ink)}
 .nota-creditos{flex-basis:100%; font-size: var(--t-s); color:var(--ink3); max-width:78ch; margin-top: var(--e-3)}
 .nota-creditos a{color:var(--ink2); text-underline-offset:2px}
 .nota-creditos a:hover{color:var(--ink)}
@@ -2804,9 +2809,13 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .proyeccion b{color:var(--ink)}
 .diario-lista{display:flex; flex-direction:column; gap: var(--e-3)}
 .diario-fila{
-  display:grid; grid-template-columns:64px 1fr auto; gap: var(--e-4); align-items:baseline;
-  padding: var(--e-3) var(--e-4); background:var(--panel2); border-radius:var(--r-m); font-size: var(--t-m);
+  display:grid; grid-template-columns:32px minmax(0, 1fr) auto; gap: var(--e-4); align-items:center; width:100%;
+  padding: var(--e-2) var(--e-4) var(--e-2) var(--e-2); background:var(--panel2); border:none; border-radius:var(--r-m);
+  font:inherit; font-size: var(--t-m); color:var(--ink); text-align:left; cursor:pointer; transition:transform var(--muelle-toque);
 }
+.diario-fila:active{transform:scale(.98)}
+.diario-cartel{width:32px; height:48px; border-radius:var(--r-s); object-fit:cover; background:var(--panel); display:block}
+.diario-texto{display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
 .diario-fecha{font-size: var(--t-xs); font-weight:600; color:var(--ink3); text-transform:uppercase; letter-spacing:.04em}
 .diario-titulo{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .diario-estrellas{color:var(--gold-texto); font-size: var(--t-s); letter-spacing:.1em}

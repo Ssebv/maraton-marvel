@@ -1743,7 +1743,7 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma, notas = {}, diaInici
   )
 }
 
-function Diario({ vistas, notas, pais, idioma }) {
+function Diario({ vistas, notas, pais, idioma, indice, onAbrir }) {
   const marcas = useMemo(() => (
     Object.entries(vistas)
       .filter(([id, ts]) => typeof ts === 'number' && ts > 1e12 && TITULOS[id])
@@ -1755,12 +1755,17 @@ function Diario({ vistas, notas, pais, idioma }) {
     <section className="grafica diario">
       <h3 className="grafica-titulo">{tr('Diario del maratón', 'Marathon diary')}</h3>
       <div className="diario-lista">
+        {/* con carátula y abriendo la ficha: 30 filas solo de texto se leían
+            como un registro, y todo lo demás de la app se reconoce por su póster */}
         {marcas.map(([id, ts]) => (
-          <div className="diario-fila" key={id}>
-            <span className="diario-fecha">{new Date(ts).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' })}</span>
-            <span className="diario-titulo">{TITULOS[id]}</span>
-            {notas[id] && notas[id].p ? <span className="diario-estrellas">{'★'.repeat(notas[id].p)}</span> : null}
-          </div>
+          <button type="button" className="diario-fila" key={id} onClick={() => indice && indice[id] && onAbrir && onAbrir(indice[id])}>
+            {POSTERS[id] ? <img className="diario-cartel" src={POSTERS[id]} alt="" loading="lazy" decoding="async" /> : <span className="diario-cartel" aria-hidden="true" />}
+            <span className="diario-texto">
+              <span className="diario-titulo">{TITULOS[id]}</span>
+              <span className="diario-fecha">{new Date(ts).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' })}</span>
+            </span>
+            {notas[id] && notas[id].p ? <span className="diario-estrellas" aria-label={tr(`${notas[id].p} estrellas`, `${notas[id].p} stars`)}>{'★'.repeat(notas[id].p)}</span> : null}
+          </button>
         ))}
       </div>
       {Object.keys(vistas).length > 30 && <p className="diario-mas">{tr('Se muestran tus últimas 30 marcas.', 'Showing your last 30 check-offs.')}</p>}
@@ -4198,7 +4203,7 @@ function CrearLista({ onCrear }) {
   const enviar = () => { const n = nombre.trim(); if (n) { onCrear(n); setNombre('') } }
   return (
     <div className="crear-lista">
-      <input className="busca sync-input" placeholder={tr('Nombre de la lista (p. ej. Maratón con mi pareja)', 'List name (e.g. Marathon with my partner)')} autoComplete="off"
+      <input className="busca sync-input" placeholder={tr('Nombre, p. ej. «Con mi pareja»', 'Name, e.g. «With my partner»')} aria-label={tr('Nombre de la lista', 'List name')} autoComplete="off"
         value={nombre} maxLength={40} onChange={e => setNombre(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') enviar() }} aria-label={tr('Nombre de la lista', 'List name')} />
       <button className="accion-principal" onClick={enviar} disabled={!nombre.trim()}>{tr('Crear lista', 'Create list')}</button>
@@ -8124,7 +8129,7 @@ export default function App() {
           <ActividadDelMaraton vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma}
             onAbrir={d => setDetalle(d)} />
 
-          <Diario vistas={vistas} notas={notas} pais={pais} idioma={idioma} />
+          <Diario vistas={vistas} notas={notas} pais={pais} idioma={idioma} indice={indice} onAbrir={d => setDetalle(d)} />
 
           <Logros ctx={ctxLogros} nuevos={nuevosLogros} />
 
