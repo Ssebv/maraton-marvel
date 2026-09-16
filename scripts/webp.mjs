@@ -5,7 +5,7 @@
 // los dos mapas generados con las rutas nuevas. Idempotente: solo toca lo que
 // aún no es .webp. Si `cwebp` no está instalado (la rutina en la nube), no
 // hace NADA y sale en verde: la app funciona igual con el .jpg que haya.
-import { readFileSync, writeFileSync, unlinkSync, existsSync, readdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, unlinkSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
@@ -46,5 +46,20 @@ for (const carpeta of ['fondo', 'mini']) {
     if (!/\.jpe?g$/.test(f) || (carpeta === 'fondo' && !FRANJAS.test(f))) continue
     convierte(`${pub}${carpeta}/${f}`, `${pub}${carpeta}/${f.replace(/\.jpe?g$/, '.webp')}`)
   }
+}
+// Banners de estreno (fondo/doomsday.jpg, doomsday-780.jpg y los que añada la
+// rutina mensual): se crea el .webp AL LADO sin borrar el .jpg, que data.js
+// sigue citando. La app ofrece el WebP solo si existía al compilar
+// (__FONDOS_WEBP__ en vite.config.js), así que sin cwebp nada se rompe.
+// Medido el 16 sep 2026: doomsday-780 70 → 16 kB, doomsday 175 → 59 kB, y es
+// el elemento más grande de la primera pantalla.
+for (const f of readdirSync(pub + 'fondo')) {
+  if (!/\.jpe?g$/.test(f) || FRANJAS.test(f)) continue
+  const origen = `${pub}fondo/${f}`, destino = origen.replace(/\.jpe?g$/, '.webp')
+  if (existsSync(destino) && statSync(destino).mtimeMs >= statSync(origen).mtimeMs) continue
+  try {
+    execFileSync('cwebp', ['-quiet', '-q', '72', '-m', '6', '-sharp_yuv', '-metadata', 'none', origen, '-o', destino])
+    antes += readFileSync(origen).length; despues += readFileSync(destino).length; n++
+  } catch {}
 }
 console.log(n ? `webp: ${n} imágenes convertidas, ${Math.round(antes / 1024)} → ${Math.round(despues / 1024)} KB` : 'webp: nada que convertir')

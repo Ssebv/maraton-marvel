@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 const dir = fileURLToPath(new URL('.', import.meta.url))
 const pedidas = process.argv.slice(2)
-const sondas = pedidas.length ? pedidas : ['humo', 'cupo', 'hig', 'detalles', 'barra', 'fluidez', 'memoria']
+const sondas = pedidas.length ? pedidas : ['humo', 'cupo', 'hig', 'detalles', 'barra', 'fluidez', 'arranque', 'memoria']
 const fallidas = sondas.filter(s => spawnSync(process.execPath, [dir + s + '.mjs', ...(s === 'memoria' ? ['6'] : [])], { stdio: 'inherit' }).status !== 0)
 console.log(fallidas.length ? `\n✗ fallan: ${fallidas.join(', ')}` : `\n✓ ${sondas.length} sondas en verde`)
 process.exitCode = fallidas.length ? 1 : 0

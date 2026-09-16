@@ -22,7 +22,11 @@ const versionJson = {
   },
 }
 
+// los banners de estreno que tienen .webp al compilar (scripts/webp.mjs):
+// la app solo ofrece el WebP de los que existen
+const fondosWebp = readdirSync('public/fondo').filter(f => f.endsWith('.webp'))
+
 export default defineConfig({
-  define: { __BUILD__: JSON.stringify(sello) },
+  define: { __BUILD__: JSON.stringify(sello), __FONDOS_WEBP__: JSON.stringify(fondosWebp) },
   plugins: [react(), viteSingleFile(), versionJson],
 })

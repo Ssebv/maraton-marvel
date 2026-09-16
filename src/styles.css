@@ -222,6 +222,8 @@ button{font:inherit}
       transparent 45%, color-mix(in srgb, var(--material) 32%, transparent) 100%);
 }
 .fh-banner{height:340px}
+/* el <picture> del WebP no debe cambiar la caja: la imagen mide el banner */
+.fh-banner picture{display:contents}
 .fh-banner img{width:100%; height:100%; object-fit:cover; object-position:center 32%; display:block; opacity:var(--fondo-op)}
 .fh-muro{height:420px}
 .fh-muro .fh-tira{

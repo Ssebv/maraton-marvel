@@ -11,6 +11,7 @@
 //  - foco emulado (sin él, focus/focusin no se disparan).
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:http'
+import { gzipSync } from 'node:zlib'
 import { mkdtempSync, rmSync, existsSync, readFileSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, extname, normalize } from 'node:path'
@@ -32,8 +33,12 @@ function servidor() {
     let f = join(DIST, ruta)
     if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html')
     if (!f.startsWith(DIST) || !existsSync(f)) { res.writeHead(404); return res.end() }
-    res.writeHead(200, { 'content-type': TIPOS[extname(f)] || 'application/octet-stream', 'cache-control': 'no-store' })
-    res.end(readFileSync(f))
+    // gzip como GitHub Pages: sin él, una medida de arranque con red lenta
+    // cuenta 955 kB donde el usuario baja 283
+    const cuerpo = readFileSync(f), tipo = TIPOS[extname(f)] || 'application/octet-stream'
+    const comprime = /gzip/.test(req.headers['accept-encoding'] || '') && /text|javascript|json|manifest/.test(tipo)
+    res.writeHead(200, { 'content-type': tipo, 'cache-control': 'no-store', ...(comprime ? { 'content-encoding': 'gzip' } : {}) })
+    res.end(comprime ? gzipSync(cuerpo) : cuerpo)
   })
   return new Promise(r => srv.listen(0, 'localhost', () => r(srv)))
 }

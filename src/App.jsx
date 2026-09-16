@@ -2320,6 +2320,7 @@ function AvisoNuevo({ onProbar }) {
 // recarga trae la nueva). Como mucho una consulta cada 10 minutos, y la
 // primera a los 8 s de arrancar para no competir con el arranque.
 const SELLO = typeof __BUILD__ === 'string' ? __BUILD__ : ''
+const FONDOS_WEBP = typeof __FONDOS_WEBP__ !== 'undefined' ? __FONDOS_WEBP__ : []
 // Aviso breve con «Deshacer» (desmarcar, quitar temporada, serie completa,
 // empezar de cero). Se va solo; uno nuevo sustituye al anterior.
 // Revisión HIG (16 sep 2026): la región viva va SIEMPRE montada y el aviso
@@ -5990,9 +5991,20 @@ export default function App() {
       )}
       {fondo === 'banner' && proxEstreno?.img && (
         <div className="fondo-hero fh-banner" aria-hidden="true">
-          <img src={proxEstreno.img} alt="" decoding="async"
-            srcSet={`${proxEstreno.img.replace(/\.jpg$/, '-780.jpg')} 780w, ${proxEstreno.img} 1280w`}
-            sizes="100vw" />
+          {/* el elemento más grande de la primera pantalla: en WebP pesa la
+              cuarta parte (móvil 70 → 16 kB). Solo si el .webp existía al
+              compilar; si no, el JPEG de siempre. Probado y descartado:
+              precargarlo desde el <head> (competía con el HTML con red lenta) */}
+          <picture>
+            {FONDOS_WEBP.includes(proxEstreno.img.replace(/^.*\//, '').replace(/\.jpg$/, '.webp'))
+              && FONDOS_WEBP.includes(proxEstreno.img.replace(/^.*\//, '').replace(/\.jpg$/, '-780.webp')) && (
+              <source type="image/webp" sizes="100vw"
+                srcSet={`${proxEstreno.img.replace(/\.jpg$/, '-780.webp')} 780w, ${proxEstreno.img.replace(/\.jpg$/, '.webp')} 1280w`} />
+            )}
+            <img src={proxEstreno.img} alt="" decoding="async"
+              srcSet={`${proxEstreno.img.replace(/\.jpg$/, '-780.jpg')} 780w, ${proxEstreno.img} 1280w`}
+              sizes="100vw" />
+          </picture>
           <span className="fh-velo" />
         </div>
       )}
