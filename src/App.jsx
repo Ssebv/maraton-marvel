@@ -2334,24 +2334,31 @@ function Deshacer({ aviso, onCerrar }) {
   const resto = useRef(0)
   const vez = useRef({ id: null, n: 0 })
   if (aviso && vez.current.id !== aviso.id) vez.current = { id: aviso.id, n: vez.current.n + 1 }
-  useEffect(() => { resto.current = aviso ? aviso.ms : 0; setQuieto(false) }, [aviso])
+  // quieto mientras el puntero O el foco sigan dentro: con ratón, clicar
+  // enfoca «Deshacer» y al apartar el ratón el aviso se iba con el foco aún en
+  // el botón (code-review). relatedTarget puede ser null o la ventana.
+  const dentro = useRef({ puntero: false, foco: false })
+  useEffect(() => { resto.current = aviso ? aviso.ms : 0; dentro.current = { puntero: false, foco: false }; setQuieto(false) }, [aviso])
   useEffect(() => {
     if (!aviso || quieto) return undefined
     const desde = Date.now()
     const t = setTimeout(() => cerrar.current(), resto.current)
     return () => { clearTimeout(t); resto.current = Math.max(3000, resto.current - (Date.now() - desde)) }
   }, [aviso, quieto])
-  const para = () => setQuieto(true)
-  // relatedTarget puede ser null o la ventana (salir del documento): solo un
-  // nodo de DENTRO del aviso lo mantiene quieto
-  const sigue = e => { const r = e.relatedTarget; if (!(r instanceof Node && e.currentTarget.contains(r))) setQuieto(false) }
+  const mira = () => setQuieto(dentro.current.puntero || dentro.current.foco)
+  const entra = tipo => () => { dentro.current[tipo] = true; mira() }
+  const sale = tipo => e => {
+    const r = e.relatedTarget
+    if (r instanceof Node && e.currentTarget.contains(r)) return
+    dentro.current[tipo] = false; mira()
+  }
   return (
     <>
       {/* dos avisos seguidos con el mismo texto no cambiaban la región y el
           segundo no se leía: un espacio duro alterno la cambia siempre */}
       <span className="solo-lector" role="status">{aviso ? `${aviso.texto}. ${tr('Deshacer disponible', 'Undo available')}${vez.current.n % 2 ? '\u00A0' : ''}` : ''}</span>
       {aviso && (
-        <div className="deshacer" key={aviso.id} onPointerEnter={para} onPointerDown={para} onPointerLeave={sigue} onFocus={para} onBlur={sigue}>
+        <div className="deshacer" key={aviso.id} onPointerEnter={entra('puntero')} onPointerDown={entra('puntero')} onPointerLeave={sale('puntero')} onFocus={entra('foco')} onBlur={sale('foco')}>
           <span className="deshacer-texto">{aviso.texto}</span>
           <button type="button" onClick={() => { tic(); aviso.restaura(); cerrar.current() }}>{tr('Deshacer', 'Undo')}</button>
         </div>
@@ -7449,7 +7456,11 @@ function DescPlegable({ texto }) {
       if (!abierta) LARGAS_DESC.set(claveLarga, l)
       setLarga(l)
     }
-    if (!LARGAS_DESC.has(claveLarga)) mide()
+    // sabida, se copia al estado aquí mismo (antes de pintar): saltarse la
+    // medida sin copiarla dejaba «Leer menos» un fotograma sin clase .larga al
+    // cerrar, el botón desaparecía y el foco caía al body (code-review)
+    if (LARGAS_DESC.has(claveLarga) && !abierta) setLarga(LARGAS_DESC.get(claveLarga))
+    else if (!LARGAS_DESC.has(claveLarga)) mide()
     // la caja plegada mide dos líneas con cualquier fuente: hay que volver a
     // medir cuando entra la de verdad, que puede partir el texto distinto
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(mide)

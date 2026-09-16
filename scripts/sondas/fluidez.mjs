@@ -63,9 +63,11 @@ const tabla = Object.entries(datos).map(([k, v]) => ({ cambio: 'a ' + k.replace(
   esperaMs: mediana(v.map(x => x.espera)), renderMs: mediana(v.map(x => x.render)), tirones: v.map(x => x.tirones).join('/'), peorTironMs: Math.max(...v.map(x => x.peorTiron || 0)) }))
 console.table(tabla)
 const peorEspera = Math.max(...tabla.map(t => t.esperaMs))
-const tirones = tabla.reduce((s, t) => s + t.tirones.split('/').reduce((a, b) => a + (+b || 0), 0), 0)
+// un tirón suelto en una pasada es ruido de la máquina (visto tras correr otras
+// sondas: 1 de 12 y luego 0 de 24); falla si se repite en el mismo cambio
+const repetidos = tabla.filter(t => t.tirones.split('/').filter(x => +x > 0).length >= 2).map(t => t.cambio)
 process.exitCode = informe(`fluidez · ${modo} · CPU ×4 · ${PASADAS} pasadas`, [
   [peorEspera <= 200, `peor espera hasta que arranca la animación (mediana): ${peorEspera} ms (tope 200; las cifras bailan con la carga del Mac: para comparar, A/B alterno con DIST=)`],
-  [tirones === 0, `fotogramas de >50 ms durante la animación: ${tirones}`],
+  [repetidos.length === 0, `fotogramas de >50 ms durante la animación que se repiten en 2+ pasadas: ${repetidos.join(', ') || 'ninguno'}`],
   [errores.length === 0, `errores en consola: ${errores.length}`],
 ]) ? 1 : 0

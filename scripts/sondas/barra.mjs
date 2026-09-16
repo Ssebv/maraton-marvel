@@ -17,6 +17,13 @@ for (const ancho of [1280, 1920]) {
         marca: m ? +getComputedStyle(m).opacity : -1, fondo: +getComputedStyle(b, '::before').opacity, ancho: document.documentElement.scrollWidth, vp: innerWidth } })()`)
     filas.push([arriba.barra && arriba.nav && !arriba.navEnToolbar && arriba.ajustes, `secciones y Ajustes en la barra de la app, no en la de herramientas (${JSON.stringify({ nav: arriba.nav, enToolbar: arriba.navEnToolbar })})`])
     filas.push([arriba.marca < 0.05 && arriba.fondo < 0.05, `arriba en Maratón: marca ${arriba.marca} y fondo ${arriba.fondo} (transparentes sobre el titular)`])
+    // la marca invisible no se enfoca: el Tab tras «Saltar al contenido» va a Maratón
+    await cdp.eval(`document.querySelector('.saltar').focus()`)
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 })
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 })
+    await espera(150)
+    const tab = await cdp.eval(`({ vis: getComputedStyle(document.querySelector('.barra-app-marca')).visibility, foco: document.activeElement.className + ' ' + document.activeElement.textContent.trim().slice(0, 20) })`)
+    filas.push([tab.vis === 'hidden' && !/barra-app-marca/.test(tab.foco), `marca oculta arriba (${tab.vis}); el Tab va a «${tab.foco}»`])
     filas.push([arriba.ancho <= arriba.vp, `sin scroll horizontal: ${arriba.ancho} de ${arriba.vp}`])
 
     await cdp.eval(`window.scrollTo({ top: 2400, behavior: 'instant' })`)
@@ -24,7 +31,8 @@ for (const ancho of [1280, 1920]) {
     const abajo = await cdp.eval(`(() => { const b = document.querySelector('.barra-app').getBoundingClientRect(), t = document.querySelector('.toolbar').getBoundingClientRect()
       return { top: Math.round(b.top), bottom: Math.round(b.bottom), tb: Math.round(t.top), marca: +getComputedStyle(document.querySelector('.barra-app-marca')).opacity, fondo: +getComputedStyle(document.querySelector('.barra-app'), '::before').opacity } })()`)
     filas.push([abajo.top === 0 && abajo.tb >= abajo.bottom && abajo.tb - abajo.bottom <= 12, `al bajar: barra en 0–${abajo.bottom}, herramientas pegadas debajo en ${abajo.tb}`])
-    filas.push([abajo.marca > 0.95 && abajo.fondo > 0.95, `al bajar: marca ${abajo.marca}, fondo ${abajo.fondo}`])
+    const vis = await cdp.eval(`getComputedStyle(document.querySelector('.barra-app-marca')).visibility`)
+    filas.push([abajo.marca > 0.95 && abajo.fondo > 0.95 && vis === 'visible', `al bajar: marca ${abajo.marca} (${vis}), fondo ${abajo.fondo}`])
 
     // tecla 2 → Perfil
     await cdp.eval(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }))`)
@@ -45,6 +53,23 @@ for (const ancho of [1280, 1920]) {
     await espera(1200)
     const m = await cdp.eval(`({ barra: !!document.querySelector('.barra-app'), dock: !!document.querySelector('body > nav.tabs') })`)
     filas.push([!m.barra && m.dock, `móvil: sin barra de escritorio (${m.barra}), dock en <body> (${m.dock})`])
+    // «Leer menos» (va aquí: sin progreso sembrado la descripción de X-Men no está plegada) no pierde su clase ni el foco al cerrar (code-review).
+    // En el móvil la descripción vive dentro de «Sobre esta saga» y este bloque
+    // está oculto: el fallo era latente. Se enseña a la fuerza para probarlo.
+    await cdp.eval(`(() => { const e = document.createElement('style'); e.textContent = '.saga-desc-wrap{display:block !important}'; document.head.append(e); window.scrollTo({ top: 0, behavior: 'instant' }) })()`)
+    await espera(600)
+    const leer = await cdp.eval(`new Promise(async res => {
+    const w = [...document.querySelectorAll('.saga-desc-wrap.larga')].find(x => x.querySelector('.leer-mas').getClientRects().length)
+    if (!w) return res(null)
+    const b = w.querySelector('.leer-mas')
+    b.focus(); b.click()
+    await new Promise(r => setTimeout(r, 300))
+    b.click()
+    await new Promise(r => requestAnimationFrame(r))
+    res({ larga: w.classList.contains('larga'), visible: getComputedStyle(b).display !== 'none', foco: document.activeElement === b, texto: b.textContent })
+  })`)
+    filas.push([leer && leer.larga && leer.visible && leer.foco, `«Leer menos» → «${leer && leer.texto}» en el primer fotograma: clase ${leer && leer.larga}, visible ${leer && leer.visible}, foco ${leer && leer.foco}`])
+
     filas.push([errores.length === 0, `errores en consola: ${errores.length}`])
   } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
   malas += informe('barra · móvil 390', filas)

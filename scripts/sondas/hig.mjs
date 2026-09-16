@@ -68,6 +68,18 @@ try {
   const vacia = await cdp.eval(`document.querySelector('.solo-lector[role=status]').textContent === ''`)
   filas.push([aun && fuera && vacia, `al soltar quedan 3 s: a los 2 s sigue (${aun}), a los 3,8 s se fue (${fuera}), región vacía (${vacia})`])
 
+  // 2b · con el foco en «Deshacer», apartar el puntero no lo cierra (code-review)
+  await cdp.eval(`document.querySelector('.card.vista .checkbox, .card .checkbox').click()`)
+  await espera(300)
+  if (!(await cdp.eval(`!!document.querySelector('.deshacer')`))) { await cdp.eval(`document.querySelector('.card.vista .checkbox, .card .checkbox').click()`); await espera(300) }
+  await cdp.hasta(`!!document.querySelector('.deshacer')`, 3000)
+  await cdp.eval(`(() => { const d = document.querySelector('.deshacer'); d.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })); d.querySelector('button').focus(); d.dispatchEvent(new PointerEvent('pointerout', { bubbles: true })) })()`)
+  await espera(6000)
+  const conFoco = await cdp.eval(`!!document.querySelector('.deshacer') && document.activeElement === document.querySelector('.deshacer button')`)
+  filas.push([conFoco, `con el foco en «Deshacer» y el puntero fuera, sigue a los 6 s: ${conFoco}`])
+  await cdp.eval(`document.querySelector('.deshacer button').blur()`)
+  await espera(3500)
+
   // 3 · índice
   await cdp.eval(`window.scrollTo({ top: 3000, behavior: 'instant' })`)
   await cdp.hasta(`!!document.querySelector('.donde.visible')`, 4000)

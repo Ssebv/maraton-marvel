@@ -616,11 +616,14 @@ h1 .rojo{color:var(--red)}
    se va bajo la barra, como los títulos grandes de iOS */
 @supports (animation-timeline: scroll()){
   .barra-app.en-maraton .barra-app-marca{
-    animation-name:barraAppFondo; animation-duration:1ms; animation-timing-function:linear;
+    animation-name:marcaAparece; animation-duration:1ms; animation-timing-function:linear;
     animation-fill-mode:both; animation-timeline:scroll(root block); animation-range:70px 150px;
-    opacity:0;
+    opacity:0; visibility:hidden;
   }
 }
+/* con visibility: invisible, la marca tampoco se enfoca ni recibe clics
+   (code-review: el primer Tab caía en un enlace que no se veía) */
+@keyframes marcaAparece{from{opacity:0; visibility:hidden} to{opacity:1; visibility:visible}}
 /* con los grupos en filas propias el separador quedaba colgando al final */
 .barra-app ~ .toolbar .ctrl-sep{display:none}
 .barra-app-marca{
