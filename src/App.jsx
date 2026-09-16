@@ -1820,6 +1820,22 @@ const E_TITULO_EN = (() => {
 const tr = (es, en) => (IDIOMA_ACTUAL === 'en' ? en : es)
 // fechas y números: cada idioma con su formato
 const LOC = () => (IDIOMA_ACTUAL === 'en' ? 'en-US' : 'es-ES')
+// Un nombre con guion no se parte al final de la línea: el navegador corta
+// tras el guion y salían «X-» / «Men», «Spider-» / «Man», «One-» / «Shot» en
+// tarjetas, fichas, estrenos y logros (repaso con capturas, 16 sep 2026)
+const RE_GUION = /[\p{L}\d]{1,10}-[\p{L}\d]{1,10}/gu
+function sinPartir(texto) {
+  if (typeof texto !== 'string' || !texto.includes('-')) return texto
+  const trozos = []
+  let i = 0
+  for (const m of texto.matchAll(RE_GUION)) {
+    if (m.index > i) trozos.push(texto.slice(i, m.index))
+    trozos.push(<span className="sinparto" key={m.index}>{m[0]}</span>)
+    i = m.index + m[0].length
+  }
+  if (i < texto.length) trozos.push(texto.slice(i))
+  return trozos
+}
 
 // Textos de la interfaz que dicen «móvil» u «ordenador»: fuera de España pasan
 // por el mismo diccionario que la prosa («celular», «computadora»); con la
@@ -2316,6 +2332,8 @@ function Deshacer({ aviso, onCerrar }) {
   cerrar.current = onCerrar
   const [quieto, setQuieto] = useState(false)
   const resto = useRef(0)
+  const vez = useRef({ id: null, n: 0 })
+  if (aviso && vez.current.id !== aviso.id) vez.current = { id: aviso.id, n: vez.current.n + 1 }
   useEffect(() => { resto.current = aviso ? aviso.ms : 0; setQuieto(false) }, [aviso])
   useEffect(() => {
     if (!aviso || quieto) return undefined
@@ -2329,7 +2347,9 @@ function Deshacer({ aviso, onCerrar }) {
   const sigue = e => { const r = e.relatedTarget; if (!(r instanceof Node && e.currentTarget.contains(r))) setQuieto(false) }
   return (
     <>
-      <span className="solo-lector" role="status">{aviso ? `${aviso.texto}. ${tr('Deshacer disponible', 'Undo available')}` : ''}</span>
+      {/* dos avisos seguidos con el mismo texto no cambiaban la región y el
+          segundo no se leía: un espacio duro alterno la cambia siempre */}
+      <span className="solo-lector" role="status">{aviso ? `${aviso.texto}. ${tr('Deshacer disponible', 'Undo available')}${vez.current.n % 2 ? '\u00A0' : ''}` : ''}</span>
       {aviso && (
         <div className="deshacer" key={aviso.id} onPointerEnter={para} onPointerDown={para} onPointerLeave={sigue} onFocus={para} onBlur={sigue}>
           <span className="deshacer-texto">{aviso.texto}</span>
@@ -2665,7 +2685,7 @@ function Proximos() {
           <span className="proximo-cara" aria-hidden="true"><CaraEstreno e={e} /></span>
           <span className="proximo-texto">
           <span className="proximo-fecha">{fmtFecha(e.fecha) || e.aprox}</span>
-          <span className="proximo-titulo">{e.t}</span>
+          <span className="proximo-titulo">{sinPartir(e.t)}</span>
           <span className="proximo-tipo">{e.tipo}</span>
           <span className="proximo-nota">{e.n}</span>
           {e.fecha && <button className="proximo-cal" onClick={() => descargaIcs(e)}>{tr('Al calendario', 'Add to calendar')}</button>}
@@ -2975,7 +2995,7 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
           {vista && <span className={`sello sello-mini${marcada ? ' estampa' : ''}`} aria-hidden="true">{esComic ? tr('LEÍDO', 'READ') : tr('VISTA', 'SEEN')}</span>}
         </span>
         <span className="info">
-          <span className="fila-titulo"><span className="num">{num}</span><span className="titulo">{item.t}</span></span>
+          <span className="fila-titulo"><span className="num">{num}</span><span className="titulo">{sinPartir(item.t)}</span></span>
           <span className="meta">
             {esComic
               ? <><span className="hist">{item.a}</span> · {item.r}</>
@@ -3509,7 +3529,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             {item.opt && <span className="tipo opc">{tr('Opcional', 'Optional')}</span>}
             {platDe(pais, item) && <span className="tipo plat">{platDe(pais, item)}</span>}
           </div>
-          <h2 className="modal-titulo">{item.t}</h2>
+          <h2 className="modal-titulo">{sinPartir(item.t)}</h2>
           <p className="modal-meta">
             {item.s != null && <span className="star">★ {item.s.toFixed(1)} {tr('en IMDb', 'on IMDb')} · </span>}
             {esComic
@@ -4267,8 +4287,8 @@ function Logros({ ctx, nuevos }) {
                 <div key={l.id} className={`logro${ok ? ' ok' : ''}${ok && nuevos && nuevos.includes(l.id) ? ' nuevo' : ''}`} title={l.d}>
                   {ok && nuevos && nuevos.includes(l.id) && <span className="logro-nuevo">{tr('Nuevo', 'New')}</span>}
                   <span className="logro-emoji" aria-hidden="true">{l.e}</span>
-                  <span className="logro-nombre">{l.t}</span>
-                  <span className="logro-desc">{l.d}</span>
+                  <span className="logro-nombre">{sinPartir(l.t)}</span>
+                  <span className="logro-desc">{sinPartir(l.d)}</span>
                   {/* bloqueado con progreso: cuánto falta */}
                   {!ok && p && p[1] > 0 && p[0] > 0 && (
                     <span className="logro-prog" aria-label={tr(`${p[0]} de ${p[1]}`, `${p[0]} of ${p[1]}`)}>
@@ -6140,7 +6160,7 @@ export default function App() {
               setDetalle({ item: e.item, c: e.c, esComic: false })
             }
           }}>{tr('Sorpréndeme', 'Surprise me')}</button>
-          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio, actor o año', 'Title, episode, actor or year') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
+          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio o actor', 'Title, episode or actor') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
             // en el móvil la tecla dice «Buscar» y al pulsarla se esconde el
             // teclado, que tapaba media pantalla de resultados
@@ -7355,7 +7375,8 @@ function TiraPlegada({ entradas, esComic, onAbrir, desc, detalle, anima }) {
         </div>
       </div>
       {desc && <p className="tira-desc">{desc}</p>}
-      {detalle && <p className="tira-detalle">{detalle}</p>}
+      {/* cada dato entero en su línea: se partía «vista» / «entera» */}
+      {detalle && <p className="tira-detalle">{detalle.split(' · ').map((d, i) => <React.Fragment key={i}>{i > 0 && ' · '}<span className="sinparto">{d}</span></React.Fragment>)}</p>}
     </div>
   )
 }
