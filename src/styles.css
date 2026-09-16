@@ -202,6 +202,13 @@ body{
   padding-bottom:calc(72px + env(safe-area-inset-bottom));
   position:relative;
 }
+/* El dock flotante del móvil (16 sep 2026): alto y separación del borde de
+   abajo. En el iPhone se apoya un poco dentro de la zona del indicador de
+   inicio (como las barras de iOS 26) en vez de dejar 34 px vacíos debajo. */
+:root{--dock-alto:56px; --dock-abajo:max(10px, calc(env(safe-area-inset-bottom, 0px) - 12px))}
+@media (max-width:720px){
+  body{padding-bottom:calc(var(--dock-alto) + var(--dock-abajo) + 28px)}
+}
 /* Sin halo ambiental ni trama de puntos: el fondo es papel, no una landing. */
 .wrap{max-width:880px; margin: 0 auto; padding: 0 var(--e-6); position:relative; z-index:1}
 :focus-visible{outline:2px solid var(--blue); outline-offset:2px}
@@ -2221,10 +2228,10 @@ main.crono, main.comics, main.estreno{animation:none}
   html.barra-pegada.barra-oculta .toolbar{transform:translateY(calc(-100% - env(safe-area-inset-top, 0px) - 2px))}
   /* y la barra de pestañas se retira hacia abajo, fundiéndose, con la misma
      curva de iOS; ya no vive dentro de .toolbar (portal a body en móvil) */
-  html.barra-oculta nav.tabs{transform:translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 2px)); opacity:0}
+  html.barra-oculta nav.tabs{transform:translateY(calc(100% + var(--dock-abajo) + 12px)); opacity:0}
   /* con una hoja, el lector o el modo cine abiertos el dock se retira, como en
      iOS: vive en <body> y pintaba por encima de ellos (revisión del 11 sep) */
-  html.capa-abierta nav.tabs{transform:translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 2px)); opacity:0; pointer-events:none}
+  html.capa-abierta nav.tabs{transform:translateY(calc(100% + var(--dock-abajo) + 12px)); opacity:0; pointer-events:none}
   /* Los destinos van en el dock de abajo: el separador que los seguía quedaba
      solo al principio del carril y parecía un chip cortado. */
   nav.tabs + .ctrl-sep, .controles > .ctrl-sep:first-child{display:none}
@@ -2245,29 +2252,36 @@ main.crono, main.comics, main.estreno{animation:none}
      pegada abajo, línea arriba, zona segura dentro, icono + rótulo por
      pestaña y la activa en rojo. Sin píldora que se desliza: el color dice
      dónde estás. Los laterales llevan la zona segura para el apaisado. */
+  /* Barra de pestañas flotante (16 sep 2026, «el nav no se ve bien, los
+     logos están muy pegados al borde»): la de borde a borde medía 31 px por
+     dentro y la cápsula de la activa, de 30, tocaba la raya de arriba; debajo
+     quedaban los 34 px vacíos de la zona segura. Ahora flota separada de los
+     lados y del borde, 56 px con iconos de 20 y rótulo, y la cápsula de la
+     activa va concéntrica con la barra (4 px por dentro, mismo radio menos 4). */
   nav.tabs{
-    position:fixed; left:0; right:0; bottom:0; z-index:40;
-    justify-content:space-around; gap: 0;
-    /* pedida «mucho más pequeña» (11 sep 2026): 42 px + zona segura, en vez
-       de 58; el icono baja a 18 y el rótulo va pegado. La zona táctil se
-       completa por arriba con el ::after de cada pestaña. */
-    padding: 1px env(safe-area-inset-right, 0px) calc(1px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
+    position:fixed; z-index:40;
+    left:calc(12px + env(safe-area-inset-left, 0px)); right:calc(12px + env(safe-area-inset-right, 0px));
+    bottom:var(--dock-abajo); height:var(--dock-alto);
+    justify-content:space-around; align-items:stretch; gap: 0; padding: 4px;
     background:var(--panel);
-    border:none; border-top:1px solid var(--line);
-    border-radius:0; box-shadow:none;
+    border:1px solid var(--line); border-radius:var(--r-pill);
+    box-shadow:0 10px 30px -10px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.18);
+    max-width:520px; margin-inline:auto;
   }
   nav.tabs .tab{
-    flex:1 1 0; min-width:0; min-height:31px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 0;
-    padding: 0 var(--e-2); border-radius:0; background:transparent;
-    font-size: var(--t-xs); font-weight:600; letter-spacing:.01em; line-height:1.2; color:var(--ink3);
+    flex:1 1 0; min-width:0; min-height:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 2px;
+    padding: 0 var(--e-2); border-radius:var(--r-pill); background:transparent;
+    font-size: var(--t-xs); font-weight:600; letter-spacing:.01em; line-height:1.15; color:var(--ink3);
   }
   nav.tabs .tab{position:relative; z-index:1}
-  nav.tabs .tab-ico{display:block; width:16px; height:16px}
+  nav.tabs .tab-ico{display:block; width:20px; height:20px; transition:transform var(--muelle-toque)}
+  /* el dedo encoge el icono al instante: la respuesta no espera a la vista nueva */
+  nav.tabs .tab:active .tab-ico{transform:scale(.86)}
   /* activa: relleno al 35 % y trazo más grueso, para que se distinga sin color */
-  nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.4; fill:color-mix(in srgb, var(--red) 35%, transparent); animation:pestanaPop var(--muelle-pop) both}
-  /* 31 px de alto: la zona táctil llega a 44 creciendo hacia arriba */
-  nav.tabs .tab::after{content:""; position:absolute; inset:-13px 0 0}
+  nav.tabs .tab[aria-current="page"] .tab-ico{stroke-width:2.2; fill:color-mix(in srgb, var(--red) 35%, transparent); animation:pestanaPop var(--muelle-pop) both}
+  /* 48 px de pestaña: la zona táctil llega a 56 con el relleno de la barra */
+  nav.tabs .tab::after{content:""; position:absolute; inset:-4px 0}
   /* Cristal en el dock (pedido el 3 sep 2026: excepción consciente y única a
      la regla del 18 de agosto de no usar backdrop-filter como superficie).
      Solo aquí: es una franja de 60 px que iOS desenfoca igual en sus barras.
@@ -2321,10 +2335,10 @@ main.crono, main.comics, main.estreno{animation:none}
   /* en la barra de pestañas el indicador es una cápsula tintada detrás del
      icono y el rótulo (como la barra de iOS 26), no la píldora de escritorio */
   nav.tabs .indicador{background:none; box-shadow:none}
+  /* la cápsula ocupa la pestaña entera (48 px) y viaja entre ellas */
   nav.tabs .indicador::before{
-    content:""; position:absolute; left:50%; top:50%; width:min(64px, calc(100% - 8px)); height:30px;
-    transform:translate(-50%, -50%); border-radius:var(--r-pill);
-    background:color-mix(in srgb, var(--red) 13%, transparent);
+    content:""; position:absolute; inset:0; border-radius:var(--r-pill);
+    background:color-mix(in srgb, var(--red) 15%, transparent);
   }
 
   /* Sin blur bajo la hoja: desenfocar una página llena de carátulas mientras
@@ -2375,7 +2389,7 @@ main.crono, main.comics, main.estreno{animation:none}
   box-shadow:var(--card-shadow-up); white-space:nowrap;
   animation:fadeIn var(--dur-media) ease both;
 }
-@media (max-width:720px){ .version-nueva{bottom:calc(56px + env(safe-area-inset-bottom, 0px))} }
+@media (max-width:720px){ .version-nueva{bottom:calc(var(--dock-alto) + var(--dock-abajo) + 10px)} }
 /* ── Deshacer: píldora oscura sobre todo (también sobre la ficha abierta) ── */
 .deshacer{
   /* centrado con márgenes automáticos y no con left:50% + translate: así el
@@ -2403,7 +2417,7 @@ main.crono, main.comics, main.estreno{animation:none}
 }
 .deshacer button::after{content:""; position:absolute; inset:-4px}
 .deshacer button:active{transform:scale(.96)}
-@media (max-width:720px){ .deshacer{bottom:calc(56px + env(safe-area-inset-bottom, 0px))} }
+@media (max-width:720px){ .deshacer{bottom:calc(var(--dock-alto) + var(--dock-abajo) + 10px)} }
 /* ── Recordatorios de estreno ── */
 .novedades{
   flex-direction:row; align-items:center; justify-content:space-between;
@@ -3221,7 +3235,7 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 }
 @keyframes insigniaEntra{from{transform:scale(0)}}
 @media (max-width:720px){
-  nav.tabs .tab-insignia{top:1px; right:auto; left:calc(50% + 4px); box-shadow:0 0 0 2px var(--panel)}
+  nav.tabs .tab-insignia{top:5px; right:auto; left:calc(50% + 6px); box-shadow:0 0 0 2px var(--panel)}
 }
 /* y dentro, en Logros, la tarjeta que acabas de ganar */
 .logro{position:relative}
