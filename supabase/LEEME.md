@@ -25,6 +25,7 @@ PostgreSQL temporal que imita a Supabase y comprueba 67 reglas.
 1. **SQL Editor → New query**.
 2. Pega el contenido de `supabase/migrations/20260916120000_comunidades.sql` y pulsa **Run**.
    Luego, en otra consulta, `supabase/migrations/20260916180000_retos_y_muro.sql` → **Run**
+   y después `supabase/migrations/20260916200000_privacidad_ranking.sql` → **Run**
    (las migraciones van en orden de nombre; cada una nueva se aplica igual).
 3. Nueva consulta con el contenido de `supabase/catalogo.sql` → **Run**
    (los 143 títulos con sus minutos; se repite cuando entre un título nuevo:

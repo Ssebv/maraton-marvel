@@ -77,14 +77,27 @@ try {
     // ── dispositivo 2, con otra cosa vista ──
     await s.cierra()
     s = await abre({ puerto: PUERTOS.app, proxy: PROXY, siembra: siembra({ logan: ahora - 2 * 864e5 }) })
+    // la primera lectura del progreso en la nube falla (red): la fusión debe
+    // quedar pendiente, sin pisar lo local, y reintentarse al volver (code-review)
+    await s.cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => {
+      if (sessionStorage.getItem('fallo-hecho')) return
+      const f = window.fetch
+      window.fetch = (u, o) => { if (String(u).includes('/rest/v1/progreso?usuario=') && (!o || !o.method || o.method === 'GET') && !sessionStorage.getItem('fallo-hecho')) { sessionStorage.setItem('fallo-hecho', '1'); return Promise.reject(new TypeError('red caída')) } return f(u, o) }
+    })()` })
     await s.navega('#crono')
     await espera(1200)
     await entra(s)
+    await espera(3000)
+    const pendiente = await s.cdp.eval(`({ fusion: (JSON.parse(localStorage.getItem('maraton-marvel-cuenta-v1')) || {}).fusion, logan: !!JSON.parse(localStorage.getItem('maraton-marvel-v1')).logan, fc: !!JSON.parse(localStorage.getItem('maraton-marvel-v1'))['first-class'] })`)
+    prueba(pendiente.fusion === true && pendiente.logan && !pendiente.fc, `fusión caída por red: queda pendiente y lo local sigue intacto (${JSON.stringify(pendiente)})`)
+    await s.cdp.eval(`window.dispatchEvent(new Event('online'))`)
     await espera(3500)
     const sinModal = await s.cdp.eval(`!document.querySelector('.crea-perfil')`)
     prueba(sinModal, 'en el segundo navegador el perfil ya existe: no lo pide otra vez')
     const pr2 = await servicio(`progreso?usuario=eq.${p1[0].id}&select=vistas`)
     const local2 = await s.cdp.eval(`JSON.parse(localStorage.getItem('maraton-marvel-v1'))`)
+    const fusionTrasReintento = await s.cdp.eval(`(JSON.parse(localStorage.getItem('maraton-marvel-cuenta-v1')) || {}).fusion`)
+    prueba(fusionTrasReintento === undefined, 'al volver la conexión se reintenta y la fusión se completa')
     prueba(pr2[0].vistas['first-class'] && pr2[0].vistas.logan && local2['first-class'] && local2.logan,
       `se funden los dos: nube ${Object.keys(pr2[0].vistas).join(', ')} · navegador ${Object.keys(local2).join(', ')}`)
 

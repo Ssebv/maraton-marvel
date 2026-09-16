@@ -612,7 +612,10 @@ function HiloHoja({ saliendo, id, cuenta, token, vistas, eps, onCerrar, onVerPer
       if (tipo === 'hilo') onCerrar(); else await carga()
     } catch {}
   }
-  const hijos = padre => resp.filter(r => (r.padre || null) === padre)
+  // una respuesta cuyo padre no llega (oculto por moderación o de alguien que
+  // bloqueaste) sube al primer nivel en vez de desaparecer con él (code-review)
+  const idsResp = new Set(resp.map(r => r.id))
+  const hijos = padre => resp.filter(r => (padre === null ? !r.padre || !idsResp.has(r.padre) : r.padre === padre))
   const pintaRespuesta = r => {
     const propia = cuenta && r.autor.id === cuenta.uid
     return (
@@ -832,6 +835,7 @@ const saneaCuenta = x => {
     nombre: typeof x.nombre === 'string' ? x.nombre.slice(0, 80) : '',
     email: typeof x.email === 'string' ? x.email.slice(0, 120) : '',
     foto: typeof x.foto === 'string' && x.foto.startsWith('https://') ? x.foto : '',
+    ...(x.fusion === true ? { fusion: true } : {}),
   }
 }
 // La vista que estás mirando —búsqueda y filtros— vive en la URL: así se puede
@@ -2706,18 +2710,19 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
   useEffect(() => { setC(null); setYo(null); carga() }, [direccion, cuenta && cuenta.uid])
   const ok = esObj(c)
   useEffect(() => {
-    if (!ok) return undefined
+    // ranking y retos son solo para miembros (la base lo exige desde la
+    // revisión de seguridad); la ventana la fija el servidor
+    if (!ok || !yo) { setRanking(null); return undefined }
     let vivo = true
     setRanking(null)
     ;(async () => {
       try {
-        const desde = new Date(Date.now() - (ventana === 'semana' ? 7 : 30) * 864e5).toISOString()
-        const filas = await rest(cuenta ? await token() : null, 'rpc/ranking', { method: 'POST', body: { comunidad_in: c.id, desde_in: desde } })
+        const filas = await rest(await token(), 'rpc/ranking', { method: 'POST', body: { comunidad_in: c.id, ventana_in: ventana === 'semana' ? '7d' : '30d' } })
         if (vivo) setRanking((Array.isArray(filas) ? filas : []).filter(f => esObj(f) && typeof f.nombre === 'string'))
       } catch { if (vivo) setRanking([]) }
     })()
     return () => { vivo = false }
-  }, [ok && c.id, ventana, yo && yo.en_ranking])
+  }, [ok && c.id, ventana, !!yo, yo && yo.en_ranking])
   const cargaRetos = async () => {
     try {
       const t = cuenta ? await token() : null
@@ -2725,7 +2730,7 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
       const filas = await rest(t, `retos?comunidad=eq.${c.id}&hasta=gte.${hoy}&select=id,nombre,titulos,hasta&order=hasta.asc&limit=10`)
       const lista = (Array.isArray(filas) ? filas : []).filter(r => esObj(r) && typeof r.nombre === 'string' && Array.isArray(r.titulos))
       const conProgreso = await Promise.all(lista.map(async r => {
-        const p = await rest(t, 'rpc/progreso_reto', { method: 'POST', body: { reto_in: r.id } }).catch(() => [])
+        const p = yo ? await rest(t, 'rpc/progreso_reto', { method: 'POST', body: { reto_in: r.id } }).catch(() => []) : []
         return { ...r, progreso: (Array.isArray(p) ? p : []).filter(x => esObj(x) && typeof x.nombre === 'string') }
       }))
       setRetos(conProgreso)
@@ -2739,7 +2744,7 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
       setHayMas(lista.length === 40)
     } catch { setMuro(m => m || []) }
   }
-  useEffect(() => { if (ok) cargaRetos() }, [ok && c.id, yo && yo.en_ranking])
+  useEffect(() => { if (ok) cargaRetos() }, [ok && c.id, !!yo, yo && yo.en_ranking])
   useEffect(() => {
     if (!ok) return undefined
     let vivo = true
@@ -2827,7 +2832,19 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
                     <button type="button" className="tab" aria-pressed={ventana === 'mes'} onClick={() => setVentana('mes')}>{tr('30 días', '30 days')}</button>
                   </div>
                 </div>
-                {ranking === null ? <p className="ajuste-pista" role="status">{tr('Calculando…', 'Calculating…')}</p>
+                {yo && !yo.en_ranking && (
+                  <div className="aviso info ranking-optin">
+                    <span className="aviso-texto">{tr('No apareces en el ranking. Si te sumas, los miembros de esta comunidad verán tus horas, títulos y episodios de los últimos 7 y 30 días; nada más de tu progreso. Lo puedes quitar cuando quieras.', 'You’re not on the leaderboard. If you join it, this community’s members will see your hours, titles and episodes from the last 7 and 30 days; nothing else from your progress. You can leave it anytime.')}</span>
+                    <span className="aviso-acciones">
+                      <button className="chip-btn destacado" disabled={ocupado}
+                        onClick={() => accion(t => rest(t, `membresias?comunidad=eq.${c.id}&usuario=eq.${cuenta.uid}`, { method: 'PATCH', prefer: 'return=minimal', body: { en_ranking: true } }))}>
+                        {tr('Aparecer en el ranking', 'Join the leaderboard')}
+                      </button>
+                    </span>
+                  </div>
+                )}
+                {!yo ? <p className="ajuste-pista">{tr('El ranking y los retos solo los ven sus miembros.', 'Only members can see the leaderboard and challenges.')}</p>
+                  : ranking === null ? <p className="ajuste-pista" role="status">{tr('Calculando…', 'Calculating…')}</p>
                   : ranking.length === 0 ? <p className="ajuste-pista">{tr('Nadie aparece todavía.', 'Nobody shows up yet.')}</p>
                   : (
                     <ol className="ranking-lista">
@@ -6203,14 +6220,36 @@ export default function App() {
     try { const m = window.location.hash.match(/^#h\/(\d{1,12})$/); return m ? Number(m[1]) : null } catch { return null }
   })
   // una invitación (#i/código) se canjea en cuanto hay cuenta con perfil
-  const [invitacionPendiente, setInvitacionPendiente] = useState(() => (NUBE ? INVITACION_EN_URL : null))
+  // se guarda en localStorage: entrar con Google o por correo vuelve a la app
+  // sin el #i/… y la invitación se perdía (code-review)
+  const [invitacionPendiente, setInvitacionPendienteEstado] = useState(() => {
+    if (!NUBE) return null
+    if (INVITACION_EN_URL) return INVITACION_EN_URL
+    try { const g = localStorage.getItem('maraton-marvel-invitacion-v1'); return g && /^[a-f0-9]{16,40}$/.test(g) ? g : null } catch { return null }
+  })
+  const setInvitacionPendiente = v => {
+    setInvitacionPendienteEstado(v)
+    try { v ? localStorage.setItem('maraton-marvel-invitacion-v1', v) : localStorage.removeItem('maraton-marvel-invitacion-v1') } catch {}
+  }
   // ¿comparte su muro en alguna comunidad? Solo entonces se publica actividad
   const [muroActivo, setMuroActivo] = useState(false)
   const publicaRef = useRef(null)
   // recién entrado: primero se funde lo local con lo remoto, y hasta que
   // termina no arranca la sincronización normal (su primer tirón pisaría lo
   // local con lo remoto viejo)
-  const [fusionando, setFusionando] = useState(false)
+  // Se guarda en la sesión (cta.fusion) hasta que la fusión termina bien: si
+  // falla la red o se recarga a mitad, se reintenta en vez de soltar la
+  // sincronización, cuyo primer tirón pisaría lo local con lo remoto viejo
+  // (code-review)
+  const [fusionando, setFusionandoEstado] = useState(() => !!(NUBE && leeGuardado(KEY_CUENTA, saneaCuenta, null)?.fusion))
+  const setFusionando = v => {
+    setFusionandoEstado(v)
+    try {
+      const g = JSON.parse(localStorage.getItem(KEY_CUENTA))
+      if (g && typeof g === 'object') localStorage.setItem(KEY_CUENTA, JSON.stringify({ ...g, fusion: v || undefined }))
+    } catch {}
+  }
+  const [reintento, setReintento] = useState(0)
   const cuentaLista = cuenta && perfilCuenta && !fusionando ? cuenta : null
   // el token de sesión dura una hora y no se persiste: se renueva del rt
   const tokenNube = useRef({ t: null, hasta: 0 })
@@ -6218,21 +6257,30 @@ export default function App() {
     if (tokenNube.current.t) salirNube(tokenNube.current.t)
     setCuenta(null)
     setPerfilCuenta(null)
-    setFusionando(false)
+    setFusionandoEstado(false)
     tokenNube.current = { t: null, hasta: 0 }
     setSyncEstado(sync ? 'ok' : 'off')
     try { localStorage.removeItem(KEY_CUENTA) } catch {}
   }
   const tokenCuenta = async () => {
     if (tokenNube.current.t && tokenNube.current.hasta > Date.now() + 60000) return tokenNube.current.t
-    const r = await refrescaToken(cuenta.rt)
+    // otra pestaña pudo rotar el token de refresco: usar el guardado, no el
+    // de la memoria de esta (reusar uno viejo hace que Supabase cierre la
+    // sesión en todas partes; code-review)
+    let rt = cuenta.rt
+    try { const g = JSON.parse(localStorage.getItem(KEY_CUENTA)); if (g && g.uid === cuenta.uid && typeof g.rt === 'string') rt = g.rt } catch {}
+    const r = await refrescaToken(rt)
     tokenNube.current = { t: r.token, hasta: Date.now() + r.dura * 1000 }
     // Supabase rota el token de refresco en cada uso: quedarse con el viejo
     // dejaría la sesión muerta en el siguiente arranque
-    if (r.rt && r.rt !== cuenta.rt) {
-      const cta = { ...cuenta, rt: r.rt }
-      setCuenta(cta)
-      try { localStorage.setItem(KEY_CUENTA, JSON.stringify(cta)) } catch {}
+    if (r.rt && r.rt !== rt) {
+      try {
+        const g = JSON.parse(localStorage.getItem(KEY_CUENTA)) || cuenta
+        localStorage.setItem(KEY_CUENTA, JSON.stringify({ ...g, rt: r.rt }))
+      } catch {}
+      // la cuenta en memoria solo se actualiza por el rt: las dependencias de
+      // la sincronización van por uid, así no se relanza nada (code-review)
+      setCuenta(c => (c ? { ...c, rt: r.rt } : c))
     }
     return r.token
   }
@@ -6336,7 +6384,9 @@ export default function App() {
   }
 
   // la fuente de sincronización: la cuenta si la hay (con perfil), si no la base propia
-  const fuenteSync = cuentaLista ? { cuenta: cuentaLista } : sync
+  // con cuenta aún sin perfil o fusionando, NADA (antes caía a la sala propia)
+  const fuenteSync = cuenta ? (cuentaLista ? { cuenta: cuentaLista } : null) : sync
+  const uidSync = cuentaLista ? cuentaLista.uid : null
 
   // El intervalo vive fijado a [sync, cuenta], así que sin esto llamaría a un
   // tirar() de un render VIEJO: su red de rescate compararía contra el estado
@@ -6346,7 +6396,7 @@ export default function App() {
 
   useEffect(() => {
     if (perfil) return
-    const conf = cuentaLista ? { cuenta: cuentaLista } : sync
+    const conf = cuenta ? (cuentaLista ? { cuenta: cuentaLista } : null) : sync
     if (!conf) { if (!cuenta) setSyncEstado('off'); return }
     // Entre TUS dispositivos (base propia) cada 25 s está bien; contra el
     // proyecto central de la comunidad sería un derroche del cupo gratuito
@@ -6366,7 +6416,7 @@ export default function App() {
       window.removeEventListener('focus', alFoco)
       document.removeEventListener('visibilitychange', alFoco)
     }
-  }, [sync, cuentaLista])
+  }, [sync, uidSync, !!cuenta])
 
   // El muro: lo que se acaba de marcar AQUÍ (fecha de hace menos de 2 min y no
   // traído por la sincronización) se publica si hay muro activo. Va antes del
@@ -6386,7 +6436,7 @@ export default function App() {
     return () => clearTimeout(id)
     // cuenta y sync también: al salir de la cuenta (o entrar) el temporizador
     // pendiente se cancela en vez de escribir en el destino ANTERIOR
-  }, [vistas, eps, notas, listas, horario, lecturas, cuentaLista, sync])
+  }, [vistas, eps, notas, listas, horario, lecturas, uidSync, sync])
 
   // Entrar (Google o enlace por correo): el ?code= de la URL por una sesión.
   // Después se carga el perfil; con perfil, se FUNDE lo remoto con lo local
@@ -6396,12 +6446,12 @@ export default function App() {
       setSyncEstado('syncing')
       const c = await canjeaCodigo(codigo)
       tokenNube.current = { t: c.token, hasta: Date.now() + c.dura * 1000 }
-      const cta = { uid: c.uid, rt: c.rt, nombre: c.nombre, email: c.email, foto: c.foto }
-      setFusionando(true)
-      setCuenta(cta)
+      const cta = { uid: c.uid, rt: c.rt, nombre: c.nombre, email: c.email, foto: c.foto, fusion: true }
       // el rt es una llave de larga duración: se guarda aquí y A PROPÓSITO
       // queda fuera de la copia de seguridad descargable y de la restaurable
       try { localStorage.setItem(KEY_CUENTA, JSON.stringify(cta)) } catch {}
+      setFusionandoEstado(true)
+      setCuenta(cta)
       setCuentaAviso(null)
     } catch (er) {
       setSyncEstado('error')
@@ -6431,7 +6481,7 @@ export default function App() {
       } catch (er) { if (vivo) trataFallo({ cuenta }, er) }
     })()
     return () => { vivo = false }
-  }, [cuenta && cuenta.uid])
+  }, [cuenta && cuenta.uid, perfilCuenta === null ? reintento : 0])
   // la fusión de después de entrar, en cuanto hay perfil
   useEffect(() => {
     if (!cuenta || !perfilCuenta || !fusionando) return undefined
@@ -6466,10 +6516,20 @@ export default function App() {
         } catch {}
         setFusionando(false)
         setSyncEstado('ok')
-      } catch (er) { if (vivo) { setFusionando(false); trataFallo({ cuenta }, er) } }
+      } catch (er) { if (vivo) trataFallo({ cuenta }, er) } // sigue fusionando: se reintenta al volver
     })()
     return () => { vivo = false }
-  }, [cuenta, perfilCuenta, fusionando])
+  }, [cuenta && cuenta.uid, perfilCuenta, fusionando, reintento])
+  // perfil o fusión pendientes por un fallo de red: se reintenta al volver a
+  // la app o al recuperar la conexión (la app instalada no se recarga)
+  useEffect(() => {
+    if (!NUBE || !cuenta || (perfilCuenta !== null && !fusionando)) return undefined
+    const otra = () => { if (!document.hidden) setReintento(n => n + 1) }
+    window.addEventListener('online', otra)
+    document.addEventListener('visibilitychange', otra)
+    window.addEventListener('focus', otra)
+    return () => { window.removeEventListener('online', otra); document.removeEventListener('visibilitychange', otra); window.removeEventListener('focus', otra) }
+  }, [cuenta && cuenta.uid, perfilCuenta, fusionando])
   useEffect(() => {
     if (!cuentaLista) { setMuroActivo(false); return undefined }
     let vivo = true
@@ -6504,7 +6564,10 @@ export default function App() {
   }
   useEffect(() => {
     if (!invitacionPendiente || !NUBE) return
-    if (!cuenta) { setCuentaAviso(tr('Entra (y crea tu perfil) para aceptar la invitación.', 'Sign in (and create your profile) to accept the invite.')); setAjustes(true); return }
+    if (!cuenta) {
+      try { localStorage.setItem('maraton-marvel-invitacion-v1', invitacionPendiente) } catch {}
+      setCuentaAviso(tr('Entra (y crea tu perfil) para aceptar la invitación.', 'Sign in (and create your profile) to accept the invite.')); setAjustes(true); return
+    }
     if (!cuentaLista) return
     const cod = invitacionPendiente
     setInvitacionPendiente(null)

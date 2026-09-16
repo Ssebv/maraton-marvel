@@ -93,6 +93,11 @@ try {
     prueba(dirPriv === `los-del-multiverso-${sello}` && k[0] && k[0].tipo === 'privada' && k[0].dueno === alfa.id && k[0].portada === 'first-class' && k[0].miembros === 1,
       `crear: dirección «${dirPriv}» sacada del nombre, privada, dueña alfa, portada y 1 miembro`)
     prueba(h && h.titulo === nombrePriv && /Doomsday/.test(h.texto), 'al crearla se abre su hoja con nombre y descripción')
+    // ranking opt-in (revisión de seguridad): recién creada, nadie aparece hasta sumarse
+    prueba(h.ranking.length === 0 && /No apareces en el ranking/.test(h.texto), 'ranking opt-in: recién creada, nadie aparece y se explica qué se comparte')
+    await s.cdp.eval(`[...document.querySelectorAll('.ranking-optin button')].find(b => /Aparecer/.test(b.textContent)).click()`)
+    await s.cdp.hasta(`!document.querySelector('.ranking-optin') && document.querySelectorAll('.ranking-fila').length === 1`, 8000).catch(() => null)
+    h = await hoja(s)
     const esperadas = (await servicio(`catalogo?id=in.(logan,first-class)&select=minutos`)).reduce((a, x) => a + x.minutos, 0)
     prueba(h.ranking.length === 1 && h.ranking[0].nombre === `@${alfa.nombre}` && h.ranking[0].horas.replace(/\s/g, ' ') === `${Math.floor(esperadas / 60)} h ${esperadas % 60} min`.replace(' 0 min', ''),
       `ranking de 7 días con horas del catálogo: ${JSON.stringify(h.ranking)} (esperaba ${esperadas} min)`)
@@ -135,7 +140,9 @@ try {
     await cierraHoja(s)
     await s.cdp.eval(`location.hash = 'i/${codigo}'`)
     await esperaHoja(s, 15000)
-    await esperaRanking(s)
+    await s.cdp.hasta(`!!document.querySelector('.ranking-optin button')`, 10000).catch(() => null)
+    await s.cdp.eval(`document.querySelector('.ranking-optin button').click()`)
+    await s.cdp.hasta(`document.querySelectorAll('.ranking-fila').length === 2`, 10000).catch(() => null)
     h = await hoja(s)
     const mB = await servicio(`membresias?comunidad=eq.${(await servicio(`comunidades?direccion=eq.${dirPriv}&select=id`))[0].id}&select=usuario,papel`)
     prueba(h && h.titulo === nombrePriv && mB.length === 2 && h.yo, `#i/código: beta entra y se abre la comunidad (${mB.length} miembros)`)
@@ -158,6 +165,17 @@ try {
     h = await s.cdp.eval(`(document.querySelector('.comunidad-hoja') || {}).textContent || ''`)
     prueba(mB2.length === 0 && /no existe o es privada/.test(h), 'salir: la membresía se borra y la privada deja de verse')
     prueba(s.errores.length === 0, `errores en consola (beta): ${s.errores.length} ${s.errores.slice(0, 2).join(' | ')}`)
+  } finally { await s.cierra() }
+
+  // ── sin cuenta: la invitación se recuerda hasta entrar (code-review) ──
+  s = await abre({ puerto: PUERTOS.app, proxy: PROXY, siembra: siembra(null) })
+  try {
+    await s.navega(`#i/${codigo}`)
+    await espera(1500)
+    await s.navega('#crono') // como volver de Google: la dirección ya no lleva el #i/
+    await espera(800)
+    const guardada = await s.cdp.eval(`localStorage.getItem('maraton-marvel-invitacion-v1')`)
+    prueba(guardada === codigo, `sin cuenta, la invitación queda guardada para después de entrar (${guardada && guardada.slice(0, 8)}…)`)
   } finally { await s.cierra() }
 } catch (e) {
   prueba(false, 'la sonda se cayó: ' + e.message)

@@ -213,7 +213,18 @@ try {
   const publica = r.out
   como('beto', `insert into membresias (comunidad, usuario) values ('${publica}', '${U.beto}')`)
   como('beto', `update progreso set vistas = '{"deadpool2": ${ts(3)}}' where usuario = '${U.beto}'`)
-  r = como('anon', `select nombre || ':' || minutos || ':' || titulos from ranking('${publica}') order by minutos desc`)
+  // ranking opt-in (revisión de seguridad): sin activarlo, nadie aparece
+  r = como('beto', `select count(*) from ranking('${publica}')`)
+  prueba(r.ok && r.out === '0', `ranking opt-in: sin activarlo no aparece nadie (${r.out || r.err})`)
+  como('ana', `update membresias set en_ranking = true where comunidad = '${publica}' and usuario = '${U.ana}'`)
+  como('beto', `update membresias set en_ranking = true where comunidad = '${publica}' and usuario = '${U.beto}'`)
+  r = como('anon', `select count(*) from ranking('${publica}')`)
+  prueba(!r.ok && /permission denied/.test(r.err), `ranking sin sesión: denegado (${r.err})`)
+  r = como('carla', `select count(*) from ranking('${publica}')`)
+  prueba(r.ok && r.out === '0', `ranking para quien no es miembro: vacío (${r.out || r.err})`)
+  r = como('beto', `select count(*) from ranking('${publica}', '1970-01-01'::timestamptz, '2100-01-01'::timestamptz)`)
+  prueba(!r.ok, `la ventana de fechas ya no la elige quien llama (${r.err})`)
+  r = como('beto', `select nombre || ':' || minutos || ':' || titulos from ranking('${publica}') order by minutos desc`)
   const minLogan = +admin(`select minutos from catalogo where id = 'logan'`), minFc = +admin(`select minutos from catalogo where id = 'first-class'`), minDp = +admin(`select minutos from catalogo where id = 'deadpool2'`)
   const loki = admin(`select round(minutos::numeric / episodios) from catalogo where id = 'loki2'`)
   const esperaAna = minLogan + minFc + +loki
@@ -222,7 +233,7 @@ try {
   prueba(r.ok && r.out.split('\n')[0] === `ana:${esperaAna}:2` && r.out.includes(`beto:${minDp}:1`),
     `ranking de 7 días con horas del catálogo (${r.out.replace(/\n/g, ' · ')}; ana esperaba ${esperaAna})`)
   como('beto', `update membresias set en_ranking = false where comunidad = '${publica}' and usuario = '${U.beto}'`)
-  r = como('anon', `select count(*) from ranking('${publica}')`)
+  r = como('ana', `select count(*) from ranking('${publica}', '30d')`)
   prueba(r.out === '1', 'quien sale del ranking no aparece')
   como('ana', `insert into actividad (usuario, tipo, ref, estrellas) values ('${U.ana}', 'titulo', 'logan', 5)`)
   r = como('beto', `select count(*) from actividad`)
@@ -246,8 +257,14 @@ try {
   r = como('ana', `insert into retos (comunidad, nombre, titulos, hasta, creado_por) values ('${publica}', 'Logan y compañía', '{logan,first-class,deadpool2}', current_date + 30, '${U.ana}') returning id`)
   const reto = r.out
   prueba(r.ok && +reto > 0, `la dueña crea un reto ${r.ok ? '' : r.err}`)
-  r = como('anon', `select nombre || ':' || hechos || '/' || total from progreso_reto(${reto || 0})`)
-  prueba(r.ok && r.out === 'ana:2/3', `progreso del reto: ${r.out || r.err} (beto salió del ranking y no cuenta)`)
+  // una marca antigua (valor 1, sin fecha) también cuenta en el reto
+  como('ana', `update progreso set vistas = vistas || '{"deadpool2": 1}' where usuario = '${U.ana}'`)
+  r = como('ana', `select nombre || ':' || hechos || '/' || total from progreso_reto(${reto || 0})`)
+  prueba(r.ok && r.out === 'ana:3/3', `progreso del reto con marca antigua: ${r.out || r.err} (beto salió del ranking y no cuenta)`)
+  r = como('anon', `select count(*) from progreso_reto(${reto || 0})`)
+  prueba(!r.ok && /permission denied/.test(r.err), `progreso de un reto sin sesión: denegado (${r.err})`)
+  r = como('carla', `select count(*) from progreso_reto(${reto || 0})`)
+  prueba(r.ok && r.out === '0', `progreso de un reto para quien no es miembro: vacío (${r.out || r.err})`)
   let publicadas = 0
   for (let i = 0; i < 61; i++) { r = como('ana', `insert into actividad (usuario, tipo, ref) values ('${U.ana}', 'episodio', 'loki2:1:${i + 1}')`); if (r.ok) publicadas++ }
   prueba(publicadas === 59 && /límite/.test(r.err), `muro: como mucho 60 por hora (${publicadas} más tras la primera; ${r.err})`)

@@ -42,7 +42,8 @@ try {
   let r = await fetch(`${REST}/comunidades?select=id`, { method: 'POST', headers: { ...alfa.h, Prefer: 'return=representation' }, body: JSON.stringify({ direccion: dir, nombre: `Muro ${sello}`, tipo: 'publica', dueno: alfa.id }) })
   const com = (await json(r))[0].id
   await fetch(`${REST}/membresias`, { method: 'POST', headers: beta.h, body: JSON.stringify({ comunidad: com, usuario: beta.id }) })
-  await fetch(`${REST}/membresias?comunidad=eq.${com}&usuario=eq.${beta.id}`, { method: 'PATCH', headers: beta.h, body: JSON.stringify({ muro_activo: true }) })
+  await fetch(`${REST}/membresias?comunidad=eq.${com}&usuario=eq.${beta.id}`, { method: 'PATCH', headers: beta.h, body: JSON.stringify({ muro_activo: true, en_ranking: true }) })
+  await fetch(`${REST}/membresias?comunidad=eq.${com}&usuario=eq.${alfa.id}`, { method: 'PATCH', headers: alfa.h, body: JSON.stringify({ en_ranking: true }) })
   prueba(true, `comunidad pública de alfa con beta dentro y el muro de beta activo`)
 
   // ── beta marca y valora en la app ──

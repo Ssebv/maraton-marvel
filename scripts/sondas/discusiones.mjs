@@ -144,6 +144,9 @@ try {
     await s.cdp.hasta(`document.querySelectorAll('.hilo-hoja .respuestas .respuestas .respuesta').length === 1`, 8000).catch(() => null)
     const anid = await servicio(`respuestas?hilo=eq.${hiloId}&profundidad=eq.1&select=id`)
     prueba(anid.length === 1, 'respuesta anidada (segundo nivel) en pantalla y en la base')
+    // la administración oculta la respuesta de beta: la de alfa, debajo, no debe desaparecer (code-review)
+    const r1 = (await servicio(`respuestas?hilo=eq.${hiloId}&profundidad=eq.0&select=id`))[0].id
+    await fetch(`${REST}/respuestas?id=eq.${r1}`, { method: 'PATCH', headers: { ...admin, Prefer: 'return=minimal' }, body: JSON.stringify({ oculto: true }) })
     await s.cdp.eval(`document.querySelector('.hilo-hoja .cerrar').click()`)
     await s.cdp.hasta(`!document.querySelector('.hilo-hoja')`, 5000)
     await espera(400)
@@ -172,6 +175,18 @@ try {
   // ── cuenta nueva: el foro abierto aún no ──
   s = await abre({ puerto: PUERTOS.app, proxy: PROXY, siembra: siembra(nueva) })
   try {
+    // otra persona abre el hilo: la respuesta oculta no está, la de alfa (que colgaba de ella) sí
+    await s.navega('#crono')
+    await espera(2500)
+    await s.cdp.eval(`location.hash = 'h/${hiloId}'`)
+    await esperaHilo(s)
+    await espera(1200)
+    await s.cdp.eval(clic('.hilo-velo button', 'Ver igual'))
+    await espera(500)
+    const rsp = await s.cdp.eval(`[...document.querySelectorAll('.hilo-hoja .respuesta-cuerpo')].map(x => x.textContent)`)
+    prueba(rsp.includes('Buen punto') && !rsp.some(t => /Totalmente/.test(t)), `respuesta bajo una oculta sigue visible: ${JSON.stringify(rsp)}`)
+    await s.cdp.eval(`document.querySelector('.hilo-hoja .cerrar').click()`)
+    await s.cdp.hasta(`!document.querySelector('.hilo-hoja')`, 5000)
     await s.navega('?t=logan')
     await s.cdp.hasta(`!!document.querySelector('.modal .valoracion button.chip-btn')`, 12000)
     await espera(3000)

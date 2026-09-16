@@ -119,7 +119,8 @@ export async function refrescaToken(rt) {
 }
 
 export async function salirNube(token) {
-  try { await pide('/auth/v1/logout', { method: 'POST', token }) } catch {}
+  // scope=local: sale en ESTE dispositivo; sin él Supabase cierra la sesión en todos (code-review)
+  try { await pide('/auth/v1/logout?scope=local', { method: 'POST', token }) } catch {}
 }
 
 // La API REST (PostgREST): `ruta` sin /rest/v1, p. ej. «perfiles?id=eq.…»
