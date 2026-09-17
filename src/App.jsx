@@ -4274,10 +4274,10 @@ function PerfilView({ nombre, vistasP, epsP, notasP }) {
 function MiniTl({ item, c, vista, onAbrir }) {
   return (
     <button id={`tl-${item.id}`} className={`tl-card${vista ? ' vista' : ''}`} style={{ '--glow': c[0] }} onClick={onAbrir}>
-      <span className="tl-poster"><Portada item={item} c={c} esComic={false} /></span>
+      <span className="tl-poster"><Portada item={item} c={c} esComic={false} />{vista && <span className="galeria-check" aria-hidden="true"><CheckIcon /></span>}</span>
       <span className="tl-info">
         <span className="tl-titulo">{item.t}</span>
-        <span className="tl-h">{item.h}</span>
+        <span className="tl-h">{item.h}{vista && <span className="solo-lector">{tr(' · vista', ' · watched')}</span>}</span>
       </span>
     </button>
   )
@@ -4333,13 +4333,16 @@ function BorrarLista({ onBorrar }) {
 }
 
 function Estrellas() {
+  // Detrás del texto, una estrella grande y blanca se leía como el «·» que la
+  // app usa de separador («com·pletados»): puntos de 2–3 px sin extensión,
+  // más tenues, y la mitad en el móvil, donde el texto ocupa todo el ancho
   const capas = useMemo(() => [150, 90, 44].map((n, capa) => {
-    const sombras = []
-    for (let i = 0; i < n; i++) {
+    const sombras = [], total = window.innerWidth < 720 ? Math.round(n / 2) : n
+    for (let i = 0; i < total; i++) {
       const x = (Math.random() * 100).toFixed(1)
       const y = (Math.random() * 100).toFixed(1)
-      const brillo = (0.35 + capa * 0.22 + Math.random() * 0.2).toFixed(2)
-      sombras.push(`${x}vw ${y}vh 0 ${capa === 2 ? '1px' : '0'} rgba(242,239,230,${brillo})`)
+      const brillo = (0.22 + capa * 0.14 + Math.random() * 0.16).toFixed(2)
+      sombras.push(`${x}vw ${y}vh 0 0 rgba(242,239,230,${brillo})`)
     }
     return sombras.join(',')
   }), [])
@@ -8174,32 +8177,43 @@ export default function App() {
                       <span key={r} className="anillo"
                         style={{ width: r * 2, height: r * 2, marginLeft: -r, marginTop: -r }} />
                     ))}
-                    {(() => {
+                    {/* Dos pasadas con las mismas órbitas: planetas y, encima de
+                        todos, sus nombres. Cada órbita gira en su propio contexto
+                        de apilado, así que en una sola pasada el planeta de una
+                        órbita posterior (y el sol) tapaba el nombre de otra
+                        («T-10005» bajo Tierra-616). Las animaciones nacen en el
+                        mismo fotograma y van sincronizadas. */}
+                    {[false, true].map(nombres => {
                       const u616 = MULTIVERSO.find(u => u.num === 'Tierra-616')
-                      return (
-                        <button className="sol" style={{ '--tc': u616.c }}
-                          onClick={() => abreTierra(u616.num)} title={u616.nombre}>
-                          <span className="planeta planeta-orbe planeta-sol"><span className="planeta-textura" /></span>
-                          <span className="nav-nombre">Tierra-616</span>
-                        </button>
+                      const Pieza = nombres ? 'span' : 'button'
+                      const pieza = (u, clase, orbe, nombre) => (
+                        <Pieza className={clase} style={{ '--tc': u.c }}
+                          {...(nombres ? {} : { onClick: () => abreTierra(u.num), title: u.nombre, 'aria-label': nombre })}>
+                          {orbe}
+                          <span className="nav-nombre">{nombre}</span>
+                        </Pieza>
                       )
-                    })()}
-                    {MULTIVERSO.filter(u => ORBITAS[u.num]).map(u => {
-                      const [r, fase, dur, dir, tam] = ORBITAS[u.num]
                       return (
-                        <div className={`orbita${dir < 0 ? ' inversa' : ''}`} key={u.num}
-                          style={{ width: r * 2, height: r * 2, marginLeft: -r, marginTop: -r, transform: `rotate(${fase}deg)` }}>
-                          <div className="giro" style={{ animationDuration: dur + 's' }}>
-                            <div className="nav-pos" style={{ transform: `translateX(-50%) rotate(${-fase}deg)` }}>
-                              <div className="contra" style={{ animationDuration: dur + 's' }}>
-                                <button className="planeta-nav" style={{ '--tc': u.c }}
-                                  onClick={() => abreTierra(u.num)} title={u.nombre}>
-                                  <span className="planeta planeta-orbe" style={{ width: tam, height: tam }}><span className="planeta-textura" /></span>
-                                  <span className="nav-nombre">{CORTO_SISTEMA[u.num] || u.num.replace('Tierra-', 'T-')}</span>
-                                </button>
+                        <div className={nombres ? 'sistema-capa sistema-nombres' : 'sistema-capa'} key={String(nombres)} aria-hidden={nombres || undefined}>
+                          {pieza(u616, 'sol', nombres ? <span className="planeta-orbe planeta-hueco" style={{ width: 92, height: 92 }} />
+                            : <span className="planeta planeta-orbe planeta-sol"><span className="planeta-textura" /></span>, 'Tierra-616')}
+                          {MULTIVERSO.filter(u => ORBITAS[u.num]).map(u => {
+                            const [r, fase, dur, dir, tam] = ORBITAS[u.num]
+                            return (
+                              <div className={`orbita${dir < 0 ? ' inversa' : ''}`} key={u.num}
+                                style={{ width: r * 2, height: r * 2, marginLeft: -r, marginTop: -r, transform: `rotate(${fase}deg)` }}>
+                                <div className="giro" style={{ animationDuration: dur + 's' }}>
+                                  <div className="nav-pos" style={{ transform: `translateX(-50%) rotate(${-fase}deg)` }}>
+                                    <div className="contra" style={{ animationDuration: dur + 's' }}>
+                                      {pieza(u, 'planeta-nav', nombres ? <span className="planeta-orbe planeta-hueco" style={{ width: tam, height: tam }} />
+                                        : <span className="planeta planeta-orbe" style={{ width: tam, height: tam }}><span className="planeta-textura" /></span>,
+                                        CORTO_SISTEMA[u.num] || u.num.replace('Tierra-', 'T-'))}
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
+                            )
+                          })}
                         </div>
                       )
                     })}

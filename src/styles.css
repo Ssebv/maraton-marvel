@@ -1631,6 +1631,12 @@ main.galeria{margin-top: var(--e-6)}
   white-space:nowrap;
 }
 .planeta-nav:hover .nav-nombre, .sol:hover .nav-nombre{color:var(--ink)}
+/* los nombres van en su propia capa, encima de todos los planetas (App.jsx):
+   la capa de planetas guarda el hueco del nombre sin pintarlo */
+.sistema-capa{position:absolute; inset:0}
+.sistema-capa:not(.sistema-nombres) .nav-nombre{visibility:hidden}
+.sistema-nombres{z-index:3; pointer-events:none}
+.sistema-nombres .sol, .sistema-nombres .planeta-nav{pointer-events:none; cursor:default}
 @media (max-width:720px){
   .sistema-wrap{padding: 0}
   .sistema{transform:scale(.48); transform-origin:center center; margin: -180px 0}
@@ -1832,9 +1838,14 @@ main.tiempo{margin-top: var(--e-6)}
   border-color:color-mix(in srgb, var(--glow, var(--red)) 55%, var(--line));
   box-shadow:4px 4px 0 color-mix(in srgb, var(--glow, var(--red)) 35%, transparent);
 }
-.tl-card.vista{opacity:.55}
-.tl-card.vista .tl-titulo{text-decoration:line-through; color:var(--ink2)}
-.tl-poster{flex:none}
+/* Vista como en la Galería: carátula apagada y check. Antes toda la tarjeta
+   al 55 % y el título tachado: con medio maratón visto, media línea temporal
+   era ilegible (y el tachado se lee como «quitado», no como «hecho»). */
+.tl-card.vista .tl-titulo{color:var(--ink2)}
+.tl-card.vista .cover{filter:grayscale(.75) brightness(.8)}
+.tl-poster{flex:none; position:relative}
+.tl-poster .galeria-check{right:-6px; top:-6px; width:18px; height:18px}
+.tl-poster .galeria-check svg{width:9px; height:9px}
 .tl-poster .cover{width:40px; height:60px; border-radius:var(--r-s)}
 .tl-info{min-width:0; display:flex; flex-direction:column; gap: var(--e-1)}
 .tl-titulo{font-size: var(--t-m); font-weight:600; line-height:1.3}
