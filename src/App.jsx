@@ -1870,6 +1870,11 @@ window.addEventListener('popstate', () => {
   }
   if (!capasAtras.length || !entradaAtras) return
   entradaAtras = false
+  // la entrada de abajo puede llevar la URL de otra vista (se escribió antes
+  // de apilar la capa: Multiverso → Perfil → una lista, atrás, dejaba
+  // #multiverso y el hashchange cambiaba de sección en vez de cerrar la
+  // lista). Se repone la URL de ahora antes de que llegue ese hashchange.
+  if (urlEstado != null) history.replaceState(history.state, '', urlEstado)
   // No se saca del registro aquí: cerrar una capa que sigue abierta con otra
   // clave (la pila de fichas al volver un título) la re-registra en su sitio
   // y vuelve a pedir su entrada; si de verdad se cierra, su limpieza la quita
@@ -1945,6 +1950,50 @@ function useSaliente(abierto) {
     return () => clearTimeout(t)
   }, [abierto])
   return [montada || !!abierto, abierto ? '' : ' saliendo']
+}
+// Carpetas dentro de una vista (17 sep 2026): una Tierra del Multiverso, una
+// lista de Perfil. Antes eran un estado suelto: atrás (borde, botón) se saltaba
+// la carpeta y llevaba a Maratón a media lista; al entrar desde abajo del mapa
+// la cabecera y «← Volver» quedaban por encima de la pantalla (y=231, cabecera
+// a -87 px), y al salir no se volvía a donde estabas. Ahora es una capa más
+// (atrás la cierra), entra y sale con el mismo desliz que las pestañas,
+// empieza en su principio y al salir devuelve la posición de fuera.
+// `activa`: la vista donde vive la carpeta está en pantalla (fuera de ella el
+// estado se conserva, pero no responde a atrás).
+function useCarpeta(abierta, setAbierta, activa) {
+  const fuera = useRef(null)
+  const abre = v => { fuera.current = window.scrollY; conTransicion('adelante', () => setAbierta(v)) }
+  const cierra = () => conTransicion('atras', () => setAbierta(null))
+  useVolverCierra(activa && abierta != null, cierra, () => document.querySelector('main'))
+  const previa = useRef(abierta)
+  React.useLayoutEffect(() => {
+    const antes = previa.current
+    previa.current = abierta
+    if (!activa || antes === abierta) return
+    if (abierta != null) {
+      // el principio de la carpeta, bajo lo que haya pegado arriba (el mismo
+      // margen que usan las anclas: scroll-padding-top)
+      const main = document.querySelector('main')
+      if (!main) return
+      const tope = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0
+      const y = Math.max(0, main.getBoundingClientRect().top + window.scrollY - tope)
+      if (window.scrollY > y + 1) window.scrollTo({ top: y, behavior: 'instant' })
+    } else if (fuera.current != null) {
+      window.scrollTo({ top: fuera.current, behavior: 'instant' })
+      fuera.current = null
+    }
+  }, [abierta, activa])
+  return [abre, cierra]
+}
+// Subir al principio (tocar la pestaña en la que ya estás): el desplazamiento
+// suave del navegador dura según la distancia (1,28 s desde 6.000 px, medido
+// el 17 sep 2026). Desde lejos se salta hasta una pantalla y media del
+// principio y solo ese último tramo se anima, como en las apps de iOS.
+function subeArriba() {
+  if (movimientoReducido()) { window.scrollTo({ top: 0, behavior: 'instant' }); return }
+  const cerca = window.innerHeight * 1.5
+  if (window.scrollY > cerca) window.scrollTo({ top: cerca, behavior: 'instant' })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 function gestosDeVolver() {
   let g = null, cerrando = false
@@ -4670,6 +4719,35 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   // La biografía es una capa dentro de la ficha: atrás vuelve a la ficha, como
   // hace Escape, y no cierra las dos de golpe
   useVolverCierra(!!persona, () => setPersona(null), () => refModal.current && refModal.current.querySelector('.persona-ficha'), true)
+  // Cada pantalla de la hoja (un título, una biografía) recuerda su scroll
+  // (17 sep 2026): la hoja es el mismo nodo para todas y la biografía abría a
+  // 200 px, el título abierto desde ella a 150 (carátula y título cortados), y
+  // al volver no se recuperaba nada. Lo nuevo empieza arriba; lo que vuelve
+  // (atrás a la ficha, la pila de títulos) aparece donde lo dejaste.
+  const claveHoja = `${item.id}|${persona ? persona.tmdbId || persona.nombre : ''}`
+  const scrollHoja = useRef({ clave: claveHoja, previa: claveHoja, pos: {} })
+  // al cambiar de pantalla se anota dónde quedaba la anterior, ANTES de pintar
+  // la nueva: el evento de scroll llega al fotograma siguiente y, si el toque
+  // venía justo después de desplazar, se apuntaba ya con la clave nueva
+  if (scrollHoja.current.clave !== claveHoja && refModal.current) scrollHoja.current.pos[scrollHoja.current.clave] = refModal.current.scrollTop
+  scrollHoja.current.clave = claveHoja
+  React.useLayoutEffect(() => {
+    const h = scrollHoja.current
+    // cerrar una biografía la olvida: abrirla otra vez empieza arriba
+    if (h.previa !== claveHoja && h.previa.startsWith(`${item.id}|`) && claveHoja === `${item.id}|`) delete h.pos[h.previa]
+    h.previa = claveHoja
+    const m = refModal.current
+    if (!m) return
+    const y = h.pos[claveHoja] || 0
+    if (Math.abs(m.scrollTop - y) > 1) m.scrollTop = y
+  }, [claveHoja])
+  useEffect(() => {
+    const m = refModal.current
+    if (!m) return undefined
+    const guarda = () => { scrollHoja.current.pos[scrollHoja.current.clave] = m.scrollTop }
+    m.addEventListener('scroll', guarda, { passive: true })
+    return () => m.removeEventListener('scroll', guarda)
+  }, [])
   // El asa de la hoja móvil (arrastrar hacia abajo para cerrar) y el borde
   // (deslizar para volver) viven en gestosDeVolver, comunes a todas las capas.
   const refNav = useRef(onNav)
@@ -5804,6 +5882,8 @@ export default function App() {
   // perfilado el 16 sep 2026). Solo se lee al pintar las pestañas y al volver.
   const ultimaVista = useRef({}).current
   ultimaVista[destinoDe(vista)] = vista
+  const vistaHash = useRef(vista)
+  vistaHash.current = vista
   useEffect(() => {
     if (perfil) return
     const onHash = () => {
@@ -5821,7 +5901,13 @@ export default function App() {
         if (urlEstado) history.replaceState(history.state, '', urlEstado)
         return
       }
-      conTransicion('atras', () => setVista(VISTAS_VALIDAS.includes(h) ? h : 'crono'))
+      // Al cerrar la última capa la app consume su entrada de historial
+      // (history.back) y vuelve a escribir la URL buena: ese hashchange llega
+      // con la vista ya puesta. Pedir otra transición a la misma vista cortaba
+      // la del dock (dos seguidas a 30 ms, y la segunda sin desliz).
+      const nueva = VISTAS_VALIDAS.includes(h) ? h : 'crono'
+      if (nueva === vistaHash.current) return
+      conTransicion('atras', () => setVista(nueva))
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
@@ -5923,6 +6009,8 @@ export default function App() {
   const [orden, setOrden] = useState('crono')
   const [listas, setListas] = useState(() => leeGuardado(KEY_LISTAS, saneaListas, []))
   const [listaActiva, setListaActiva] = useState(null)
+  const [abreTierra, cierraTierra] = useCarpeta(tierra, setTierra, !perfil && vista === 'multiverso')
+  const [abreLista, cierraLista] = useCarpeta(listaActiva, setListaActiva, !perfil && vista === 'listas')
   const [cine, setCine] = useState(false)
   // el cómic abierto en el lector y por qué página va cada uno
   const [lector, setLector] = useState(null)
@@ -6964,12 +7052,25 @@ export default function App() {
     const p = posiciones.current[vista]
     const cambiaDestino = destinoDe(vista) !== destinoPrevio.current
     destinoPrevio.current = destinoDe(vista)
+    // Sin posición guardada la vista empieza en su principio, vengas de arriba
+    // o de abajo (17 sep 2026): antes solo se bajaba, y desde mitad de la lista
+    // Perfil abría en y=3.838 (en Logros) y «Por estreno» en una tarjeta
+    // cualquiera. El principio es la barra pegada en Maratón (el contenido
+    // justo debajo) y el título grande en Perfil y Multiverso, sin barra.
     if (!p) {
-      if (!cambiaDestino) return
       const barra = document.querySelector('.toolbar')
-      if (!barra) return
-      const y = barra.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(barra).top) || 10)
-      if (window.scrollY < y - 1) window.scrollTo({ top: y, behavior: 'instant' })
+      const conBarra = barra && barra.getClientRects().length > 0
+      // pegada, el rect de la barra da su sitio pegado, no el del flujo: se
+      // mide desde lo que la sigue (que no se pega), restando su alto y el
+      // hueco entre las dos (márgenes que colapsan: cuenta el mayor)
+      const sig = conBarra && barra.nextElementSibling
+      let y = 0
+      if (sig) {
+        const cb = getComputedStyle(barra), cs = getComputedStyle(sig)
+        const hueco = Math.max(parseFloat(cb.marginBottom) || 0, parseFloat(cs.marginTop) || 0)
+        y = Math.max(0, sig.getBoundingClientRect().top + window.scrollY - hueco - barra.offsetHeight - (Number.isFinite(parseFloat(cb.top)) ? parseFloat(cb.top) : 10))
+      }
+      if (window.scrollY > y + 1 || (cambiaDestino && window.scrollY < y - 1)) window.scrollTo({ top: y, behavior: 'instant' })
       return
     }
     const el = p.id && document.getElementById(p.id)
@@ -7525,8 +7626,14 @@ export default function App() {
   const irADestino = (d, destino, e) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
     e.preventDefault()
-    // la pestaña en la que ya estás sube al principio, como en iOS
-    if (destino === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
+    // la pestaña en la que ya estás sube al principio, como en iOS; dentro de
+    // una carpeta (una Tierra, una lista) vuelve primero a la raíz
+    if (destino === vista) {
+      if (vista === 'multiverso' && tierra) cierraTierra()
+      else if (vista === 'listas' && listaActiva) cierraLista()
+      else subeArriba()
+      return
+    }
     conTransicion(DESTINOS.findIndex(x => x.id === d.id) > DESTINOS.findIndex(x => x.id === destinoDe(vista)) ? 'adelante' : 'atras', () => setVista(destino))
   }
   const navTabs = (
@@ -7837,7 +7944,7 @@ export default function App() {
                   onClick={e => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
-                    if (v === vista) { window.scrollTo({ top: 0, behavior: movimientoReducido() ? 'instant' : 'smooth' }); return }
+                    if (v === vista) { if (v === 'listas' && listaActiva) cierraLista(); else subeArriba(); return }
                     conTransicion(d.vistas.indexOf(v) > d.vistas.indexOf(vista) ? 'adelante' : 'atras', () => setVista(v))
                   }}>{p ? tr(p.label, p.en || p.label) : v}</a>
               )
@@ -7949,7 +8056,7 @@ export default function App() {
               const v = itemsOrdenados.filter(({ item }) => l.prog[item.id]).length
               return (
                 <div>
-                  <button className="chip-btn" onClick={() => setListaActiva(null)}>{tr('← Mis listas', '← My lists')}</button>
+                  <button className="chip-btn" onClick={cierraLista}>{tr('← Mis listas', '← My lists')}</button>
                   <header className="lista-hero">
                     <h2 className="lista-nombre">{l.nombre}</h2>
                     <span className="stat-foot">{v} / {itemsOrdenados.length} {tr('vistos en esta lista · progreso independiente del maratón', 'watched on this list · progress independent from the marathon')}</span>
@@ -7993,8 +8100,8 @@ export default function App() {
                       const v = l.items.filter(id => l.prog[id]).length
                       return (
                         <article key={l.id} className="mv-card lista-card" role="button" tabIndex={0}
-                          onClick={() => setListaActiva(l.id)}
-                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setListaActiva(l.id) } }}>
+                          onClick={() => abreLista(l.id)}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abreLista(l.id) } }}>
                           <h2 className="mv-nombre">{l.nombre}</h2>
                           <div className="barra"><i style={{ width: `${total ? 100 * v / total : 0}%` }} /></div>
                           <span className="stat-foot">{v} / {total} {tr('títulos vistos', 'titles watched')}</span>
@@ -8021,7 +8128,7 @@ export default function App() {
             const v = items.filter(({ item }) => vistas[item.id]).length
             return (
               <div className="tierra" style={{ '--tc': u.c }}>
-                <button className="chip-btn" onClick={() => setTierra(null)}>{tr('← Volver al multiverso', '← Back to the multiverse')}</button>
+                <button className="chip-btn" onClick={cierraTierra}>{tr('← Volver al multiverso', '← Back to the multiverse')}</button>
                 <header className="tierra-hero">
                   <span className="planeta planeta-grande" aria-hidden="true"><span className="planeta-textura" /></span>
                   <span className="mv-num tierra-num">{u.num}</span>
@@ -8071,7 +8178,7 @@ export default function App() {
                       const u616 = MULTIVERSO.find(u => u.num === 'Tierra-616')
                       return (
                         <button className="sol" style={{ '--tc': u616.c }}
-                          onClick={() => setTierra(u616.num)} title={u616.nombre}>
+                          onClick={() => abreTierra(u616.num)} title={u616.nombre}>
                           <span className="planeta planeta-orbe planeta-sol"><span className="planeta-textura" /></span>
                           <span className="nav-nombre">Tierra-616</span>
                         </button>
@@ -8086,7 +8193,7 @@ export default function App() {
                             <div className="nav-pos" style={{ transform: `translateX(-50%) rotate(${-fase}deg)` }}>
                               <div className="contra" style={{ animationDuration: dur + 's' }}>
                                 <button className="planeta-nav" style={{ '--tc': u.c }}
-                                  onClick={() => setTierra(u.num)} title={u.nombre}>
+                                  onClick={() => abreTierra(u.num)} title={u.nombre}>
                                   <span className="planeta planeta-orbe" style={{ width: tam, height: tam }}><span className="planeta-textura" /></span>
                                   <span className="nav-nombre">{CORTO_SISTEMA[u.num] || u.num.replace('Tierra-', 'T-')}</span>
                                 </button>
@@ -8103,8 +8210,8 @@ export default function App() {
                 {MULTIVERSO.map(u => (
                   <article className="mv-card" key={u.num} style={{ '--tc': u.c }}
                     role="button" tabIndex={0}
-                    onClick={() => setTierra(u.num)}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTierra(u.num) } }}>
+                    onClick={() => abreTierra(u.num)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abreTierra(u.num) } }}>
                     <span className="planeta planeta-mini" aria-hidden="true"><span className="planeta-textura" /></span>
                     <span className="mv-num">{u.num}</span>
                     <h2 className="mv-nombre">{u.nombre}</h2>

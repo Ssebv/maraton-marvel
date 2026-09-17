@@ -1716,12 +1716,11 @@ main.multiverso{margin-top: var(--e-6)}
 }
 .mv-card:hover .mv-entrar{transform:translateX(3px)}
 
-/* Vista de una Tierra */
-.tierra{animation:portal .65s var(--curva) both}
-@keyframes portal{
-  from{clip-path:circle(0% at 50% 140px); opacity:.4}
-  to{clip-path:circle(150% at 50% 140px); opacity:1}
-}
+/* Vista de una Tierra. Entra con el desliz de las pestañas (useCarpeta, una
+   View Transition); sin ellas, el fundido corto. El «portal» de 650 ms
+   recortaba con clip-path (repinta cada fotograma) encima de las tarjetas
+   escalonadas: dos animaciones y más del doble del tope de 300 ms. */
+.tierra{animation:entraVista var(--dur-media) var(--curva) both}
 .tierra-hero{
   margin: var(--e-5) 0 var(--e-5); padding: var(--e-6) var(--e-7); padding-right: 210px; border-radius:var(--r-l);
   position:relative;
@@ -1979,7 +1978,7 @@ main.crono, main.comics, main.estreno{animation:none}
    llevan nombre propio y no se funden con el contenido. La vista entra por
    aquí, así que main no se anima además. */
 @supports (view-transition-name: none){
-  main{animation:none}
+  main, .tierra{animation:none}
   nav.tabs{view-transition-name:dock}
   .barra-app{view-transition-name:barra-app}
   .toolbar{view-transition-name:barra}
@@ -3234,7 +3233,7 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   border-radius:var(--r-pill); background:var(--red); box-shadow:0 0 0 2px var(--panel2);
   animation:insigniaEntra var(--muelle-pop) both;
 }
-@keyframes insigniaEntra{from{transform:scale(0)}}
+@keyframes insigniaEntra{from{transform:scale(.5); opacity:0}}
 @media (max-width:720px){
   nav.tabs .tab-insignia{top:5px; right:auto; left:calc(50% + 6px); box-shadow:0 0 0 2px var(--panel)}
 }
