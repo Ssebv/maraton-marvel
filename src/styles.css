@@ -1465,6 +1465,20 @@ main.compacto .grid{gap: var(--e-3)}
 main.compacto .checkbox{width:24px; height:24px}
 .compartir{align-self:flex-start}
 .stats-acciones{display:flex; gap: var(--e-4); align-items:center; flex-wrap:wrap}
+/* en el móvil los tres chips no caben en una fila (~370 px en 342) y «Club de
+   maratón» quedaba huérfano: el botón principal a lo ancho y los secundarios
+   en tres columnas iguales, a dos líneas si hace falta */
+@media (max-width:640px){
+  .stats-acciones{gap: var(--e-3); align-items:stretch}
+  .stats-acciones > .accion-principal{flex:1 1 100%}
+  /* se reparten la fila a partes iguales sean 1, 2 o 3 (con duelo o club
+     activos desaparece su chip) */
+  .stats-acciones > .chip-btn{
+    flex:1 1 0; min-width:0;
+    min-height:44px; padding: var(--e-2) var(--e-3); border-radius:var(--r-m);
+    text-wrap:balance; line-height:1.25; text-align:center;
+  }
+}
 .perfil-valoradas{margin-top: var(--e-3)}
 .perfil-item{position:relative; cursor:default}
 .perfil-item .cover{width:100%; height:auto; aspect-ratio:2/3}
@@ -1800,6 +1814,13 @@ main.multiverso{margin-top: var(--e-6)}
 main.listas-vista{margin-top: var(--e-6)}
 .crear-lista{display:flex; gap: var(--e-3); flex-wrap:wrap; margin: var(--e-5) 0 var(--e-6)}
 .crear-lista .sync-input{flex:1; min-width:240px}
+/* en el móvil campo y botón en una fila: con min-width 240 el botón caía solo
+   debajo y la lista vacía se leía como un formulario a medias (21 sep 2026) */
+@media (max-width:640px){
+  .crear-lista{flex-wrap:nowrap}
+  .crear-lista .sync-input{min-width:0}
+  .crear-lista .accion-principal{flex:none; padding: var(--e-3) var(--e-5)}
+}
 .lista-hero{
   margin: var(--e-5) 0 var(--e-5); padding: var(--e-6) var(--e-6); border-radius:var(--r-l);
   border:none; background:var(--panel);
@@ -2603,7 +2624,10 @@ a.prov-chip:hover{border-color:var(--ink3)}
   border:2px solid var(--nc); box-shadow:0 4px 14px rgba(0,0,0,.35); background:var(--panel2);
 }
 .nodo-ini{display:grid; place-items:center; font-weight:700; font-size: var(--t-s); color:color-mix(in srgb, var(--nc) var(--era-tinta), var(--ink))}
-.nodo-t{font-size: var(--t-xs); font-weight:600; color:var(--ink2); text-align:center; line-height:1.15; max-width:76px}
+.nodo-t{
+  font-size: var(--t-xs); font-weight:600; color:var(--ink2); text-align:center; line-height:1.15; width:100px; max-width:none;
+  text-wrap:balance; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden;
+}
 .nodo:hover{transform:translate(-50%,-50%) scale(1.08)}
 .nodo.on img, .nodo.on .nodo-ini{outline:2.5px solid var(--red); outline-offset:2px}
 .nodo.on .nodo-t{color:var(--ink)}
@@ -2627,7 +2651,9 @@ a.prov-chip:hover{border-color:var(--ink3)}
 @media (max-width:720px){
   .nodo{width:56px}
   .nodo img, .nodo-ini{width:32px; height:46px}
-  .nodo-t{font-size: var(--t-xs); max-width:56px}
+  /* el nombre puede ser más ancho que su carátula (el nodo lo centra): a
+     56 px «Doctor Strange en el multiverso de la locura» ocupaba 6 líneas */
+  .nodo-t{font-size: var(--t-xs); width:92px; max-width:none}
 }
 .duelo-live{
   margin-left: var(--e-4); font-size: var(--t-xs); font-weight:700; letter-spacing:.08em;
@@ -2959,6 +2985,11 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 }
 /* ── Temas de acento por universo (alias sobre tokens ya adaptados a claro/oscuro;
    el tinte --red-soft se deriva solo) ── */
+/* muestra del color en su chip de Ajustes; con el chip marcado (fondo tinta)
+   lleva un anillo del fondo para no fundirse */
+.acento-chip{display:inline-flex; align-items:center; gap: var(--e-3)}
+.acento-muestra{flex:none; width:12px; height:12px; border-radius:50%; background:var(--am)}
+.acento-chip[aria-checked="true"] .acento-muestra{box-shadow:0 0 0 2px var(--bg)}
 :root[data-acento="xmen"]{--red:var(--gold-texto)}  /* --gold a secas se queda en 3,5:1 en claro */
 :root[data-acento="tva"]{--red:var(--violet)}
 :root[data-acento="zombi"]{--red:var(--doom)}

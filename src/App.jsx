@@ -1221,11 +1221,13 @@ function sinTransiciones(cambia) {
   setTimeout(() => s.remove(), 1)
 }
 const ACENTOS = [
-  { id: '616', nombre: 'Tierra-616', en: 'Earth-616' },
-  { id: 'xmen', nombre: 'X-Men' },
-  { id: 'tva', nombre: 'La TVA', en: 'The TVA' },
-  { id: 'zombi', nombre: 'Zombi', en: 'Zombie' },
-  { id: '828', nombre: '4 Fantásticos', en: 'Fantastic Four' },
+  // `c`: el token base de cada acento para su muestra en Ajustes (el de
+  // Tierra-616 es --peligro, que nunca se redefine: --red cambia con el acento)
+  { id: '616', nombre: 'Tierra-616', en: 'Earth-616', c: 'var(--peligro)' },
+  { id: 'xmen', nombre: 'X-Men', c: 'var(--gold-texto)' },
+  { id: 'tva', nombre: 'La TVA', en: 'The TVA', c: 'var(--violet)' },
+  { id: 'zombi', nombre: 'Zombi', en: 'Zombie', c: 'var(--doom)' },
+  { id: '828', nombre: '4 Fantásticos', en: 'Fantastic Four', c: 'var(--teal)' },
 ]
 
 // Nueve pestañas eran nueve destinos planos, pero seis de ellas son formas
@@ -4353,7 +4355,7 @@ function CrearLista({ onCrear }) {
   const enviar = () => { const n = nombre.trim(); if (n) { onCrear(n); setNombre('') } }
   return (
     <div className="crear-lista">
-      <input className="busca sync-input" placeholder={tr('Nombre, p. ej. «Con mi pareja»', 'Name, e.g. «With my partner»')} aria-label={tr('Nombre de la lista', 'List name')} autoComplete="off"
+      <input className="busca sync-input" placeholder={tr('Ej.: Con mi pareja', 'E.g. With my partner')} aria-label={tr('Nombre de la lista', 'List name')} autoComplete="off"
         value={nombre} maxLength={40} onChange={e => setNombre(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') enviar() }} aria-label={tr('Nombre de la lista', 'List name')} />
       <button className="accion-principal" onClick={enviar} disabled={!nombre.trim()}>{tr('Crear lista', 'Create list')}</button>
@@ -8943,7 +8945,10 @@ export default function App() {
                 </div>
                 <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-acento">
                   {ACENTOS.map(a => (
-                    <button key={a.id} className="chip-btn" role="radio" aria-checked={acento === a.id} onClick={() => setAcento(a.id)}>{tr(a.nombre, a.en || a.nombre)}</button>
+                    <button key={a.id} className="chip-btn acento-chip" role="radio" aria-checked={acento === a.id} onClick={() => setAcento(a.id)}>
+                      {/* el color que se elige, a la vista: antes eran solo nombres */}
+                      <span className="acento-muestra" style={{ '--am': a.c }} aria-hidden="true" />{tr(a.nombre, a.en || a.nombre)}
+                    </button>
                   ))}
                 </div>
               </div>
