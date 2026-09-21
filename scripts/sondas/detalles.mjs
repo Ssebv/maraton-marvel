@@ -64,6 +64,28 @@ let malas = 0
     await cdp.hasta(`!!document.querySelector('.deshacer')`, 3000)
     const t2 = await cdp.eval(region)
     filas.push([t1.trim() === t2.trim() && t1 !== t2 && t1.length > 10, `mismo aviso dos veces, región distinta: ${JSON.stringify(t1)} → ${JSON.stringify(t2)}`])
+
+    // ficha desplazada: el asa lleva franja del color de la hoja y va por
+    // encima del contenido (el texto asomaba cortado alrededor, 21 sep)
+    await cdp.eval(`document.querySelector('.deshacer button')?.click()`)
+    await cdp.eval(`document.querySelector('.card .abrir').click()`)
+    await cdp.hasta(`!!document.querySelector('.modal')`, 3000)
+    await espera(900)
+    const asa = y => cdp.eval(`(() => { const m = document.querySelector('.modal'); m.scrollTop = ${y}; const b = getComputedStyle(m, '::before'); return { sombra: b.boxShadow, z: b.zIndex, fondo: getComputedStyle(m).backgroundColor } })()`)
+    const a0 = await asa(0); await espera(300); const a1 = await asa(400); await espera(300)
+    const a1b = await asa(400)
+    filas.push([/^rgba\(0, 0, 0, 0\)/.test(a0.sombra) && a1b.sombra.startsWith(a1b.fondo) && a1b.z === '2', `asa de la ficha: sin franja arriba (${a0.sombra.slice(0, 18)}), con franja al bajar (${a1b.sombra.slice(0, 18)} = ${a1b.fondo}), z ${a1b.z}`])
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+    await espera(700)
+
+    // diario de Perfil: 6 filas por meses y «Ver N más» abre el resto
+    await navega('#stats')
+    await cdp.hasta(`!!document.querySelector('.diario')`, 4000)
+    const d0 = await cdp.eval(`({ filas: document.querySelectorAll('.diario-fila').length, meses: document.querySelectorAll('.diario-mes').length, boton: document.querySelector('.diario-ver')?.textContent })`)
+    await cdp.eval(`document.querySelector('.diario-ver').click()`)
+    await espera(300)
+    const d1 = await cdp.eval(`({ filas: document.querySelectorAll('.diario-fila').length, meses: [...document.querySelectorAll('.diario-mes')].map(m => m.textContent), boton: document.querySelector('.diario-ver')?.textContent })`)
+    filas.push([d0.filas === 6 && d0.meses >= 1 && /24/.test(d0.boton) && d1.filas === 30 && d1.meses.length >= 2 && /menos/.test(d1.boton), `diario: ${d0.filas} filas («${d0.boton}») → ${d1.filas} en ${d1.meses.join(', ')} («${d1.boton}»)`])
     filas.push([errores.length === 0, `errores en consola: ${errores.length} ${errores.slice(0, 3).join(' | ')}`])
   } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
   malas += informe('detalles · móvil 390', filas)

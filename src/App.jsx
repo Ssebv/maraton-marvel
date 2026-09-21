@@ -1766,32 +1766,59 @@ function Calendario({ vistas, eps, indice, onAbrir, idioma, notas = {}, diaInici
   )
 }
 
+// Plegado en las 6 últimas y por meses (21 sep 2026): las 30 filas de golpe
+// ocupaban ~1.600 px en el móvil y dejaban los logros muy abajo.
+const DIARIO_PLEGADO = 6
 function Diario({ vistas, notas, pais, idioma, indice, onAbrir }) {
+  const [abierto, setAbierto] = useState(false)
   const marcas = useMemo(() => (
     Object.entries(vistas)
       .filter(([id, ts]) => typeof ts === 'number' && ts > 1e12 && TITULOS[id])
       .sort((a, b) => b[1] - a[1])
       .slice(0, 30)
   ), [vistas, pais, idioma])
+  // meses con su nombre (y el año si no es el actual), en el orden de las marcas
+  const meses = useMemo(() => {
+    const hoy = new Date().getFullYear(), grupos = []
+    for (const [id, ts] of abierto ? marcas : marcas.slice(0, DIARIO_PLEGADO)) {
+      const d = new Date(ts), clave = d.getFullYear() * 12 + d.getMonth()
+      if (!grupos.length || grupos[grupos.length - 1].clave !== clave) {
+        grupos.push({ clave, nombre: d.toLocaleDateString(LOC(), d.getFullYear() === hoy ? { month: 'long' } : { month: 'long', year: 'numeric' }), filas: [] })
+      }
+      grupos[grupos.length - 1].filas.push([id, ts])
+    }
+    return grupos
+  }, [marcas, abierto, idioma])
   if (!marcas.length) return null
+  const quedan = marcas.length - DIARIO_PLEGADO
   return (
     <section className="grafica diario">
       <h3 className="grafica-titulo">{tr('Diario del maratón', 'Marathon diary')}</h3>
-      <div className="diario-lista">
-        {/* con carátula y abriendo la ficha: 30 filas solo de texto se leían
-            como un registro, y todo lo demás de la app se reconoce por su póster */}
-        {marcas.map(([id, ts]) => (
-          <button type="button" className="diario-fila" key={id} onClick={() => indice && indice[id] && onAbrir && onAbrir(indice[id])}>
-            {POSTERS[id] ? <img className="diario-cartel" src={POSTERS[id]} alt="" loading="lazy" decoding="async" /> : <span className="diario-cartel" aria-hidden="true" />}
-            <span className="diario-texto">
-              <span className="diario-titulo">{TITULOS[id]}</span>
-              <span className="diario-fecha">{new Date(ts).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' })}</span>
-            </span>
-            {notas[id] && notas[id].p ? <span className="diario-estrellas" aria-label={tr(`${notas[id].p} estrellas`, `${notas[id].p} stars`)}>{'★'.repeat(notas[id].p)}</span> : null}
-          </button>
-        ))}
-      </div>
-      {Object.keys(vistas).length > 30 && <p className="diario-mas">{tr('Se muestran tus últimas 30 marcas.', 'Showing your last 30 check-offs.')}</p>}
+      {meses.map(m => (
+        <div className="diario-grupo" key={m.clave}>
+          <h4 className="diario-mes">{m.nombre}</h4>
+          <div className="diario-lista">
+            {/* con carátula y abriendo la ficha: 30 filas solo de texto se leían
+                como un registro, y todo lo demás de la app se reconoce por su póster */}
+            {m.filas.map(([id, ts]) => (
+              <button type="button" className="diario-fila" key={id} onClick={() => indice && indice[id] && onAbrir && onAbrir(indice[id])}>
+                {POSTERS[id] ? <img className="diario-cartel" src={POSTERS[id]} alt="" loading="lazy" decoding="async" /> : <span className="diario-cartel" aria-hidden="true" />}
+                <span className="diario-texto">
+                  <span className="diario-titulo">{TITULOS[id]}</span>
+                  <span className="diario-fecha">{new Date(ts).toLocaleDateString(LOC(), { weekday: 'short', day: 'numeric' })}</span>
+                </span>
+                {notas[id] && notas[id].p ? <span className="diario-estrellas" aria-label={tr(`${notas[id].p} estrellas`, `${notas[id].p} stars`)}>{'★'.repeat(notas[id].p)}</span> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      {quedan > 0 && (
+        <button type="button" className="chip-btn diario-ver" aria-expanded={abierto} onClick={() => setAbierto(a => !a)}>
+          {abierto ? tr('Ver menos', 'Show less') : tr(`Ver ${quedan} más`, `Show ${quedan} more`)}
+        </button>
+      )}
+      {abierto && Object.keys(vistas).length > 30 && <p className="diario-mas">{tr('Se muestran tus últimas 30 marcas.', 'Showing your last 30 check-offs.')}</p>}
     </section>
   )
 }

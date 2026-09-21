@@ -2397,6 +2397,25 @@ main.crono, main.comics, main.estreno{animation:none}
     width:38px; height:5px; border-radius:var(--r-s); flex:none;
     background:color-mix(in srgb, var(--ink) 28%, transparent);
   }
+  /* Al bajar, el texto pasaba alrededor del asa y asomaba cortado por el
+     borde de la hoja («1 h 52 min» bajo el asa, 21 sep 2026). Con la hoja
+     desplazada, el asa lleva detrás una franja del color de la hoja: una
+     sombra sin desenfoque recortada a una banda. Arriba del todo no hay
+     franja, que taparía el fotograma de fondo. Sin scroll-timeline, como antes. */
+  @supports (animation-timeline: scroll()){
+    .modal{scroll-timeline: --hoja block}
+    .modal::before{
+      background:color-mix(in srgb, var(--ink) 28%, var(--panel));
+      clip-path:inset(-8px -100vmax -10px -100vmax);
+      /* por encima del contenido de la ficha, que va con z-index:1 */
+      z-index:2;
+      animation:asaFranja linear both; animation-timeline: --hoja; animation-range: 0 40px;
+    }
+    @keyframes asaFranja{
+      from{box-shadow:0 0 0 100vmax transparent}
+      to{box-shadow:0 0 0 100vmax var(--panel)}
+    }
+  }
 }
 /* ── Aviso de versión nueva: píldora fija abajo, sobre el dock en móvil ── */
 .version-nueva{
@@ -2864,6 +2883,12 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .diario-titulo{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .diario-estrellas{color:var(--gold-texto); font-size: var(--t-s); letter-spacing:.1em}
 .diario-mas{margin: var(--e-3) 0 0; font-size: var(--t-xs); color:var(--ink3)}
+.diario-grupo + .diario-grupo{margin-top: var(--e-5)}
+.diario-mes{
+  margin: var(--e-4) 0 var(--e-3); font-size: var(--t-xs); font-weight:700; color:var(--ink3);
+  text-transform:uppercase; letter-spacing:.08em;
+}
+.diario-ver{margin-top: var(--e-4)}
 .nav-ficha{
   position:fixed; top:50%; transform:translateY(-50%); z-index:60;
   width:44px; height:56px; border-radius:var(--r-m); border:1px solid var(--line);
