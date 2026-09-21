@@ -120,6 +120,34 @@ let malas = 0
   malas += informe('detalles · logro desbloqueado', filas)
 }
 
+// Modo cine en el móvil: título sin partir por el guion, flechas debajo del
+// contenido y deslizar pasa de título (21 sep 2026)
+{
+  const { cdp, navega, cierra, errores } = await abre()
+  const filas = []
+  try {
+    await navega('#crono')
+    await espera(1500)
+    await cdp.eval(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Modo cine').click()`)
+    await cdp.hasta(`!!document.querySelector('.cine-titulo')`, 3000)
+    await espera(500)
+    const m = await cdp.eval(`(() => { const t = document.querySelector('.cine-titulo'), p = document.querySelector('.cine-panel').getBoundingClientRect(), f = [...document.querySelectorAll('.cine-flecha')].map(b => b.getBoundingClientRect())
+      return { partidos: [...t.querySelectorAll('.sinparto')].filter(e => e.getClientRects().length > 1).length, debajo: f.every(r => r.top >= p.bottom), ancho: Math.round(t.getBoundingClientRect().width) } })()`)
+    filas.push([m.partidos === 0 && m.debajo && m.ancho > 280, `cine: título a ${m.ancho} px sin partir (${m.partidos}), flechas debajo (${m.debajo})`])
+    const cont = () => cdp.eval(`document.querySelector('.cine-contador').textContent.split(' ')[0]`)
+    const desliza = async (x0, x1) => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: 500 }] })
+      for (let i = 1; i <= 6; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (x1 - x0) * i / 6, y: 500 }] }); await espera(16) }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+      await espera(400)
+    }
+    const a = await cont(); await desliza(300, 100); const b = await cont(); await desliza(100, 300); const c = await cont()
+    filas.push([a === '1' && b === '2' && c === '1', `cine: deslizar ${a} → ${b} → ${c}`])
+    filas.push([errores.length === 0, `errores en consola: ${errores.length}`])
+  } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
+  malas += informe('detalles · modo cine', filas)
+}
+
 for (const ancho of [1280, 1600]) {
   const { cdp, navega, cierra, errores } = await abre({ movil: false, ancho, alto: 900, siembra })
   const filas = []

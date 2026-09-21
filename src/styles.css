@@ -1892,10 +1892,11 @@ main.tiempo{margin-top: var(--e-6)}
 /* ── Modo cine ── */
 .cine{
   position:fixed; inset:0; z-index:60;
-  background:
-    radial-gradient(70% 50% at 50% 0%, color-mix(in srgb, var(--glow, var(--red)) 6%, transparent), transparent 70%),
-    color-mix(in srgb, var(--bg) 97%, black);
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap: var(--e-5);
+  /* sin halo radial ni resplandor del color del título (nada-de-estética-IA):
+     el fondo es la noche de la app y la carátula lleva sombra neutra */
+  background:color-mix(in srgb, var(--bg) 97%, black);
+  display:flex; flex-direction:column; align-items:center; justify-content:safe center; gap: var(--e-5);
+  overflow-y:auto; overscroll-behavior:contain; padding-block:calc(64px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-bottom, 0px));
   animation:fadeIn .25s ease both;
 }
 .cine-cerrar{position:fixed; top:calc(22px + env(safe-area-inset-top, 0px)); right:calc(24px + env(safe-area-inset-right, 0px))}
@@ -1914,7 +1915,7 @@ main.tiempo{margin-top: var(--e-6)}
 }
 .cine-poster .cover{
   width:min(300px, 34vw); height:auto; aspect-ratio:2/3; border-radius:var(--r-m);
-  box-shadow:0 12px 60px -12px color-mix(in srgb, var(--glow, var(--red)) 55%, transparent);
+  box-shadow:0 12px 40px -12px rgba(0,0,0,.6);
 }
 .cine-info{min-width:0; display:flex; flex-direction:column; gap: var(--e-4); max-width:480px}
 .cine-contador{font-size: var(--t-xs); font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3)}
@@ -1936,6 +1937,14 @@ main.tiempo{margin-top: var(--e-6)}
      «Ver ficha» quedaba descolgado a la izquierda */
   .cine-info .modal-acciones{flex-direction:column; align-items:center}
   .cine-info .accion-principal{white-space:nowrap}
+}
+/* En el móvil las flechas (58 px a cada lado) dejaban ~200 px al título, que
+   se partía en tres líneas: van debajo, juntas, y el contador se acorta */
+@media (max-width:640px){
+  .cine-centro{flex-wrap:wrap; justify-content:center; row-gap: var(--e-5); column-gap: var(--e-7)}
+  .cine-panel{order:-1; flex-basis:100%; touch-action:pan-y}
+  .cine-flecha{width:48px; height:48px}
+  .cine-contador-extra{display:none}
 }
 /* con el dedo no hay flechas ni Enter ni Esc */
 @media (hover: none){ .cine-ayuda{display:none} }

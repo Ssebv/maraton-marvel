@@ -6108,6 +6108,9 @@ export default function App() {
   const refCine = useRef(null)
   useDialogo(refCine, () => setCine(false), cine)
   const [cineIdx, setCineIdx] = useState(0)
+  // deslizar en Modo cine: en el móvil las flechas van abajo y el pulgar pasa
+  // de título deslizando, como en el lector (más de 50 px, más lateral que vertical)
+  const cineToque = useRef(null)
   // acepta valor o función: los cierres de las tarjetas memoizadas no deben
   // leer `listas` de un render viejo
   const guardaListas = next => setListas(prev => {
@@ -8664,11 +8667,20 @@ export default function App() {
             <div className="cine-centro">
               <button className="cine-flecha" onClick={() => setCineIdx(i => Math.max(0, i - 1))}
                 disabled={idx === 0} aria-label={tr('Anterior', 'Previous')}>‹</button>
-              <div className="cine-panel" style={{ '--glow': c[0] }}>
+              <div className="cine-panel" key={item.id}
+                onTouchStart={e => { const t = e.touches[0]; cineToque.current = { x: t.clientX, y: t.clientY } }}
+                onTouchEnd={e => {
+                  const ini = cineToque.current, t = e.changedTouches[0]
+                  cineToque.current = null
+                  if (!ini) return
+                  const dx = t.clientX - ini.x, dy = t.clientY - ini.y
+                  if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+                  setCineIdx(i => dx < 0 ? Math.min(cineLista.length - 1, i + 1) : Math.max(0, i - 1))
+                }}>
                 <div className="cine-poster"><Portada item={item} c={c} esComic={false} /></div>
                 <div className="cine-info">
-                  <span className="cine-contador">{idx + 1} {tr('de', 'of')} {cineLista.length} {tr('pendientes · orden del maratón', 'pending · marathon order')}</span>
-                  <h2 className="cine-titulo">{item.t}</h2>
+                  <span className="cine-contador">{idx + 1} {tr('de', 'of')} {cineLista.length} {tr('pendientes', 'pending')}<span className="cine-contador-extra">{tr(' · orden del maratón', ' · marathon order')}</span></span>
+                  <h2 className="cine-titulo">{sinPartir(item.t)}</h2>
                   <p className="cine-meta">
                     {item.s != null && <span className="star">★ {item.s.toFixed(1)} · </span>}
                     <span className="hist">{item.h}</span>{item.d ? <> · {fmtDur(item.d)}</> : null}
