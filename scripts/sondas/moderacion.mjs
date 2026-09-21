@@ -42,6 +42,9 @@ const escribe = (sel, valor) => `(() => { const i = document.querySelector(${JSO
   i.dispatchEvent(new Event('input', { bubbles: true })); return true })()`
 const clic = (sel, texto) => `(() => { const b = [...document.querySelectorAll(${JSON.stringify(sel)})].find(x => ${JSON.stringify(texto)} ? x.textContent.includes(${JSON.stringify(texto)}) : true); if (!b) return false; b.click(); return true })()`
 
+// botón de la fila de un reporte concreto (por su texto: motivo · tipo)
+const enFila = (patron, boton) => `(() => { const f = [...document.querySelectorAll('.cola-fila')].find(x => ${patron}.test(x.querySelector('.cola-que').textContent)); if (!f) return false
+  const b = [...f.querySelectorAll('.chip-btn')].find(x => x.textContent.includes(${JSON.stringify(boton)})); if (!b) return false; b.click(); return true })()`
 const filas = []
 const prueba = (ok, t) => filas.push([!!ok, t])
 try {
@@ -56,6 +59,8 @@ try {
   const [h2] = await post(mala, 'hilos', { comunidad: k.id, autor: mala.id, titulo: 'Mi hilo para editar', cuerpo: 'primera versión' })
   const [r2] = await post(mala, 'respuestas', { hilo: h2.id, autor: mala.id, cuerpo: 'respuesta original' })
   const [h3] = await post(mala, 'hilos', { titulo_ref: 'first-class', autor: mala.id, titulo: 'En el foro abierto', cuerpo: 'spam spam' })
+  const [h4] = await post(mod, 'hilos', { comunidad: k.id, autor: mod.id, titulo: 'Hilo de la dueña', cuerpo: 'polémico' })
+  await fetch(`${REST}/reportes`, { method: 'POST', headers: rep.h, body: JSON.stringify({ reportante: rep.id, tipo: 'hilo', ref: String(h4.id), comunidad: k.id, motivo: 'odio' }) })
   for (const [tipo, ref, comunidad, motivo] of [['hilo', h1.id, k.id, 'acoso'], ['respuesta', r1.id, k.id, 'spam'], ['hilo', h3.id, null, 'spam']])
     await fetch(`${REST}/reportes`, { method: 'POST', headers: rep.h, body: JSON.stringify({ reportante: rep.id, tipo, ref: String(ref), comunidad, motivo }) })
   prueba(true, 'cuentas (mala, mod dueña, rep, jefa administradora), comunidad, 3 hilos y 3 reportes')
@@ -83,7 +88,21 @@ try {
     await s.cdp.eval(`document.querySelector('.respuesta .edita-texto').requestSubmit()`)
     await s.cdp.hasta(`/respuesta corregida/.test(document.querySelector('.respuesta .respuesta-cuerpo')?.textContent || '')`, 8000).catch(() => null)
     const fr = (await servicio(`respuestas?id=eq.${r2.id}&select=cuerpo`))[0]
-    prueba(fr.cuerpo === 'respuesta corregida', `respuesta editada: «${fr.cuerpo}»`)
+    const editada = await s.cdp.eval(`/editada/.test(document.querySelector('.respuesta .muro-cuando').textContent)`)
+    prueba(fr.cuerpo === 'respuesta corregida' && editada, `respuesta editada: «${fr.cuerpo}», marcada «editada» (${editada})`)
+    // guardar cuando ya pasaron las 24 h (editor abierto a tiempo): la base no
+    // cambia nada y la app lo dice, no cierra como si hubiera guardado
+    await s.cdp.eval(clic('.respuesta .hilo-accion', 'Editar'))
+    await s.cdp.hasta(`!!document.querySelector('.respuesta .edita-texto')`, 3000)
+    await fetch(`${REST}/respuestas?id=eq.${r2.id}`, { method: 'PATCH', headers: admin, body: JSON.stringify({ creado: new Date(Date.now() - 2 * 864e5).toISOString() }) })
+    await s.cdp.eval(escribe('.respuesta .edita-texto textarea', 'tarde'))
+    await espera(100)
+    await s.cdp.eval(`document.querySelector('.respuesta .edita-texto').requestSubmit()`)
+    await s.cdp.hasta(`!!document.querySelector('.respuesta .edita-texto [role=alert]')`, 8000).catch(() => null)
+    const tarde = await s.cdp.eval(`(document.querySelector('.respuesta .edita-texto [role=alert]') || {}).textContent || ''`)
+    const fr2 = (await servicio(`respuestas?id=eq.${r2.id}&select=cuerpo`))[0]
+    prueba(/24 h/.test(tarde) && fr2.cuerpo === 'respuesta corregida', `fuera de plazo: aviso «${tarde}» y el texto no cambia`)
+    await s.cdp.eval(clic('.respuesta .edita-texto .chip-btn', 'Cancelar'))
     // pasadas las 24 h ya no hay «Editar» (la base tampoco lo deja)
     await fetch(`${REST}/hilos?id=eq.${h2.id}`, { method: 'PATCH', headers: admin, body: JSON.stringify({ creado: new Date(Date.now() - 2 * 864e5).toISOString() }) })
     await s.cdp.eval(`document.querySelector('.hilo-hoja .cerrar').click()`); await espera(700)
@@ -99,13 +118,15 @@ try {
     await s.navega('#crono'); await espera(3000)
     await s.cdp.eval(`location.hash = 'c/${dir}'`)
     await s.cdp.hasta(`!!document.querySelector('.cola-reportes')`, 12000)
-    const n = await s.cdp.eval(`document.querySelectorAll('.cola-fila').length`)
-    prueba(n === 2, `la dueña ve la cola de su comunidad: ${n} reportes (el del foro abierto no)`)
-    await s.cdp.eval(clic('.cola-fila .chip-btn', 'Ocultar y resolver'))
+    await espera(800)
+    const n = await s.cdp.eval(`({ filas: document.querySelectorAll('.cola-fila').length, propios: [...document.querySelectorAll('.cola-fila')].filter(f => /contenido tuyo/.test(f.textContent) && !f.querySelector('.chip-btn')).length })`)
+    prueba(n.filas === 3 && n.propios === 1, `la dueña ve la cola de su comunidad: ${n.filas} reportes (el del foro abierto no), ${n.propios} de su propio hilo sin botones`)
+    await s.cdp.eval(enFila('/^Acoso o insultos · Hilo/', 'Ocultar y resolver'))
+    await s.cdp.hasta(`document.querySelectorAll('.cola-fila').length === 2`, 8000).catch(() => null)
+    await s.cdp.eval(enFila('/^Spam · Respuesta/', 'Descartar'))
     await s.cdp.hasta(`document.querySelectorAll('.cola-fila').length === 1`, 8000).catch(() => null)
-    await s.cdp.eval(clic('.cola-fila .chip-btn', 'Descartar'))
-    await s.cdp.hasta(`!document.querySelector('.cola-reportes')`, 8000).catch(() => null)
-    const reps = await servicio(`reportes?comunidad=eq.${k.id}&select=tipo,estado,resuelto_por&order=id`)
+    const porRef = async (tipo, ref) => (await servicio(`reportes?tipo=eq.${tipo}&ref=eq.${ref}&select=estado,resuelto_por`))[0]
+    const reps = [await porRef('hilo', h1.id), await porRef('respuesta', r1.id)]
     const oculto = (await servicio(`hilos?id=eq.${h1.id}&select=oculto`))[0].oculto
     const reg = await servicio(`registro_moderacion?comunidad=eq.${k.id}&select=accion`)
     prueba(reps[0].estado === 'resuelto' && reps[1].estado === 'descartado' && reps.every(r => r.resuelto_por === mod.id) && oculto === true,
@@ -121,8 +142,9 @@ try {
     await s.cdp.hasta(`!!document.querySelector('.cola-reportes')`, 12000)
     const txt = await s.cdp.eval(`document.querySelector('.cola-reportes').textContent`)
     prueba(/Spam/.test(txt) && /Hilo/.test(txt), 'la administración ve el reporte del foro abierto en Comunidades')
-    await s.cdp.eval(clic('.cola-fila .chip-btn', 'Ocultar y resolver'))
-    await s.cdp.hasta(`!document.querySelector('.cola-reportes')`, 8000).catch(() => null)
+    const antes = await s.cdp.eval(`document.querySelectorAll('.cola-fila').length`)
+    await s.cdp.eval(enFila('/^Spam · Hilo/', 'Ocultar y resolver'))
+    await s.cdp.hasta(`document.querySelectorAll('.cola-fila').length === ${antes - 1}`, 8000).catch(() => null)
     const e3 = (await servicio(`reportes?ref=eq.${h3.id}&tipo=eq.hilo&select=estado`))[0].estado
     prueba(e3 === 'resuelto', `resuelto desde la cola global: ${e3}`)
   } finally { await s.cierra() }

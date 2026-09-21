@@ -205,6 +205,14 @@ try {
   prueba(r.out === 't', 'su autora sí lo ve, marcado como oculto')
   r = como('admin', `select accion from registro_moderacion order by id`)
   prueba(r.out.includes('ocultar') && r.out.includes('reporte:resuelto'), 'queda en el registro de moderación')
+  // quien modera no resuelve reportes de lo suyo (code-review del 21 sep)
+  const hiloAna = como('ana', `insert into hilos (comunidad, autor, titulo, cuerpo) values ('${privada}', '${U.ana}', 'Hilo de la dueña', 'x') returning id`).out
+  const repAna = como('beto', `insert into reportes (reportante, tipo, ref, comunidad, motivo) values ('${U.beto}', 'hilo', '${hiloAna}', '${privada}', 'acoso') returning id`).out
+  r = como('ana', `select resolver_reporte(${repAna}, 'descartado')`)
+  prueba(!r.ok && /contenido tuyo/.test(r.err), `la dueña no descarta un reporte de su propio hilo (${r.err})`)
+  r = como('admin', `select resolver_reporte(${repAna}, 'resuelto')`)
+  prueba(r.ok, `la administración sí lo resuelve ${r.ok ? '' : r.err}`)
+  como('ana', `delete from hilos where id = ${hiloAna}`) // no estorba a las cuentas de hilos de más abajo
   r = como('ana', `select expulsar('${privada}', '${U.beto}', 'prueba')`)
   r = como('beto', `select unirse_con_codigo('${codigo}')`)
   prueba(!r.ok && /expulsaron/.test(r.err), `expulsado no vuelve con el código (${r.err})`)

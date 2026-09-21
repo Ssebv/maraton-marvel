@@ -529,15 +529,30 @@ function Reportar({ tipo, refId, comunidad, cuenta, token }) {
 // tienen comunidad). Ver lleva al contenido, «Ocultar y resolver» lo oculta
 // con rpc/moderar y cierra el reporte, «Descartar» lo cierra sin tocar nada.
 // Todo queda en el registro de moderación (lo escribe la base).
-function ColaReportes({ token, comunidad, onAbrirHilo }) {
+function ColaReportes({ token, comunidad, yo, onAbrirHilo }) {
   const [lista, setLista] = useState(null)
   const [error, setError] = useState('')
+  // de quién es lo reportado: lo tuyo no lo resuelves tú (lo revisa la
+  // administración; la base también lo impide, code-review)
+  const [autores, setAutores] = useState({})
   const carga = async () => {
     try {
+      const t = await token()
       const filtro = comunidad ? `&comunidad=eq.${comunidad}` : ''
-      const r = await rest(await token(), `reportes?estado=eq.abierto${filtro}&select=id,tipo,ref,motivo,detalle,creado,comunidad,reportante:perfiles!reportes_reportante_fkey(nombre)&order=creado.asc&limit=50`)
-      setLista((Array.isArray(r) ? r : []).filter(x => esObj(x) && typeof x.id === 'number' && typeof x.ref === 'string'))
-    } catch { setLista([]); setError(tr('No se pudo cargar la cola.', 'Could not load the queue.')) }
+      const r = await rest(t, `reportes?estado=eq.abierto${filtro}&select=id,tipo,ref,motivo,detalle,creado,comunidad,reportante:perfiles!reportes_reportante_fkey(nombre)&order=creado.asc&limit=50`)
+      const l = (Array.isArray(r) ? r : []).filter(x => esObj(x) && typeof x.id === 'number' && typeof x.ref === 'string')
+      setLista(l)
+      const ids = tipo => l.filter(x => x.tipo === tipo && /^\d+$/.test(x.ref)).map(x => x.ref)
+      const [hs, rs] = await Promise.all([
+        ids('hilo').length ? rest(t, `hilos?id=in.(${ids('hilo').join(',')})&select=id,autor`) : [],
+        ids('respuesta').length ? rest(t, `respuestas?id=in.(${ids('respuesta').join(',')})&select=id,autor`) : [],
+      ])
+      const a = {}
+      ;(Array.isArray(hs) ? hs : []).forEach(f => { a['hilo:' + f.id] = f.autor })
+      ;(Array.isArray(rs) ? rs : []).forEach(f => { a['respuesta:' + f.id] = f.autor })
+      l.filter(x => x.tipo === 'perfil').forEach(x => { a['perfil:' + x.ref] = x.ref })
+      setAutores(a)
+    } catch { setLista(l => l || []); setError(tr('No se pudo cargar la cola.', 'Could not load the queue.')) }
   }
   useEffect(() => { carga() }, [comunidad])
   if (!lista || lista.length === 0) return lista && error ? <p className="import-error" role="status">{error}</p> : null
@@ -555,13 +570,16 @@ function ColaReportes({ token, comunidad, onAbrirHilo }) {
       const t = await token()
       if (ocultar) await rest(t, 'rpc/moderar', { method: 'POST', body: { tipo_in: x.tipo, id_in: Number(x.ref), accion_in: 'ocultar' } })
       await rest(t, 'rpc/resolver_reporte', { method: 'POST', body: { id_in: x.id, estado_in: estado } })
-      setLista(l => l.filter(y => y.id !== x.id))
+      // al vaciarse se vuelve a pedir: solo se cargan los 50 más antiguos
+      const resto = lista.filter(y => y.id !== x.id)
+      setLista(resto)
+      if (resto.length === 0) carga()
     } catch { setError(tr('No se pudo resolver. Inténtalo otra vez.', 'Could not resolve. Try again.')) }
   }
   const tipos = { hilo: ['Hilo', 'Thread'], respuesta: ['Respuesta', 'Reply'], perfil: ['Perfil', 'Profile'], comunidad: ['Comunidad', 'Community'] }
   return (
     <section className="comunidades-bloque cola-reportes" aria-labelledby={`cola-${comunidad || 'todo'}`}>
-      <h3 className="grafica-titulo" id={`cola-${comunidad || 'todo'}`}>{tr('Reportes por revisar', 'Reports to review')} <span className="tab-insignia-texto">{lista.length}</span></h3>
+      <h3 className="grafica-titulo" id={`cola-${comunidad || 'todo'}`}>{tr('Reportes por revisar', 'Reports to review')} <span className="tab-insignia-texto">{lista.length >= 50 ? '50+' : lista.length}</span></h3>
       {error && <p className="import-error" role="status">{error}</p>}
       <ul className="cola-lista">
         {lista.map(x => {
@@ -571,12 +589,16 @@ function ColaReportes({ token, comunidad, onAbrirHilo }) {
             <li key={x.id} className="cola-fila">
               <span className="cola-que"><b>{m ? tr(m[1], m[2]) : x.motivo}</b> · {tr(tt[0], tt[1])} · {haceCuanto(Date.parse(x.creado))}{esObj(x.reportante) ? ` · @${x.reportante.nombre}` : ''}</span>
               {x.detalle && <span className="cola-detalle">{x.detalle}</span>}
+              {yo && autores[x.tipo + ':' + x.ref] === yo ? (
+                <span className="ajuste-pista">{tr('Es contenido tuyo: lo revisa la administración.', 'It’s your own content: the admins review it.')}</span>
+              ) : (
               <span className="ajuste-ops">
                 {x.tipo !== 'comunidad' && <button type="button" className="chip-btn" onClick={() => ver(x)}>{tr('Ver', 'View')}</button>}
                 {(x.tipo === 'hilo' || x.tipo === 'respuesta') && <button type="button" className="chip-btn destacado" onClick={() => resuelve(x, 'resuelto', true)}>{tr('Ocultar y resolver', 'Hide and resolve')}</button>}
                 {x.tipo !== 'hilo' && x.tipo !== 'respuesta' && <button type="button" className="chip-btn" onClick={() => resuelve(x, 'resuelto', false)}>{tr('Resuelto', 'Resolved')}</button>}
                 <button type="button" className="chip-btn" onClick={() => resuelve(x, 'descartado', false)}>{tr('Descartar', 'Dismiss')}</button>
               </span>
+              )}
             </li>
           )
         })}
@@ -589,6 +611,9 @@ function ColaReportes({ token, comunidad, onAbrirHilo }) {
 // «editar … propio 24 h» y columnas titulo/cuerpo); marca «editado».
 const EDITABLE_MS = 24 * 3600 * 1000
 function EditaTexto({ inicial, conTitulo, tituloInicial, onGuardar, onCancelar }) {
+  // los mismos límites que la base: hilo 3–140 de título y 10000 de texto,
+  // respuesta 1–5000 (antes 10000 y el error decía «solo 24 h»)
+  const maxTexto = conTitulo ? 10000 : 5000
   const [texto, setTexto] = useState(inicial || '')
   const [titulo, setTitulo] = useState(tituloInicial || '')
   const [error, setError] = useState('')
@@ -604,8 +629,8 @@ function EditaTexto({ inicial, conTitulo, tituloInicial, onGuardar, onCancelar }
         setError(er && /enlace no permitido/.test(er.message) ? tr('Ese enlace no se puede publicar.', 'That link can’t be posted.') : tr('No se pudo guardar (solo se puede editar en las primeras 24 h).', 'Could not save (you can only edit in the first 24 h).'))
       }
     }}>
-      {conTitulo && <input className="busca" maxLength={120} aria-label={tr('Título', 'Title')} value={titulo} onChange={e => setTitulo(e.target.value)} />}
-      <textarea className="busca sync-input comunidad-descripcion" rows={4} maxLength={10000} autoFocus aria-label={tr('Texto', 'Text')} value={texto} onChange={e => setTexto(e.target.value)} />
+      {conTitulo && <input className="busca" maxLength={140} aria-label={tr('Título', 'Title')} value={titulo} onChange={e => setTitulo(e.target.value)} />}
+      <textarea className="busca sync-input comunidad-descripcion" rows={4} maxLength={maxTexto} autoFocus aria-label={tr('Texto', 'Text')} value={texto} onChange={e => setTexto(e.target.value)} />
       {error && <span className="import-error" role="alert">{error}</span>}
       <span className="ajuste-ops">
         <button className="chip-btn destacado" type="submit" disabled={enviando}>{enviando ? tr('Guardando…', 'Saving…') : tr('Guardar', 'Save')}</button>
@@ -658,7 +683,10 @@ function HiloHoja({ saliendo, id, cuenta, token, vistas, eps, onCerrar, onVerPer
   const [respondiendo, setRespondiendo] = useState(null)
   const [editando, setEditando] = useState(null) // 'hilo' o el id de una respuesta
   const guarda = async (tipo, rid, cambios) => {
-    await rest(await token(), `${tipo === 'hilo' ? 'hilos' : 'respuestas'}?id=eq.${rid}`, { method: 'PATCH', prefer: 'return=minimal', body: cambios })
+    // con la fila de vuelta: pasadas las 24 h la regla de la base filtra la
+    // fila y el PATCH «acierta» sin cambiar nada (code-review): vacío = fuera de plazo
+    const f = await rest(await token(), `${tipo === 'hilo' ? 'hilos' : 'respuestas'}?id=eq.${rid}&select=id`, { method: 'PATCH', prefer: 'return=representation', body: cambios })
+    if (!Array.isArray(f) || f.length === 0) throw new Error('fuera de plazo')
     setEditando(null); await carga(); onCambio()
   }
   const carga = async () => {
@@ -668,7 +696,7 @@ function HiloHoja({ saliendo, id, cuenta, token, vistas, eps, onCerrar, onVerPer
       const hilo = Array.isArray(filas) && saneaHilo(filas[0])
       if (!hilo) { setH(false); return }
       setH(hilo)
-      const rs = await rest(t, `respuestas?hilo=eq.${id}&select=id,padre,profundidad,cuerpo,votos,hijos,oculto,creado,autor:perfiles!respuestas_autor_fkey(id,nombre,avatar)&order=creado.asc&limit=300`)
+      const rs = await rest(t, `respuestas?hilo=eq.${id}&select=id,padre,profundidad,cuerpo,votos,hijos,oculto,creado,editado,autor:perfiles!respuestas_autor_fkey(id,nombre,avatar)&order=creado.asc&limit=300`)
       const lista = (Array.isArray(rs) ? rs : []).filter(r => esObj(r) && typeof r.id === 'number' && typeof r.cuerpo === 'string' && esObj(r.autor))
       setResp(lista)
       if (cuenta) {
@@ -718,7 +746,7 @@ function HiloHoja({ saliendo, id, cuenta, token, vistas, eps, onCerrar, onVerPer
       <li key={r.id} className={`respuesta${r.oculto ? ' oculto' : ''}`}>
         <div className="respuesta-cab">
           <button className="muro-quien" onClick={() => onVerPerfil(r.autor.nombre)}>@{r.autor.nombre}</button>
-          <span className="muro-cuando">{haceCuanto(Date.parse(r.creado))}{r.oculto ? tr(' · oculta por moderación', ' · hidden by moderators') : ''}</span>
+          <span className="muro-cuando">{haceCuanto(Date.parse(r.creado))}{r.editado ? tr(' · editada', ' · edited') : ''}{r.oculto ? tr(' · oculta por moderación', ' · hidden by moderators') : ''}</span>
         </div>
         {editando === r.id
           ? <EditaTexto inicial={r.cuerpo} onCancelar={() => setEditando(null)} onGuardar={({ texto }) => guarda('respuesta', r.id, { cuerpo: texto })} />
@@ -2084,7 +2112,7 @@ async function compartirMes(m) {
   const blob = await new Promise(res => cv.toBlob(res, 'image/png'))
   const archivo = new File([blob], 'mi-mes-maraton.png', { type: 'image/png' })
   if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-    try { await navigator.share({ files: [archivo], title: tr('Mi mes de maratón', 'My marathon month') }); return } catch {}
+    try { await navigator.share({ files: [archivo], title: tr('Mi mes de maratón', 'My marathon month') }); return } catch (e) { if (e && e.name === 'AbortError') return }
   }
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob); a.download = 'mi-mes-maraton.png'
@@ -2170,7 +2198,10 @@ window.addEventListener('popstate', () => {
     return
   }
   if (!capasAtras.length || !entradaAtras) return
-  if (history.length > largoAtras) { largoAtras = history.length; return }
+  // …y el largo deja de crecer en el tope del navegador (~50 entradas): los
+  // enlaces de la comunidad tampoco son nunca la entrada de abajo (la app los
+  // reescribe al llegar), así que se reconocen por su forma (code-review)
+  if (history.length > largoAtras || /^#(c|u|h|i)\//.test(location.hash)) { largoAtras = history.length; return }
   entradaAtras = false
   // la entrada de abajo puede llevar la URL de otra vista (se escribió antes
   // de apilar la capa: Multiverso → Perfil → una lista, atrás, dejaba
@@ -2886,7 +2917,7 @@ function PerfilPublico({ saliendo, nombre, cuenta, token, onCerrar, onEntrar }) 
         if (datos.loSigo) await rest(t, `seguimientos?seguidor=eq.${cuenta.uid}&seguido=eq.${datos.id}`, { method: 'DELETE', prefer: 'return=minimal' })
       }
       await carga()
-    } catch { setBloqueado(ya) } finally { setOcupado(false) }
+    } catch { await carga().catch(() => setBloqueado(ya)) } finally { setOcupado(false) }
   }
   return (
     <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onCerrar} role="dialog" aria-modal="true" aria-label={tr(`Perfil de @${nombre}`, `@${nombre}’s profile`)}>
@@ -3045,7 +3076,7 @@ function Comunidades({ cuenta, token, recarga, onEntrar, onAbrir, onCrear, onCod
           {errorCodigo && <span className="import-error" role="status">{errorCodigo}</span>}
         </form>
       )}
-      {admin && <ColaReportes token={token} comunidad={null} onAbrirHilo={onAbrirHilo} />}
+      {admin && <ColaReportes token={token} comunidad={null} yo={cuenta.uid} onAbrirHilo={onAbrirHilo} />}
       {cuenta && avisos.length > 0 && (
         <section className="comunidades-bloque">
           <h3 className="grafica-titulo">{tr('Avisos', 'Notifications')} <span className="tab-insignia-texto">{avisos.length}</span></h3>
@@ -3382,7 +3413,7 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
                   {hayMas && muro && <button className="chip-btn" onClick={() => cargaMuro(muro[muro.length - 1].creado)}>{tr('Ver más', 'Show more')}</button>}
                 </section>
               )}
-              {puedeInvitar && <ColaReportes token={token} comunidad={c.id} onAbrirHilo={onAbrirHilo} />}
+              {puedeInvitar && <ColaReportes token={token} comunidad={c.id} yo={cuenta.uid} onAbrirHilo={onAbrirHilo} />}
               {yo && (
                 <section className="comunidad-yo">
                   <h3 className="grafica-titulo">{tr('Tú en esta comunidad', 'You in this community')}</h3>
@@ -6218,7 +6249,8 @@ async function compartirImagen(est, comicsVistos, comicsTot) {
   const blob = await new Promise(res => cv.toBlob(res, 'image/png'))
   const archivo = new File([blob], 'maraton-marvel.png', { type: 'image/png' })
   if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-    try { await navigator.share({ files: [archivo], title: tr('Mi maratón Marvel', 'My Marvel marathon') }); return } catch {}
+    // cancelar la hoja de compartir no es un fallo: sin descarga (code-review)
+    try { await navigator.share({ files: [archivo], title: tr('Mi maratón Marvel', 'My Marvel marathon') }); return } catch (e) { if (e && e.name === 'AbortError') return }
   }
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob); a.download = 'maraton-marvel.png'
