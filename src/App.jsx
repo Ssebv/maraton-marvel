@@ -8190,7 +8190,7 @@ export default function App() {
                       const u616 = MULTIVERSO.find(u => u.num === 'Tierra-616')
                       const Pieza = nombres ? 'span' : 'button'
                       const pieza = (u, clase, orbe, nombre) => (
-                        <Pieza className={mvSobre === u.num ? `${clase} sobre` : clase} style={{ '--tc': u.c }}
+                        <Pieza className={mvSobre === u.num ? `${clase} sobre` : clase} style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u) }}
                           {...(nombres ? {} : {
                             onClick: () => abreTierra(u.num), title: u.nombre, 'aria-label': nombre,
                             onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null),
@@ -8213,7 +8213,7 @@ export default function App() {
                                   <div className="nav-pos" style={{ transform: `translateX(-50%) rotate(${-fase}deg)` }}>
                                     <div className="contra" style={{ animationDuration: dur + 's' }}>
                                       {pieza(u, 'planeta-nav', nombres ? <span className="planeta-orbe planeta-hueco" style={{ width: tam, height: tam }} />
-                                        : <span className="planeta planeta-orbe" style={{ width: tam, height: tam }}><span className="planeta-textura" /></span>,
+                                        : <span className="planeta planeta-orbe" style={{ width: tam, height: tam, '--p': tam + 'px' }}><span className="planeta-textura" /></span>,
                                         CORTO_SISTEMA[u.num] || u.num.replace('Tierra-', 'T-'))}
                                     </div>
                                   </div>
@@ -8229,7 +8229,7 @@ export default function App() {
               ) : (
               <div className="mv-grid">
                 {MULTIVERSO.map(u => (
-                  <article className="mv-card" key={u.num} style={{ '--tc': u.c }}
+                  <article className="mv-card" key={u.num} style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u) }}
                     role="button" tabIndex={0}
                     onClick={() => abreTierra(u.num)}
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abreTierra(u.num) } }}>

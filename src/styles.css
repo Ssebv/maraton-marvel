@@ -1547,6 +1547,10 @@ main.galeria{margin-top: var(--e-6)}
 
 /* ── Planetas giratorios (elementos de uiverse adaptados: Tierra de Lakshay-art + Sol de reyrojo2) ── */
 .planeta{
+  /* --p = diámetro: las sombras de volumen se miden con él. Iban en px
+     pensados para el planeta grande (150) y en los de 56 del Sistema y las
+     tarjetas la sombra de 64 px tapaba dos tercios: bolas casi negras */
+  --p:150px;
   border-radius:50%; flex:none; position:absolute;
   /* tres capas (11 sep 2026): el halo en el planeta, la textura que gira
      como hija recortada por el círculo, y el volumen encima. Antes se
@@ -1560,20 +1564,22 @@ main.galeria{margin-top: var(--e-6)}
   background-image:url('/maraton-marvel/tierra.jpg');
   background-size:auto 100%; background-repeat:repeat-x;
   animation:girarPlaneta 28s linear infinite;
+  /* cada Tierra en su punto del giro: todas enseñaban Australia a la vez */
+  animation-delay:calc(var(--fase, 0) * -2.6s);
 }
 .planeta::before{
   content:""; position:absolute; inset:0; border-radius:50%; z-index:1;
   box-shadow:
-    -4px 0 8px rgba(195,244,255,.4) inset,
-    10px 2px 20px rgba(0,0,0,.9) inset,
-    -14px -2px 24px color-mix(in srgb, var(--tc, var(--blue)) 40%, transparent) inset,
-    64px 0 38px rgba(0,0,0,.6) inset;
+    calc(var(--p) * -.027) 0 calc(var(--p) * .053) rgba(195,244,255,.4) inset,
+    calc(var(--p) * .067) calc(var(--p) * .013) calc(var(--p) * .133) rgba(0,0,0,.9) inset,
+    calc(var(--p) * -.093) calc(var(--p) * -.013) calc(var(--p) * .16) color-mix(in srgb, var(--tc, var(--blue)) 40%, transparent) inset,
+    calc(var(--p) * .427) 0 calc(var(--p) * .253) rgba(0,0,0,.6) inset;
 }
 .planeta::after{
   content:""; position:absolute; inset:0; border-radius:50%; z-index:2;
   background:var(--tc, transparent); mix-blend-mode:color; opacity:.5;
 }
-.planeta-mini{width:56px; height:56px; top:16px; right:16px}
+.planeta-mini{--p:56px; width:56px; height:56px; top:16px; right:16px}
 .planeta-grande{width:150px; height:150px; right:30px; top:50%; transform:translateY(-50%)}
 @keyframes girarPlaneta{
   from{transform:translateX(0)}
@@ -1581,7 +1587,7 @@ main.galeria{margin-top: var(--e-6)}
 }
 .mv-card{position:relative; padding-right: 88px}
 @media (max-width:640px){
-  .planeta-grande{width:92px; height:92px; right:16px; top:20px; transform:none}
+  .planeta-grande{--p:92px; width:92px; height:92px; right:16px; top:20px; transform:none}
   .mv-card{padding-right: 82px}
   /* el relleno móvil de .tierra-hero va DESPUÉS de su regla base (ver «Vista de una Tierra») */
 }
@@ -1614,20 +1620,23 @@ main.galeria{margin-top: var(--e-6)}
 .sol{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); z-index:2}
 .sol.sobre{transform:translate(-50%, -50%) scale(1.12)}
 .planeta-sol{
-  width:92px; height:92px;
+  --p:92px; width:92px; height:92px;
   box-shadow:0 0 55px 6px color-mix(in srgb, var(--tc, var(--red)) 55%, transparent);
 }
 .planeta-sol::before{
   box-shadow:
-    -5px 0 10px rgba(255,220,180,.5) inset,
-    12px 2px 24px rgba(0,0,0,.85) inset,
-    -16px -2px 28px color-mix(in srgb, var(--tc, var(--red)) 50%, transparent) inset,
-    70px 0 44px rgba(0,0,0,.5) inset;
+    calc(var(--p) * -.033) 0 calc(var(--p) * .067) rgba(255,220,180,.5) inset,
+    calc(var(--p) * .08) calc(var(--p) * .013) calc(var(--p) * .16) rgba(0,0,0,.85) inset,
+    calc(var(--p) * -.107) calc(var(--p) * -.013) calc(var(--p) * .187) color-mix(in srgb, var(--tc, var(--red)) 50%, transparent) inset,
+    calc(var(--p) * .467) 0 calc(var(--p) * .293) rgba(0,0,0,.5) inset;
 }
 .nav-nombre{
   font-size: var(--t-xs); font-weight:700; letter-spacing:.05em; color:var(--ink2);
-  /* al cruzarse dos órbitas las etiquetas se solapan: la de delante debe ganar */
-  background:color-mix(in srgb, var(--bg) 92%, transparent); padding: var(--e-1) var(--e-3); border-radius:var(--r-s);
+  /* sin recuadro: desde que los nombres van encima de todo (17 sep), el
+     recuadro opaco tapaba el planeta de al lado o el sol. Un contorno del
+     color del fondo basta para leerlo sobre anillos y halos */
+  padding: var(--e-1) var(--e-3);
+  text-shadow:0 0 2px var(--bg), 0 0 2px var(--bg), 0 0 4px var(--bg);
   white-space:nowrap;
 }
 .sobre .nav-nombre{color:var(--ink)}

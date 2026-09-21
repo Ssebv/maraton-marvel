@@ -42,6 +42,10 @@ function servidor({ puerto = 0, proxy = null } = {}) {
       return
     }
     let ruta = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
+    // el CSS pide algunas imágenes con la ruta absoluta de Pages
+    // (`/maraton-marvel/tierra.jpg`): sin esto daban 404 y las capturas
+    // enseñaban planetas sin textura (21 sep 2026)
+    ruta = ruta.replace(/^[/\\]maraton-marvel(?=[/\\])/, '')
     let f = join(DIST, ruta)
     if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html')
     if (!f.startsWith(DIST) || !existsSync(f)) { res.writeHead(404); return res.end() }
