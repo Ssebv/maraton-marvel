@@ -29,4 +29,20 @@ const fondosWebp = readdirSync('public/fondo').filter(f => f.endsWith('.webp'))
 export default defineConfig({
   define: { __BUILD__: JSON.stringify(sello), __FONDOS_WEBP__: JSON.stringify(fondosWebp) },
   plugins: [react(), viteSingleFile(), versionJson],
+  // Preact en lugar de React (21 sep 2026): el código sigue importando de
+  // 'react' y 'react-dom' y aquí se redirige a preact/compat. react-dom era el
+  // 29 % del HTML; medido A/B alterno en 4G lenta y CPU ×4: usable 2,04 → 1,73 s,
+  // LCP 2,55 → 2,22 s, 306 → 259 kB gzip, y las 10 sondas y las 5 de comunidad
+  // en verde. Diferencia a tener en cuenta: los eventos son los nativos
+  // (onPointerEnter escucha pointerenter, no el pointerover de React) y el
+  // render va en una microtarea, no dentro del mismo evento.
+  resolve: {
+    alias: [
+      { find: /^react-dom\/client$/, replacement: 'preact/compat/client' },
+      { find: /^react-dom$/, replacement: 'preact/compat' },
+      { find: /^react\/jsx-runtime$/, replacement: 'preact/jsx-runtime' },
+      { find: /^react\/jsx-dev-runtime$/, replacement: 'preact/jsx-dev-runtime' },
+      { find: /^react$/, replacement: 'preact/compat' },
+    ],
+  },
 })

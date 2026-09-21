@@ -25,7 +25,7 @@ Guía interactiva para ver **todo Marvel y X-Men en orden cronológico de la his
 | `src/posters.js` / `public/posters/` | Índice y archivos de carátulas (pósters oficiales de TMDB en español) |
 | `src/people.js` / `public/people/` | Fotos de reparto y dirección |
 | `src/tmdb.js` | Mapeo id → TMDB (tráilers, fotogramas, sinopsis, proveedores) |
-| `src/App.jsx` / `src/styles.css` | Toda la aplicación (React 19, un solo componente raíz) |
+| `src/App.jsx` / `src/styles.css` | Toda la aplicación (API de React servida por Preact 10 con `preact/compat`, alias en `vite.config.js` desde el 21 sep 2026; un solo componente raíz) |
 | `src/nube.js` | La cuenta de Google: configuración `NUBE` (null = apagada), GIS y Firebase Auth por REST |
 | `src/en-textos.js` | Diccionario ES→EN de los textos escritos a mano (clave = cadena exacta del fuente) |
 | `src/titulos-en.js` / `src/episodios-en.js` | Títulos en inglés (GENERADOS: `npm run titulos-en` / `episodios-en`) |
