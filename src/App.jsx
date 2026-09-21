@@ -1801,7 +1801,8 @@ function Diario({ vistas, notas, pais, idioma, indice, onAbrir }) {
             {/* con carátula y abriendo la ficha: 30 filas solo de texto se leían
                 como un registro, y todo lo demás de la app se reconoce por su póster */}
             {m.filas.map(([id, ts]) => (
-              <button type="button" className="diario-fila" key={id} onClick={() => indice && indice[id] && onAbrir && onAbrir(indice[id])}>
+              <button type="button" className={abierto && marcas.findIndex(x => x[0] === id) >= DIARIO_PLEGADO ? 'diario-fila entra' : 'diario-fila'}
+                style={abierto ? { '--i': marcas.findIndex(x => x[0] === id) - DIARIO_PLEGADO } : undefined} key={id} onClick={() => indice && indice[id] && onAbrir && onAbrir(indice[id])}>
                 {POSTERS[id] ? <img className="diario-cartel" src={POSTERS[id]} alt="" loading="lazy" decoding="async" /> : <span className="diario-cartel" aria-hidden="true" />}
                 <span className="diario-texto">
                   <span className="diario-titulo">{TITULOS[id]}</span>
@@ -3720,6 +3721,43 @@ const FONDOS_WEBP = typeof __FONDOS_WEBP__ !== 'undefined' ? __FONDOS_WEBP__ : [
 // texto, y cada aviso nuevo era un nodo nuevo (key). Y mientras el dedo, el
 // ratón o el foco están sobre el aviso, no se va: 5 s no dan para llegar al
 // botón con VoiceOver (WCAG 2.2.1); al salir quedan al menos 3 s.
+// Logro desbloqueado EN EL MOMENTO (21 sep 2026): hasta ahora solo quedaba un
+// punto en la pestaña Perfil y el momento más emocionante de la app pasaba en
+// silencio. Aviso breve arriba, como las notificaciones de iOS: entra por el
+// borde de arriba con el muelle con rebote (raro, así que puede) y se va por
+// el mismo borde. Tocarlo lleva a los logros. La región viva va siempre
+// montada (VoiceOver no lee una que nace con texto: ver Deshacer).
+function LogroAviso({ aviso, onCerrar, onIr }) {
+  const [sale, setSale] = useState(false)
+  const cerrar = useRef(onCerrar)
+  cerrar.current = onCerrar
+  useEffect(() => {
+    if (!aviso) return undefined
+    setSale(false)
+    const t1 = setTimeout(() => setSale(true), 4200)
+    const t2 = setTimeout(() => cerrar.current(), 4200 + 260)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [aviso])
+  const l = aviso && LOGROS.find(x => x.id === aviso.ids[0])
+  const mas = aviso ? aviso.ids.length - 1 : 0
+  const texto = l ? `${tr('Logro desbloqueado', 'Achievement unlocked')}: ${l.t}${mas ? tr(` y ${mas} más`, ` and ${mas} more`) : ''}` : ''
+  return (
+    <>
+      <span className="solo-lector" role="status">{texto}</span>
+      {l && (
+        <button type="button" className={`logro-aviso${sale ? ' sale' : ''}`} key={aviso.id} aria-hidden="true" tabIndex={-1}
+          onClick={() => { setSale(true); setTimeout(() => cerrar.current(), 260); onIr() }}>
+          <span className="logro-aviso-emoji">{l.e}</span>
+          <span className="logro-aviso-texto">
+            <span className="logro-aviso-rotulo">{tr('Logro desbloqueado', 'Achievement unlocked')}{mas ? tr(` · y ${mas} más`, ` · and ${mas} more`) : ''}</span>
+            <span className="logro-aviso-nombre">{sinPartir(l.t)}</span>
+          </span>
+        </button>
+      )}
+    </>
+  )
+}
+
 function Deshacer({ aviso, onCerrar }) {
   const cerrar = useRef(onCerrar)
   cerrar.current = onCerrar
@@ -7610,6 +7648,18 @@ export default function App() {
     todoCompleto: DATA.every(sg => sg.eras.every(era => era.items.every(it => vistas[it.id]))),
   }), [vistas, eps, notas, estadisticas])
   const logrosOk = useMemo(() => LOGROS.filter(l => l.f(ctxLogros)).map(l => l.id), [ctxLogros])
+  // Aviso en el momento de desbloquear: solo lo que cambia con la app ya en
+  // marcha (no al arrancar, ni lo que trae la sincronización), y no si llegan
+  // más de 3 de golpe: eso es restaurar una copia, no un logro ganado.
+  const [logroAviso, setLogroAviso] = useState(null)
+  const logrosAntes = useRef(null), arranque = useRef(Date.now())
+  useEffect(() => {
+    const antes = logrosAntes.current
+    logrosAntes.current = logrosOk
+    if (!antes || aplicandoRemoto.current || Date.now() - arranque.current < 2000) return
+    const nuevos = logrosOk.filter(id => !antes.includes(id))
+    if (nuevos.length && nuevos.length <= 3) setLogroAviso({ id: Date.now(), ids: nuevos })
+  }, [logrosOk])
   const [logrosVistos, setLogrosVistos] = useState(() => {
     try { const g = JSON.parse(localStorage.getItem(KEY_LOGROS_VISTOS)); return Array.isArray(g) ? g : null } catch { return null }
   })
@@ -9042,6 +9092,8 @@ export default function App() {
       <Footer onAjustes={() => setAjustes(true)} nota={enMaraton} />
       <VersionNueva />
       <Deshacer aviso={deshacer} onCerrar={() => setDeshacer(null)} />
+      <LogroAviso aviso={logroAviso} onCerrar={() => setLogroAviso(null)}
+        onIr={() => { if (detalle) setDetalle(null); if (vista !== 'stats') conTransicion('adelante', () => setVista('stats')) }} />
       {(vista === 'crono' || vista === 'comics' || vista === 'animacion') && createPortal(
         <DondeEstoy version={`${vista}|${Object.keys(vistas).length}|${Object.keys(eps).length}|${JSON.stringify(filtros)}|${buscaLenta}|${idioma}|${pais}`}
           siguiente={stats.siguiente ? { id: stats.siguiente.id, t: stats.siguiente.t } : null}

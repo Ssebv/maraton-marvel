@@ -2428,6 +2428,35 @@ main.crono, main.comics, main.estreno{animation:none}
   animation:fadeIn var(--dur-media) ease both;
 }
 @media (max-width:720px){ .version-nueva{bottom:calc(var(--dock-alto) + var(--dock-abajo) + 10px)} }
+/* ── Logro desbloqueado: aviso arriba, como una notificación de iOS ──
+   Centrado con márgenes (no left:50%: ver .deshacer). Entra y sale por el
+   borde de arriba; el rebote (--muelle-pop) solo porque es un momento raro. */
+.logro-aviso{
+  position:fixed; z-index:96; width:fit-content; max-width:calc(100% - 32px); margin-inline:auto;
+  left:calc(16px + env(safe-area-inset-left, 0px)); right:calc(16px + env(safe-area-inset-right, 0px));
+  top:calc(10px + env(safe-area-inset-top, 0px));
+  display:flex; align-items:center; gap: var(--e-4);
+  padding: var(--e-3) var(--e-6) var(--e-3) var(--e-4); border-radius:var(--r-l);
+  background:var(--panel); color:var(--ink); font:inherit; text-align:left; cursor:pointer;
+  border:1.5px solid color-mix(in srgb, var(--gold) 55%, var(--line));
+  box-shadow:var(--card-shadow-up);
+  animation:logroEntra var(--muelle-pop) both;
+}
+.logro-aviso.sale{animation:logroSale var(--dur-media) var(--curva) both; pointer-events:none}
+@keyframes logroEntra{from{opacity:0; transform:translateY(calc(-100% - 16px))}}
+@keyframes logroSale{to{opacity:0; transform:translateY(calc(-100% - 16px))}}
+.logro-aviso:active{transform:scale(.97)}
+.logro-aviso-emoji{font-size: var(--t-xl); line-height:1; flex:none}
+.logro-aviso-texto{display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
+.logro-aviso-rotulo{font-size: var(--t-xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-texto)}
+.logro-aviso-nombre{font-size: var(--t-b); font-weight:700; line-height:1.25}
+@media (prefers-reduced-motion: reduce){
+  @keyframes logroEntra{from{opacity:0}}
+  @keyframes logroSale{to{opacity:0}}
+}
+/* en escritorio, bajo la barra de la app */
+@media (min-width:721px){ .logro-aviso{top:72px} }
+
 /* ── Deshacer: píldora oscura sobre todo (también sobre la ficha abierta) ── */
 .deshacer{
   /* centrado con márgenes automáticos y no con left:50% + translate: así el
@@ -2889,6 +2918,8 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
   text-transform:uppercase; letter-spacing:.08em;
 }
 .diario-ver{margin-top: var(--e-4)}
+/* al abrir «Ver N más» las filas nuevas entran en cascada corta (tope 8) */
+.diario-fila.entra{animation:entraVista var(--dur-media) var(--curva) both; animation-delay:calc(min(var(--i, 0), 8) * 30ms)}
 .nav-ficha{
   position:fixed; top:50%; transform:translateY(-50%); z-index:60;
   width:44px; height:56px; border-radius:var(--r-m); border:1px solid var(--line);

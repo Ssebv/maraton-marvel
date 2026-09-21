@@ -84,11 +84,40 @@ let malas = 0
     const d0 = await cdp.eval(`({ filas: document.querySelectorAll('.diario-fila').length, meses: document.querySelectorAll('.diario-mes').length, boton: document.querySelector('.diario-ver')?.textContent })`)
     await cdp.eval(`document.querySelector('.diario-ver').click()`)
     await espera(300)
-    const d1 = await cdp.eval(`({ filas: document.querySelectorAll('.diario-fila').length, meses: [...document.querySelectorAll('.diario-mes')].map(m => m.textContent), boton: document.querySelector('.diario-ver')?.textContent })`)
-    filas.push([d0.filas === 6 && d0.meses >= 1 && /24/.test(d0.boton) && d1.filas === 30 && d1.meses.length >= 2 && /menos/.test(d1.boton), `diario: ${d0.filas} filas («${d0.boton}») → ${d1.filas} en ${d1.meses.join(', ')} («${d1.boton}»)`])
+    const d1 = await cdp.eval(`({ filas: document.querySelectorAll('.diario-fila').length, entran: document.querySelectorAll('.diario-fila.entra').length, meses: [...document.querySelectorAll('.diario-mes')].map(m => m.textContent), boton: document.querySelector('.diario-ver')?.textContent })`)
+    filas.push([d0.filas === 6 && d0.meses >= 1 && /24/.test(d0.boton) && d1.filas === 30 && d1.entran === 24 && d1.meses.length >= 2 && /menos/.test(d1.boton), `diario: ${d0.filas} filas («${d0.boton}») → ${d1.filas} (${d1.entran} entran en cascada) en ${d1.meses.join(', ')} («${d1.boton}»)`])
     filas.push([errores.length === 0, `errores en consola: ${errores.length} ${errores.slice(0, 3).join(' | ')}`])
   } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
   malas += informe('detalles · móvil 390', filas)
+}
+
+// logro desbloqueado en el momento: sin progreso, marcar el primer título
+// saca «Primer paso» arriba y en la región viva; tocarlo lleva a los logros;
+// una marca que no desbloquea nada no saca aviso
+{
+  const { cdp, navega, cierra, errores } = await abre()
+  const filas = []
+  try {
+    await navega('#crono')
+    await espera(2600) // lo que cambia al arrancar no avisa
+    const antes = await cdp.eval(`!!document.querySelector('.logro-aviso')`)
+    await cdp.eval(`document.querySelector('.card:not(.vista) .checkbox').click()`)
+    await cdp.hasta(`!!document.querySelector('.logro-aviso')`, 2000).catch(() => {})
+    const r = await cdp.eval(`({ nombre: document.querySelector('.logro-aviso-nombre')?.textContent, region: [...document.querySelectorAll('.solo-lector[role=status]')].map(e => e.textContent).find(t => /Logro/.test(t)) })`)
+    filas.push([!antes && r.nombre === 'Primer paso' && /Logro desbloqueado: Primer paso/.test(r.region || ''), `aviso de logro al marcar el primero: «${r.nombre}», región «${r.region}»`])
+    await cdp.eval(`document.querySelector('.logro-aviso').click()`)
+    await espera(900)
+    const ir = await cdp.eval(`({ hash: location.hash, aviso: !!document.querySelector('.logro-aviso'), nuevo: !!document.querySelector('.logro.nuevo') })`)
+    filas.push([ir.hash === '#stats' && !ir.aviso && ir.nuevo, `tocarlo lleva a los logros (${ir.hash}, «Nuevo» ${ir.nuevo}) y se cierra (${!ir.aviso})`])
+    await navega('#crono')
+    await espera(2600)
+    await cdp.eval(`document.querySelector('.card:not(.vista) .checkbox').click()`)
+    await espera(600)
+    const otra = await cdp.eval(`!!document.querySelector('.logro-aviso')`)
+    filas.push([!otra, `una marca sin logro no avisa (${otra})`])
+    filas.push([errores.length === 0, `errores en consola: ${errores.length}`])
+  } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
+  malas += informe('detalles · logro desbloqueado', filas)
 }
 
 for (const ancho of [1280, 1600]) {
