@@ -1826,6 +1826,169 @@ function Diario({ vistas, notas, pais, idioma, indice, onAbrir }) {
   )
 }
 
+// ── Tu mes (21 sep 2026, etapa 3 de la Fase 8) ──
+// El resumen de un mes, como el de Strava: horas, títulos, episodios, días
+// activos y la mejor racha del mes, la saga que más viste, cómo va frente al
+// mes anterior y tu favorito (la nota más alta de lo que marcaste ese mes).
+// Las horas cuentan cada episodio por su parte de la serie; una serie marcada
+// entera sin episodios cuenta su duración completa.
+const ITEM_POR_ID = new Map(DATA.flatMap(s => s.eras.flatMap(e => e.items.map(i => [i.id, { item: i, saga: s.saga }]))))
+const claveMes = t => { const d = new Date(t); return d.getFullYear() * 12 + d.getMonth() }
+const esMarca = t => typeof t === 'number' && t > 1e12
+function resumenDeMes(clave, vistas, eps, notas) {
+  const dias = new Set(), porSerie = {}, conEps = new Set()
+  const dia = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime() }
+  let min = 0, episodios = 0
+  for (const [k, t] of Object.entries(eps)) {
+    const id = k.slice(0, k.indexOf(':'))
+    conEps.add(id)
+    if (!esMarca(t) || claveMes(t) !== clave) continue
+    porSerie[id] = (porSerie[id] || 0) + 1; episodios++; dias.add(dia(t))
+  }
+  for (const [id, n] of Object.entries(porSerie)) {
+    const r = ITEM_POR_ID.get(id), L = EPISODES[id] ? EPISODES[id].length : 0
+    if (r && L) min += (r.item.d || 0) * n / L
+  }
+  const titulos = []
+  for (const [id, t] of Object.entries(vistas)) {
+    const r = ITEM_POR_ID.get(id)
+    if (!r || !esMarca(t) || claveMes(t) !== clave) continue
+    titulos.push({ id, t, r }); dias.add(dia(t))
+    if (!conEps.has(id)) min += r.item.d || 0
+  }
+  // mejor racha dentro del mes
+  const orden = [...dias].sort((a, b) => a - b)
+  let racha = 0, cur = 0
+  orden.forEach((d, i) => { cur = i && d - orden[i - 1] <= 86400000 * 1.5 ? cur + 1 : 1; racha = Math.max(racha, cur) })
+  const sagas = {}
+  titulos.forEach(x => { sagas[x.r.saga] = (sagas[x.r.saga] || 0) + 1 })
+  const top = Object.entries(sagas).sort((a, b) => b[1] - a[1])[0]
+  const favorito = titulos.filter(x => notas[x.id] && notas[x.id].p)
+    .sort((a, b) => notas[b.id].p - notas[a.id].p || b.t - a.t)[0] || null
+  return { min, titulos: titulos.length, episodios, dias: dias.size, racha, saga: top && top[1] >= 2 ? top : null, favorito }
+}
+const NOMBRE_SAGA = { xmen: ['la saga X-Men', 'the X-Men saga'], ucm: ['el UCM', 'the MCU'], comics: ['los cómics', 'the comics'], animacion: ['la animación', 'animation'] }
+const nombreMes = (clave, conAnio) => new Date(Math.floor(clave / 12), clave % 12, 1).toLocaleDateString(LOC(), conAnio ? { month: 'long', year: 'numeric' } : { month: 'long' })
+
+function TuMes({ vistas, eps, notas, idioma, onAbrir }) {
+  const hoy = claveMes(Date.now())
+  // meses con alguna marca, del más reciente al más antiguo (y siempre el actual)
+  const meses = useMemo(() => {
+    const m = new Set([hoy])
+    Object.values(vistas).forEach(t => { if (esMarca(t)) m.add(claveMes(t)) })
+    Object.values(eps).forEach(t => { if (esMarca(t)) m.add(claveMes(t)) })
+    return [...m].filter(k => k <= hoy).sort((a, b) => b - a)
+  }, [vistas, eps, hoy])
+  const [i, setI] = useState(0)
+  const clave = meses[Math.min(i, meses.length - 1)]
+  const r = useMemo(() => resumenDeMes(clave, vistas, eps, notas), [clave, vistas, eps, notas, idioma])
+  const antes = useMemo(() => resumenDeMes(clave - 1, vistas, eps, notas), [clave, vistas, eps, notas])
+  if (meses.length === 1 && r.dias === 0) return null
+  const horas = r.min / 60, dif = Math.round(horas - antes.min / 60)
+  // la cifra en horas enteras (a 390 px «12 h 7 min» iba a dos líneas); bajo
+  // la hora, minutos
+  const fmtH = m => m >= 60 ? `${Math.round(m / 60)} h` : `${Math.round(m)} min`
+  const conAnio = Math.floor(clave / 12) !== Math.floor(hoy / 12)
+  const mes = nombreMes(clave, conAnio), mesAntes = nombreMes(clave - 1, false)
+  const fav = r.favorito
+  const frase = []
+  if (r.saga) frase.push(tr(`sobre todo ${NOMBRE_SAGA[r.saga[0]]?.[0] || r.saga[0]} (${r.saga[1]} títulos)`, `mostly ${NOMBRE_SAGA[r.saga[0]]?.[1] || r.saga[0]} (${r.saga[1]} titles)`))
+  if (antes.dias > 0 && dif !== 0) frase.push(dif > 0 ? tr(`${dif} h más que en ${mesAntes}`, `${dif} h more than in ${mesAntes}`) : tr(`${-dif} h menos que en ${mesAntes}`, `${-dif} h less than in ${mesAntes}`))
+  return (
+    <section className="grafica tu-mes" aria-labelledby="tu-mes-titulo">
+      <div className="tu-mes-cab">
+        <h3 className="grafica-titulo" id="tu-mes-titulo">{tr('Tu mes', 'Your month')}</h3>
+        <div className="tu-mes-nav">
+          <button type="button" className="chip-btn" disabled={i >= meses.length - 1} onClick={() => setI(v => v + 1)} aria-label={tr('Mes anterior', 'Previous month')}>‹</button>
+          <span className="tu-mes-nombre" aria-live="polite">{mes}</span>
+          <button type="button" className="chip-btn" disabled={i === 0} onClick={() => setI(v => Math.max(0, v - 1))} aria-label={tr('Mes siguiente', 'Next month')}>›</button>
+        </div>
+      </div>
+      {r.dias === 0
+        ? <p className="grafica-sub">{tr(`Aún no has marcado nada en ${mes}.`, `Nothing checked off in ${mes} yet.`)}</p>
+        : <>
+          <div className="tu-mes-cifras">
+            <div><b>{fmtH(r.min)}</b><span>{tr('vistas', 'watched')}</span></div>
+            <div><b>{r.titulos}</b><span>{r.titulos === 1 ? tr('título', 'title') : tr('títulos', 'titles')}</span></div>
+            <div><b>{r.episodios}</b><span>{r.episodios === 1 ? tr('episodio', 'episode') : tr('episodios', 'episodes')}</span></div>
+            <div><b>{r.dias}</b><span>{r.dias === 1 ? tr('día activo', 'active day') : tr('días activos', 'active days')}</span>{r.racha > 1 && <span className="tu-mes-racha">{tr(`racha de ${r.racha} días`, `${r.racha}-day streak`)}</span>}</div>
+          </div>
+          {frase.length > 0 && <p className="grafica-sub tu-mes-frase">{(t => t[0].toUpperCase() + t.slice(1))(frase.join(' · '))}</p>}
+          {fav && (
+            <button type="button" className="tu-mes-fav" onClick={() => onAbrir(fav.id)}>
+              {POSTERS[fav.id] ? <img src={POSTERS[fav.id]} alt="" loading="lazy" decoding="async" /> : <span className="tu-mes-fav-img" aria-hidden="true" />}
+              <span className="tu-mes-fav-texto">
+                <span className="tu-mes-fav-rotulo">{tr('Tu favorito del mes', 'Your favorite this month')}</span>
+                <span className="tu-mes-fav-titulo">{sinPartir(fav.r.item.t)}</span>
+                <span className="tu-mes-fav-nota" aria-label={tr(`${notas[fav.id].p} estrellas`, `${notas[fav.id].p} stars`)}>{'★'.repeat(notas[fav.id].p)}</span>
+              </span>
+            </button>
+          )}
+          <button type="button" className="chip-btn tu-mes-compartir" onClick={() => compartirMes({ ...r, mes, fmtH: fmtH(r.min), favTitulo: fav ? fav.r.item.t : null, favNota: fav ? notas[fav.id].p : 0, favPoster: fav ? POSTERS[fav.id] : null, frase: frase.length ? (t => t[0].toUpperCase() + t.slice(1))(frase.join(' · ')) : '' })}>
+            {tr('Compartir mi mes', 'Share my month')}
+          </button>
+        </>}
+    </section>
+  )
+}
+
+// La imagen del mes, con la misma tinta nocturna que la del progreso.
+async function compartirMes(m) {
+  try { await document.fonts.ready } catch {}
+  const W = 1080, H = 1350
+  const cv = document.createElement('canvas')
+  cv.width = W; cv.height = H
+  const x = cv.getContext('2d')
+  x.fillStyle = OSCURO.bg; x.fillRect(0, 0, W, H)
+  x.fillStyle = 'rgba(242,239,230,0.045)'
+  for (let i = 20; i < W; i += 26) for (let j = 20; j < H; j += 26) { x.beginPath(); x.arc(i, j, 1.3, 0, 7); x.fill() }
+  x.save(); x.translate(80, 84); x.transform(1, 0, -0.14, 1, 0, 0)
+  x.fillStyle = OSCURO.red; x.fillRect(0, 0, 470, 46); x.restore()
+  x.fillStyle = '#fff'; x.font = '700 21px Archivo, sans-serif'
+  x.fillText(tr('MARATÓN MARVEL · MI MES', 'MARVEL MARATHON · MY MONTH'), 100, 115)
+  x.fillStyle = OSCURO.ink; x.font = '400 96px "Archivo Black", Archivo, sans-serif'
+  x.fillText(m.mes.toUpperCase(), 80, 250)
+  x.fillStyle = OSCURO.red; x.font = '400 170px "Archivo Black", Archivo, sans-serif'
+  x.fillText(m.fmtH, 74, 450)
+  x.fillStyle = OSCURO.ink2; x.font = '500 34px Archivo, sans-serif'
+  x.fillText(tr('de maratón', 'of marathon'), 80, 505)
+  const cifras = [[m.titulos, m.titulos === 1 ? tr('título', 'title') : tr('títulos', 'titles')], [m.episodios, m.episodios === 1 ? tr('episodio', 'episode') : tr('episodios', 'episodes')], [m.dias, m.dias === 1 ? tr('día activo', 'active day') : tr('días activos', 'active days')]]
+  cifras.forEach(([n, t], k) => {
+    const cx = 80 + k * 310
+    x.fillStyle = OSCURO.panel2; x.beginPath(); x.roundRect(cx, 560, 290, 150, 16); x.fill()
+    x.fillStyle = OSCURO.ink; x.font = '400 64px "Archivo Black", Archivo, sans-serif'; x.fillText(String(n), cx + 28, 645)
+    x.fillStyle = OSCURO.ink2; x.font = '600 26px Archivo, sans-serif'; x.fillText(t, cx + 28, 686)
+  })
+  let y = 780
+  if (m.frase) { x.fillStyle = OSCURO.ink2; x.font = '500 30px Archivo, sans-serif'; x.fillText(m.frase, 80, y); y += 60 }
+  if (m.favTitulo) {
+    let img = null
+    if (m.favPoster) {
+      img = await new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = m.favPoster })
+    }
+    x.strokeStyle = OSCURO.gold; x.lineWidth = 3; x.beginPath(); x.roundRect(80, y, 920, 300, 16); x.stroke()
+    if (img) { x.save(); x.beginPath(); x.roundRect(110, y + 30, 160, 240, 10); x.clip(); x.drawImage(img, 110, y + 30, 160, 240); x.restore() }
+    const tx = img ? 300 : 116
+    x.fillStyle = OSCURO.gold; x.font = '700 24px Archivo, sans-serif'; x.fillText(tr('MI FAVORITO DEL MES', 'MY FAVORITE THIS MONTH'), tx, y + 80)
+    x.fillStyle = OSCURO.ink; x.font = '400 40px "Archivo Black", Archivo, sans-serif'
+    // el título en dos líneas como mucho
+    const palabras = m.favTitulo.toUpperCase().split(' '), lineas = ['']
+    palabras.forEach(p => { const l = lineas[lineas.length - 1]; if (x.measureText(l + ' ' + p).width > 1000 - tx - 40 && l) lineas.push(p); else lineas[lineas.length - 1] = l ? l + ' ' + p : p })
+    lineas.slice(0, 2).forEach((l, k) => x.fillText(l, tx, y + 136 + k * 48))
+    x.fillStyle = OSCURO.gold; x.font = '400 44px Archivo, sans-serif'; x.fillText('★'.repeat(m.favNota), tx, y + 250)
+  }
+  x.fillStyle = OSCURO.ink3; x.font = '600 24px Archivo, sans-serif'
+  x.fillText('ssebv.github.io/maraton-marvel', 80, H - 60)
+  const blob = await new Promise(res => cv.toBlob(res, 'image/png'))
+  const archivo = new File([blob], 'mi-mes-maraton.png', { type: 'image/png' })
+  if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+    try { await navigator.share({ files: [archivo], title: tr('Mi mes de maratón', 'My marathon month') }); return } catch {}
+  }
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob); a.download = 'mi-mes-maraton.png'
+  a.click(); URL.revokeObjectURL(a.href)
+}
+
 // El iPad moderno se anuncia como MacIntel; lo delata el táctil
 const ES_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
@@ -8437,6 +8600,9 @@ export default function App() {
           {amigo && <Duelo amigo={amigo} vistas={vistas} eps={eps} onQuitar={() => guardaAmigo(null)} />}
           {club && <Club club={club} vistas={vistas} eps={eps}
             onSalir={() => guardaClub(null)} onInvitar={() => setClubInvitar(true)} />}
+
+          <TuMes vistas={vistas} eps={eps} notas={notas} idioma={idioma}
+            onAbrir={id => { const d = buscaItem(id); if (d) setDetalle(d) }} />
 
           <ActividadDelMaraton vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma}
             onAbrir={d => setDetalle(d)} />

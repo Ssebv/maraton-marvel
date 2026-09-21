@@ -39,7 +39,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 |---|---|---|
 | 1 · Revisión | code-review de los commits del 21 sep: 3 hallazgos (aviso de logro con lo sincronizado, un fotograma del segundo aviso, planeta que se quedaba en hover), los 3 arreglados | ✅ |
 | 2 · Optimización del arranque | Medido: el JS solo gasta 150 ms de CPU y lo caro es la red (HTML 306 kB gzip, react-dom el 29 %); los datos como JSON no compensaban (2,5 kB gzip las plataformas). Hecho: Preact 10 con preact/compat en lugar de React → 259 kB gzip, usable 2,04 → 1,73 s y LCP 2,55 → 2,22 s (A/B alterno, 4G lenta, CPU ×4). De paso, arreglado un fallo real de los enlaces #c/ y #u/ con Perfil abierto | ✅ |
-| 3 · Resumen del mes | En Perfil, estilo Strava: horas, títulos, racha y tu mejor valorado del mes; compartible como imagen | — |
+| 3 · Resumen del mes | Hecho: «Tu mes» en Perfil (horas, títulos, episodios, días activos y racha; la saga que más viste y la diferencia con el mes anterior; tu favorito del mes con su carátula; meses anteriores con ‹ ›) y «Compartir mi mes» como imagen 1080×1350 | ✅ |
 | 4 · Comunidades, fase 5 | Moderación (cola de reportes, bloquear, editar en 24 h), probada contra el Supabase local | — |
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)

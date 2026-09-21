@@ -2950,6 +2950,35 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .diario-titulo{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .diario-estrellas{color:var(--gold-texto); font-size: var(--t-s); letter-spacing:.1em}
 .diario-mas{margin: var(--e-3) 0 0; font-size: var(--t-xs); color:var(--ink3)}
+/* ── Tu mes (21 sep 2026) ── */
+.tu-mes-cab{display:flex; align-items:center; justify-content:space-between; gap: var(--e-3); flex-wrap:wrap}
+.tu-mes-nav{display:flex; align-items:center; gap: var(--e-2)}
+.tu-mes-nav .chip-btn{min-width:36px; min-height:36px; padding: 0; font-size: var(--t-b)}
+.tu-mes-nav .chip-btn:disabled{opacity:.35; cursor:default}
+.tu-mes-nombre{min-width:120px; text-align:center; font-weight:700; font-size: var(--t-m); text-transform:capitalize}
+.tu-mes-cifras{display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap: var(--e-3); margin-top: var(--e-4)}
+.tu-mes-cifras > div{background:var(--panel2); border-radius:var(--r-m); padding: var(--e-4); display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
+.tu-mes-cifras b{font-family:"Archivo Black","Archivo",sans-serif; font-weight:400; font-size: var(--t-xl); line-height:1.1; font-variant-numeric:tabular-nums}
+.tu-mes-cifras span{font-size: var(--t-s); color:var(--ink2)}
+.tu-mes-frase{margin-top: var(--e-4)}
+.tu-mes-fav{
+  display:flex; align-items:center; gap: var(--e-4); width:100%; margin-top: var(--e-4);
+  padding: var(--e-3); background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer;
+  border:1.5px solid color-mix(in srgb, var(--gold) 55%, var(--line)); border-radius:var(--r-m);
+  transition:transform var(--muelle-toque);
+}
+.tu-mes-fav:active{transform:scale(.98)}
+.tu-mes-racha{font-size: var(--t-xs); font-weight:700; color:var(--red)}
+@media (min-width:641px){ .tu-mes-fav{width:auto; max-width:480px; padding-right: var(--e-7)} }
+.tu-mes-fav img, .tu-mes-fav-img{flex:none; width:44px; height:66px; object-fit:cover; border-radius:var(--r-s); background:var(--panel2)}
+.tu-mes-fav-texto{display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
+.tu-mes-fav-rotulo{font-size: var(--t-xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-texto)}
+.tu-mes-fav-titulo{font-weight:700}
+.tu-mes-fav-nota{color:var(--gold-texto); letter-spacing:.1em; font-size: var(--t-s)}
+.tu-mes-compartir{margin-top: var(--e-4)}
+@media (max-width:640px){
+  .tu-mes-cifras{grid-template-columns:repeat(2, minmax(0, 1fr))}
+}
 .diario-grupo + .diario-grupo{margin-top: var(--e-5)}
 /* en escritorio, filas de 1.280 px con un título corto: a dos columnas */
 @media (min-width:900px){

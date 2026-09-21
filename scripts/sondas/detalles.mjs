@@ -120,6 +120,32 @@ let malas = 0
   malas += informe('detalles · logro desbloqueado', filas)
 }
 
+// Tu mes (21 sep 2026): con marcas de este mes y del anterior, las cifras,
+// la frase frente al mes anterior, navegar al anterior y el favorito
+{
+  const ahora = new Date(), y = ahora.getFullYear(), m = ahora.getMonth()
+  const d = (mm, dia) => new Date(y, mm, dia, 21).getTime()
+  const siembraMes = {
+    'maraton-marvel-v1': { 'first-class': d(m, 1), 'origins-wolverine': d(m, 1), xmen1: d(m, 1), x2: d(m, 1), ironman1: d(m - 1, 20), cap1: d(m - 1, 22) },
+    'maraton-marvel-eps-v1': { 'legion:1:1': d(m, 1), 'legion:1:2': d(m, 1) },
+    'maraton-marvel-notas-v1': { x2: { p: 5 }, 'first-class': { p: 4 } },
+  }
+  const { cdp, navega, cierra, errores } = await abre({ siembra: siembraMes })
+  const filas = []
+  try {
+    await navega('#stats')
+    await cdp.hasta(`!!document.querySelector('.tu-mes-cifras')`, 4000)
+    const r = await cdp.eval(`({ cifras: [...document.querySelectorAll('.tu-mes-cifras b')].map(b => b.textContent), frase: document.querySelector('.tu-mes-frase')?.textContent || '', fav: document.querySelector('.tu-mes-fav-titulo')?.textContent })`)
+    filas.push([r.cifras[1] === '4' && r.cifras[2] === '2' && r.cifras[3] === '1' && /^Sobre todo la saga X-Men \(4 títulos\)/.test(r.frase) && /más que en/.test(r.frase) && r.fav === 'X-Men 2', `tu mes: ${JSON.stringify(r)}`])
+    await cdp.eval(`document.querySelector('.tu-mes-nav .chip-btn').click()`)
+    await espera(300)
+    const a = await cdp.eval(`({ titulos: document.querySelectorAll('.tu-mes-cifras b')[1]?.textContent, sig: document.querySelectorAll('.tu-mes-nav .chip-btn')[1].disabled })`)
+    filas.push([a.titulos === '2' && a.sig === false, `mes anterior: ${a.titulos} títulos, «›» activo (${!a.sig})`])
+    filas.push([errores.length === 0, `errores en consola: ${errores.length}`])
+  } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
+  malas += informe('detalles · tu mes', filas)
+}
+
 // Modo cine en el móvil: título sin partir por el guion, flechas debajo del
 // contenido y deslizar pasa de título (21 sep 2026)
 {
