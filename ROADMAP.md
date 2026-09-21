@@ -31,6 +31,17 @@ Cronología completa (X-Men + UCM + cómics) · vista por estreno · episodios m
 | **Calendario en la portada** (15 sep 2026) | Pedido por Sebastián: ver al entrar qué días viste qué y las reseñas y estrellas que pusiste | Medio |
 | **Pendiente: el progreso de los amigos** (15 sep 2026) | Pedido por Sebastián, para más adelante: ver cómo van sus amigos con el maratón y cómo valoraron lo que vieron, en sus perfiles. Hay piezas: perfil compartible por enlace (bits de lo visto), modo duelo y club (Firebase). Falta: que el perfil lleve fechas y notas/reseñas (hoy solo bits), una vista «Amigos» con varios perfiles guardados y, para verlo en vivo, la cuenta de Google encendida (`src/nube.js`, `NUBE = null`: Sebastián tiene que crear el proyecto Firebase) | Alto |
 
+## Fase 8 — Mejoras, optimización y funcionalidades (plan del 21 sep 2026)
+
+Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidades, continúa con cada etapa».
+
+| Etapa | Qué entra | Estado |
+|---|---|---|
+| 1 · Revisión | code-review de los commits del 21 sep: 3 hallazgos (aviso de logro con lo sincronizado, un fotograma del segundo aviso, planeta que se quedaba en hover), los 3 arreglados | ✅ |
+| 2 · Optimización del arranque | Datos grandes (plataformas de 19 países, episodios) como JSON en vez de literales JS, medido A/B con la sonda `arranque` (base: usable 2,27 s, LCP 2,7 s, bloqueo 336 ms, 308 kB gzip) | — |
+| 3 · Resumen del mes | En Perfil, estilo Strava: horas, títulos, racha y tu mejor valorado del mes; compartible como imagen | — |
+| 4 · Comunidades, fase 5 | Moderación (cola de reportes, bloquear, editar en 24 h), probada contra el Supabase local | — |
+
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 
 **Estado:** fases 1 y 2 hechas y probadas contra un Supabase local (`npm run comunidad:sonda`: reglas 69/69 y cuenta de punta a punta). La cuenta está en la app, apagada: se enciende pegando Project URL + anon key en `src/nube.js` tras crear el proyecto (supabase/LEEME.md). Perfil público `#u/…`, seguir, buscar por @ y «Sigues a…» también hechos (fase 2 completa). Fase 3 en marcha: comunidades (crear, descubrir, unirse, invitar con #i/, ranking 7/30 días) hechas. Retos con fecha y muro con aplausos también hechos: fase 3 completa. Fase 4 hecha: foros por título y por comunidad, hilos con velo según tu progreso, spoilers en línea, menciones, votos, respuestas anidadas, reportes, avisos y moderación. Siguiente: fase 5 (cola de reportes para moderar dentro de la app, bloquear desde el perfil, editar en 24 h).

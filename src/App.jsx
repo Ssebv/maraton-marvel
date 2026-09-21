@@ -3730,13 +3730,15 @@ const FONDOS_WEBP = typeof __FONDOS_WEBP__ !== 'undefined' ? __FONDOS_WEBP__ : [
 // el mismo borde. Tocarlo lleva a los logros. La región viva va siempre
 // montada (VoiceOver no lee una que nace con texto: ver Deshacer).
 function LogroAviso({ aviso, onCerrar, onIr }) {
-  const [sale, setSale] = useState(false)
+  // la salida es de UN aviso (su id): un booleano seguía en true al llegar el
+  // siguiente y lo pintaba un fotograma en su sitio antes de entrar (code-review)
+  const [saleId, setSaleId] = useState(null)
+  const sale = !!aviso && saleId === aviso.id
   const cerrar = useRef(onCerrar)
   cerrar.current = onCerrar
   useEffect(() => {
     if (!aviso) return undefined
-    setSale(false)
-    const t1 = setTimeout(() => setSale(true), 4200)
+    const t1 = setTimeout(() => setSaleId(aviso.id), 4200)
     const t2 = setTimeout(() => cerrar.current(), 4200 + 260)
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [aviso])
@@ -3748,7 +3750,7 @@ function LogroAviso({ aviso, onCerrar, onIr }) {
       <span className="solo-lector" role="status">{texto}</span>
       {l && (
         <button type="button" className={`logro-aviso${sale ? ' sale' : ''}`} key={aviso.id} aria-hidden="true" tabIndex={-1}
-          onClick={() => { setSale(true); setTimeout(() => cerrar.current(), 260); onIr() }}>
+          onClick={() => { setSaleId(aviso.id); setTimeout(() => cerrar.current(), 260); onIr() }}>
           <span className="logro-aviso-emoji">{l.e}</span>
           <span className="logro-aviso-texto">
             <span className="logro-aviso-rotulo">{tr('Logro desbloqueado', 'Achievement unlocked')}{mas ? tr(` · y ${mas} más`, ` · and ${mas} more`) : ''}</span>
@@ -6388,6 +6390,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
   const aplicandoRemoto = React.useRef(false)
+  // cuándo llegó lo último remoto: el aviso de logro lo mira (aplicandoRemoto
+  // ya lo ha consumido el efecto de empujar, que va antes; code-review 21 sep)
+  const remotoEn = React.useRef(0)
   const ultimoAplicado = React.useRef(0)
 
   // ── La cuenta de la comunidad (si el proyecto NUBE de Supabase está configurado) ──
@@ -6552,7 +6557,7 @@ export default function App() {
           } catch {}
         }
         ultimoAplicado.current = datos.t
-        aplicandoRemoto.current = true
+        aplicandoRemoto.current = true; remotoEn.current = Date.now()
         if (v) { setVistas(v); try { localStorage.setItem(KEY, JSON.stringify(v)) } catch {} }
         if (e) { setEps(e); try { localStorage.setItem(KEY_EPS, JSON.stringify(e)) } catch {} }
         if (n) { setNotas(n); try { localStorage.setItem(KEY_NOTAS, JSON.stringify(n)) } catch {} }
@@ -6696,7 +6701,7 @@ export default function App() {
         // el marcador ANTES de soltar la sincronización: su primer tirón no
         // debe re-aplicar un remoto más viejo que la unión recién subida
         ultimoAplicado.current = t
-        aplicandoRemoto.current = true
+        aplicandoRemoto.current = true; remotoEn.current = Date.now()
         setVistas(v); setEps(e); setNotas(n); setListas(l); setLecturas(lec)
         if (h) guardaHorario(h)
         try {
@@ -6813,7 +6818,7 @@ export default function App() {
         const n = { ...(esObj(datos) && saneaNotas(datos.n) || {}), ...notas }
         const lRemoto = (esObj(datos) && saneaListas(datos.l)) || []
         const l = [...lRemoto, ...listas.filter(x => !lRemoto.some(r => r.id === x.id))]
-        aplicandoRemoto.current = true
+        aplicandoRemoto.current = true; remotoEn.current = Date.now()
         setVistas(v); setEps(e); setNotas(n); setListas(l)
         localStorage.setItem(KEY, JSON.stringify(v))
         localStorage.setItem(KEY_EPS, JSON.stringify(e))
@@ -7661,7 +7666,7 @@ export default function App() {
   useEffect(() => {
     const antes = logrosAntes.current
     logrosAntes.current = logrosOk
-    if (!antes || aplicandoRemoto.current || Date.now() - arranque.current < 2000) return
+    if (!antes || Date.now() - remotoEn.current < 2000 || Date.now() - arranque.current < 2000) return
     const nuevos = logrosOk.filter(id => !antes.includes(id))
     if (nuevos.length && nuevos.length <= 3) setLogroAviso({ id: Date.now(), ids: nuevos })
   }, [logrosOk])
@@ -8274,7 +8279,7 @@ export default function App() {
                       const pieza = (u, clase, orbe, nombre) => (
                         <Pieza className={mvSobre === u.num ? `${clase} sobre` : clase} style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u) }}
                           {...(nombres ? {} : {
-                            onClick: () => abreTierra(u.num), title: u.nombre, 'aria-label': nombre,
+                            onClick: () => { setMvSobre(null); abreTierra(u.num) }, title: u.nombre, 'aria-label': nombre,
                             onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null),
                             onFocus: () => setMvSobre(u.num), onBlur: () => setMvSobre(null),
                           })}>

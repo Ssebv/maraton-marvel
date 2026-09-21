@@ -37,6 +37,16 @@ const abierta = `!!document.querySelector('.tierra')`
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', clickCount: 1 })
       const ok = await cdp.hasta(abierta, 2000).then(() => true, () => false)
       filas.push([ok, `clic en el nombre del ${quien} «${p.t}» abre su Tierra`])
+      if (ok && i === 1) {
+        // al volver, el planeta que se tocó no se queda agrandado (su
+        // pointerleave no llega: la vista del Sistema se desmonta al abrir)
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 }) // con el ratón encima, el hover sería legítimo
+        await cdp.eval(`document.querySelector('.tierra .chip-btn').click()`)
+        await cdp.hasta(`!!document.querySelector('.sistema')`, 3000)
+        await espera(400)
+        const quedan = await cdp.eval(`document.querySelectorAll('.sistema .sobre').length`)
+        filas.push([quedan === 0, `al volver de su Tierra ningún planeta se queda en hover (${quedan})`])
+      }
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 })
     }
     filas.push([errores.length === 0, `sin errores de consola (${errores.length})`])
