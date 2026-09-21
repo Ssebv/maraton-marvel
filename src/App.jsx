@@ -889,6 +889,48 @@ const decodificaSync = cod => {
   return null
 }
 const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+// Búsqueda que perdona (21 sep 2026): «spiderman», «x men», «end game» o
+// «loki t2» no encontraban nada (el guion y los espacios contaban), ni
+// «deadpol» por una letra. Tres niveles: el texto tal cual; sin espacios ni
+// signos (compacto); y palabra por palabra, cada palabra de la búsqueda en el
+// título compacto o a una errata de alguna palabra suya (dos desde 8 letras).
+const compacto = t => t.replace(/[^a-z0-9]/g, '')
+function distanciaHasta(a, b, tope) {
+  if (Math.abs(a.length - b.length) > tope) return tope + 1
+  let fila = Array.from({ length: b.length + 1 }, (_, j) => j)
+  for (let i = 1; i <= a.length; i++) {
+    const nueva = [i]
+    let min = i
+    for (let j = 1; j <= b.length; j++) {
+      nueva[j] = Math.min(fila[j] + 1, nueva[j - 1] + 1, fila[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+      if (nueva[j] < min) min = nueva[j]
+    }
+    if (min > tope) return tope + 1
+    fila = nueva
+  }
+  return fila[b.length]
+}
+const preparaBusca = q => {
+  const n = norm(q).trim()
+  return { n, c: compacto(n), palabras: n.split(/[^a-z0-9]+/).filter(Boolean) }
+}
+const pajarBusca = texto => {
+  const n = norm(texto)
+  return { n, c: compacto(n), palabras: [...new Set(n.split(/[^a-z0-9]+/).filter(Boolean))] }
+}
+function coincide(p, q, tolerante = true) {
+  if (!q.n) return true
+  if (p.n.includes(q.n)) return true
+  if (q.c.length >= 3 && p.c.includes(q.c)) return true
+  if (!tolerante || !q.palabras.length) return false
+  // cada palabra contra las palabras del pajar, no contra el texto pegado
+  // (en «portmantom» del reparto aparecían «ant» y «man»): las cortas como
+  // principio de palabra, las largas dentro de una o a una errata
+  const tope = w => (w.length >= 8 ? 2 : 1)
+  return q.palabras.every(w => w.length < 4
+    ? p.palabras.some(x => x.startsWith(w))
+    : p.palabras.some(x => x.includes(w) || (w.length >= 5 && distanciaHasta(w, x, tope(w)) <= tope(w))))
+}
 
 // \u2500\u2500 Saneado de todo lo que entra de fuera \u2500\u2500
 // Un try/catch protege de lo ilegible, no de un dato con la forma equivocada:
@@ -7518,25 +7560,27 @@ export default function App() {
     const m = {}
     DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
       m[it.id] = {
-        base: norm([it.t, T_ES[it.id] || '', TITULOS_LATAM[it.id] || '', TITULOS_EN[it.id] || '', it.en || '', it.dir || '', ...(it.cast || []), String(it.r)].join(' ')),
+        base: pajarBusca([it.t, T_ES[it.id] || '', TITULOS_LATAM[it.id] || '', TITULOS_EN[it.id] || '', it.en || '', it.dir || '', ...(it.cast || []), String(it.r)].join(' ')),
         // los episodios también en sus tres idiomas, como los títulos; van
         // aparte porque en modo sin spoilers los de un título no visto no
         // cuentan (la lista los enseña como «Episodio N» y la búsqueda no
         // debe delatarlos)
-        eps: norm([...(EP_ES[it.id] || []),
+        eps: pajarBusca([...(EP_ES[it.id] || []),
           ...Object.values(EPISODIOS_LATAM[it.id] || {}),
           ...Object.values(EPISODIOS_EN[it.id] || {})].join(' ')),
       }
     })))
     return m
   }, [pais, idioma])
-  const qBusca = buscaLenta ? norm(buscaLenta) : ''
+  const qBusca = useMemo(() => preparaBusca(buscaLenta || ''), [buscaLenta])
   const pasaFiltro = (item, esComic) => {
     if (buscaLenta) {
       const p = pajares[item.id], q = qBusca
       if (!p) return false
       const conEps = !(sinSpoilers && !vistas[item.id])
-      if (!p.base.includes(q) && !(conEps && p.eps.includes(q))) return false
+      // los episodios sin tolerancia a erratas: son cientos de palabras y
+      // «loki» a una letra de todo daba falsos positivos
+      if (!coincide(p.base, q) && !(conEps && coincide(p.eps, q, false))) return false
     }
     if (filtros.series && item.tipo === 'serie') return false
     if (filtros.opc && item.opt) return false

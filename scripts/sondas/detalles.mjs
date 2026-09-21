@@ -120,6 +120,34 @@ let malas = 0
   malas += informe('detalles · logro desbloqueado', filas)
 }
 
+// Búsqueda que perdona (21 sep 2026): sin espacios ni signos, erratas de una
+// letra, y sin falsos positivos por trozos de palabras del reparto
+{
+  const { cdp, navega, cierra, errores } = await abre()
+  const filas = []
+  try {
+    await navega('#crono')
+    await espera(1200)
+    const busca = async q => {
+      await cdp.eval(`(() => { const i = document.querySelector('.controles .busca'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, ${JSON.stringify(q)}); i.dispatchEvent(new Event('input', { bubbles: true })) })()`)
+      await espera(500)
+      return cdp.eval(`[...document.querySelectorAll('.card .titulo')].map(t => t.textContent)`)
+    }
+    const casos = [
+      ['spiderman', r => r.some(t => /Spider-Man: Sin camino a casa/.test(t))],
+      ['x men', r => r.includes('X-Men 2')],
+      ['end game', r => r.length === 1 && /Endgame/.test(r[0])],
+      ['loki t2', r => r.length === 1 && /Loki \(T2\)/.test(r[0])],
+      ['deadpol', r => r.some(t => t === 'Deadpool')],
+      ['ant man', r => r.length === 3 && r.every(t => /Ant-Man/.test(t))],
+      ['qwerty', r => r.length === 0],
+    ]
+    for (const [q, ok] of casos) { const r = await busca(q); filas.push([ok(r), `buscar «${q}»: ${r.length} (${r.slice(0, 3).join(' | ')})`]) }
+    filas.push([errores.length === 0, `errores en consola: ${errores.length}`])
+  } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
+  malas += informe('detalles · búsqueda', filas)
+}
+
 // Tu mes (21 sep 2026): con marcas de este mes y del anterior, las cifras,
 // la frase frente al mes anterior, navegar al anterior y el favorito
 {
