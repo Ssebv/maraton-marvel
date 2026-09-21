@@ -1609,10 +1609,10 @@ main.galeria{margin-top: var(--e-6)}
   display:flex; flex-direction:column; align-items:center; gap: var(--e-2);
   transition:transform var(--dur-media) var(--curva);
 }
-.planeta-nav:hover, .sol:hover{transform:scale(1.18)}
+.planeta-nav.sobre{transform:scale(1.18)}
 .planeta-orbe{position:relative; width:56px; height:56px; top:auto; right:auto; display:block}
 .sol{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); z-index:2}
-.sol:hover{transform:translate(-50%, -50%) scale(1.12)}
+.sol.sobre{transform:translate(-50%, -50%) scale(1.12)}
 .planeta-sol{
   width:92px; height:92px;
   box-shadow:0 0 55px 6px color-mix(in srgb, var(--tc, var(--red)) 55%, transparent);
@@ -1630,7 +1630,7 @@ main.galeria{margin-top: var(--e-6)}
   background:color-mix(in srgb, var(--bg) 92%, transparent); padding: var(--e-1) var(--e-3); border-radius:var(--r-s);
   white-space:nowrap;
 }
-.planeta-nav:hover .nav-nombre, .sol:hover .nav-nombre{color:var(--ink)}
+.sobre .nav-nombre{color:var(--ink)}
 /* los nombres van en su propia capa, encima de todos los planetas (App.jsx):
    la capa de planetas guarda el hueco del nombre sin pintarlo */
 .sistema-capa{position:absolute; inset:0}
@@ -2052,7 +2052,7 @@ main.crono, main.comics, main.estreno{animation:none}
      conservan el suyo o se descoloca la vista entera */
   .card:hover, .card:active, .mv-card:hover, .tl-card:hover, .galeria-item:hover,
   .pf-item:hover, .persona:hover .avatar, .dot:hover, .estrella:hover,
-  .planeta-nav:hover, .cine-flecha:hover:not(:disabled), .chip-btn:active,
+  .planeta-nav.sobre, .cine-flecha:hover:not(:disabled), .chip-btn:active,
   .checkbox:active, .accion-principal:active,
   .galeria-item:active, .tl-card:active, .mv-card:active, .pf-item:active, .volver-ficha:active,
   .cine-flecha:active, .prov-chip:active, .aviso-btn:active, .persona:active .avatar{
@@ -2060,7 +2060,7 @@ main.crono, main.comics, main.estreno{animation:none}
   }
   .version-nueva:active{transform:translateX(-50%) !important}
   .nav-ficha:active{transform:translateY(-50%) !important}
-  .nodo:hover, .sol:hover{transform:translate(-50%, -50%) !important}
+  .nodo:hover, .sol.sobre{transform:translate(-50%, -50%) !important}
 }
 
 /* En táctil, tocar dispara :hover y el elemento se queda levantado o
@@ -2069,10 +2069,10 @@ main.crono, main.comics, main.estreno{animation:none}
 @media (hover: none), (pointer: coarse){
   .card:hover, .mv-card:hover, .tl-card:hover, .galeria-item:hover,
   .pf-item:hover, .persona:hover .avatar, .dot:hover, .estrella:hover,
-  .planeta-nav:hover{
+  .planeta-nav.sobre{
     transform:none;
   }
-  .nodo:hover, .sol:hover{transform:translate(-50%, -50%)}
+  .nodo:hover, .sol.sobre{transform:translate(-50%, -50%)}
   .card:hover{box-shadow:var(--card-shadow)}
   .mv-card:hover, .tl-card:hover{box-shadow:none}
 }

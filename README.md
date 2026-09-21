@@ -163,7 +163,7 @@ La hoja de estilos tiene reglas fijas. Se revisaron en agosto de 2026 para que l
 npm install
 npm test        # comprueba el contrato, el dataset, los archivos y las reglas del CSS
 npm run desplegar   # verifica → compila → copia a docs/ → vuelve a verificar
-npm run sonda       # Chrome sin cabeza contra dist/: humo, cupo, HIG, detalles, barra, fluidez, arranque y memoria
+npm run sonda       # Chrome sin cabeza contra dist/: humo, cupo, HIG, detalles, barra, fluidez, navegación, sistema, arranque y memoria
 npm run produccion  # tras el push: espera a que Pages sirva el md5 de docs/
 npm run comunidad:rls       # reglas de la base de la comunidad en un PostgreSQL local (67 comprobaciones)
 npm run comunidad:catalogo  # regenera supabase/catalogo.sql cuando entra un título
@@ -192,7 +192,9 @@ npm run comunidad:sonda     # reglas + cuenta + perfil y seguir + comunidades + 
 5. **`barra`**: en escritorio las secciones y Ajustes están en la barra de la app (a 1280 y 1920), transparente arriba y con fondo al bajar, la barra de herramientas pegada debajo y ausente en Perfil, la tecla 2 lleva a Perfil, y en el móvil sigue el dock en `<body>`.
 6. **`arranque`**: arranque en frío con red 4G lenta y CPU ×4 (tiempo hasta usable, primer pintado, LCP, bloqueo y bytes).
 7. **`fluidez`**: con la CPU a ×4 y tres pasadas, cuánto tarda en arrancar la animación al cambiar de sección, cuánto dura el render y si hay fotogramas de más de 50 ms durante la animación. Para comparar dos builds, `DIST=<carpeta>` y alternarlas: la máquina mete ruido.
-8. **`memoria`**: seis vueltas por todas las vistas abriendo y cerrando fichas; falla si entre la vuelta de la mitad y la última crecen el heap (>5 %), los nodos, los oyentes o los intervalos vivos. Medido el 16 de septiembre de 2026: 6 MB de heap, 3.637 nodos y 3 intervalos, planos: sin fugas.
+8. **`navegacion`**: en el móvil, las subvistas y Perfil empiezan en su principio, volver a Maratón devuelve a la misma tarjeta, una Tierra y una lista son carpetas (atrás y la pestaña activa salen a donde estabas), la hoja recuerda el scroll de cada pantalla y volver con el dock es una sola transición.
+9. **`sistema`**: en Multiverso › Sistema, con ratón y dedo reales (no `.click()`), clicar o tocar el nombre del sol o de un planeta abre su Tierra, y en escritorio el hover agranda y aviva a la vez el planeta y su nombre, que viven en capas distintas.
+10. **`memoria`**: seis vueltas por todas las vistas abriendo y cerrando fichas; falla si entre la vuelta de la mitad y la última crecen el heap (>5 %), los nodos, los oyentes o los intervalos vivos. Medido el 16 de septiembre de 2026: 6 MB de heap, 3.637 nodos y 3 intervalos, planos: sin fugas.
 
 Se corre una sola con `node scripts/sondas/<nombre>.mjs`. `lib.mjs` trae `abre`, `navega`, `memoria`, `toca` y `captura` para escribir una nueva.
 

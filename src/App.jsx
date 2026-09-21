@@ -5996,6 +5996,9 @@ export default function App() {
   })
   const [tierra, setTierra] = useState(null)
   const [mvModo, setMvModo] = useState('sistema')
+  // planeta bajo el puntero o con foco: el botón y su nombre viven en capas
+  // distintas del Sistema y :hover solo llega al botón (code-review)
+  const [mvSobre, setMvSobre] = useState(null)
   const [planModal, setPlanModal] = useState(false)
   const [planHoras, setPlanHoras] = useState(2)
   const [planExpress, setPlanExpress] = useState(true)
@@ -8187,8 +8190,12 @@ export default function App() {
                       const u616 = MULTIVERSO.find(u => u.num === 'Tierra-616')
                       const Pieza = nombres ? 'span' : 'button'
                       const pieza = (u, clase, orbe, nombre) => (
-                        <Pieza className={clase} style={{ '--tc': u.c }}
-                          {...(nombres ? {} : { onClick: () => abreTierra(u.num), title: u.nombre, 'aria-label': nombre })}>
+                        <Pieza className={mvSobre === u.num ? `${clase} sobre` : clase} style={{ '--tc': u.c }}
+                          {...(nombres ? {} : {
+                            onClick: () => abreTierra(u.num), title: u.nombre, 'aria-label': nombre,
+                            onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null),
+                            onFocus: () => setMvSobre(u.num), onBlur: () => setMvSobre(null),
+                          })}>
                           {orbe}
                           <span className="nav-nombre">{nombre}</span>
                         </Pieza>
