@@ -12,7 +12,7 @@
     "comunidad:rls": "node scripts/comunidad/rls.mjs",
     "comunidad:catalogo": "node scripts/comunidad/catalogo.mjs",
     "comunidad:local": "node scripts/comunidad/local.mjs",
-    "comunidad:sonda": "node scripts/comunidad/rls.mjs && node scripts/sondas/cuenta.mjs && node scripts/sondas/seguir.mjs && node scripts/sondas/comunidades.mjs && node scripts/sondas/muro.mjs && node scripts/sondas/discusiones.mjs",
+    "comunidad:sonda": "node scripts/comunidad/rls.mjs && node scripts/sondas/cuenta.mjs && node scripts/sondas/seguir.mjs && node scripts/sondas/comunidades.mjs && node scripts/sondas/muro.mjs && node scripts/sondas/discusiones.mjs && node scripts/sondas/moderacion.mjs",
     "contrato": "node scripts/contrato.mjs",
     "plataformas": "node scripts/plataformas.mjs; node scripts/paises.mjs; node scripts/titulos.mjs; node scripts/titulos-en.mjs; node scripts/episodios.mjs; node scripts/episodios-en.mjs",
     "titulos": "node scripts/titulos.mjs",

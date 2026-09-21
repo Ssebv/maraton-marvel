@@ -524,6 +524,97 @@ function Reportar({ tipo, refId, comunidad, cuenta, token }) {
   )
 }
 
+// Cola de reportes (fase 5, 21 sep 2026): quien modera una comunidad ve los
+// abiertos de esa comunidad; la administración, todos (los foros abiertos no
+// tienen comunidad). Ver lleva al contenido, «Ocultar y resolver» lo oculta
+// con rpc/moderar y cierra el reporte, «Descartar» lo cierra sin tocar nada.
+// Todo queda en el registro de moderación (lo escribe la base).
+function ColaReportes({ token, comunidad, onAbrirHilo }) {
+  const [lista, setLista] = useState(null)
+  const [error, setError] = useState('')
+  const carga = async () => {
+    try {
+      const filtro = comunidad ? `&comunidad=eq.${comunidad}` : ''
+      const r = await rest(await token(), `reportes?estado=eq.abierto${filtro}&select=id,tipo,ref,motivo,detalle,creado,comunidad,reportante:perfiles!reportes_reportante_fkey(nombre)&order=creado.asc&limit=50`)
+      setLista((Array.isArray(r) ? r : []).filter(x => esObj(x) && typeof x.id === 'number' && typeof x.ref === 'string'))
+    } catch { setLista([]); setError(tr('No se pudo cargar la cola.', 'Could not load the queue.')) }
+  }
+  useEffect(() => { carga() }, [comunidad])
+  if (!lista || lista.length === 0) return lista && error ? <p className="import-error" role="status">{error}</p> : null
+  const ver = async x => {
+    try {
+      const t = await token()
+      if (x.tipo === 'hilo') onAbrirHilo(Number(x.ref))
+      else if (x.tipo === 'respuesta') { const f = await rest(t, `respuestas?id=eq.${x.ref}&select=hilo`); if (Array.isArray(f) && f[0]) onAbrirHilo(f[0].hilo) }
+      else if (x.tipo === 'perfil') { const f = await rest(t, `perfiles?id=eq.${x.ref}&select=nombre`); if (Array.isArray(f) && f[0]) location.hash = 'u/' + f[0].nombre }
+    } catch {}
+  }
+  const resuelve = async (x, estado, ocultar) => {
+    setError('')
+    try {
+      const t = await token()
+      if (ocultar) await rest(t, 'rpc/moderar', { method: 'POST', body: { tipo_in: x.tipo, id_in: Number(x.ref), accion_in: 'ocultar' } })
+      await rest(t, 'rpc/resolver_reporte', { method: 'POST', body: { id_in: x.id, estado_in: estado } })
+      setLista(l => l.filter(y => y.id !== x.id))
+    } catch { setError(tr('No se pudo resolver. Inténtalo otra vez.', 'Could not resolve. Try again.')) }
+  }
+  const tipos = { hilo: ['Hilo', 'Thread'], respuesta: ['Respuesta', 'Reply'], perfil: ['Perfil', 'Profile'], comunidad: ['Comunidad', 'Community'] }
+  return (
+    <section className="comunidades-bloque cola-reportes" aria-labelledby={`cola-${comunidad || 'todo'}`}>
+      <h3 className="grafica-titulo" id={`cola-${comunidad || 'todo'}`}>{tr('Reportes por revisar', 'Reports to review')} <span className="tab-insignia-texto">{lista.length}</span></h3>
+      {error && <p className="import-error" role="status">{error}</p>}
+      <ul className="cola-lista">
+        {lista.map(x => {
+          const m = MOTIVOS_REPORTE.find(y => y[0] === x.motivo)
+          const tt = tipos[x.tipo] || [x.tipo, x.tipo]
+          return (
+            <li key={x.id} className="cola-fila">
+              <span className="cola-que"><b>{m ? tr(m[1], m[2]) : x.motivo}</b> · {tr(tt[0], tt[1])} · {haceCuanto(Date.parse(x.creado))}{esObj(x.reportante) ? ` · @${x.reportante.nombre}` : ''}</span>
+              {x.detalle && <span className="cola-detalle">{x.detalle}</span>}
+              <span className="ajuste-ops">
+                {x.tipo !== 'comunidad' && <button type="button" className="chip-btn" onClick={() => ver(x)}>{tr('Ver', 'View')}</button>}
+                {(x.tipo === 'hilo' || x.tipo === 'respuesta') && <button type="button" className="chip-btn destacado" onClick={() => resuelve(x, 'resuelto', true)}>{tr('Ocultar y resolver', 'Hide and resolve')}</button>}
+                {x.tipo !== 'hilo' && x.tipo !== 'respuesta' && <button type="button" className="chip-btn" onClick={() => resuelve(x, 'resuelto', false)}>{tr('Resuelto', 'Resolved')}</button>}
+                <button type="button" className="chip-btn" onClick={() => resuelve(x, 'descartado', false)}>{tr('Descartar', 'Dismiss')}</button>
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+// Editar lo propio en las primeras 24 h (la base lo exige igual: política
+// «editar … propio 24 h» y columnas titulo/cuerpo); marca «editado».
+const EDITABLE_MS = 24 * 3600 * 1000
+function EditaTexto({ inicial, conTitulo, tituloInicial, onGuardar, onCancelar }) {
+  const [texto, setTexto] = useState(inicial || '')
+  const [titulo, setTitulo] = useState(tituloInicial || '')
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  return (
+    <form className="respuesta-form edita-texto" onSubmit={async e => {
+      e.preventDefault()
+      if (!texto.trim() && !conTitulo) return
+      if (conTitulo && titulo.trim().length < 3) return
+      setEnviando(true); setError('')
+      try { await onGuardar({ texto: texto.trim(), titulo: titulo.trim() }) } catch (er) {
+        setEnviando(false)
+        setError(er && /enlace no permitido/.test(er.message) ? tr('Ese enlace no se puede publicar.', 'That link can’t be posted.') : tr('No se pudo guardar (solo se puede editar en las primeras 24 h).', 'Could not save (you can only edit in the first 24 h).'))
+      }
+    }}>
+      {conTitulo && <input className="busca" maxLength={120} aria-label={tr('Título', 'Title')} value={titulo} onChange={e => setTitulo(e.target.value)} />}
+      <textarea className="busca sync-input comunidad-descripcion" rows={4} maxLength={10000} autoFocus aria-label={tr('Texto', 'Text')} value={texto} onChange={e => setTexto(e.target.value)} />
+      {error && <span className="import-error" role="alert">{error}</span>}
+      <span className="ajuste-ops">
+        <button className="chip-btn destacado" type="submit" disabled={enviando}>{enviando ? tr('Guardando…', 'Saving…') : tr('Guardar', 'Save')}</button>
+        <button className="chip-btn" type="button" onClick={onCancelar}>{tr('Cancelar', 'Cancel')}</button>
+      </span>
+    </form>
+  )
+}
+
 function RespuestaForm({ hilo, padre, cuenta, token, onHecha, onCancelar, autoFocus }) {
   const [texto, setTexto] = useState('')
   const [error, setError] = useState('')
@@ -565,6 +656,11 @@ function HiloHoja({ saliendo, id, cuenta, token, vistas, eps, onCerrar, onVerPer
   const [modera, setModera] = useState(false)
   const [revela, setRevela] = useState(false)
   const [respondiendo, setRespondiendo] = useState(null)
+  const [editando, setEditando] = useState(null) // 'hilo' o el id de una respuesta
+  const guarda = async (tipo, rid, cambios) => {
+    await rest(await token(), `${tipo === 'hilo' ? 'hilos' : 'respuestas'}?id=eq.${rid}`, { method: 'PATCH', prefer: 'return=minimal', body: cambios })
+    setEditando(null); await carga(); onCambio()
+  }
   const carga = async () => {
     try {
       const t = cuenta ? await token() : null
@@ -624,12 +720,15 @@ function HiloHoja({ saliendo, id, cuenta, token, vistas, eps, onCerrar, onVerPer
           <button className="muro-quien" onClick={() => onVerPerfil(r.autor.nombre)}>@{r.autor.nombre}</button>
           <span className="muro-cuando">{haceCuanto(Date.parse(r.creado))}{r.oculto ? tr(' · oculta por moderación', ' · hidden by moderators') : ''}</span>
         </div>
-        <CuerpoTexto texto={r.cuerpo} onPerfil={onVerPerfil} className="respuesta-cuerpo" />
+        {editando === r.id
+          ? <EditaTexto inicial={r.cuerpo} onCancelar={() => setEditando(null)} onGuardar={({ texto }) => guarda('respuesta', r.id, { cuerpo: texto })} />
+          : <CuerpoTexto texto={r.cuerpo} onPerfil={onVerPerfil} className="respuesta-cuerpo" />}
         <div className="respuesta-acciones">
           <button type="button" className={`hilo-accion voto${votados.resp[r.id] ? ' hecho' : ''}`} aria-pressed={!!votados.resp[r.id]} onClick={() => vota('respuesta', r.id)}
             aria-label={tr(`Votar a favor, ${r.votos} votos`, `Upvote, ${r.votos} votes`)}>▲ {r.votos}</button>
           {cuenta && r.profundidad < 2 && <button type="button" className="hilo-accion" onClick={() => setRespondiendo(r.id)}>{tr('Responder', 'Reply')}</button>}
           {!propia && <Reportar tipo="respuesta" refId={r.id} comunidad={h.comunidad} cuenta={cuenta} token={token} />}
+          {propia && editando !== r.id && Date.now() - Date.parse(r.creado) < EDITABLE_MS && <button type="button" className="hilo-accion" onClick={() => setEditando(r.id)}>{tr('Editar', 'Edit')}</button>}
           {propia && r.hijos === 0 && <button type="button" className="hilo-accion" onClick={() => borrar('respuesta', r.id)}>{tr('Borrar', 'Delete')}</button>}
           {modera && <button type="button" className="hilo-accion" onClick={() => moderar('respuesta', r.id, r.oculto ? 'mostrar' : 'ocultar')}>{r.oculto ? tr('Mostrar', 'Unhide') : tr('Ocultar', 'Hide')}</button>}
         </div>
@@ -655,11 +754,13 @@ function HiloHoja({ saliendo, id, cuenta, token, vistas, eps, onCerrar, onVerPer
                 {h.oculto && <span className="tipo plat">{tr('Oculto por moderación', 'Hidden by moderators')}</span>}
                 {h.titulo_ref && <span className="hilo-ref">{nombreRef(h)}</span>}
               </span>
-              <h2 className="modal-titulo">{h.titulo}</h2>
+              {editando === 'hilo'
+                ? <EditaTexto conTitulo tituloInicial={h.titulo} inicial={h.cuerpo} onCancelar={() => setEditando(null)} onGuardar={({ texto, titulo }) => guarda('hilo', h.id, { titulo, cuerpo: texto })} />
+                : <h2 className="modal-titulo">{h.titulo}</h2>}
               <p className="perfil-cuenta">
                 <button className="muro-quien" onClick={() => onVerPerfil(h.autor.nombre)}>@{h.autor.nombre}</button> · {haceCuanto(h.creado)}{h.editado ? tr(' · editado', ' · edited') : ''}
               </p>
-              {h.cuerpo && (velado ? (
+              {editando !== 'hilo' && h.cuerpo && (velado ? (
                 <div className="hilo-velado">
                   <p className="hilo-cuerpo borroso" aria-hidden="true">{h.cuerpo.slice(0, 280)}</p>
                   <div className="hilo-velo">
@@ -671,6 +772,7 @@ function HiloHoja({ saliendo, id, cuenta, token, vistas, eps, onCerrar, onVerPer
               <div className="respuesta-acciones hilo-acciones">
                 <button type="button" className={`chip-btn voto${votados.hilo ? ' hecho' : ''}`} aria-pressed={votados.hilo} onClick={() => vota('hilo')}>▲ {h.votos}</button>
                 {cuenta && h.autor.id !== cuenta.uid && <Reportar tipo="hilo" refId={h.id} comunidad={h.comunidad} cuenta={cuenta} token={token} />}
+                {cuenta && h.autor.id === cuenta.uid && editando !== 'hilo' && Date.now() - h.creado < EDITABLE_MS && <button type="button" className="hilo-accion" onClick={() => setEditando('hilo')}>{tr('Editar', 'Edit')}</button>}
                 {cuenta && h.autor.id === cuenta.uid && h.respuestas === 0 && <button type="button" className="hilo-accion" onClick={() => borrar('hilo', h.id)}>{tr('Borrar hilo', 'Delete thread')}</button>}
                 {modera && <button type="button" className="hilo-accion" onClick={() => moderar('hilo', h.id, h.fijado ? 'desfijar' : 'fijar')}>{h.fijado ? tr('Desfijar', 'Unpin') : tr('Fijar', 'Pin')}</button>}
                 {modera && <button type="button" className="hilo-accion" onClick={() => moderar('hilo', h.id, h.oculto ? 'mostrar' : 'ocultar')}>{h.oculto ? tr('Mostrar', 'Unhide') : tr('Ocultar', 'Hide')}</button>}
@@ -2732,9 +2834,13 @@ function PerfilPublico({ saliendo, nombre, cuenta, token, onCerrar, onEntrar }) 
   const [datos, setDatos] = useState(null) // null cargando · false no existe · 'error' · objeto
   const [ocupado, setOcupado] = useState(false)
   const [copiado, setCopiado] = useState(false)
+  const [bloqueado, setBloqueado] = useState(false)
   const carga = async () => {
     try {
       const j = await rest(cuenta ? await token() : null, 'rpc/perfil_publico', { method: 'POST', body: { nombre_in: nombre } })
+      // de alguien que bloqueaste la base solo da id, @nombre y avatar
+      // (migración 20260921120000): se enseña eso y «Desbloquear»
+      setBloqueado(esObj(j) && j.bloqueado === true)
       const p = esObj(j) && saneaPerfil({ ...j, priv_progreso: 'publico', priv_resenas: 'publico', priv_logros: 'publico' })
       if (!p) { setDatos(false); return }
       const notas = j.notas == null ? null : (saneaNotas(j.notas) || {})
@@ -2767,6 +2873,21 @@ function PerfilPublico({ saliendo, nombre, cuenta, token, onCerrar, onEntrar }) 
       setDatos(d => ({ ...d, loSigo: ya, seguidores: d.seguidores + (ya ? 1 : -1) }))
     } finally { setOcupado(false) }
   }
+  // Bloquear (fase 5): no verás sus hilos ni respuestas, no podrá seguirte ni
+  // mencionarte (lo aplica la base). Si lo seguías, se deja de seguir.
+  const bloquea = async () => {
+    const ya = bloqueado
+    setOcupado(true); setBloqueado(!ya)
+    try {
+      const t = await token()
+      if (ya) await rest(t, `bloqueos?quien=eq.${cuenta.uid}&a_quien=eq.${datos.id}`, { method: 'DELETE', prefer: 'return=minimal' })
+      else {
+        await rest(t, 'bloqueos', { method: 'POST', prefer: 'return=minimal', body: { quien: cuenta.uid, a_quien: datos.id } })
+        if (datos.loSigo) await rest(t, `seguimientos?seguidor=eq.${cuenta.uid}&seguido=eq.${datos.id}`, { method: 'DELETE', prefer: 'return=minimal' })
+      }
+      await carga()
+    } catch { setBloqueado(ya) } finally { setOcupado(false) }
+  }
   return (
     <div className={'overlay' + (saliendo || '')} ref={ref} tabIndex={-1} onClick={onCerrar} role="dialog" aria-modal="true" aria-label={tr(`Perfil de @${nombre}`, `@${nombre}’s profile`)}>
       <div className="modal perfil-hoja" onClick={e => e.stopPropagation()}>
@@ -2782,14 +2903,16 @@ function PerfilPublico({ saliendo, nombre, cuenta, token, onCerrar, onEntrar }) 
                 <div className="perfil-textos">
                   <h2 className="modal-titulo">@{datos.nombre}</h2>
                   {datos.nombre_visible && <p className="perfil-visible">{datos.nombre_visible}</p>}
-                  <p className="perfil-cuenta">
-                    <b>{datos.seguidores}</b> {datos.seguidores === 1 ? tr('seguidor', 'follower') : tr('seguidores', 'followers')} · <b>{datos.siguiendo}</b> {tr('siguiendo', 'following')}
-                  </p>
+                  {!bloqueado && (
+                    <p className="perfil-cuenta">
+                      <b>{datos.seguidores}</b> {datos.seguidores === 1 ? tr('seguidor', 'follower') : tr('seguidores', 'followers')} · <b>{datos.siguiendo}</b> {tr('siguiendo', 'following')}
+                    </p>
+                  )}
                 </div>
               </header>
               {datos.bio && <p className="modal-res perfil-bio">{datos.bio}</p>}
               <div className="modal-acciones">
-                {!propio && (
+                {!propio && !bloqueado && (
                   <button className={datos.loSigo ? 'chip-btn' : 'accion-principal'} aria-pressed={datos.loSigo} disabled={ocupado} onClick={sigue}>
                     {!cuenta ? tr('Entra para seguir', 'Sign in to follow') : datos.loSigo ? tr('Siguiendo', 'Following') : tr('Seguir', 'Follow')}
                   </button>
@@ -2800,8 +2923,17 @@ function PerfilPublico({ saliendo, nombre, cuenta, token, onCerrar, onEntrar }) 
                   else navigator.clipboard.writeText(url).then(() => { setCopiado(true); setTimeout(() => setCopiado(false), 2500) })
                 }}>{copiado ? tr('¡Enlace copiado!', 'Link copied!') : tr('Compartir perfil', 'Share profile')}</button>
               </div>
+              {cuenta && !propio && (
+                <div className="respuesta-acciones perfil-seguridad">
+                  <button type="button" className="hilo-accion" aria-pressed={bloqueado} disabled={ocupado} onClick={bloquea}>
+                    {bloqueado ? tr(`Desbloquear a @${datos.nombre}`, `Unblock @${datos.nombre}`) : tr('Bloquear', 'Block')}
+                  </button>
+                  <Reportar tipo="perfil" refId={datos.id} cuenta={cuenta} token={token} />
+                </div>
+              )}
+              {bloqueado && <p className="ajuste-pista" role="status">{tr(`Bloqueaste a @${datos.nombre}: no verás sus hilos ni sus respuestas, y no podrá seguirte ni mencionarte.`, `You blocked @${datos.nombre}: you won’t see their threads or replies, and they can’t follow or mention you.`)}</p>}
               {propio && <p className="ajuste-pista">{tr('Así ves tu perfil tú. Los demás ven cada parte según tu privacidad (Ajustes › Cuenta).', 'This is how you see your profile. Others see each part according to your privacy (Settings › Account).')}</p>}
-              {datos.vistas ? (
+              {bloqueado ? null : datos.vistas ? (
                 <div className="perfil-cuerpo">
                   <PerfilCifras est={est} pct={pct} />
                   <PerfilMapa est={est} vistasP={datos.vistas} />
@@ -2855,6 +2987,15 @@ function Comunidades({ cuenta, token, recarga, onEntrar, onAbrir, onCrear, onCod
     })()
     return () => { vivo = false }
   }, [cuenta && cuenta.uid, recarga])
+  // la administración ve la cola de TODOS los reportes (los foros abiertos no
+  // tienen comunidad): se pregunta a la base, que es quien decide
+  const [admin, setAdmin] = useState(false)
+  useEffect(() => {
+    if (!cuenta) { setAdmin(false); return undefined }
+    let vivo = true
+    token().then(t => rest(t, 'rpc/es_admin', { method: 'POST', body: {} })).then(r => { if (vivo) setAdmin(r === true) }).catch(() => {})
+    return () => { vivo = false }
+  }, [cuenta && cuenta.uid])
   const [mias, setMias] = useState(null)
   const [publicas, setPublicas] = useState(null)
   const [codigo, setCodigo] = useState('')
@@ -2904,6 +3045,7 @@ function Comunidades({ cuenta, token, recarga, onEntrar, onAbrir, onCrear, onCod
           {errorCodigo && <span className="import-error" role="status">{errorCodigo}</span>}
         </form>
       )}
+      {admin && <ColaReportes token={token} comunidad={null} onAbrirHilo={onAbrirHilo} />}
       {cuenta && avisos.length > 0 && (
         <section className="comunidades-bloque">
           <h3 className="grafica-titulo">{tr('Avisos', 'Notifications')} <span className="tab-insignia-texto">{avisos.length}</span></h3>
@@ -3240,6 +3382,7 @@ function ComunidadHoja({ saliendo, direccion, cuenta, token, onCerrar, onVerPerf
                   {hayMas && muro && <button className="chip-btn" onClick={() => cargaMuro(muro[muro.length - 1].creado)}>{tr('Ver más', 'Show more')}</button>}
                 </section>
               )}
+              {puedeInvitar && <ColaReportes token={token} comunidad={c.id} onAbrirHilo={onAbrirHilo} />}
               {yo && (
                 <section className="comunidad-yo">
                   <h3 className="grafica-titulo">{tr('Tú en esta comunidad', 'You in this community')}</h3>

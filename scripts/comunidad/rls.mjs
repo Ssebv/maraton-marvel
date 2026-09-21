@@ -181,6 +181,12 @@ try {
   prueba(r.out === '0', `ana bloqueó a carla y no ve sus hilos (${r.out})`)
   r = como('beto', `select count(*) from hilos where comunidad is null`)
   prueba(r.out === '6', 'el bloqueo de ana no afecta a beto')
+  // el perfil de quien bloqueaste: lo mínimo para reconocerlo y desbloquear,
+  // sin progreso (antes null: tras bloquear no había cómo deshacerlo)
+  r = como('ana', `select perfil_publico(nombre) ->> 'bloqueado', perfil_publico(nombre) ? 'vistas', perfil_publico(nombre) ? 'seguidores' from perfiles where id = '${U.carla}'`)
+  prueba(r.out === 'true|f|f', `perfil de alguien bloqueado: bloqueado, sin progreso ni contadores (${r.out})`)
+  r = como('beto', `select perfil_publico(nombre) ->> 'bloqueado' from perfiles where id = '${U.carla}'`)
+  prueba(r.out === 'false', `para quien no bloqueó, bloqueado = false (${r.out})`)
 
   // ── moderación ──
   const hiloCarla = como('beto', `select min(id) from hilos where comunidad is null`).out
