@@ -118,7 +118,11 @@ try {
     // buscar por @ y el perfil propio
     await s.cdp.eval(`document.querySelector('.chip-ajustes').click()`)
     await s.cdp.hasta(`!!document.querySelector('#cuenta-buscar')`, 8000)
-    await s.cdp.eval(`(() => { const i = document.querySelector('#cuenta-buscar'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '@${alfa.nombre.toUpperCase()}'); i.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('.cuenta-buscar').requestSubmit() })()`)
+    await s.cdp.eval(`(() => { const i = document.querySelector('#cuenta-buscar'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '@${alfa.nombre.toUpperCase()}'); i.dispatchEvent(new Event('input', { bubbles: true })) })()`)
+    // enviar en otro paso, como una persona: en la misma tarea el formulario
+    // aún tenía el valor anterior con un motor que pinta en la microtarea
+    await espera(50)
+    await s.cdp.eval(`document.querySelector('.cuenta-buscar').requestSubmit()`)
     await s.cdp.hasta(`!!document.querySelector('.perfil-hoja .perfil-cab')`, 8000).catch(() => null)
     h = await hoja(s)
     prueba(h && h.titulo === `@${alfa.nombre}` && !h.botones.includes('Seguir') && /Así ves tu perfil/.test(h.texto), 'buscar «@ALFA_…» abre el perfil propio: sin Seguir y con la nota de privacidad')

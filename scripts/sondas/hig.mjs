@@ -56,11 +56,18 @@ try {
   filas.push([Math.abs(caja.izq - caja.der) <= 2 && caja.izq >= 16, `aviso centrado: ${caja.izq} px a la izquierda, ${caja.der} a la derecha, ${caja.ancho} de ancho`])
   // se toca a los 3,5 s: quedaban 1,5 y al soltar debe dar al menos 3
   await espera(3500)
-  await cdp.eval(`document.querySelector('.deshacer').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }))`)
+  // dedo de verdad (CDP) sobre el texto del aviso, no un pointerover
+  // sintético: ese imitaba cómo escucha React y no sirve con otro motor
+  const dedo = async tipo => {
+    if (tipo === 'touchEnd') return cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    const p = await cdp.eval(`(() => { const r = document.querySelector('.deshacer-texto').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
+    return cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [p] })
+  }
+  await dedo('touchStart')
   await espera(3000)
   const sigue = await cdp.eval(`!!document.querySelector('.deshacer')`)
   filas.push([sigue, `con el dedo encima desde el 3,5 s, sigue a los 6,5 s (se iba a los 5): ${sigue}`])
-  await cdp.eval(`document.querySelector('.deshacer').dispatchEvent(new PointerEvent('pointerout', { bubbles: true }))`)
+  await dedo('touchEnd')
   await espera(2000)
   const aun = await cdp.eval(`!!document.querySelector('.deshacer')`)
   await espera(1800)
@@ -73,7 +80,12 @@ try {
   await espera(300)
   if (!(await cdp.eval(`!!document.querySelector('.deshacer')`))) { await cdp.eval(`document.querySelector('.card.vista .checkbox, .card .checkbox').click()`); await espera(300) }
   await cdp.hasta(`!!document.querySelector('.deshacer')`, 3000)
-  await cdp.eval(`(() => { const d = document.querySelector('.deshacer'); d.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })); d.querySelector('button').focus(); d.dispatchEvent(new PointerEvent('pointerout', { bubbles: true })) })()`)
+  // el dedo toca y se va; el foco queda en «Deshacer» (con teclado o
+  // VoiceOver): el puntero ya no está, pero el foco basta para que siga
+  await dedo('touchStart')
+  await dedo('touchEnd')
+  await espera(100)
+  await cdp.eval(`document.querySelector('.deshacer button').focus()`)
   await espera(6000)
   const conFoco = await cdp.eval(`!!document.querySelector('.deshacer') && document.activeElement === document.querySelector('.deshacer button')`)
   filas.push([conFoco, `con el foco en «Deshacer» y el puntero fuera, sigue a los 6 s: ${conFoco}`])

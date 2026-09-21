@@ -1886,9 +1886,15 @@ let entradaAtras = !!(history.state && history.state.capa === 1)
 // que volver a escribir la buena al aterrizar.
 let urlEstado = null
 let consumiendoAtras = false
+// Largo del historial con la entrada de la capa puesta. Ir a un #hash nuevo
+// (un enlace #c/…, #u/…) TAMBIÉN dispara popstate, y con una capa abierta
+// (Perfil lo es: atrás vuelve a Maratón) se tomaba por un «atrás»: se reponía
+// la URL anterior y el enlace se perdía (21 sep 2026). Atrás no cambia el
+// largo; una navegación nueva lo alarga.
+let largoAtras = history.length
 function conciliaAtras() {
   queueMicrotask(() => {
-    if (capasAtras.length && !entradaAtras) { history.pushState({ capa: 1 }, ''); entradaAtras = true }
+    if (capasAtras.length && !entradaAtras) { history.pushState({ capa: 1 }, ''); entradaAtras = true; largoAtras = history.length }
     else if (!capasAtras.length && entradaAtras) { entradaAtras = false; consumiendoAtras = true; history.back() }
   })
 }
@@ -1899,6 +1905,7 @@ window.addEventListener('popstate', () => {
     return
   }
   if (!capasAtras.length || !entradaAtras) return
+  if (history.length > largoAtras) { largoAtras = history.length; return }
   entradaAtras = false
   // la entrada de abajo puede llevar la URL de otra vista (se escribió antes
   // de apilar la capa: Multiverso → Perfil → una lista, atrás, dejaba
