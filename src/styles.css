@@ -2087,7 +2087,10 @@ main.crono, main.comics, main.estreno{animation:none}
 }
 @media (min-width:1240px){
   .wrap{max-width:1720px; padding: 0 var(--e-8)}
-  .hero{display:flex; align-items:flex-end; justify-content:space-between; gap: var(--e-8); flex-wrap:wrap}
+  /* entre filas 24 y no 48: con 48 + su margen, «Tu calendario» quedaba a
+     64 px de las cifras, más lejos que ninguna otra cosa (21 sep 2026) */
+  .hero{display:flex; align-items:flex-end; justify-content:space-between; gap: var(--e-6) var(--e-8); flex-wrap:wrap}
+  .hero > .cal-inicio{margin-top:0}
   .hero-titulo{flex:none}
   .stats{margin-top: 0; flex:1; max-width:880px; min-width:560px}
   main.crono{
@@ -2913,6 +2916,10 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .diario-estrellas{color:var(--gold-texto); font-size: var(--t-s); letter-spacing:.1em}
 .diario-mas{margin: var(--e-3) 0 0; font-size: var(--t-xs); color:var(--ink3)}
 .diario-grupo + .diario-grupo{margin-top: var(--e-5)}
+/* en escritorio, filas de 1.280 px con un título corto: a dos columnas */
+@media (min-width:900px){
+  .diario-lista{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr))}
+}
 .diario-mes{
   margin: var(--e-4) 0 var(--e-3); font-size: var(--t-xs); font-weight:700; color:var(--ink3);
   text-transform:uppercase; letter-spacing:.08em;
@@ -3205,6 +3212,34 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
   .siguiente-marcar:active{transform:scale(.96)}
 }
 
+/* En escritorio y tableta (21 sep 2026): «Siguiente» era solo texto, sin
+   carátula ni botón, en una caja con media altura vacía; la acción principal
+   de la app estaba solo en el móvil. Aquí .stats SÍ es rejilla: el botón
+   comparte celda con la tarjeta (abajo a la derecha) y la carátula entra a
+   la izquierda del texto. */
+@media (min-width:641px){
+  .stats-inicio .siguiente-stat{
+    grid-column:3; grid-row:1;
+    display:flex; flex-direction:row; align-items:flex-start; gap: var(--e-4);
+    padding-bottom:calc(var(--e-5) + 36px + var(--e-3));
+  }
+  .stats-inicio .stat-sig-img{display:block; flex:none; width:44px; height:66px; object-fit:cover; border-radius:var(--r-s); background:var(--panel2)}
+  .stats-inicio .stat-sig-texto{display:flex; flex-direction:column; gap: var(--e-2); min-width:0; flex:1}
+  .stats-inicio .siguiente-marcar{
+    grid-column:3; grid-row:1; align-self:end; justify-self:end; margin: 0 var(--e-5) var(--e-5) 0; z-index:1;
+    display:inline-flex; align-items:center; gap: var(--e-2); position:relative;
+    padding: var(--e-2) var(--e-4); min-height:36px; border-radius:var(--r-pill);
+    border:1.5px solid var(--done); background:transparent; color:var(--done);
+    font:inherit; font-size: var(--t-s); font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; cursor:pointer;
+    transition:transform var(--muelle-toque);
+  }
+  .stats-inicio .siguiente-marcar svg{width:14px; height:14px}
+  .stats-inicio .siguiente-marcar:active{transform:scale(.96)}
+  @media (hover:hover) and (pointer:fine){
+    .stats-inicio .siguiente-marcar:hover{background:color-mix(in srgb, var(--done) 12%, transparent)}
+  }
+}
+
 /* ── «Dónde estoy»: píldora fija con la saga y la era, abre el índice ── */
 .donde{
   position:fixed; top:0; left:50%; z-index:35;
@@ -3346,8 +3381,9 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 /* ── Tamaños intermedios (repaso de layout, 16 sep 2026) ── */
 /* 360 px: la etiqueta del titular se partía en dos líneas */
 @media (max-width:380px){ .hero-eyebrow{letter-spacing:.06em} }
-/* iPad: cuatro próximos estrenos en 2×2 y no 3 + 1 huérfano */
-@media (min-width:641px) and (max-width:1239px){
+/* cuatro próximos estrenos en 2×2 y no 3 + 1 huérfano: en el iPad (16 sep)
+   y también en escritorio, donde a 1440 quedaba «X-Men (UCM)» solo en su fila */
+@media (min-width:641px){
   .proximos:has(> :nth-child(4):last-child){grid-template-columns:repeat(2, minmax(0, 1fr))}
 }
 /* móvil apaisado (unos 390 px de alto): titular y cifras ocupaban toda la

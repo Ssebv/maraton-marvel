@@ -136,6 +136,10 @@ for (const ancho of [1280, 1600]) {
     const l = await cdp.eval(`({ cols: getComputedStyle(document.querySelector('main.crono')).gridTemplateColumns, plegada: !!document.querySelector('main.crono .saga.plegada') })`)
     const dos = /^[\d.]+px [\d.]+px$/.test(l.cols)
     filas.push([dos !== l.plegada, `lista: ${l.cols}${l.plegada ? ' (una saga plegada: una columna)' : ''}`])
+    // «Siguiente» con carátula y «Marcar» dentro de su celda (21 sep 2026)
+    const sg = await cdp.eval(`(() => { const s = document.querySelector('.siguiente-stat')?.getBoundingClientRect(), b = document.querySelector('.siguiente-marcar')?.getBoundingClientRect(), i = document.querySelector('.stat-sig-img')
+      return s && b ? { dentro: b.width > 40 && b.left >= s.left && b.right <= s.right && b.top >= s.top && b.bottom <= s.bottom, img: !!i && i.getBoundingClientRect().width > 30 } : null })()`)
+    filas.push([!!sg && sg.dentro && sg.img, `«Siguiente» con carátula y «Marcar» dentro de la tarjeta: ${JSON.stringify(sg)}`])
     filas.push([errores.length === 0, `errores en consola: ${errores.length}`])
   } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
   malas += informe(`detalles · escritorio ${ancho}`, filas)

@@ -7842,8 +7842,8 @@ export default function App() {
                 }
               }, vista !== 'crono' || desplegado ? 120 : 0)
             }}>
-              {/* carátula solo en móvil (CSS): ahí «Siguiente» es la acción
-                  de la primera pantalla y debe leerse como una tarjeta */}
+              {/* carátula: «Siguiente» es la acción de la primera pantalla y
+                  debe leerse como una tarjeta (en escritorio desde el 21 sep) */}
               {POSTERS[stats.siguiente.id] && <img className="stat-sig-img" src={POSTERS[stats.siguiente.id]} alt="" loading="lazy" decoding="async" />}
               <span className="stat-sig-texto">
               <span className="stat-label">{tr('Siguiente', 'Up next')}</span>
@@ -7857,9 +7857,9 @@ export default function App() {
               {/* solo en móvil (CSS): la flecha dice que la tarjeta se pulsa, como una fila de iOS */}
               <svg className="stat-sig-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
             </button>
-            {/* marcar sin abrir la ficha (solo móvil, CSS): va FUERA del botón
+            {/* marcar sin abrir la ficha: va FUERA del botón
                 de la tarjeta —un botón no puede llevar otro dentro— y el CSS lo
-                pone encima, a la derecha */}
+                pone encima, a la derecha (en escritorio, abajo en la misma celda) */}
             {(() => {
               const s = stats.siguiente
               const lista = s.tipo === 'serie' ? EPISODES[s.id] : null
