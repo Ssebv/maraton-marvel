@@ -78,7 +78,7 @@ for (const ancho of [1280, 1920]) {
 // en el móvil; los filtros y las acciones viven en sus hojas
 {
   const filas = []
-  const { cdp, navega, cierra } = await abre()
+  const { cdp, navega, cierra, errores } = await abre()
   try {
     await navega('#crono')
     await cdp.hasta(`!!document.querySelector('.ctrl-filtros')`, 5000)
@@ -93,13 +93,24 @@ for (const ancho of [1280, 1920]) {
     await espera(300)
     const puesto = await cdp.eval(`(() => { const b = [...document.querySelectorAll('.filtro-fila')].find(x => x.textContent.includes('Solo pendientes'))
       return { marcado: b.getAttribute('aria-checked'), cuenta: (document.querySelector('.ctrl-cuenta') || {}).textContent } })()`)
-    await cdp.eval(`document.querySelector('.overlay .cerrar').click()`); await espera(500)
+    // la hoja que sale sigue montada 360 ms (useSaliente): se espera a que no
+    // quede ninguna y se pregunta solo por la abierta (code-review)
+    await cdp.eval(`document.querySelector('.overlay .cerrar').click()`)
+    await cdp.hasta(`!document.querySelector('.overlay')`, 3000)
     await cdp.eval(`document.querySelector('.ctrl-mas').click()`)
-    await cdp.hasta(`!!document.querySelector('.filtro-fila')`, 3000)
-    const acciones = await cdp.eval(`[...document.querySelectorAll('.filtro-fila b')].map(b => b.textContent)`)
+    await cdp.hasta(`!!document.querySelector('.overlay:not(.saliendo) .filtro-fila')`, 3000)
+    const acciones = await cdp.eval(`[...document.querySelectorAll('.overlay:not(.saliendo) .filtro-fila b')].map(b => b.textContent)`)
     filas.push([n === 6 && puesto.marcado === 'true' && puesto.cuenta === '1', `hoja de Filtros: ${n} filtros, «Solo pendientes» queda puesto y el botón lleva la cuenta (${puesto.cuenta})`])
     filas.push([acciones.length === 4 && acciones.includes('Modo cine'), `hoja de Más: ${JSON.stringify(acciones)}`])
-  } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
+    // atrás cierra la hoja abierta sin salir de la vista (regla del proyecto:
+    // toda capa nueva se registra en useVolverCierra)
+    const conCapa = await cdp.eval(`({ capa: (history.state || {}).capa || 0 })`)
+    await cdp.eval(`history.back()`)
+    await espera(800)
+    const tras = await cdp.eval(`({ hoja: !!document.querySelector('.overlay:not(.saliendo)'), hash: location.hash })`)
+    filas.push([conCapa.capa >= 1 && !tras.hoja && tras.hash === '#crono', `la hoja añade su paso atrás (capa ${conCapa.capa}) y atrás la cierra sin salir de la vista (${JSON.stringify(tras)})`])
+    filas.push([errores.length === 0, `errores en consola: ${errores.length}`])
+  } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message])} finally { await cierra() }
   malas += informe('barra ordenada · móvil 390', filas)
 }
 

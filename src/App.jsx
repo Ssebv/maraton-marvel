@@ -2237,10 +2237,23 @@ let consumiendoAtras = false
 // la URL anterior y el enlace se perdía (21 sep 2026). Atrás no cambia el
 // largo; una navegación nueva lo alarga.
 let largoAtras = history.length
+// El back() de cerrar una capa es ASÍNCRONO: si otra capa se abre antes de que
+// llegue el popstate (cerrar Filtros y abrir Más de dos toques seguidos), la
+// nueva pedía su entrada y la vuelta pendiente se la comía; después, atrás
+// sacaba de la vista con la hoja abierta (22 sep 2026). Ahora el consumo se
+// aplaza un poco y, si vuelve a haber capas, se cancela y se reutiliza la
+// entrada que ya está puesta.
+let consumoPendiente = null
 function conciliaAtras() {
   queueMicrotask(() => {
-    if (capasAtras.length && !entradaAtras) { history.pushState({ capa: 1 }, ''); entradaAtras = true; largoAtras = history.length }
-    else if (!capasAtras.length && entradaAtras) { entradaAtras = false; consumiendoAtras = true; history.back() }
+    if (capasAtras.length && !entradaAtras) {
+      if (consumoPendiente) { clearTimeout(consumoPendiente); consumoPendiente = null; entradaAtras = true; return }
+      history.pushState({ capa: 1 }, ''); entradaAtras = true; largoAtras = history.length
+    } else if (!capasAtras.length && entradaAtras) {
+      entradaAtras = false
+      if (consumoPendiente) clearTimeout(consumoPendiente)
+      consumoPendiente = setTimeout(() => { consumoPendiente = null; consumiendoAtras = true; history.back() }, 120)
+    }
   })
 }
 window.addEventListener('popstate', () => {
@@ -7065,6 +7078,8 @@ export default function App() {
   useDialogo(refDuelo, () => setDueloModal(false), dueloModal)
   useDialogo(refClub, () => setClubModal(false), clubModal)
   useDialogo(refInvitar, () => setClubInvitar(false), !!(clubInvitar && club))
+  useVolverCierra(filtrosModal, () => setFiltrosModal(false))
+  useVolverCierra(masModal, () => setMasModal(false))
   useVolverCierra(planModal, () => setPlanModal(false))
   useVolverCierra(horarioModal, () => setHorarioModal(false))
   useVolverCierra(perfilModal, () => setPerfilModal(false))
@@ -8747,20 +8762,12 @@ export default function App() {
         <span className="toolbar-tope" aria-hidden="true" />
         <div className="controles" role="group" aria-label={tr('Vista y filtros', 'View and filters')}>
           {esMovil && createPortal(navTabs, document.body)}
-          {/* los filtros solo actúan sobre las listas del maratón (crono,
-              estreno, cómics, animación, galería, cine): en Mío y Multiverso
-              no cambian nada y solo estorbaban en el carril */}
-          {destinoDe(vista) === 'maraton' && (
-            <>
-            </>
-          )}
-          <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
           {enMaraton && (<>
-          <button className="chip-btn ctrl-filtros" aria-pressed={filtrosActivos > 0} aria-expanded={filtrosModal} onClick={() => setFiltrosModal(true)}>
+          <button className="chip-btn ctrl-filtros" aria-haspopup="dialog" aria-expanded={filtrosModal} onClick={() => setFiltrosModal(true)}>
             {tr('Filtros', 'Filters')}{filtrosActivos > 0 && <span className="ctrl-cuenta">{filtrosActivos}</span>}
           </button>
-          <button className="chip-btn ctrl-mas" aria-expanded={masModal} onClick={() => setMasModal(true)}>{tr('Más', 'More')}</button>
+          <button className="chip-btn ctrl-mas" aria-haspopup="dialog" aria-expanded={masModal} onClick={() => setMasModal(true)}>{tr('Más', 'More')}</button>
           <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio o actor', 'Title, episode or actor') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
             // en el móvil la tecla dice «Buscar» y al pulsarla se esconde el
@@ -9972,7 +9979,9 @@ export default function App() {
                 ))}
               </div>
               <div className="modal-acciones">
-                {filtrosActivos > 0 && <button className="chip-btn" onClick={() => setFiltros(sinFiltros())}>{tr('Quitar todos', 'Clear all')}</button>}
+                {/* no se desmonta al pulsarlo: si desaparece bajo el foco, el
+                    siguiente Tab se va fuera de la hoja (code-review) */}
+                <button className="chip-btn" disabled={filtrosActivos === 0} onClick={() => setFiltros(sinFiltros())}>{tr('Quitar todos', 'Clear all')}</button>
                 <button className="accion-principal" onClick={() => setFiltrosModal(false)}>{tr('Listo', 'Done')}</button>
               </div>
             </div>
