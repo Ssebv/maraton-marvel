@@ -6785,6 +6785,11 @@ export default function App() {
   // es (nombre y ficha debajo) y el segundo entra (Sebastián, 22 sep 2026)
   const [mvSel, setMvSel] = useState(null)
   const [planModal, setPlanModal] = useState(false)
+  // La barra mezclaba 6 filtros, 4 acciones y el buscador en un carril que
+  // había que deslizar (22 sep 2026): ahora Buscar, Filtros (con cuántos hay
+  // puestos) y Más, cada grupo en su hoja
+  const [filtrosModal, setFiltrosModal] = useState(false)
+  const [masModal, setMasModal] = useState(false)
   const [planHoras, setPlanHoras] = useState(2)
   const [planExpress, setPlanExpress] = useState(true)
   const [horario, setHorario] = useState(() => leeGuardado(KEY_HORARIO, saneaHorario, null))
@@ -7052,7 +7057,10 @@ export default function App() {
   useDialogo(refAjustes, () => setAjustes(false), ajustes)
   // y lo mismo el resto de ventanas del maratón
   const refPlan = useRef(null), refPerfilM = useRef(null), refDuelo = useRef(null), refClub = useRef(null), refInvitar = useRef(null)
+  const refFiltros = useRef(null), refMas = useRef(null)
   useDialogo(refPlan, () => setPlanModal(false), planModal)
+  useDialogo(refFiltros, () => setFiltrosModal(false), filtrosModal)
+  useDialogo(refMas, () => setMasModal(false), masModal)
   useDialogo(refPerfilM, () => setPerfilModal(false), perfilModal)
   useDialogo(refDuelo, () => setDueloModal(false), dueloModal)
   useDialogo(refClub, () => setClubModal(false), clubModal)
@@ -8253,6 +8261,18 @@ export default function App() {
   }, [sesionHoy])
 
   const [planMontado, planSale] = useSaliente(planModal)
+  const [filtrosMontado, filtrosSale] = useSaliente(filtrosModal)
+  const [masMontado, masSale] = useSaliente(masModal)
+  const sorprendeme = () => {
+    const pendientes = []
+    DATA.forEach(saga => { if (saga.saga === 'comics' || saga.saga === 'animacion') return
+      saga.eras.forEach(era => era.items.forEach(item => {
+        if (pasaFiltro(item, false) && !vistas[item.id]) pendientes.push({ item, c: era.c })
+      })) })
+    if (!pendientes.length) return
+    const e = pendientes[Math.floor(Math.random() * pendientes.length)]
+    setDetalle({ item: e.item, c: e.c, esComic: false })
+  }
   const plan = useMemo(() => {
     if (!planMontado) return null
     let restante = planHoras * 60
@@ -8732,34 +8752,15 @@ export default function App() {
               no cambian nada y solo estorbaban en el carril */}
           {destinoDe(vista) === 'maraton' && (
             <>
-          <span className="ctrl-sep" aria-hidden="true" />
-          <div className="ctrl-grupo">
-          <button className="chip-btn destacado" aria-pressed={filtros.express} onClick={() => setF('express')}>{tr('Ruta express', 'Express route')}</button>
-          <button className="chip-btn" aria-pressed={filtros.series} onClick={() => setF('series')}>{tr('Sin series', 'No series')}</button>
-          <button className="chip-btn" aria-pressed={filtros.opc} onClick={() => setF('opc')}>{tr('Sin opcionales', 'No optionals')}</button>
-          <button className="chip-btn" aria-pressed={filtros.vistas} onClick={() => setF('vistas')}>{tr('Solo pendientes', 'Pending only')}</button>
-          <button className="chip-btn" aria-pressed={filtros.joyas} onClick={() => setF('joyas')}>{tr('Joyas ★7,5+', 'Gems ★7.5+')}</button>
-          <button className="chip-btn" aria-pressed={filtros.disney} onClick={() => setF('disney')}>{tr('En Disney+', 'On Disney+')}</button>
-          </div>
             </>
           )}
           <span className="ctrl-sep" aria-hidden="true" />
           <div className="ctrl-grupo">
           {enMaraton && (<>
-          <button className="chip-btn destacado" aria-pressed={planModal} onClick={() => setPlanModal(true)}>{tr('Plan de sesión', 'Session plan')}</button>
-          <button className="chip-btn" aria-pressed={horarioModal} onClick={() => setHorarioModal(true)}>{tr('Horario', 'Schedule')}</button>
-          <button className="chip-btn" onClick={() => { setCineIdx(0); setCine(true) }}>{tr('Modo cine', 'Cinema mode')}</button>
-          <button className="chip-btn" onClick={() => {
-            const pendientes = []
-            DATA.forEach(saga => { if (saga.saga === 'comics' || saga.saga === 'animacion') return
-              saga.eras.forEach(era => era.items.forEach(item => {
-                if (pasaFiltro(item, false) && !vistas[item.id]) pendientes.push({ item, c: era.c })
-              })) })
-            if (pendientes.length) {
-              const e = pendientes[Math.floor(Math.random() * pendientes.length)]
-              setDetalle({ item: e.item, c: e.c, esComic: false })
-            }
-          }}>{tr('Sorpréndeme', 'Surprise me')}</button>
+          <button className="chip-btn ctrl-filtros" aria-pressed={filtrosActivos > 0} aria-expanded={filtrosModal} onClick={() => setFiltrosModal(true)}>
+            {tr('Filtros', 'Filters')}{filtrosActivos > 0 && <span className="ctrl-cuenta">{filtrosActivos}</span>}
+          </button>
+          <button className="chip-btn ctrl-mas" aria-expanded={masModal} onClick={() => setMasModal(true)}>{tr('Más', 'More')}</button>
           <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio o actor', 'Title, episode or actor') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
             // en el móvil la tecla dice «Buscar» y al pulsarla se esconde el
@@ -9950,6 +9951,55 @@ export default function App() {
           </div>
         </div>
       )}
+      {filtrosMontado && (
+        <div className={'overlay' + filtrosSale} ref={refFiltros} tabIndex={-1} onClick={() => setFiltrosModal(false)} role="dialog" aria-modal="true" aria-label={tr('Filtros', 'Filters')}>
+          <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+            <button className="cerrar" onClick={() => setFiltrosModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
+            <div className="modal-info">
+              <h2 className="modal-titulo">{tr('Filtros', 'Filters')}</h2>
+              <p className="modal-res">{tr('Cambian lo que enseñan las listas del maratón, la galería y el modo cine.', 'They change what the marathon lists, the gallery and cinema mode show.')}</p>
+              <div className="filtros-hoja">
+                {[['express', tr('Ruta express', 'Express route'), tr('Solo lo imprescindible para llegar a Doomsday', 'Only what you need to reach Doomsday')],
+                  ['vistas', tr('Solo pendientes', 'Pending only'), tr('Esconde lo que ya marcaste', 'Hides what you already marked')],
+                  ['series', tr('Sin series', 'No series'), tr('Solo películas y especiales', 'Only films and specials')],
+                  ['opc', tr('Sin opcionales', 'No optionals'), tr('Fuera lo prescindible', 'Drops what you can skip')],
+                  ['joyas', tr('Joyas ★7,5+', 'Gems ★7.5+'), tr('Solo lo mejor valorado en IMDb', 'Only the best rated on IMDb')],
+                  ['disney', tr('En Disney+', 'On Disney+'), tr(`Lo que hoy está en Disney+ en ${nombrePaisIdioma(pais)}`, `What's on Disney+ today in ${nombrePaisIdioma(pais)}`)]].map(([k, nombre, pista]) => (
+                  <button key={k} className="filtro-fila" role="switch" aria-checked={!!filtros[k]} onClick={() => setF(k)}>
+                    <span className="filtro-texto"><b>{nombre}</b><small>{pista}</small></span>
+                    <span className="filtro-marca" aria-hidden="true"><CheckIcon /></span>
+                  </button>
+                ))}
+              </div>
+              <div className="modal-acciones">
+                {filtrosActivos > 0 && <button className="chip-btn" onClick={() => setFiltros(sinFiltros())}>{tr('Quitar todos', 'Clear all')}</button>}
+                <button className="accion-principal" onClick={() => setFiltrosModal(false)}>{tr('Listo', 'Done')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+        {masMontado && (
+        <div className={'overlay' + masSale} ref={refMas} tabIndex={-1} onClick={() => setMasModal(false)} role="dialog" aria-modal="true" aria-label={tr('Más', 'More')}>
+          <div className="modal modal-sync" onClick={e => e.stopPropagation()}>
+            <button className="cerrar" onClick={() => setMasModal(false)} aria-label={tr('Cerrar', 'Close')}>✕</button>
+            <div className="modal-info">
+              <h2 className="modal-titulo">{tr('Más', 'More')}</h2>
+              <div className="filtros-hoja">
+                {[[tr('Plan de sesión', 'Session plan'), tr('Qué ver con el tiempo que tengas hoy', 'What to watch with the time you have today'), () => setPlanModal(true)],
+                  [tr('Horario', 'Schedule'), tr('Tus sesiones fijas y el aviso del día', 'Your regular sessions and the reminder'), () => setHorarioModal(true)],
+                  [tr('Modo cine', 'Cinema mode'), tr('Lo siguiente a pantalla completa, una a una', 'What\u2019s next, full screen, one by one'), () => { setCineIdx(0); setCine(true) }],
+                  [tr('Sorpréndeme', 'Surprise me'), tr('Una al azar de lo que te falta', 'A random one from what you have left'), sorprendeme]].map(([nombre, pista, accion]) => (
+                  <button key={nombre} className="filtro-fila" onClick={() => { setMasModal(false); accion() }}>
+                    <span className="filtro-texto"><b>{nombre}</b><small>{pista}</small></span>
+                    <span className="filtro-flecha" aria-hidden="true">›</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
       {planMontado && plan && (
         <div className={'overlay' + planSale} ref={refPlan} tabIndex={-1} onClick={() => setPlanModal(false)} role="dialog" aria-modal="true" aria-label={tr('Plan de sesión', 'Session plan')}>
           <div className="modal modal-sync" onClick={e => e.stopPropagation()}>

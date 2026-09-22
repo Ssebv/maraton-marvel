@@ -182,7 +182,10 @@ let malas = 0
   try {
     await navega('#crono')
     await espera(1500)
-    await cdp.eval(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Modo cine').click()`)
+    // desde el 22 sep, Modo cine vive en la hoja «Más» de la barra
+    await cdp.eval(`document.querySelector('.ctrl-mas').click()`)
+    await cdp.hasta(`!!document.querySelector('.filtro-fila')`, 3000)
+    await cdp.eval(`[...document.querySelectorAll('.filtro-fila')].find(b => b.textContent.includes('Modo cine')).click()`)
     await cdp.hasta(`!!document.querySelector('.cine-titulo')`, 3000)
     await espera(500)
     const m = await cdp.eval(`(() => { const t = document.querySelector('.cine-titulo'), p = document.querySelector('.cine-panel').getBoundingClientRect(), f = [...document.querySelectorAll('.cine-flecha')].map(b => b.getBoundingClientRect())

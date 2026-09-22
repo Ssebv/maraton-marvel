@@ -2437,10 +2437,14 @@ main.crono, main.comics, main.estreno{animation:none}
      comentarios del club y el del código de sincronización */
   /* 216 px: a 168 el texto de ejemplo se cortaba a media palabra («Título, episodio, a»);
      medido con el texto dentro del campo, que reserva el hueco del botón de borrar */
-  .controles .busca{order:-1; width:216px}
+  .controles .busca{order:-2; width:216px}
+  /* 22 sep: Filtros y Más van con el buscador, antes de Ajustes; el carril
+     los dejaba fuera (Más empezaba en x=397 con 390 de ancho) */
+  .controles .ctrl-filtros{order:-1}
+  .controles .ctrl-mas{order:-1}
   /* Ajustes era el undécimo chip del carril, fuera de la vista: va justo
      después de la búsqueda (mismo order; el DOM decide el empate) */
-  .controles .chip-ajustes{order:-1}
+  .controles .chip-ajustes{order:0}
   /* Barra de pestañas (11 sep 2026): antes era una pastilla flotante con
      tres palabras, que se leía como un selector suelto y tapaba la última
      tarjeta. Ahora es una barra de app al estilo iOS: de borde a borde,
@@ -3884,3 +3888,29 @@ div.nf-abrir{cursor:default}
   .nf-ancha .nf-tile{width:clamp(260px, 24vw, 320px)}
   .nf-top .nf-tile{width:clamp(190px, 17vw, 230px)}
 }
+
+/* Hojas de Filtros y Más (22 sep 2026): filas con nombre y qué hace cada una */
+.filtros-hoja{display:flex; flex-direction:column; gap: var(--e-2); margin: var(--e-4) 0 0}
+.filtro-fila{
+  display:flex; align-items:center; gap: var(--e-4); width:100%; min-height:56px; padding: var(--e-3) var(--e-4);
+  background:var(--panel2); border:1px solid transparent; border-radius:var(--r-m); color:var(--ink); font:inherit; text-align:left; cursor:pointer;
+}
+.filtro-texto{display:flex; flex-direction:column; gap:2px; flex:1; min-width:0}
+.filtro-texto b{font-size: var(--t-b); font-weight:700}
+.filtro-texto small{font-size: var(--t-s); color:var(--ink2)}
+.filtro-marca{
+  flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+  border:1.5px solid var(--line); color:transparent;
+}
+.filtro-marca svg{width:14px; height:14px}
+.filtro-fila[aria-checked="true"]{border-color:color-mix(in srgb, var(--done) 55%, var(--line))}
+.filtro-fila[aria-checked="true"] .filtro-marca{background:var(--done); border-color:var(--done); color:#fff}
+.filtro-flecha{flex:none; color:var(--ink2); font-size: var(--t-l)}
+.filtro-fila:active{transform:scale(.99)}
+@media (hover:hover){ .filtro-fila:hover{border-color:var(--ink3)} }
+/* el botón de filtros con su cuenta */
+.ctrl-cuenta{
+  margin-left: var(--e-2); min-width:18px; height:18px; padding: 0 5px; border-radius:var(--r-pill);
+  background:var(--red); color:#fff; font-size:11px; font-weight:700; display:inline-grid; place-items:center;
+}
+@media (prefers-reduced-motion: reduce){ .filtro-fila:active{transform:none} }

@@ -56,6 +56,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | 17 · Inicio en escritorio (22 sep) | Las dos cajas de cifras de la cabecera (repetían el «5 / 111» de la cartelera) se cambian en Inicio por la línea de progreso compacta; cartelera algo más baja: a 1280×800 sus botones quedan a la vista (acababan en 843 px, ahora en 766); carátulas de las filas más grandes (a 1280 px entraban siete y pico) | ✅ |
 | 18 · Inicio sin conexión (22 sep) | El service worker guarda las fotos de TMDB (caché primero, caché propia permanente con tope de 80: son respuestas opacas) y, si una foto no llega, la carátula local ocupa su sitio en las filas anchas y la cartelera se queda con la suya: sin conexión Inicio sale completo y en las visitas siguientes la foto de la cartelera sale de la caché | ✅ |
 | 19 · Precarga de la cartelera (22 sep) | Mientras miras la cartelera se bajan en un momento libre la foto y la carátula de los dos títulos siguientes: al marcar vista, la foto nueva aparece en ~50 ms en vez de ~400–570 (4G lenta, A/B). La etiqueta dice «Siguiente con tus filtros» cuando hay búsqueda o filtros | ✅ |
+| 20 · Barra ordenada (22 sep) | La barra mezclaba 6 filtros, 4 acciones y el buscador en un carril que había que deslizar: ahora Buscar, Filtros (con cuántos hay puestos) y Más caben sin deslizar en el móvil. Los filtros pasan a una hoja con su nombre y qué hace cada uno; Plan de sesión, Horario, Modo cine y Sorpréndeme, a la hoja «Más» | ✅ |
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 

@@ -74,4 +74,33 @@ for (const ancho of [1280, 1920]) {
   } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
   malas += informe('barra · móvil 390', filas)
 }
+// Barra ordenada (22 sep): Buscar, Filtros (con su cuenta) y Más a la vista
+// en el móvil; los filtros y las acciones viven en sus hojas
+{
+  const filas = []
+  const { cdp, navega, cierra } = await abre()
+  try {
+    await navega('#crono')
+    await cdp.hasta(`!!document.querySelector('.ctrl-filtros')`, 5000)
+    await espera(400)
+    const v = await cdp.eval(`(() => { const r = s => { const e = document.querySelector(s); const c = e.getBoundingClientRect(); return { x: Math.round(c.x), der: Math.round(c.right) } }
+      return { busca: r('.busca'), filtros: r('.ctrl-filtros'), mas: r('.ctrl-mas'), vw: innerWidth, chips: document.querySelectorAll('.controles .chip-btn').length } })()`)
+    filas.push([v.busca.x >= 0 && v.filtros.der <= v.vw && v.mas.der <= v.vw, `móvil: Buscar, Filtros y Más caben sin deslizar (${JSON.stringify(v)})`])
+    await cdp.eval(`document.querySelector('.ctrl-filtros').click()`)
+    await cdp.hasta(`!!document.querySelector('.filtro-fila')`, 3000)
+    const n = await cdp.eval(`document.querySelectorAll('.filtro-fila').length`)
+    await cdp.eval(`[...document.querySelectorAll('.filtro-fila')].find(b => b.textContent.includes('Solo pendientes')).click()`)
+    await espera(300)
+    const puesto = await cdp.eval(`(() => { const b = [...document.querySelectorAll('.filtro-fila')].find(x => x.textContent.includes('Solo pendientes'))
+      return { marcado: b.getAttribute('aria-checked'), cuenta: (document.querySelector('.ctrl-cuenta') || {}).textContent } })()`)
+    await cdp.eval(`document.querySelector('.overlay .cerrar').click()`); await espera(500)
+    await cdp.eval(`document.querySelector('.ctrl-mas').click()`)
+    await cdp.hasta(`!!document.querySelector('.filtro-fila')`, 3000)
+    const acciones = await cdp.eval(`[...document.querySelectorAll('.filtro-fila b')].map(b => b.textContent)`)
+    filas.push([n === 6 && puesto.marcado === 'true' && puesto.cuenta === '1', `hoja de Filtros: ${n} filtros, «Solo pendientes» queda puesto y el botón lleva la cuenta (${puesto.cuenta})`])
+    filas.push([acciones.length === 4 && acciones.includes('Modo cine'), `hoja de Más: ${JSON.stringify(acciones)}`])
+  } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
+  malas += informe('barra ordenada · móvil 390', filas)
+}
+
 process.exitCode = malas ? 1 : 0
