@@ -3619,3 +3619,106 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   .cabecera-destino{padding-block: var(--e-4) var(--e-2)}
   .cd-titulo{font-size: var(--t-xl)}
 }
+
+/* ── Inicio al estilo Netflix (22 sep 2026) ──
+   Cartelera con lo siguiente y filas que se deslizan. La cartelera lleva un
+   velo oscuro FIJO (no sigue al tema): su texto es blanco sobre fotograma en
+   claro y en oscuro. La tarjeta «Siguiente» de la cabecera se esconde aquí,
+   la cartelera ya es eso. */
+.hero.en-inicio .siguiente-stat, .hero.en-inicio .siguiente-marcar{display:none}
+.inicio-nf{display:flex; flex-direction:column; gap: var(--e-6); margin-top: var(--e-4); padding-bottom: var(--e-7)}
+.nf-cartel{
+  position:relative; overflow:hidden; border-radius:var(--r-l); isolation:isolate;
+  min-height:clamp(440px, 56vw, 560px); display:flex; align-items:flex-end;
+  background:linear-gradient(160deg, var(--c1, #333), var(--c2, #111));
+  color:#fff;
+}
+.nf-cartel-fondo{position:absolute; inset:0; z-index:-1}
+.nf-cartel-fondo img{width:100%; height:100%; object-fit:cover; object-position:center 25%}
+.nf-cartel-fondo .nf-cartel-poster{object-fit:contain; object-position:right center; opacity:.5}
+.nf-cartel-fondo::after{
+  content:""; position:absolute; inset:0;
+  background:
+    linear-gradient(to top, rgba(8,9,14,.94) 0%, rgba(8,9,14,.7) 38%, rgba(8,9,14,0) 72%),
+    linear-gradient(to right, rgba(8,9,14,.75) 0%, rgba(8,9,14,0) 60%);
+}
+.nf-cartel-texto{position:relative; display:flex; flex-direction:column; gap: var(--e-3); padding: var(--e-7); max-width:640px}
+.nf-eyebrow{font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.78); font-variant-numeric:tabular-nums}
+.nf-cartel-t{
+  margin:0; font-family:"Archivo Black","Archivo",sans-serif; font-size:clamp(30px, 5.2vw, 58px); line-height:1.02;
+  letter-spacing:-.01em; text-wrap:balance; text-shadow:0 2px 14px rgba(0,0,0,.45);
+}
+.nf-meta{display:flex; flex-wrap:wrap; gap: var(--e-1) var(--e-3); font-size: var(--t-s); color:rgba(255,255,255,.85); font-variant-numeric:tabular-nums}
+.nf-nota{color:#f5c518; font-weight:700}
+.nf-res{margin:0; font-size: var(--t-b); line-height:1.5; color:rgba(255,255,255,.9); max-width:52ch;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden}
+.nf-cartel-ep{display:flex; align-items:center; gap: var(--e-3); font-size: var(--t-s); color:rgba(255,255,255,.9)}
+.nf-cartel-ep .nf-prog{position:relative; width:120px; flex:none}
+.nf-botones{display:flex; flex-wrap:wrap; gap: var(--e-3); margin-top: var(--e-2)}
+.nf-btn{
+  display:inline-flex; align-items:center; gap: var(--e-2); min-height:48px; padding: 0 var(--e-6);
+  border:none; border-radius:var(--r-s); font:inherit; font-size: var(--t-b); font-weight:700; cursor:pointer;
+  transition:transform var(--muelle-toque, .15s);
+}
+.nf-btn svg{width:20px; height:20px}
+.nf-btn-marcar{background:#fff; color:#0b0c10}
+.nf-btn-info{background:rgba(120,120,128,.55); color:#fff}
+@media (hover:hover){
+  .nf-btn-marcar:hover{background:rgba(255,255,255,.82)}
+  .nf-btn-info:hover{background:rgba(120,120,128,.4)}
+}
+.nf-btn:active{transform:scale(.97)}
+.nf-fin{min-height:260px}
+
+/* filas */
+.nf-fila{min-width:0}
+.nf-fila-cab{display:flex; align-items:baseline; gap: var(--e-3); margin-bottom: var(--e-3)}
+.nf-fila-t{margin:0; font-size: var(--t-l); font-weight:700; letter-spacing:0; text-transform:none}
+.nf-fila-sub{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.nf-flechas{margin-left:auto; display:none; gap: var(--e-2)}
+.nf-flechas button{width:36px; height:36px; border-radius:var(--r-pill); border:1px solid var(--line); background:var(--panel); color:var(--ink); font-size:20px; line-height:1; cursor:pointer}
+@media (hover:hover) and (pointer:fine){ .nf-flechas{display:flex} }
+.nf-carril{
+  display:flex; gap: var(--e-3); overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none;
+  scroll-snap-type:x mandatory; scroll-padding-inline: var(--e-6);
+  margin-inline:calc(-1 * var(--e-6)); padding: 4px var(--e-6) 6px;
+}
+.nf-carril::-webkit-scrollbar{display:none}
+.nf-tile{
+  flex:none; width:clamp(112px, 28vw, 158px); scroll-snap-align:start; padding:0; border:none; background:none;
+  color:var(--ink); text-align:left; font:inherit; cursor:pointer; transition:transform var(--muelle-toque, .15s);
+}
+.nf-tile:active{transform:scale(.97)}
+.nf-img{position:relative; display:block; aspect-ratio:2/3; border-radius:var(--r-s); overflow:hidden; background:var(--panel2)}
+.nf-img img{width:100%; height:100%; object-fit:cover; display:block}
+.nf-sin{display:grid; place-items:center; width:100%; height:100%; color:#fff; font-weight:700; font-size: var(--t-l)}
+.nf-tile.vista .nf-img img{opacity:.6}
+.nf-check{
+  position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%;
+  display:grid; place-items:center; background:var(--done); color:#fff;
+}
+.nf-check svg{width:14px; height:14px}
+.nf-prog{position:absolute; left:0; right:0; bottom:0; height:4px; background:rgba(255,255,255,.3)}
+.nf-prog i{display:block; height:100%; background:var(--red)}
+.nf-ancha .nf-tile{width:clamp(210px, 62vw, 280px)}
+.nf-ancha .nf-img{aspect-ratio:16/9}
+.nf-tile-t{display:block; margin-top: var(--e-2); font-size: var(--t-s); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.nf-tile-t small{display:block; font-weight:400; color:var(--ink2); font-size: var(--t-xs)}
+/* top 10: el número grande, en contorno, asoma detrás de la carátula */
+.nf-top .nf-tile{display:flex; align-items:flex-end; width:clamp(150px, 40vw, 200px)}
+.nf-num{
+  flex:none; font-family:"Archivo Black","Archivo",sans-serif; font-size:clamp(84px, 22vw, 120px); line-height:.78;
+  color:var(--bg); -webkit-text-stroke:2px var(--ink2); margin-right:-.12em; letter-spacing:-.06em; user-select:none;
+}
+.nf-top .nf-img{flex:1; min-width:0}
+@media (hover:hover) and (pointer:fine){
+  .nf-tile:hover{transform:scale(1.04)}
+}
+@media (max-width:640px){
+  .nf-cartel{margin-inline:calc(-1 * var(--e-6)); border-radius:0; min-height:440px}
+  .nf-cartel-texto{padding: var(--e-6)}
+  .nf-cartel-fondo img{object-position:center 20%}
+  .nf-cartel-fondo::after{background:linear-gradient(to top, rgba(8,9,14,.96) 0%, rgba(8,9,14,.75) 42%, rgba(8,9,14,0) 75%)}
+  .nf-btn{flex:1; justify-content:center; padding: 0 var(--e-4)}
+}
+@media (prefers-reduced-motion: reduce){ .nf-tile:hover, .nf-tile:active, .nf-btn:active{transform:none} }

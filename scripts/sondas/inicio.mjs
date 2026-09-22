@@ -1,0 +1,44 @@
+#!/usr/bin/env node
+// Inicio al estilo Netflix (22 sep 2026): la vista por defecto del Maratón.
+//  - sin hash se abre Inicio, con la cartelera del siguiente título pendiente;
+//  - «Marcar vista» lo marca y la cartelera pasa al siguiente (con Deshacer);
+//  - una serie empezada sale en «Continuar viendo» con su barra y su episodio;
+//  - tocar una carátula abre la ficha; los carriles no ensanchan la página;
+//  - #crono sigue enseñando la lista de tarjetas.
+import { abre, espera, informe } from './lib.mjs'
+
+const filas = []
+const ahora = Date.now()
+for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
+  const donde = movil ? 'móvil' : 'escritorio'
+  const { cdp, navega, cierra, errores } = await abre({ movil, ancho, alto: movil ? 844 : 900, siembra: {
+    'maraton-marvel-v1': { 'first-class': ahora - 3e8, 'origins-wolverine': ahora - 2e8 },
+    'maraton-marvel-eps-v1': { 'legion:1:1': 1, 'legion:1:2': 1 },
+  } })
+  try {
+    await navega('')
+    await cdp.hasta(`!!document.querySelector('.inicio-nf .nf-cartel-t')`, 5000)
+    const t0 = await cdp.eval(`document.querySelector('.nf-cartel-t').textContent`)
+    const sub = await cdp.eval(`(document.querySelector('.subvista[aria-current="page"]') || {}).textContent`)
+    filas.push([sub === 'Inicio' && !!t0, `${donde}: sin hash abre Inicio (${sub}) con la cartelera de «${t0}»`])
+    const cont = await cdp.eval(`(() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'Continuar viendo')
+      if (!f) return null; const t = f.querySelector('.nf-tile'); return { t: t.querySelector('.nf-tile-t').textContent, w: parseFloat(t.querySelector('.nf-prog i').style.width) } })()`)
+    filas.push([!!cont && /Legion/.test(cont.t) && cont.w > 0, `${donde}: «Continuar viendo» con Legion, su episodio y su barra: ${JSON.stringify(cont)}`])
+    const ancho = await cdp.eval(`({ doc: document.documentElement.scrollWidth, vw: innerWidth })`)
+    filas.push([ancho.doc <= ancho.vw, `${donde}: los carriles no ensanchan la página (${ancho.doc} ≤ ${ancho.vw})`])
+    await cdp.eval(`document.querySelector('.nf-btn-marcar').click()`)
+    await cdp.hasta(`!!document.querySelector('.deshacer')`, 3000)
+    await espera(300)
+    const t1 = await cdp.eval(`document.querySelector('.nf-cartel-t').textContent`)
+    const marcada = await cdp.eval(`Object.keys(JSON.parse(localStorage.getItem('maraton-marvel-v1'))).length`)
+    filas.push([t1 !== t0 && marcada === 3, `${donde}: «Marcar vista» marca «${t0}» y la cartelera pasa a «${t1}» (${marcada} marcas)`])
+    await cdp.eval(`[...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'A continuación').querySelector('.nf-tile').click()`)
+    const ficha = await cdp.hasta(`!!document.querySelector('.overlay')`, 3000).then(() => true, () => false)
+    filas.push([ficha, `${donde}: tocar una carátula abre su ficha`])
+    await navega('#crono')
+    const cards = await cdp.hasta(`document.querySelectorAll('.card').length > 10`, 5000).then(() => true, () => false)
+    filas.push([cards, `${donde}: #crono sigue con la lista de tarjetas`])
+    filas.push([errores.length === 0, `${donde}: sin errores de consola (${errores.length})`])
+  } finally { await cierra() }
+}
+process.exitCode = informe('Inicio estilo Netflix', filas) ? 1 : 0

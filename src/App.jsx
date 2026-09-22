@@ -1416,7 +1416,7 @@ const ACENTOS = [
 // selector dentro de cada uno. Los ids de vista y el hash no cambian: los
 // enlaces antiguos siguen abriendo lo que abrían.
 const DESTINOS = [
-  { id: 'maraton', label: 'Maratón', en: 'Marathon', vistas: ['crono', 'estreno', 'comics', 'animacion', 'galeria', 'tiempo'] },
+  { id: 'maraton', label: 'Maratón', en: 'Marathon', vistas: ['inicio', 'crono', 'estreno', 'comics', 'animacion', 'galeria', 'tiempo'] },
   // Perfil abre en lo tuyo (progreso, racha, logros); las listas, después
   // Comunidades solo existe con la cuenta encendida (src/nube.js)
   { id: 'mio', label: 'Perfil', en: 'Profile', vistas: NUBE ? ['stats', 'listas', 'comunidades'] : ['stats', 'listas'] },
@@ -1463,8 +1463,9 @@ function fmtDur(d) {
 }
 
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
-const VISTAS_VALIDAS = ['crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo', ...(NUBE ? ['comunidades'] : [])]
+const VISTAS_VALIDAS = ['inicio', 'crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo', ...(NUBE ? ['comunidades'] : [])]
 const PESTANAS = [
+  { id: 'inicio', label: 'Inicio', en: 'Home' },
   { id: 'crono', label: 'Cronológico', en: 'Chronological' },
   { id: 'comunidades', label: 'Comunidades', en: 'Communities' },
   { id: 'estreno', label: 'Por estreno', en: 'By release' },
@@ -3891,6 +3892,143 @@ function MapaMultiverso({ onAbrir }) {
         <p className="mapa-ayuda">{tr('Pulsa un título para iluminar sus conexiones con el resto del multiverso.', 'Tap a title to light up its connections with the rest of the multiverse.')}<span className="solo-movil"> {tr('Desliza para recorrer el mapa entero.', 'Swipe to travel the whole map.')}</span></p>
       )}
     </div>
+  )
+}
+
+// ── Inicio al estilo Netflix (22 sep 2026, Sebastián: «quiero mejorar cómo el
+// usuario va viendo las películas, más estilo Netflix») ──
+// Una cartelera con lo siguiente que toca y filas que se deslizan: seguir con
+// lo empezado, lo que viene, la ruta a Doomsday, lo mejor valorado y cada era
+// de la cronología. Tocar un título abre su ficha (ver, tráiler, marcar).
+const nfClave = d => d.item.id
+function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra }) {
+  const carril = useRef(null)
+  if (!items.length) return null
+  const mueve = dir => {
+    const c = carril.current
+    if (c) c.scrollBy({ left: dir * c.clientWidth * .85, behavior: movimientoReducido() ? 'instant' : 'smooth' })
+  }
+  return (
+    <section className={`nf-fila${ancha ? ' nf-ancha' : ''}${numerada ? ' nf-top' : ''}`}>
+      <div className="nf-fila-cab">
+        <h2 className="nf-fila-t">{titulo}</h2>
+        {sub && <span className="nf-fila-sub">{sub}</span>}
+        <span className="nf-flechas" aria-hidden="true">
+          <button tabIndex={-1} onClick={() => mueve(-1)}>‹</button>
+          <button tabIndex={-1} onClick={() => mueve(1)}>›</button>
+        </span>
+      </div>
+      <div className="nf-carril" ref={carril}>
+        {items.map((d, i) => {
+          const visto = !!vistas[d.item.id]
+          const foto = ancha && FOTOGRAMAS[d.item.id]
+          const ex = extra ? extra(d) : null
+          return (
+            <button key={nfClave(d)} className={`nf-tile${visto ? ' vista' : ''}`} onClick={() => onAbrir(d)}
+              aria-label={`${numerada ? `${i + 1}. ` : ''}${d.item.t}${visto ? tr(' (vista)', ' (watched)') : ''}${ex && ex.texto ? ` · ${ex.texto}` : ''}`}>
+              {numerada && <span className="nf-num" aria-hidden="true">{i + 1}</span>}
+              <span className="nf-img">
+                {foto
+                  ? <img src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" />
+                  : POSTERS[d.item.id]
+                    ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />
+                    : <span className="nf-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
+                {visto && <span className="nf-check" aria-hidden="true"><CheckIcon /></span>}
+                {ex && ex.pct != null && <span className="nf-prog" aria-hidden="true"><i style={{ width: `${ex.pct}%` }} /></span>}
+              </span>
+              {ancha && <span className="nf-tile-t">{d.item.t}{ex && ex.texto && <small>{ex.texto}</small>}</span>}
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+function InicioNf({ stats, vistas, eps, notas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe }) {
+  const s = stats.siguiente
+  // todo lo que se ve (sin cómics ni bóveda), en el orden del maratón
+  const todos = []
+  const eras = []
+  DATA.forEach(saga => {
+    const esComic = saga.saga === 'comics'
+    saga.eras.forEach(era => {
+      const its = era.items.filter(it => pasaFiltro(it, esComic)).map(item => ({ item, c: era.c, esComic }))
+      if (its.length) eras.push({ saga, era, its })
+      if (saga.saga !== 'comics' && saga.saga !== 'animacion') todos.push(...its)
+    })
+  })
+  const pendientes = todos.filter(d => !vistas[d.item.id])
+  const epsDe = d => (EPISODES[d.item.id] || []).length
+  const continuar = todos.filter(d => !vistas[d.item.id] && d.item.tipo === 'serie' && epHechosDe(d.item) > 0)
+  const siguienteEpDe = d => (EPISODES[d.item.id] || []).find(e => !eps[`${d.item.id}:${e.s}:${e.n}`])
+  const top = todos.filter(d => d.item.s).sort((a, b) => b.item.s - a.item.s).slice(0, 10)
+  // las marcas guardan la fecha (ms); las antiguas, un 1: esas no ordenan
+  const recientes = todos.filter(d => vistas[d.item.id] > 1e12).sort((a, b) => vistas[b.item.id] - vistas[a.item.id]).slice(0, 15)
+  const favoritas = todos.filter(d => notas[d.item.id] && notas[d.item.id].p >= 4).sort((a, b) => notas[b.item.id].p - notas[a.item.id].p)
+  const nombreSaga = sg => sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? tr('UCM', 'MCU') : sg.saga === 'animacion' ? tr('Animación', 'Animation') : tr('Cómics', 'Comics')
+
+  const dS = s && buscaItem(s.id)
+  const foto = s && FOTOGRAMAS[s.id]
+  const lista = s && s.tipo === 'serie' ? EPISODES[s.id] : null
+  const epSig = lista && lista.find(x => !eps[`${s.id}:${x.s}:${x.n}`])
+  const hechos = lista ? lista.length - lista.filter(x => !eps[`${s.id}:${x.s}:${x.n}`]).length : 0
+  const puesto = s ? todos.findIndex(d => d.item.id === s.id) + 1 : 0
+  const verRes = s && s.res && !sinSpoilers
+  return (
+    <main className="inicio-nf">
+      {s ? (
+        <section className="nf-cartel" style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
+          <div className="nf-cartel-fondo" aria-hidden="true">
+            {foto
+              ? <img src={`${TMDB_IMG}w1280${foto}`} srcSet={`${TMDB_IMG}w780${foto} 780w, ${TMDB_IMG}w1280${foto} 1280w`} sizes="100vw" alt="" decoding="async" fetchpriority="high" />
+              : POSTERS[s.id] && <img className="nf-cartel-poster" src={POSTERS[s.id]} alt="" decoding="async" />}
+          </div>
+          <div className="nf-cartel-texto">
+            <span className="nf-eyebrow">{tr('Siguiente en tu maratón', 'Next in your marathon')} · {puesto} / {todos.length}</span>
+            <h2 className="nf-cartel-t">{s.t}</h2>
+            <span className="nf-meta">
+              {s.s ? <b className="nf-nota">★ {String(s.s).replace('.', IDIOMA_ACTUAL === 'en' ? '.' : ',')}</b> : null}
+              <span>{s.r}</span>
+              {s.d ? <span>{fmtDur(s.d)}</span> : null}
+              {s.tipo === 'serie' && lista ? <span>{lista.length} {tr('episodios', 'episodes')}</span> : null}
+              {s.h ? <span>{tr('Ocurre: ', 'Set: ')}{s.h}</span> : null}
+            </span>
+            {epSig && hechos > 0 && (
+              <span className="nf-cartel-ep">
+                <span className="nf-prog"><i style={{ width: `${100 * hechos / lista.length}%` }} /></span>
+                {tr('Vas por', 'You are on')} T{epSig.s}·E{epSig.n}{sinSpoilers ? '' : `: ${epSig.t}`}
+              </span>
+            )}
+            {verRes && <p className="nf-res">{s.res}</p>}
+            <div className="nf-botones">
+              <button className="nf-btn nf-btn-marcar" onClick={() => onMarcar(s)}>
+                <CheckIcon /> {epSig ? tr(`Marcar T${epSig.s}·E${epSig.n}`, `Mark S${epSig.s}·E${epSig.n}`) : tr('Marcar vista', 'Mark watched')}
+              </button>
+              {dS && <button className="nf-btn nf-btn-info" onClick={() => onAbrir(dS)}>{tr('Más información', 'More info')}</button>}
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="nf-cartel nf-fin">
+          <div className="nf-cartel-texto">
+            <span className="nf-eyebrow">{tr('Maratón completo', 'Marathon complete')}</span>
+            <h2 className="nf-cartel-t">{tr('Lo viste todo', 'You watched it all')}</h2>
+            <p className="nf-res">{tr('Quedan los cómics, la bóveda de animación y volver a tus favoritas.', 'There are still the comics, the animation vault and your favourites to rewatch.')}</p>
+          </div>
+        </section>
+      )}
+      <FilaNf titulo={tr('Continuar viendo', 'Continue watching')} items={continuar} ancha vistas={vistas} onAbrir={onAbrir}
+        extra={d => { const e = siguienteEpDe(d), n = epsDe(d); return { pct: n ? 100 * epHechosDe(d.item) / n : 0, texto: e ? `T${e.s}·E${e.n}` : '' } }} />
+      <FilaNf titulo={tr('A continuación', 'Up next')} sub={tr('en el orden del maratón', 'in marathon order')} items={pendientes.slice(s ? 1 : 0, 16)} vistas={vistas} onAbrir={onAbrir} />
+      <FilaNf titulo={tr('Rumbo a Doomsday', 'Toward Doomsday')} sub={tr('la ruta express', 'the express route')} items={pendientes.filter(d => d.item.exp).slice(0, 20)} vistas={vistas} onAbrir={onAbrir} />
+      <FilaNf titulo={tr('Top 10 del maratón', 'Marathon top 10')} sub={tr('por nota de IMDb', 'by IMDb rating')} items={top} numerada vistas={vistas} onAbrir={onAbrir} />
+      <FilaNf titulo={tr('Visto hace poco', 'Recently watched')} items={recientes} ancha vistas={vistas} onAbrir={onAbrir} />
+      <FilaNf titulo={tr('Tus favoritas', 'Your favourites')} sub={tr('4 y 5 estrellas', '4 and 5 stars')} items={favoritas} vistas={vistas} onAbrir={onAbrir} />
+      {eras.map(({ saga, era, its }) => (
+        <FilaNf key={saga.saga + era.era} titulo={era.era} vistas={vistas} onAbrir={onAbrir} items={its}
+          sub={`${nombreSaga(saga)} · ${era.rango} · ${its.filter(d => vistas[d.item.id]).length}/${its.length}`} />
+      ))}
+    </main>
   )
 }
 
@@ -6376,7 +6514,7 @@ export default function App() {
   const [filtros, setFiltros] = useState(() => leeVistaUrl().filtros)
   const [vista, setVista] = useState(() => {
     const h = window.location.hash.replace('#', '')
-    return VISTAS_VALIDAS.includes(h) ? h : 'crono'
+    return VISTAS_VALIDAS.includes(h) ? h : 'inicio'
   })
   // la última subvista de cada destino, en un ref que se actualiza al pintar:
   // como estado en un efecto provocaba un SEGUNDO render de toda la app justo
@@ -6407,7 +6545,7 @@ export default function App() {
       // (history.back) y vuelve a escribir la URL buena: ese hashchange llega
       // con la vista ya puesta. Pedir otra transición a la misma vista cortaba
       // la del dock (dos seguidas a 30 ms, y la segunda sin desliz).
-      const nueva = VISTAS_VALIDAS.includes(h) ? h : 'crono'
+      const nueva = VISTAS_VALIDAS.includes(h) ? h : 'inicio'
       if (nueva === vistaHash.current) return
       conTransicion('atras', () => setVista(nueva))
     }
@@ -6418,7 +6556,7 @@ export default function App() {
   // botón en Android) vuelve a Maratón en vez de salir de la app, como en
   // las apps con pestañas; solo desde Maratón se sale. La subvista en la que
   // estabas se conserva (ultimaVista). El contenido sigue al dedo en el gesto.
-  useVolverCierra(!perfil && destinoDe(vista) !== 'maraton', () => conTransicion('atras', () => setVista(ultimaVista.maraton || 'crono')), () => document.querySelector('main'))
+  useVolverCierra(!perfil && destinoDe(vista) !== 'maraton', () => conTransicion('atras', () => setVista(ultimaVista.maraton || 'inicio')), () => document.querySelector('main'))
   const [detalle, setDetalleEstado] = useState(() => {
     try {
       const p = new URLSearchParams(window.location.search)
@@ -6587,7 +6725,7 @@ export default function App() {
     // la coma es legal en un valor de consulta y URLSearchParams la escapa igual:
     // esta URL está para mirarla y compartirla, así que se deja legible
     const cad = p.toString().replace(/%2C/g, ',')
-    const h = vista === 'crono' ? '' : '#' + vista
+    const h = vista === 'inicio' ? '' : '#' + vista
     urlEstado = window.location.pathname + (cad ? '?' + cad : '') + h
     // se conserva history.state: ahí vive la marca {capa:1} del gesto atrás
     history.replaceState(history.state, '', urlEstado)
@@ -6628,7 +6766,10 @@ export default function App() {
       const guardado = localStorage.getItem(KEY_PANEL)
       if (guardado !== null) return guardado === '1'
     } catch {}
-    return window.innerWidth > 640
+    // plegado de entrada también en escritorio desde Inicio (22 sep 2026): lo
+    // primero es la cartelera con lo siguiente, como en Netflix. Quien lo abre
+    // lo tiene abierto (se guarda)
+    return false
   })
   const [fondo, setFondo] = useState(() => {
     try { return localStorage.getItem(KEY_FONDO) || 'banner' } catch { return 'banner' }
@@ -8069,7 +8210,7 @@ export default function App() {
     const base = tr('Maratón Marvel & X-Men', 'Marvel & X-Men Marathon')
     if (detalle) { document.title = `${detalle.item.t} · ${base}`; return }
     const p = PESTANAS.find(x => x.id === vista)
-    document.title = (!p || vista === 'crono') ? base : `${tr(p.label, p.en || p.label)} · ${base}`
+    document.title = (!p || vista === 'inicio') ? base : `${tr(p.label, p.en || p.label)} · ${base}`
   }, [vista, detalle, idioma])
 
   // Cada capa sigue montada 240 ms tras cerrarse para salir animada
@@ -8246,8 +8387,8 @@ export default function App() {
           barra de abajo. */}
       {!esMovil && (
         <header className={'barra-app' + (enMaraton ? ' en-maraton' : '')}>
-          <a className="barra-app-marca" href={'#' + (ultimaVista.maraton || 'crono')}
-            onClick={e => irADestino(DESTINOS[0], ultimaVista.maraton || 'crono', e)}>
+          <a className="barra-app-marca" href={'#' + (ultimaVista.maraton || 'inicio')}
+            onClick={e => irADestino(DESTINOS[0], ultimaVista.maraton || 'inicio', e)}>
             {tr(<>Maratón <span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span></>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}
           </a>
           {navTabs}
@@ -8282,7 +8423,7 @@ export default function App() {
         </div>
       )}
       {enMaraton ? (
-      <section className="hero">
+      <section className={vista === 'inicio' ? 'hero en-inicio' : 'hero'}>
         <div className="hero-titulo">
           <p className="hero-eyebrow">{tr('Guía de maratón · cronología completa', 'Marathon guide · the full chronology')}</p>
           <h1>{tr(<>Maratón <span className="rojo">Marvel</span> &amp; X-Men</>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}</h1>
@@ -8527,7 +8668,10 @@ export default function App() {
       )}
 
       <Estrellas />
-      {vista === 'tiempo' ? (
+      {vista === 'inicio' ? (
+        <InicioNf stats={stats} vistas={vistas} eps={eps} notas={notas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
+          epHechosDe={epHechosDe} onAbrir={d => setDetalle(d)} onMarcar={marcaSiguiente} />
+      ) : vista === 'tiempo' ? (
         <main className="tiempo">
           <p className="saga-desc mv-intro">
             {tr(<>Cada título colocado en el año en que <b>ocurre su historia</b>, no en el que se estrenó:
