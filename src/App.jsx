@@ -4543,15 +4543,16 @@ function Proximos() {
 // Un planeta: halo, textura que gira recortada por clip-path y volumen. Las
 // Tierras que se confundían llevan un rasgo propio (22 sep 2026, Sebastián:
 // «algo distintivo para poder ver cuál es»): el Vacío un anillo de escombros,
-// la 616 de los cómics trama de puntos, la 828 su luna y Sony el negro del
-// simbionte.
+// la 616 de los cómics trama de puntos, la 828 su luna, Sony el negro del
+// simbionte, What If las órbitas cruzadas de sus ramas y Zombies manchas.
 function Orbe({ clase, rasgo }) {
   return (
     <span className={`planeta ${clase}${rasgo ? ' con-' + rasgo : ''}`} aria-hidden="true">
       {rasgo === 'anillo' && <span className="rasgo-anillo atras" />}
-      <span className="planeta-recorte"><span className="planeta-textura" />{rasgo === 'trama' && <span className="rasgo-trama" />}</span>
+      <span className="planeta-recorte"><span className="planeta-textura" />{rasgo === 'trama' && <span className="rasgo-trama" />}{rasgo === 'plaga' && <span className="rasgo-plaga" />}</span>
       {rasgo === 'anillo' && <span className="rasgo-anillo delante" />}
       {rasgo === 'luna' && <span className="rasgo-luna" />}
+      {rasgo === 'ramas' && <span className="rasgo-ramas" />}
     </span>
   )
 }
@@ -8690,6 +8691,11 @@ export default function App() {
             const cruces = MULTIVERSO.filter(o => o.num !== u.num)
               .map(o => ({ o, n: itemsTierra(o).filter(({ item }) => mios.has(item.id)).length }))
               .filter(x => x.n).sort((a, b) => b.n - a.n)
+            // los cruces del Mapa que tocan esta Tierra: título de aquí ↔ título de donde sea
+            const conexiones = MAPA_ARISTAS.filter(e => mios.has(e.a) || mios.has(e.b))
+              .map(e => { const aqui = mios.has(e.a) ? e.a : e.b, otro = aqui === e.a ? e.b : e.a
+                return { e, aqui: buscaItem(aqui), otro: buscaItem(otro) } })
+              .filter(x => x.aqui && x.otro)
             const filtra = tierraPend && items.length > 8 && v > 0 && v < items.length
             const lista = filtra ? items.filter(({ item }) => !vistas[item.id]) : items
             return (
@@ -8730,6 +8736,17 @@ export default function App() {
                     </div>
                   )}
                 </header>
+                {conexiones.length > 0 && (
+                  <section className="tierra-conexiones">
+                    <h3 className="tierra-cruces-t">{tr('Cómo se conecta', 'How it connects')}</h3>
+                    {conexiones.map(({ e, aqui, otro }) => (
+                      <button key={e.a + e.b} className="mapa-conexion" onClick={() => setDetalle(otro)}>
+                        <span className="mapa-conexion-t">{aqui.item.t} ↔ {otro.item.t}</span>
+                        <span className="mapa-conexion-d">{e.t}</span>
+                      </button>
+                    ))}
+                  </section>
+                )}
                 {items.length > 8 && v > 0 && v < items.length && (
                   <div className="tierra-filtro">
                     <button className="chip-btn" aria-pressed={tierraPend} onClick={() => setTierraPend(x => !x)}>
@@ -8773,7 +8790,19 @@ export default function App() {
               {mvModo === 'mapa' && <MapaMultiverso onAbrir={d => setDetalle(d)} />}
               {mvModo === 'mapa' ? null : mvModo === 'sistema' ? (
                 <>
-                <div className="sistema-wrap">
+                <div className="sistema-wrap"
+                  onClick={e => { if (mvSel && !e.target.closest('button, .nav-nombre')) setMvSel(null) }}
+                  onKeyDown={e => {
+                    if (e.key === 'Escape' && mvSel) { e.preventDefault(); setMvSel(null); return }
+                    const paso = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]
+                    if (!paso) return
+                    // del centro hacia fuera, anillo por anillo
+                    const orden = ['Tierra-616', ...Object.keys(ORBITAS).sort((a, b) => ORBITAS[a][0] - ORBITAS[b][0])]
+                    const i = orden.indexOf(mvSel), sig = orden[(i + paso + orden.length) % orden.length]
+                    e.preventDefault(); setMvSel(sig)
+                    const b = [...e.currentTarget.querySelectorAll('.sistema-capa:not(.sistema-nombres) button')].find(x => x.dataset.tierra === sig)
+                    if (b) b.focus({ preventScroll: true })
+                  }}>
                   <div className={mvSel ? 'sistema con-sel' : 'sistema'}>
                     {ANILLOS.map(a => (
                       <span key={a.r} className="anillo" style={{ '--r': a.r }} />
@@ -8798,7 +8827,7 @@ export default function App() {
                           <Pieza className={`${clase}${mvSobre === u.num ? ' sobre' : ''}${mvSel === u.num ? ' elegido' : ''}${pr.n && pr.v === pr.n ? ' completa' : ''}${u.opc ? ' opcional' : ''}`}
                             style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u), '--t': tam }}
                             {...(nombres ? {} : {
-                              onClick: () => pulsaPlaneta(u), title: u.nombre, 'aria-pressed': mvSel === u.num,
+                              onClick: () => pulsaPlaneta(u), title: u.nombre, 'aria-pressed': mvSel === u.num, 'data-tierra': u.num,
                               'aria-label': `${u.num}: ${u.nombre}. ${pr.v} / ${pr.n}`,
                               onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null),
                               onFocus: () => setMvSobre(u.num), onBlur: () => setMvSobre(null),

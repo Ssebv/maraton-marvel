@@ -1710,6 +1710,7 @@ main.galeria{margin-top: var(--e-6)}
 /* lo opcional (los 4F de Fox) lleva la pista punteada */
 .opcional .orbe-pista{stroke-dasharray:3 4}
 .mv-fila-opc{font-size: var(--t-xs); color:var(--ink2); margin-left: var(--e-2); font-weight:600; letter-spacing:.04em; text-transform:uppercase}
+.tierra-conexiones{display:flex; flex-direction:column; gap: var(--e-3); margin: 0 0 var(--e-5)}
 .mv-sel-ayuda{margin: 0 0 var(--e-5); text-align:center; font-size: var(--t-s); color:var(--ink2)}
 .mv-sel{
   position:relative; margin: 0 auto var(--e-6); max-width:560px; padding: var(--e-5) var(--e-6); padding-right:88px;
@@ -1739,6 +1740,19 @@ main.galeria{margin-top: var(--e-6)}
   position:absolute; z-index:3; width:calc(var(--p) * .24); height:calc(var(--p) * .24); right:calc(var(--p) * -.16); top:calc(var(--p) * -.06);
   border-radius:50%; background:radial-gradient(circle at 35% 35%, #f3efe4, #9c978c 60%, #4a4740);
   box-shadow:calc(var(--p) * -.02) calc(var(--p) * .02) calc(var(--p) * .04) rgba(0,0,0,.5) inset;
+}
+.rasgo-ramas, .rasgo-ramas::before{
+  position:absolute; left:50%; top:50%; width:calc(var(--p) * 1.45); height:calc(var(--p) * .38); z-index:3; pointer-events:none;
+  border-radius:50%; border:1px solid color-mix(in srgb, var(--tc) 70%, #fff); transform:translate(-50%, -50%) rotate(35deg); opacity:.75;
+}
+.rasgo-ramas::before{content:""; transform:translate(-50%, -50%) rotate(-70deg)}
+.rasgo-plaga{
+  position:absolute; inset:0; mix-blend-mode:multiply; opacity:.8;
+  background:
+    radial-gradient(circle at 30% 35%, #2d4a1c 0 9%, transparent 11%),
+    radial-gradient(circle at 62% 58%, #2d4a1c 0 13%, transparent 15%),
+    radial-gradient(circle at 44% 78%, #2d4a1c 0 7%, transparent 9%),
+    radial-gradient(circle at 72% 28%, #2d4a1c 0 6%, transparent 8%);
 }
 .con-simbionte .planeta-recorte{filter:brightness(.5) contrast(1.35) saturate(.4)}
 .con-simbionte::after{opacity:.25}

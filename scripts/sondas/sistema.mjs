@@ -137,4 +137,34 @@ const abierta = `!!document.querySelector('.tierra')`
   } finally { await cierra() }
 }
 
+// teclado y toque en el vacío (22 sep): flechas de planeta en planeta, del
+// centro hacia fuera; Esc y un toque fuera de los planetas quitan la preselección
+{
+  const { cdp, navega, cierra } = await abre({ movil: false, ancho: 1280, alto: 900 })
+  try {
+    await navega('#multiverso')
+    await cdp.hasta(`!!document.querySelector('.sistema .sol')`, 5000)
+    await espera(500)
+    await cdp.eval(`document.querySelector('.sistema-capa:not(.sistema-nombres) .sol').focus(); 1`)
+    const tecla = async key => { for (const type of ['keyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key, code: key, windowsVirtualKeyCode: { ArrowRight: 39, ArrowLeft: 37, Escape: 27 }[key] }) ; await espera(250) }
+    const elegido = `(document.querySelector('.mv-sel .mv-num') || {}).textContent || null`
+    await tecla('ArrowRight'); const a = await cdp.eval(elegido)
+    await tecla('ArrowRight'); const b = await cdp.eval(elegido)
+    await tecla('ArrowLeft'); await tecla('ArrowLeft'); const c = await cdp.eval(elegido)
+    const foco = await cdp.eval(`document.activeElement && document.activeElement.dataset.tierra`)
+    filas.push([a === 'Tierra-616' && b === 'Tierra-10005' && c === 'El Vacío' && foco === c, `flechas: → ${a}, → ${b}, ←← ${c} (vuelta por el final), con el foco en él (${foco})`])
+    await tecla('Escape')
+    filas.push([(await cdp.eval(elegido)) === null, 'Esc quita la preselección'])
+    await tecla('ArrowRight')
+    const r = await cdp.eval(`(() => { const s = document.querySelector('.sistema').getBoundingClientRect(); return { x: s.x + 8, y: s.y + 8 } })()`)
+    for (const type of ['mousePressed', 'mouseReleased']) await cdp.send('Input.dispatchMouseEvent', { type, x: r.x, y: r.y, button: 'left', clickCount: 1 })
+    await espera(250)
+    filas.push([(await cdp.eval(elegido)) === null, 'un clic en el vacío del Sistema quita la preselección'])
+    await cdp.eval(`[...document.querySelectorAll('.mv-fila')].find(b => b.textContent.includes('Universo Sony')).click()`)
+    await cdp.hasta(`!!document.querySelector('.tierra')`, 3000)
+    const cx = await cdp.eval(`[...document.querySelectorAll('.tierra-conexiones .mapa-conexion-d')].map(x => x.textContent)`)
+    filas.push([cx.length === 1 && /Eddie Brock/.test(cx[0]), `«Cómo se conecta» en Sony: ${JSON.stringify(cx)}`])
+  } finally { await cierra() }
+}
+
 process.exitCode = informe('Sistema del Multiverso', filas) ? 1 : 0
