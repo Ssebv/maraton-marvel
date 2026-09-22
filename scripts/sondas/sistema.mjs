@@ -58,6 +58,9 @@ const abierta = `!!document.querySelector('.tierra')`
       }
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 })
     }
+    const roba = await cdp.eval(`[...document.querySelectorAll('.sistema-capa:not(.sistema-nombres) .nav-nombre')].filter(n => {
+      const r = n.getBoundingClientRect(), e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return e === n }).length`)
+    filas.push([roba === 0, `ningún nombre invisible de la capa de planetas recibe el toque (${roba})`])
     filas.push([errores.length === 0, `sin errores de consola (${errores.length})`])
   } finally { await cierra() }
 }
@@ -115,7 +118,8 @@ const abierta = `!!document.querySelector('.tierra')`
 // marca, con su fecha, en cada película; Sony enseña sus seis y la Tierra de
 // los 4F de Fox es opcional (no cuenta en el total)
 {
-  const { cdp, navega, cierra } = await abre({ siembra: { 'maraton-marvel-v1': { sony: 1754000000000, fox4f: 1, nwh: 1 } } })
+  const { cdp, navega, cierra } = await abre({ siembra: { 'maraton-marvel-v1': { sony: 1754000000000, fox4f: 1, nwh: 1 },
+    'maraton-marvel-notas-v1': { sony: { p: 4, t: 'las de Raimi' }, venom1: { p: 2 } } } })
   try {
     await navega('#multiverso')
     await cdp.hasta(`!!document.querySelector('.mv-fila')`, 5000)
@@ -125,6 +129,10 @@ const abierta = `!!document.querySelector('.tierra')`
     filas.push([!v.sony && !v.fox4f && piezas.every(id => v[id] === 1754000000000) && v.ff2005 && v.ff2015, `los lotes se migran a sus ${piezas.length} + 3 películas con su fecha y se borran`])
     const r = await cdp.eval(`(() => { const fila = t => [...document.querySelectorAll('.mv-fila')].find(b => b.textContent.includes(t))
       return { sony: fila('Universo Sony').querySelector('.mv-fila-cuenta').textContent, fox: fila('121698').textContent, resumen: document.querySelector('.mv-resumen-texto').textContent } })()`)
+    const nt = await cdp.eval(`JSON.parse(localStorage.getItem('maraton-marvel-notas-v1'))`)
+    filas.push([!nt.sony && nt['sm-raimi1'] && nt['sm-raimi1'].p === 4 && nt.venom1.p === 2, `la nota del lote pasa a su primera película sin pisar las propias: ${JSON.stringify(nt)}`])
+    const rg = await cdp.eval(`['anillo', 'trama', 'luna', 'simbionte'].map(r => document.querySelectorAll('.sistema .con-' + r).length)`)
+    filas.push([rg.every(n => n === 1), `rasgos propios en el Sistema (anillo, trama, luna, simbionte): ${rg}`])
     filas.push([r.sony === '6/6' && /opcional/i.test(r.fox) && /de 11 Tierras/.test(r.resumen), `Sony ${r.sony}, los 4F de Fox opcionales y fuera del total («${r.resumen}»)`])
   } finally { await cierra() }
 }

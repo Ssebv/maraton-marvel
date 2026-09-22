@@ -4540,6 +4540,21 @@ function Proximos() {
   )
 }
 
+// Un planeta: halo, textura que gira recortada por clip-path y volumen. Las
+// Tierras que se confundían llevan un rasgo propio (22 sep 2026, Sebastián:
+// «algo distintivo para poder ver cuál es»): el Vacío un anillo de escombros,
+// la 616 de los cómics trama de puntos, la 828 su luna y Sony el negro del
+// simbionte.
+function Orbe({ clase, rasgo }) {
+  return (
+    <span className={`planeta ${clase}${rasgo ? ' con-' + rasgo : ''}`} aria-hidden="true">
+      {rasgo === 'anillo' && <span className="rasgo-anillo atras" />}
+      <span className="planeta-recorte"><span className="planeta-textura" />{rasgo === 'trama' && <span className="rasgo-trama" />}</span>
+      {rasgo === 'anillo' && <span className="rasgo-anillo delante" />}
+      {rasgo === 'luna' && <span className="rasgo-luna" />}
+    </span>
+  )
+}
 // Cuatro anillos con sentido (22 sep 2026): antes diez órbitas a 20-30 px
 // una de otra, y a escala de móvil los planetas se montaban. En cada anillo
 // sus Tierras van a 120° y giran juntas, así que nunca chocan entre ellas.
@@ -6694,6 +6709,22 @@ export default function App() {
     try { localStorage.setItem(KEY_NOTAS, JSON.stringify(next)) } catch {}
     return next
   })
+  // estrellas y notas de un lote partido (code-review del 22 sep): se perdían
+  // bajo un id que ya no enseña ninguna tarjeta. Pasan a la primera pieza, si
+  // no tiene las suyas: una nota del lote entero no se reparte por 11 películas
+  useEffect(() => {
+    if (!tieneLote(notas)) return
+    setNotas(prev => {
+      const next = { ...prev }
+      for (const [lote, piezas] of Object.entries(LOTES_PARTIDOS)) {
+        if (!next[lote]) continue
+        if (!next[piezas[0]]) next[piezas[0]] = next[lote]
+        delete next[lote]
+      }
+      try { localStorage.setItem(KEY_NOTAS, JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [notas])
   const alternaCompacto = () => setCompacto(c => {
     localStorage.setItem(KEY_COMPACTO, c ? '0' : '1'); return !c
   })
@@ -8665,7 +8696,7 @@ export default function App() {
               <div className="tierra" style={{ '--tc': u.c }}>
                 <button className="chip-btn" onClick={cierraTierra}>{tr('← Volver al multiverso', '← Back to the multiverse')}</button>
                 <header className="tierra-hero">
-                  <span className="planeta planeta-grande" aria-hidden="true"><span className="planeta-recorte"><span className="planeta-textura" /></span></span>
+                  <Orbe clase="planeta-grande" rasgo={u.rasgo} />
                   <div className="tierra-cab">
                     <span className="mv-num tierra-num">{u.num}</span>
                     <h2 className="tierra-nombre">{u.nombre}</h2>
@@ -8756,6 +8787,10 @@ export default function App() {
                     {[false, true].map(nombres => {
                       const u616 = MULTIVERSO.find(u => u.num === 'Tierra-616')
                       const Pieza = nombres ? 'span' : 'button'
+                      const pulsaPlaneta = u => {
+                        if (mvSel !== u.num) { setMvSel(u.num); return }
+                        setMvSobre(null); abreTierra(u.num)
+                      }
                       const pieza = (u, clase, tam, nombre) => {
                         const pr = progTierras.por[u.num]
                         const hecho = pr.n ? pr.v / pr.n : 0
@@ -8763,17 +8798,14 @@ export default function App() {
                           <Pieza className={`${clase}${mvSobre === u.num ? ' sobre' : ''}${mvSel === u.num ? ' elegido' : ''}${pr.n && pr.v === pr.n ? ' completa' : ''}${u.opc ? ' opcional' : ''}`}
                             style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u), '--t': tam }}
                             {...(nombres ? {} : {
-                              onClick: () => {
-                                if (mvSel !== u.num) { setMvSel(u.num); return }
-                                setMvSobre(null); abreTierra(u.num)
-                              }, title: u.nombre, 'aria-pressed': mvSel === u.num,
+                              onClick: () => pulsaPlaneta(u), title: u.nombre, 'aria-pressed': mvSel === u.num,
                               'aria-label': `${u.num}: ${u.nombre}. ${pr.v} / ${pr.n}`,
                               onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null),
                               onFocus: () => setMvSobre(u.num), onBlur: () => setMvSobre(null),
                             })}>
                             {nombres ? <span className="planeta-orbe planeta-hueco" /> : (
                               <>
-                                <span className={`planeta planeta-orbe${clase === 'sol' ? ' planeta-sol' : ''}`}><span className="planeta-recorte"><span className="planeta-textura" /></span></span>
+                                <Orbe clase={`planeta-orbe${clase === 'sol' ? ' planeta-sol' : ''}`} rasgo={u.rasgo} />
                                 {/* lo que llevas de esa Tierra, como un arco a su alrededor */}
                                 <svg className="orbe-progreso" viewBox="0 0 40 40" aria-hidden="true">
                                   <circle cx="20" cy="20" r="19" pathLength="100" className="orbe-pista" />
@@ -8781,7 +8813,11 @@ export default function App() {
                                 </svg>
                               </>
                             )}
-                            <span className="nav-nombre">{nombre}</span>
+                            {/* el nombre cuelga fuera de la caja del botón: lo recibe
+                                la capa de encima, que se pinta sobre todo (el de abajo,
+                                invisible y tocable, robaba el toque al planeta de al lado) */}
+                            <span className="nav-nombre" {...(nombres ? { onClick: () => pulsaPlaneta(u),
+                              onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null) } : {})}>{nombre}</span>
                           </Pieza>
                         )
                       }
@@ -8815,7 +8851,7 @@ export default function App() {
                   const sig = itemsTierra(u).find(({ item }) => !vistas[item.id])
                   return (
                     <section className="mv-sel" style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u) }} aria-live="polite" key={u.num}>
-                      <span className="planeta planeta-mini" aria-hidden="true"><span className="planeta-recorte"><span className="planeta-textura" /></span></span>
+                      <Orbe clase="planeta-mini" rasgo={u.rasgo} />
                       <span className="mv-num">{u.num}</span>
                       <h2 className="mv-nombre">{u.nombre}</h2>
                       <span className="mv-estado">{u.estado}</span>
@@ -8861,7 +8897,7 @@ export default function App() {
                       role="button" tabIndex={0}
                       onClick={() => abreTierra(u.num)}
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abreTierra(u.num) } }}>
-                      <span className="planeta planeta-mini" aria-hidden="true"><span className="planeta-recorte"><span className="planeta-textura" /></span></span>
+                      <Orbe clase="planeta-mini" rasgo={u.rasgo} />
                       <span className="mv-num">{u.num}</span>
                       <h2 className="mv-nombre">{u.nombre}</h2>
                       <p className="mv-desc">{u.desc}</p>

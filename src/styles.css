@@ -1680,9 +1680,9 @@ main.galeria{margin-top: var(--e-6)}
 /* los nombres van en su propia capa, encima de todos los planetas (App.jsx):
    la capa de planetas guarda el hueco del nombre sin pintarlo */
 .sistema-capa{position:absolute; inset:0}
-/* invisible pero tocable: el nombre cuelga fuera de la caja del botón y,
-   con visibility:hidden, un clic en él caía en el vacío */
-.sistema-capa:not(.sistema-nombres) .nav-nombre{opacity:0; pointer-events:auto}
+.sistema-capa:not(.sistema-nombres) .nav-nombre{visibility:hidden}
+/* los nombres de la capa de encima reciben el clic (App.jsx: pulsaPlaneta) */
+.sistema-nombres .nav-nombre{pointer-events:auto; cursor:pointer}
 .sistema-nombres{z-index:3; pointer-events:none}
 .sistema-nombres .sol, .sistema-nombres .planeta-nav{pointer-events:none; cursor:default}
 .sistema-nombres .planeta-nav::before{content:none}
@@ -1721,6 +1721,27 @@ main.galeria{margin-top: var(--e-6)}
 .mv-sel .stat-foot b{color:var(--ink); font-weight:600}
 .mv-sel-acciones{display:flex; flex-wrap:wrap; gap: var(--e-3); margin-top: var(--e-3)}
 .mv-sel .mv-card-barra > i{background:var(--tc)}
+
+/* Rasgos propios (22 sep): se miden con --p, el diámetro */
+.rasgo-anillo{
+  position:absolute; left:50%; top:50%; width:calc(var(--p) * 1.6); height:calc(var(--p) * .46);
+  border-radius:50%; transform:translate(-50%, -50%) rotate(-18deg); pointer-events:none;
+  border:calc(var(--p) * .045 + .5px) solid color-mix(in srgb, var(--tc) 55%, #c9c3b0);
+}
+.rasgo-anillo.atras{z-index:-1; opacity:.7}
+/* delante solo va la mitad de abajo: la de arriba pasa por detrás del planeta */
+.rasgo-anillo.delante{z-index:3; border-top-color:transparent; border-left-color:transparent; border-right-color:transparent}
+.rasgo-trama{
+  position:absolute; inset:0; mix-blend-mode:multiply; opacity:.55;
+  background:radial-gradient(circle, rgba(0,0,0,.9) 32%, transparent 34%) 0 0 / calc(var(--p) * .09 + 2px) calc(var(--p) * .09 + 2px);
+}
+.rasgo-luna{
+  position:absolute; z-index:3; width:calc(var(--p) * .24); height:calc(var(--p) * .24); right:calc(var(--p) * -.16); top:calc(var(--p) * -.06);
+  border-radius:50%; background:radial-gradient(circle at 35% 35%, #f3efe4, #9c978c 60%, #4a4740);
+  box-shadow:calc(var(--p) * -.02) calc(var(--p) * .02) calc(var(--p) * .04) rgba(0,0,0,.5) inset;
+}
+.con-simbionte .planeta-recorte{filter:brightness(.5) contrast(1.35) saturate(.4)}
+.con-simbionte::after{opacity:.25}
 
 /* resumen del multiverso, sobre el Sistema */
 .mv-resumen{display:flex; flex-wrap:wrap; align-items:baseline; gap: var(--e-1) var(--e-3); margin: var(--e-2) 0 0; max-width:560px}
