@@ -3711,9 +3711,20 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   color:var(--bg); -webkit-text-stroke:2px var(--ink2); margin-right:-.12em; letter-spacing:-.06em; user-select:none;
 }
 .nf-top .nf-img{flex:1; min-width:0}
+/* en escritorio, al pasar el ratón: título, año, nota y duración sobre la carátula */
+.nf-info{
+  position:absolute; left:0; right:0; bottom:0; display:flex; flex-direction:column; gap:2px; padding: var(--e-6) var(--e-3) var(--e-3);
+  background:linear-gradient(to top, rgba(8,9,14,.92), rgba(8,9,14,0)); color:#fff; font-size: var(--t-xs);
+  opacity:0; transition:opacity .15s; pointer-events:none;
+}
+.nf-info b{font-size: var(--t-s); line-height:1.2}
+.nf-info span{color:rgba(255,255,255,.8); font-variant-numeric:tabular-nums}
 @media (hover:hover) and (pointer:fine){
   .nf-tile:hover{transform:scale(1.04)}
+  .nf-tile:hover .nf-info, .nf-tile:focus-visible .nf-info{opacity:1}
 }
+.nf-img .cover{width:100%; height:100%; object-fit:cover}
+.inicio-nf > .calendario-inicio, .inicio-nf > [class*="calendario"]{margin:0}
 @media (max-width:640px){
   .nf-cartel{margin-inline:calc(-1 * var(--e-6)); border-radius:0; min-height:440px}
   .nf-cartel-texto{padding: var(--e-6)}

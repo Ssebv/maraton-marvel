@@ -3901,6 +3901,8 @@ function MapaMultiverso({ onAbrir }) {
 // lo empezado, lo que viene, la ruta a Doomsday, lo mejor valorado y cada era
 // de la cronología. Tocar un título abre su ficha (ver, tráiler, marcar).
 const nfClave = d => d.item.id
+// la nota con coma decimal en español (7,3), como en el resto de la app
+const nfNota = n => IDIOMA_ACTUAL === 'en' ? String(n) : String(n).replace('.', ',')
 function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra }) {
   const carril = useRef(null)
   if (!items.length) return null
@@ -3934,6 +3936,12 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra })
                     ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />
                     : <span className="nf-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
                 {visto && <span className="nf-check" aria-hidden="true"><CheckIcon /></span>}
+                {!ancha && (
+                  <span className="nf-info" aria-hidden="true">
+                    <b>{d.item.t}</b>
+                    <span>{d.item.r}{d.item.s ? ` · ★ ${nfNota(d.item.s)}` : ''}{d.item.d ? ` · ${fmtDur(d.item.d)}` : ''}</span>
+                  </span>
+                )}
                 {ex && ex.pct != null && <span className="nf-prog" aria-hidden="true"><i style={{ width: `${ex.pct}%` }} /></span>}
               </span>
               {ancha && <span className="nf-tile-t">{d.item.t}{ex && ex.texto && <small>{ex.texto}</small>}</span>}
@@ -3944,7 +3952,32 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra })
     </section>
   )
 }
-function InicioNf({ stats, vistas, eps, notas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe }) {
+// Próximos estrenos como fila: los que ya están en el catálogo abren su ficha
+function ProximamenteNf({ onAbrir }) {
+  const hoy = Date.now()
+  const lista = ESTRENOS.filter(e => !e.fecha || new Date(e.fecha + 'T00:00:00') > hoy)
+  if (!lista.length) return null
+  return (
+    <section className="nf-fila">
+      <div className="nf-fila-cab"><h2 className="nf-fila-t">{tr('Próximamente', 'Coming soon')}</h2></div>
+      <div className="nf-carril">
+        {lista.map(e => {
+          const d = e.id && buscaItem(e.id)
+          const cara = (
+            <>
+              <span className="nf-img"><CaraEstreno e={e} /></span>
+              <span className="nf-tile-t">{fmtFecha(e.fecha) || e.aprox}<small>{e.tipo}</small></span>
+            </>
+          )
+          return d
+            ? <button key={e.t} className="nf-tile" onClick={() => onAbrir(d)} aria-label={`${e.t} · ${fmtFecha(e.fecha) || e.aprox}`}>{cara}</button>
+            : <div key={e.t} className="nf-tile" role="group" aria-label={`${e.t} · ${fmtFecha(e.fecha) || e.aprox}`}>{cara}</div>
+        })}
+      </div>
+    </section>
+  )
+}
+function InicioNf({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe, calendario }) {
   const s = stats.siguiente
   // todo lo que se ve (sin cómics ni bóveda), en el orden del maratón
   const todos = []
@@ -3987,7 +4020,7 @@ function InicioNf({ stats, vistas, eps, notas, pasaFiltro, onAbrir, onMarcar, si
             <span className="nf-eyebrow">{tr('Siguiente en tu maratón', 'Next in your marathon')} · {puesto} / {todos.length}</span>
             <h2 className="nf-cartel-t">{s.t}</h2>
             <span className="nf-meta">
-              {s.s ? <b className="nf-nota">★ {String(s.s).replace('.', IDIOMA_ACTUAL === 'en' ? '.' : ',')}</b> : null}
+              {s.s ? <b className="nf-nota">★ {nfNota(s.s)}</b> : null}
               <span>{s.r}</span>
               {s.d ? <span>{fmtDur(s.d)}</span> : null}
               {s.tipo === 'serie' && lista ? <span>{lista.length} {tr('episodios', 'episodes')}</span> : null}
@@ -4017,6 +4050,7 @@ function InicioNf({ stats, vistas, eps, notas, pasaFiltro, onAbrir, onMarcar, si
           </div>
         </section>
       )}
+      {calendario}
       <FilaNf titulo={tr('Continuar viendo', 'Continue watching')} items={continuar} ancha vistas={vistas} onAbrir={onAbrir}
         extra={d => { const e = siguienteEpDe(d), n = epsDe(d); return { pct: n ? 100 * epHechosDe(d.item) / n : 0, texto: e ? `T${e.s}·E${e.n}` : '' } }} />
       <FilaNf titulo={tr('A continuación', 'Up next')} sub={tr('en el orden del maratón', 'in marathon order')} items={pendientes.slice(s ? 1 : 0, 16)} vistas={vistas} onAbrir={onAbrir} />
@@ -4024,6 +4058,13 @@ function InicioNf({ stats, vistas, eps, notas, pasaFiltro, onAbrir, onMarcar, si
       <FilaNf titulo={tr('Top 10 del maratón', 'Marathon top 10')} sub={tr('por nota de IMDb', 'by IMDb rating')} items={top} numerada vistas={vistas} onAbrir={onAbrir} />
       <FilaNf titulo={tr('Visto hace poco', 'Recently watched')} items={recientes} ancha vistas={vistas} onAbrir={onAbrir} />
       <FilaNf titulo={tr('Tus favoritas', 'Your favourites')} sub={tr('4 y 5 estrellas', '4 and 5 stars')} items={favoritas} vistas={vistas} onAbrir={onAbrir} />
+      <ProximamenteNf onAbrir={onAbrir} />
+      {/* tus listas, con su propio progreso (el de re-ver con alguien) */}
+      {listas.map(l => {
+        const its = l.items.map(id => buscaItem(id)).filter(Boolean)
+        return <FilaNf key={l.id} titulo={l.nombre} items={its} vistas={l.prog || {}} onAbrir={onAbrir}
+          sub={`${tr('Tu lista', 'Your list')} · ${its.filter(d => (l.prog || {})[d.item.id]).length}/${its.length}`} />
+      })}
       {eras.map(({ saga, era, its }) => (
         <FilaNf key={saga.saga + era.era} titulo={era.era} vistas={vistas} onAbrir={onAbrir} items={its}
           sub={`${nombreSaga(saga)} · ${era.rango} · ${its.filter(d => vistas[d.item.id]).length}/${its.length}`} />
@@ -8517,7 +8558,8 @@ export default function App() {
             <button className="filtros-quitar" onClick={() => setFiltros(sinFiltros())}>{tr('Quitar', 'Clear')}</button>
           </p>
         )}
-        <CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />
+        {/* en Inicio va bajo la cartelera: aquí la empujaba fuera de la primera pantalla del móvil */}
+        {vista !== 'inicio' && <CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />}
       </section>
       ) : (
         <CabeceraDestino esMovil={esMovil} onAjustes={() => setAjustes(true)}
@@ -8669,8 +8711,9 @@ export default function App() {
 
       <Estrellas />
       {vista === 'inicio' ? (
-        <InicioNf stats={stats} vistas={vistas} eps={eps} notas={notas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
-          epHechosDe={epHechosDe} onAbrir={d => setDetalle(d)} onMarcar={marcaSiguiente} />
+        <InicioNf stats={stats} vistas={vistas} eps={eps} notas={notas} listas={listas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
+          epHechosDe={epHechosDe} onAbrir={d => setDetalle(d)} onMarcar={marcaSiguiente}
+          calendario={<CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />} />
       ) : vista === 'tiempo' ? (
         <main className="tiempo">
           <p className="saga-desc mv-intro">

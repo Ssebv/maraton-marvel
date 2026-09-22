@@ -14,6 +14,7 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
   const { cdp, navega, cierra, errores } = await abre({ movil, ancho, alto: movil ? 844 : 900, siembra: {
     'maraton-marvel-v1': { 'first-class': ahora - 3e8, 'origins-wolverine': ahora - 2e8 },
     'maraton-marvel-eps-v1': { 'legion:1:1': 1, 'legion:1:2': 1 },
+    'maraton-marvel-listas-v1': [{ id: 'l1', nombre: 'Con Cata', items: ['ironman1', 'thor1'], prog: { ironman1: 1 } }],
   } })
   try {
     await navega('')
@@ -24,6 +25,9 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     const cont = await cdp.eval(`(() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'Continuar viendo')
       if (!f) return null; const t = f.querySelector('.nf-tile'); return { t: t.querySelector('.nf-tile-t').textContent, w: parseFloat(t.querySelector('.nf-prog i').style.width) } })()`)
     filas.push([!!cont && /Legion/.test(cont.t) && cont.w > 0, `${donde}: «Continuar viendo» con Legion, su episodio y su barra: ${JSON.stringify(cont)}`])
+    const extra = await cdp.eval(`({ cal: !!document.querySelector('.inicio-nf .cal-inicio') && !document.querySelector('.hero .cal-inicio'),
+      filas: [...document.querySelectorAll('.nf-fila-t')].map(x => x.textContent) })`)
+    filas.push([extra.cal && extra.filas.includes('Próximamente') && extra.filas.includes('Con Cata'), `${donde}: calendario bajo la cartelera (no en la cabecera), «Próximamente» y la lista «Con Cata»`])
     const ancho = await cdp.eval(`({ doc: document.documentElement.scrollWidth, vw: innerWidth })`)
     filas.push([ancho.doc <= ancho.vw, `${donde}: los carriles no ensanchan la página (${ancho.doc} ≤ ${ancho.vw})`])
     await cdp.eval(`document.querySelector('.nf-btn-marcar').click()`)
