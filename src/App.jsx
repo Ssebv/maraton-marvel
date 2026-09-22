@@ -4052,6 +4052,21 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   const verGuia = !guiaVista && Object.keys(vistas).length <= 2
   const cierraGuia = () => { setGuiaVista(true); try { localStorage.setItem(KEY_GUIA_INICIO, '1') } catch {} }
   const verTrailer = s && trailerDe === s.id && extraS && extraS.trailer
+  // la foto del SIGUIENTE título se baja mientras miras la cartelera actual:
+  // al marcar vista ya está (y el service worker la guarda para la próxima)
+  const proxIds = pendientes.slice(1, 3).map(d => d.item.id).join('|')
+  useEffect(() => {
+    if (!proxIds) return
+    const ancho = window.innerWidth > 780 ? 'w1280' : 'w780'
+    const pide = () => proxIds.split('|').forEach(id => {
+      const f = FOTOGRAMAS[id]
+      if (f) { const img = new Image(); img.decoding = 'async'; img.src = `${TMDB_IMG}${ancho}${f}` }
+      if (POSTERS[id]) { const p = new Image(); p.decoding = 'async'; p.src = POSTERS[id] }
+    })
+    const q = window.requestIdleCallback || (fn => setTimeout(fn, 1200))
+    const t = q(pide, { timeout: 4000 })
+    return () => { (window.cancelIdleCallback || clearTimeout)(t) }
+  }, [proxIds])
   const eraS = s && (eras.find(x => x.its.some(d => d.item.id === s.id)) || {}).era?.era
   return (
     <main className="inicio-nf">
@@ -4077,7 +4092,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
           <div className="nf-cartel-texto">
             <span className="nf-eyebrow">
               <span className="nf-eyebrow-punto" aria-hidden="true" />
-              {tr('Siguiente en tu maratón', 'Next in your marathon')} · {puesto} / {todos.length}{eraS ? <span className="nf-eyebrow-era">{eraS}</span> : null}
+              {filtrando ? tr('Siguiente con tus filtros', 'Next with your filters') : tr('Siguiente en tu maratón', 'Next in your marathon')} · {puesto} / {todos.length}{eraS ? <span className="nf-eyebrow-era">{eraS}</span> : null}
             </span>
             <h2 className="nf-cartel-t">{s.t}</h2>
             <span className="nf-meta">

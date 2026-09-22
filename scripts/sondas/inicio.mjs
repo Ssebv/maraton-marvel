@@ -47,6 +47,9 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     const lavado = await cdp.eval(`(() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'Visto hace poco')
       const i = f && f.querySelector('.nf-img img'); return i ? getComputedStyle(i).opacity : null })()`)
     filas.push([lavado === null || lavado === '1' || lavado === '0', `${donde}: «Visto hace poco» no se atenúa (opacidad ${lavado})`])
+    // la foto del siguiente título se precarga mientras miras la cartelera
+    const pre = await cdp.eval(`performance.getEntriesByType('resource').filter(r => /image\\.tmdb\\.org\\/t\\/p\\/w(780|1280)/.test(r.name)).length`)
+    filas.push([pre >= 2, `${donde}: se precargan las fotos de los siguientes títulos (${pre} de TMDB en grande)`])
     await cdp.eval(`document.querySelector('.nf-btn-marcar').click()`)
     await cdp.hasta(`!!document.querySelector('.deshacer')`, 3000)
     await espera(300)
