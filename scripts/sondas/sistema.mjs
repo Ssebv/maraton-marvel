@@ -33,10 +33,19 @@ const abierta = `!!document.querySelector('.tierra')`
           nombre: document.querySelectorAll('.sistema-nombres .sobre').length } })()`)
         filas.push([h.boton === 1 && h.nombre === 1, `ratón sobre «${p.t}»: botón y nombre marcados (${h.boton}/${h.nombre})`])
       }
-      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: p.x, y: p.y, button: 'left', clickCount: 1 })
-      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', clickCount: 1 })
+      // preselección (22 sep): el primer clic elige y enseña la ficha, el segundo entra
+      const clic = async () => {
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: p.x, y: p.y, button: 'left', clickCount: 1 })
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', clickCount: 1 })
+      }
+      await clic(); await espera(400)
+      const sel = await cdp.eval(`({ ficha: (document.querySelector('.mv-sel .mv-num') || {}).textContent || null, tierra: !!document.querySelector('.tierra'),
+        elegidos: document.querySelectorAll('.sistema-capa:not(.sistema-nombres) .elegido').length })`)
+      filas.push([!!sel.ficha && !sel.tierra && sel.elegidos === 1, `primer clic en «${p.t}» lo preselecciona: ficha de ${sel.ficha}, sin entrar`])
+      p = await cdp.eval(centroNombre(i))
+      await clic()
       const ok = await cdp.hasta(abierta, 2000).then(() => true, () => false)
-      filas.push([ok, `clic en el nombre del ${quien} «${p.t}» abre su Tierra`])
+      filas.push([ok, `segundo clic en el nombre del ${quien} «${p.t}» abre su Tierra`])
       if (ok && i === 1) {
         // al volver, el planeta que se tocó no se queda agrandado (su
         // pointerleave no llega: la vista del Sistema se desmonta al abrir)
@@ -74,16 +83,23 @@ const abierta = `!!document.querySelector('.tierra')`
     filas.push([m.min >= 28, `planetas de al menos 28 px en el móvil (${m.min})`])
     filas.push([/circle/.test(m.clip), `la textura se recorta con clip-path, no con overflow (Safari): ${m.clip}`])
     filas.push([m.visibles.length === 1 && m.visibles[0] === 'Tierra-616', `solo el nombre del centro en el móvil: ${JSON.stringify(m.visibles)}`])
-    filas.push([m.arcos === 11 && m.filas === 11, `arco de progreso en los 11 planetas y 11 filas en el índice (${m.arcos}/${m.filas})`])
+    filas.push([m.arcos === 12 && m.filas === 12, `arco de progreso en los 12 planetas y 12 filas en el índice (${m.arcos}/${m.filas})`])
     const p = await cdp.eval(`(() => { const b = document.querySelectorAll('.sistema-capa:not(.sistema-nombres) .planeta-nav')[2]
       const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, t: b.title } })()`)
     // el planeta gira: se pausa la animación para que el dedo caiga donde se midió
     await cdp.eval(`document.getAnimations().forEach(a => a.pause()); 1`)
     const punto = [{ x: p.x, y: p.y }]
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: punto })
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    const toque = async () => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: punto })
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    }
+    await toque(); await espera(400)
+    const sel = await cdp.eval(`(() => { const n = document.querySelector('.sistema-nombres .elegido .nav-nombre')
+      return { ficha: !!document.querySelector('.mv-sel'), nombre: n && getComputedStyle(n).display !== 'none' ? n.textContent : null, tierra: !!document.querySelector('.tierra') } })()`)
+    filas.push([sel.ficha && !!sel.nombre && !sel.tierra, `primer toque en «${p.t}» (móvil): se ve su nombre («${sel.nombre}») y su ficha, sin entrar`])
+    await toque()
     const ok = await cdp.hasta(abierta, 2000).then(() => true, () => false)
-    filas.push([ok, `toque en el planeta «${p.t}» (móvil) abre su Tierra`])
+    filas.push([ok, `segundo toque en el planeta «${p.t}» (móvil) abre su Tierra`])
     await cdp.eval(`document.querySelector('.tierra .chip-btn').click()`)
     await cdp.hasta(`!!document.querySelector('.mv-indice')`, 3000)
     await cdp.eval(`document.querySelectorAll('.mv-fila')[4].scrollIntoView({ block: 'center', behavior: 'instant' })`); await espera(300)
@@ -92,6 +108,24 @@ const abierta = `!!document.querySelector('.tierra')`
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
     const t = await cdp.hasta(abierta, 2000).then(() => cdp.eval(`document.querySelector('.tierra-num').textContent`), () => null)
     filas.push([t === f.t, `la fila «${f.t}» del índice abre su Tierra (${t})`])
+  } finally { await cierra() }
+}
+
+// lotes partidos (22 sep): quien tenía «sony» o «fox4f» marcado conserva la
+// marca, con su fecha, en cada película; Sony enseña sus seis y la Tierra de
+// los 4F de Fox es opcional (no cuenta en el total)
+{
+  const { cdp, navega, cierra } = await abre({ siembra: { 'maraton-marvel-v1': { sony: 1754000000000, fox4f: 1, nwh: 1 } } })
+  try {
+    await navega('#multiverso')
+    await cdp.hasta(`!!document.querySelector('.mv-fila')`, 5000)
+    await espera(400)
+    const v = await cdp.eval(`JSON.parse(localStorage.getItem('maraton-marvel-v1'))`)
+    const piezas = ['sm-raimi1', 'sm-raimi2', 'sm-raimi3', 'asm1', 'asm2', 'venom1', 'venom2', 'morbius', 'madameweb', 'venom3', 'kraven']
+    filas.push([!v.sony && !v.fox4f && piezas.every(id => v[id] === 1754000000000) && v.ff2005 && v.ff2015, `los lotes se migran a sus ${piezas.length} + 3 películas con su fecha y se borran`])
+    const r = await cdp.eval(`(() => { const fila = t => [...document.querySelectorAll('.mv-fila')].find(b => b.textContent.includes(t))
+      return { sony: fila('Universo Sony').querySelector('.mv-fila-cuenta').textContent, fox: fila('121698').textContent, resumen: document.querySelector('.mv-resumen-texto').textContent } })()`)
+    filas.push([r.sony === '6/6' && /opcional/i.test(r.fox) && /de 11 Tierras/.test(r.resumen), `Sony ${r.sony}, los 4F de Fox opcionales y fuera del total («${r.resumen}»)`])
   } finally { await cierra() }
 }
 

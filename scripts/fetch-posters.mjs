@@ -50,8 +50,6 @@ const TITULOS = {
   'eternals': 'Eternals (film)',
   'ffh': 'Spider-Man: Far From Home',
   'nwh': 'Spider-Man: No Way Home',
-  'sony': 'Spider-Man (2002 film)',
-  'fox4f': 'Fantastic Four (2005 film)',
   'mom': 'Doctor Strange in the Multiverse of Madness',
   'hawkeye': 'Hawkeye (miniseries)',
   'moonknight': 'Moon Knight (TV series)',

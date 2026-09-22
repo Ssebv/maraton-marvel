@@ -29,7 +29,8 @@ export const ORDEN_CONGELADO = {
   "f4-94","spiderman94","hulk96","silversurfer98","sm-unlimited99","emh","ultimate-sm","avengers-assemble",
   "hulk-smash","gotg-2015","sm-2017","modok","hitmonkey","spidey-equipo","moongirl","oneshot-carter","oneshot-martillo",
   "oneshot-consultor","oneshot-item47","oneshot-rey","team-thor","team-darryl","peter-lista","xmen-evolution",
-  "wolverine-xmen","fox4f"
+  "wolverine-xmen","fox4f","sm-raimi1","sm-raimi2","sm-raimi3","asm1","asm2","venom1","venom2","morbius",
+  "madameweb","venom3","kraven","ff2005","ff2007","ff2015"
 ],
   eps: [
   "gifted:1:1","gifted:1:2","gifted:1:3","gifted:1:4","gifted:1:5","gifted:1:6","gifted:1:7","gifted:1:8",

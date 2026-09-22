@@ -77,10 +77,7 @@ function etiquetaPais(pais, id) {
 // Los bloques de varias películas no tienen ficha propia en TMDB: se consulta
 // cada una y se enseñan las plataformas que tienen más
 const BLOQUES = {
-  // Spider-Man 1–3, The Amazing 1–2, Venom 1–3, Morbius, Madame Web, Kraven
-  sony: [557, 558, 559, 1930, 102382, 335983, 580489, 526896, 634492, 912649, 539972],
-  // Los 4 Fantásticos (2005), y Silver Surfer (2007), Cuatro Fantásticos (2015)
-  fox4f: [9738, 1979, 166424],
+  // (los lotes de Sony y de los 4F de Fox se partieron en títulos sueltos el 22 sep 2026)
 }
 
 const pide = async (tipo, id) => {

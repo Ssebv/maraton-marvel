@@ -1692,6 +1692,36 @@ main.galeria{margin-top: var(--e-6)}
   .planeta-nav .nav-nombre{display:none}
 }
 
+/* Preselección (22 sep): el primer toque elige. El elegido crece, se le ve el
+   nombre (también en el móvil, sobre un fondo propio para leerse encima de
+   los demás) y todo el Sistema se para mientras haya uno elegido */
+.sistema.con-sel .giro, .sistema.con-sel .contra{animation-play-state:paused}
+.planeta-nav.elegido, .planeta-nav.elegido.sobre{transform:scale(1.35); z-index:2}
+.sol.elegido, .sol.elegido.sobre{transform:translate(-50%, -50%) scale(1.1)}
+.elegido .orbe-pista{stroke:var(--ink); stroke-width:2}
+.sistema-nombres .elegido .nav-nombre, .sistema-nombres .planeta-nav.elegido .nav-nombre{
+  display:block; color:var(--ink); background:var(--bg); border-radius:var(--r-s); padding:2px var(--e-2);
+  font-size: var(--t-xs); text-shadow:none; transform:translateX(-50%) scale(calc(1 / 1.35));
+  transform-origin:top center; top:calc(100% + 4px);
+}
+.sistema-nombres .sol.elegido .nav-nombre{transform:translateX(-50%)}
+.con-sel .planeta-nav:not(.elegido), .con-sel .sol:not(.elegido){opacity:.55}
+.sistema-nombres .planeta-nav, .sistema-nombres .sol{opacity:1}
+/* lo opcional (los 4F de Fox) lleva la pista punteada */
+.opcional .orbe-pista{stroke-dasharray:3 4}
+.mv-fila-opc{font-size: var(--t-xs); color:var(--ink2); margin-left: var(--e-2); font-weight:600; letter-spacing:.04em; text-transform:uppercase}
+.mv-sel-ayuda{margin: 0 0 var(--e-5); text-align:center; font-size: var(--t-s); color:var(--ink2)}
+.mv-sel{
+  position:relative; margin: 0 auto var(--e-6); max-width:560px; padding: var(--e-5) var(--e-6); padding-right:88px;
+  background:var(--panel); border:1.5px solid color-mix(in srgb, var(--tc) 45%, var(--line)); border-radius:var(--r-m);
+  display:flex; flex-direction:column; gap: var(--e-2); animation:entraVista var(--dur-media) var(--curva) both;
+}
+.mv-sel .mv-num{align-self:flex-start; color:color-mix(in srgb, var(--tc) var(--era-tinta), var(--ink)); background:color-mix(in srgb, var(--tc) 15%, transparent)}
+.mv-sel .mv-card-barra{margin-top: var(--e-2)}
+.mv-sel .stat-foot b{color:var(--ink); font-weight:600}
+.mv-sel-acciones{display:flex; flex-wrap:wrap; gap: var(--e-3); margin-top: var(--e-3)}
+.mv-sel .mv-card-barra > i{background:var(--tc)}
+
 /* resumen del multiverso, sobre el Sistema */
 .mv-resumen{display:flex; flex-wrap:wrap; align-items:baseline; gap: var(--e-1) var(--e-3); margin: var(--e-2) 0 0; max-width:560px}
 .mv-resumen-cifra{font-size: var(--t-l); font-weight:700; font-variant-numeric:tabular-nums}
@@ -1832,9 +1862,29 @@ main.multiverso{margin-top: var(--e-6)}
    a lo ancho. Esta regla estaba ANTES de la base, con la misma especificidad:
    la base ganaba y dejaba 210 px de relleno a la derecha en una pantalla de 390
    (el texto de la Tierra en una columna de ~100 px, palabra por palabra). */
+/* 22 sep: el planeta baja a 72 px y el nombre sube a su lado (antes 120 px
+   de relleno arriba: un hueco vacío encima de todo el texto) */
 @media (max-width:640px){
-  .tierra-hero{padding: 120px var(--e-6) var(--e-6)}
+  .tierra-hero{padding: var(--e-6)}
+  .tierra-hero .planeta-grande{--p:72px; width:72px; height:72px; top:var(--e-6); right:var(--e-5)}
+  .tierra-cab{padding-right:84px; min-height:72px}
 }
+.tierra-cab{display:flex; flex-direction:column; gap: var(--e-3)}
+.tierra-pie{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap: var(--e-3)}
+.tierra-sig{max-width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tierra-sig b{font-weight:700}
+.tierra-hecha{font-size: var(--t-s); font-weight:700; color:color-mix(in srgb, var(--tc) var(--era-tinta), var(--ink))}
+.tierra-cruces{display:flex; flex-direction:column; gap: var(--e-2); margin-top: var(--e-2); padding-top: var(--e-4); border-top:1px solid var(--line)}
+.tierra-cruces-t{font-size: var(--t-xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink2)}
+.tierra-cruces-lista{display:flex; flex-wrap:wrap; gap: var(--e-2)}
+.cruce{
+  display:inline-flex; align-items:center; gap: var(--e-2); min-height:44px; padding: 0 var(--e-4);
+  background:var(--panel2); border:none; border-radius:var(--r-s); color:var(--ink); font:inherit; font-size: var(--t-s); font-weight:600; cursor:pointer;
+}
+.cruce .mv-fila-punto{grid-row:auto}
+.cruce small{font-size: var(--t-xs); color:var(--ink2); font-variant-numeric:tabular-nums}
+@media (hover:hover){ .cruce:hover{background:color-mix(in srgb, var(--tc) 18%, var(--panel2))} }
+.tierra-filtro{display:flex; justify-content:flex-end; margin: 0 0 var(--e-4)}
 @media (min-width:1240px){
   .tierra-grid{display:grid; grid-template-columns:1fr 1fr; gap: var(--e-4)}
 }
@@ -2660,7 +2710,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 /* ── Mapa del multiverso ── */
 .mapa-mv-wrap{display:flex; flex-direction:column; gap: var(--e-5); margin-top: var(--e-5)}
 .mapa-mv{
-  position:relative; width:100%; max-width:920px; margin: 0 auto; aspect-ratio:960/700;
+  position:relative; width:100%; max-width:920px; margin: 0 auto; aspect-ratio:960/800;
   background:
     radial-gradient(70% 60% at 50% 30%, color-mix(in srgb, var(--violet) 7%, transparent), transparent 70%),
     var(--panel);
@@ -2675,7 +2725,9 @@ a.prov-chip:hover{border-color:var(--ink3)}
   .mapa-mv-wrap::-webkit-scrollbar{display:none}
   .mapa-mv{min-width:760px}
   .solo-movil{display:inline}
-  .mapa-leyenda, .mapa-ayuda{position:sticky; left:var(--e-6); max-width:calc(100vw - 2 * var(--e-6))}
+  /* left:0: el sticky ya se mide desde dentro del relleno del carril; con
+     left:var(--e-6) quedaban corridos 24 px y se salían por la derecha */
+  .mapa-leyenda, .mapa-ayuda{position:sticky; left:0; max-width:calc(100vw - 2 * var(--e-6)); box-sizing:border-box}
 }
 .arista{fill:none; stroke:color-mix(in srgb, var(--ink) 24%, transparent); stroke-width:1.5; transition:stroke var(--dur-media), opacity var(--dur-media)}
 .arista.on{stroke:var(--red); stroke-width:2.5}

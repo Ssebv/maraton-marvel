@@ -25,9 +25,6 @@ const KEY_COMPACTO = 'maraton-marvel-compacto'
 // Sagas plegadas a mano: { xmen: 1 | 0 }. Sin entrada, la saga decide sola
 // (plegada si estaba completa al cargar la página).
 const KEY_PLEGADAS = 'maraton-marvel-plegadas-v1'
-// El lote «Marvel One-Shots (cortos)» se partió en cinco tarjetas, cada una en
-// su año (11 sep 2026): quien lo tenía marcado, o en una lista, conserva la
-// marca en las cinco. El id viejo sigue ocupando su bit en orden.js.
 // Cambio de vista con View Transitions: la vista vieja y la nueva se funden
 // con un desliz corto hacia el lado de la pestaña (adelante / atrás) y las
 // barras se quedan quietas. Sin soporte o con «reducir movimiento», directo.
@@ -216,12 +213,24 @@ function cierraConVuelo(id, cierra) {
 const N_SERIES_BOVEDA = DATA.find(s => s.saga === 'animacion').eras.reduce((a, e) => a + e.items.length, 0)
 // todos los títulos del catálogo (la bienvenida decía «117» escrito a mano)
 const N_TITULOS_TODOS = DATA.reduce((a, s) => a + s.eras.reduce((b, e) => b + e.items.length, 0), 0)
-const ONESHOTS_PARTIDOS = ['oneshot-martillo', 'oneshot-consultor', 'oneshot-item47', 'oneshot-rey', 'oneshot-carter']
+// Lotes partidos en títulos sueltos: quien tenía el lote marcado, o en una
+// lista, conserva la marca en cada pieza. El id viejo sigue ocupando su bit
+// en orden.js. One-Shots (11 sep 2026); Sony y los 4 Fantásticos de Fox
+// (22 sep 2026, Sebastián: «en el universo de Sony solo veo una película»).
+const LOTES_PARTIDOS = {
+  oneshots: ['oneshot-martillo', 'oneshot-consultor', 'oneshot-item47', 'oneshot-rey', 'oneshot-carter'],
+  sony: ['sm-raimi1', 'sm-raimi2', 'sm-raimi3', 'asm1', 'asm2', 'venom1', 'venom2', 'morbius', 'madameweb', 'venom3', 'kraven'],
+  fox4f: ['ff2005', 'ff2007', 'ff2015'],
+}
+const tieneLote = v => !!v && Object.keys(LOTES_PARTIDOS).some(k => v[k])
 const migraMarcas = v => {
-  if (!v || !v.oneshots) return v
+  if (!tieneLote(v)) return v
   const n = { ...v }
-  ONESHOTS_PARTIDOS.forEach(id => { if (!n[id]) n[id] = v.oneshots })
-  delete n.oneshots
+  for (const [lote, piezas] of Object.entries(LOTES_PARTIDOS)) {
+    if (!v[lote]) continue
+    piezas.forEach(id => { if (!n[id]) n[id] = v[lote] })
+    delete n[lote]
+  }
   return n
 }
 // Modo sin spoilers: '1' esconde sinopsis, post-créditos y títulos de episodio
@@ -3785,7 +3794,11 @@ const MAPA_NODOS = [
   { id: 'quantumania', x: 380, y: 340, c: COLOR_TIERRA['Tierra-616'] },
   { id: 'mom', x: 300, y: 420, c: COLOR_TIERRA['Tierra-838'] },
   { id: 'nwh', x: 500, y: 470, c: COLOR_TIERRA['Tierra-616'] },
-  { id: 'sony', x: 500, y: 615, c: COLOR_TIERRA['Universo Sony'] },
+  // la fila de abajo (22 sep): el lote «sony» se partió y el mapa creció a 800
+  { id: 'venom2', x: 450, y: 600, c: COLOR_TIERRA['Universo Sony'] },
+  { id: 'sm-raimi2', x: 330, y: 725, c: COLOR_TIERRA['Tierra-96283'] },
+  { id: 'asm2', x: 590, y: 725, c: COLOR_TIERRA['Tierra-120703'] },
+  { id: 'ff2005', x: 200, y: 705, c: COLOR_TIERRA['Tierra-121698'] },
   { id: 'marvels', x: 680, y: 200, c: COLOR_TIERRA['Tierra-616'] },
   { id: 'whatif', x: 820, y: 340, c: COLOR_TIERRA['Universos What If'] },
   { id: 'zombies', x: 820, y: 470, c: COLOR_TIERRA['Marvel Zombies'] },
@@ -3805,7 +3818,10 @@ const MAPA_ARISTAS = [
   { a: 'marvels', b: 'dofp', t: 'Su escena post-créditos abre la puerta a la Tierra mutante' },
   { a: 'wandavision', b: 'mom', t: 'El Darkhold corrompe a Wanda' },
   { a: 'mom', b: 'nwh', t: 'Del hechizo roto a viajar entre universos' },
-  { a: 'nwh', b: 'sony', t: 'Los Spider-Man y villanos de Raimi y Garfield cruzan' },
+  { a: 'nwh', b: 'sm-raimi2', t: 'El Peter, el Octopus y el Duende de Raimi cruzan a la 616' },
+  { a: 'nwh', b: 'asm2', t: 'El Peter, el Electro y el Lagarto de Garfield cruzan a la 616' },
+  { a: 'nwh', b: 'venom2', t: 'Tras los créditos, Eddie Brock salta a la 616' },
+  { a: 'ff2005', b: 'deadpool3', t: 'La Antorcha Humana de Chris Evans acaba en el Vacío' },
   { a: 'quantumania', b: 'loki2', t: 'Las variantes de Kang y su Concilio' },
   { a: 'whatif', b: 'zombies', t: 'La plaga nace en una rama del Vigilante' },
   { a: 'ff', b: 'thunderbolts', t: 'La nave de los 4 Fantásticos aparece en la 616' },
@@ -3825,7 +3841,7 @@ function MapaMultiverso({ onAbrir }) {
   return (
     <div className="mapa-mv-wrap">
       <div className="mapa-mv">
-        <svg viewBox="0 0 960 700" preserveAspectRatio="none" aria-hidden="true">
+        <svg viewBox="0 0 960 800" preserveAspectRatio="none" aria-hidden="true">
           {MAPA_ARISTAS.map((e, i) => {
             const A = nodos[e.a], B = nodos[e.b]
             const mx = (A.x + B.x) / 2 + (A.y - B.y) * 0.18
@@ -3843,7 +3859,7 @@ function MapaMultiverso({ onAbrir }) {
           return (
             <button key={n.id}
               className={`nodo${activo ? ' on' : ''}${sel && !activo && !vecino ? ' off' : ''}`}
-              style={{ left: `${n.x / 9.6}%`, top: `${n.y / 7}%`, '--nc': n.c }}
+              style={{ left: `${n.x / 9.6}%`, top: `${n.y / 8}%`, '--nc': n.c }}
               onClick={() => setSel(activo ? null : n.id)} title={d.item.t}>
               {POSTERS[n.id]
                 ? <img src={POSTERS[n.id]} alt="" loading="lazy" />
@@ -4530,7 +4546,7 @@ function Proximos() {
 const ANILLOS = [
   { r: 150, t: ['Rumbo a Doomsday', 'Toward Doomsday'], d: ['Mutantes, 4 Fantásticos e Illuminati', 'Mutants, Fantastic Four and Illuminati'] },
   { r: 215, t: ['Las Tierras arácnidas', 'The Spider Earths'], d: ['Los Spider-Man de Sony', "Sony's Spider-Men"] },
-  { r: 280, t: ['Otras ramas', 'Other branches'], d: ['El Vigilante, la plaga y el papel', 'The Watcher, the plague and the page'] },
+  { r: 280, t: ['Otras ramas', 'Other branches'], d: ['El Vigilante, la plaga, el papel y los 4F de Fox', 'The Watcher, the plague, the page and Fox\'s FF'] },
   { r: 335, t: ['Fuera del tiempo', 'Outside time'], d: ['Donde acaba lo podado', 'Where the pruned end up'] },
 ]
 // [radio, ángulo de salida, segundos por vuelta, sentido, diámetro]
@@ -4542,14 +4558,15 @@ const ORBITAS = {
   'Tierra-120703':      [215, 200, 120, -1, 52],
   'Universo Sony':      [215, 320, 120, -1, 52],
   'Universos What If':  [280, 50,  160,  1, 56],
-  'Marvel Zombies':     [280, 170, 160,  1, 50],
-  'Tierra-616 (cómics)':[280, 290, 160,  1, 54],
-  'El Vacío':           [335, 230, 220, -1, 62],
+  'Marvel Zombies':     [280, 140, 160,  1, 50],
+  'Tierra-616 (cómics)':[280, 230, 160,  1, 54],
+  'Tierra-121698':      [280, 320, 160,  1, 50],
+  'El Vacío':           [335, 150, 220, -1, 62],
 }
 // en el sistema solar las etiquetas giran con su planeta y, a escala de
 // móvil, las largas se pisaban con las vecinas: nombre corto (el completo va
 // en el title y en la ficha de la Tierra)
-const CORTO_SISTEMA = { 'Universo Sony': 'Sony', 'Universos What If': 'What If', 'Tierra-616 (cómics)': '616 cómics', 'Marvel Zombies': 'Zombies' }
+const CORTO_SISTEMA = { 'Universo Sony': 'Sony', 'Universos What If': 'What If', 'Tierra-616 (cómics)': '616 cómics', 'Marvel Zombies': 'Zombies', 'Tierra-121698': '4F de Fox' }
 
 // Cabecera de Perfil y Multiverso (14 sep 2026): antes repetían la del
 // maratón entera (titular, «Siguiente», progreso, panel y buscador: ~380 px
@@ -6465,6 +6482,11 @@ export default function App() {
   // planeta bajo el puntero o con foco: el botón y su nombre viven en capas
   // distintas del Sistema y :hover solo llega al botón (code-review)
   const [mvSobre, setMvSobre] = useState(null)
+  // en una Tierra grande (el UCM son 75), enseñar solo lo que falta
+  const [tierraPend, setTierraPend] = useState(false)
+  // planeta preseleccionado en el Sistema: el primer toque dice qué Tierra
+  // es (nombre y ficha debajo) y el segundo entra (Sebastián, 22 sep 2026)
+  const [mvSel, setMvSel] = useState(null)
   const [planModal, setPlanModal] = useState(false)
   const [planHoras, setPlanHoras] = useState(2)
   const [planExpress, setPlanExpress] = useState(true)
@@ -6560,17 +6582,17 @@ export default function App() {
   // Migración del lote de One-Shots: en marcas locales y en lo que llegue de
   // fuera (sincronización, cuenta, sala), porque todas pasan por setVistas
   useEffect(() => {
-    if (!vistas.oneshots) return
+    if (!tieneLote(vistas)) return
     const n = migraMarcas(vistas)
     setVistas(n)
     try { localStorage.setItem(KEY, JSON.stringify(n)) } catch {}
   }, [vistas])
   useEffect(() => {
-    const tiene = l => l.items.includes('oneshots') || (l.prog && l.prog.oneshots)
+    const tiene = l => l.items.some(id => LOTES_PARTIDOS[id]) || tieneLote(l.prog)
     if (!listas.some(tiene)) return
     guardaListas(prev => prev.map(l => {
       if (!tiene(l)) return l
-      const items = l.items.flatMap(id => id === 'oneshots' ? ONESHOTS_PARTIDOS.filter(x => !l.items.includes(x)) : [id])
+      const items = l.items.flatMap(id => LOTES_PARTIDOS[id] ? LOTES_PARTIDOS[id].filter(x => !l.items.includes(x)) : [id])
       return { ...l, items, prog: migraMarcas(l.prog) || {} }
     }))
   }, [listas])
@@ -7797,11 +7819,12 @@ export default function App() {
     const por = {}, todos = new Set()
     for (const u of MULTIVERSO) {
       const its = itemsTierra(u)
-      its.forEach(({ item }) => todos.add(item.id))
+      if (!u.opc) its.forEach(({ item }) => todos.add(item.id))
       por[u.num] = { v: its.filter(({ item }) => vistas[item.id]).length, n: its.length }
     }
     const vistos = [...todos].filter(id => vistas[id]).length
-    return { por, vistos, total: todos.size, completas: MULTIVERSO.filter(u => por[u.num].n && por[u.num].v === por[u.num].n).length }
+    return { por, vistos, total: todos.size, completas: MULTIVERSO.filter(u => !u.opc && por[u.num].n && por[u.num].v === por[u.num].n).length,
+      cuentan: MULTIVERSO.filter(u => !u.opc).length }
   }, [vistas, indice])
 
   const cineLista = useMemo(() => {
@@ -8630,24 +8653,62 @@ export default function App() {
             if (!u) { setTierra(null); return null }
             const items = itemsTierra(u)
             const v = items.filter(({ item }) => vistas[item.id]).length
+            const sig = items.find(({ item }) => !vistas[item.id])
+            // Tierras que comparten títulos con esta, de más a menos cruces
+            const mios = new Set(items.map(({ item }) => item.id))
+            const cruces = MULTIVERSO.filter(o => o.num !== u.num)
+              .map(o => ({ o, n: itemsTierra(o).filter(({ item }) => mios.has(item.id)).length }))
+              .filter(x => x.n).sort((a, b) => b.n - a.n)
+            const filtra = tierraPend && items.length > 8 && v > 0 && v < items.length
+            const lista = filtra ? items.filter(({ item }) => !vistas[item.id]) : items
             return (
               <div className="tierra" style={{ '--tc': u.c }}>
                 <button className="chip-btn" onClick={cierraTierra}>{tr('← Volver al multiverso', '← Back to the multiverse')}</button>
                 <header className="tierra-hero">
                   <span className="planeta planeta-grande" aria-hidden="true"><span className="planeta-recorte"><span className="planeta-textura" /></span></span>
-                  <span className="mv-num tierra-num">{u.num}</span>
-                  <h2 className="tierra-nombre">{u.nombre}</h2>
-                  <span className="tierra-estado">{u.estado}</span>
+                  <div className="tierra-cab">
+                    <span className="mv-num tierra-num">{u.num}</span>
+                    <h2 className="tierra-nombre">{u.nombre}</h2>
+                    <span className="tierra-estado">{u.estado}</span>
+                  </div>
                   <p className="tierra-desc">{u.desc}</p>
                   {u.doom && <p className="mv-doom"><b>{tr('Rumbo a Doomsday', 'Toward Doomsday')}</b> {u.doom}</p>}
                   <div className="barra tierra-barra">
                     <i style={{ width: `${items.length ? 100 * v / items.length : 0}%` }} />
                   </div>
-                  <span className="tierra-count">{v} / {items.length} {tr('completados en este universo', 'completed in this universe')}</span>
+                  <div className="tierra-pie">
+                    <span className="tierra-count">{v} / {items.length} {tr('completados en este universo', 'completed in this universe')}</span>
+                    {sig
+                      ? <button className="chip-btn destacado tierra-sig" onClick={() => setDetalle({ ...sig, esComic: sig.item.id.startsWith('c-') })}>
+                          {tr('Siguiente: ', 'Next: ')}<b>{sig.item.t}</b>
+                        </button>
+                      : <span className="tierra-hecha">{tr('Completaste esta Tierra', 'You completed this Earth')}</span>}
+                  </div>
+                  {cruces.length > 0 && (
+                    <div className="tierra-cruces">
+                      <span className="tierra-cruces-t">{tr('Se cruza con', 'Crosses paths with')}</span>
+                      <div className="tierra-cruces-lista">
+                        {cruces.map(({ o, n }) => (
+                          <button key={o.num} className="cruce" style={{ '--tc': o.c }}
+                            onClick={() => conTransicion('adelante', () => setTierra(o.num))}
+                            aria-label={`${o.num}: ${o.nombre}. ${n} ${n === 1 ? tr('título en común', 'shared title') : tr('títulos en común', 'shared titles')}`}>
+                            <span className="mv-fila-punto" aria-hidden="true" />{CORTO_SISTEMA[o.num] || o.num}<small>{n}</small>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </header>
+                {items.length > 8 && v > 0 && v < items.length && (
+                  <div className="tierra-filtro">
+                    <button className="chip-btn" aria-pressed={tierraPend} onClick={() => setTierraPend(x => !x)}>
+                      {tierraPend ? tr(`Ver los ${items.length}`, `Show all ${items.length}`) : tr(`Solo lo que falta (${items.length - v})`, `Only what's left (${items.length - v})`)}
+                    </button>
+                  </div>
+                )}
                 <div className="grid tierra-grid">
-                  {items.map(({ item, c }, i) => (
-                    <Card key={item.id} sinSpoilers={sinSpoilers} pais={pais} idioma={idioma} item={item} num={i + 1} c={c} lectura={item.id.startsWith('c-') ? lecturas[item.id] : null}
+                  {lista.map(({ item, c }, i) => (
+                    <Card key={item.id} sinSpoilers={sinSpoilers} pais={pais} idioma={idioma} item={item} num={filtra ? items.findIndex(y => y.item.id === item.id) + 1 : i + 1} c={c} lectura={item.id.startsWith('c-') ? lecturas[item.id] : null}
                       esComic={item.id.startsWith('c-')}
                       vista={!!vistas[item.id]}
                       onToggle={() => toggle(item.id)}
@@ -8674,7 +8735,7 @@ export default function App() {
               <div className="mv-resumen">
                 <span className="mv-resumen-cifra">{progTierras.total ? Math.round(100 * progTierras.vistos / progTierras.total) : 0} %</span>
                 <span className="mv-resumen-texto">
-                  {tr('del multiverso visto', 'of the multiverse watched')} · {progTierras.completas} {tr(`de ${MULTIVERSO.length} Tierras completas`, `of ${MULTIVERSO.length} Earths complete`)}
+                  {tr('del multiverso visto', 'of the multiverse watched')} · {progTierras.completas} {tr(`de ${progTierras.cuentan} Tierras completas`, `of ${progTierras.cuentan} Earths complete`)}
                 </span>
                 <div className="barra mv-resumen-barra"><i style={{ width: `${progTierras.total ? 100 * progTierras.vistos / progTierras.total : 0}%` }} /></div>
               </div>
@@ -8682,7 +8743,7 @@ export default function App() {
               {mvModo === 'mapa' ? null : mvModo === 'sistema' ? (
                 <>
                 <div className="sistema-wrap">
-                  <div className="sistema">
+                  <div className={mvSel ? 'sistema con-sel' : 'sistema'}>
                     {ANILLOS.map(a => (
                       <span key={a.r} className="anillo" style={{ '--r': a.r }} />
                     ))}
@@ -8699,10 +8760,13 @@ export default function App() {
                         const pr = progTierras.por[u.num]
                         const hecho = pr.n ? pr.v / pr.n : 0
                         return (
-                          <Pieza className={`${clase}${mvSobre === u.num ? ' sobre' : ''}${pr.n && pr.v === pr.n ? ' completa' : ''}`}
+                          <Pieza className={`${clase}${mvSobre === u.num ? ' sobre' : ''}${mvSel === u.num ? ' elegido' : ''}${pr.n && pr.v === pr.n ? ' completa' : ''}${u.opc ? ' opcional' : ''}`}
                             style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u), '--t': tam }}
                             {...(nombres ? {} : {
-                              onClick: () => { setMvSobre(null); abreTierra(u.num) }, title: u.nombre,
+                              onClick: () => {
+                                if (mvSel !== u.num) { setMvSel(u.num); return }
+                                setMvSobre(null); abreTierra(u.num)
+                              }, title: u.nombre, 'aria-pressed': mvSel === u.num,
                               'aria-label': `${u.num}: ${u.nombre}. ${pr.v} / ${pr.n}`,
                               onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null),
                               onFocus: () => setMvSobre(u.num), onBlur: () => setMvSobre(null),
@@ -8744,6 +8808,26 @@ export default function App() {
                     })}
                   </div>
                 </div>
+                {(() => {
+                  const u = mvSel && MULTIVERSO.find(x => x.num === mvSel)
+                  if (!u) return <p className="mv-sel-ayuda">{tr('Toca un planeta para ver qué Tierra es; tócalo otra vez para entrar.', 'Tap a planet to see which Earth it is; tap it again to enter.')}</p>
+                  const pr = progTierras.por[u.num]
+                  const sig = itemsTierra(u).find(({ item }) => !vistas[item.id])
+                  return (
+                    <section className="mv-sel" style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u) }} aria-live="polite" key={u.num}>
+                      <span className="planeta planeta-mini" aria-hidden="true"><span className="planeta-recorte"><span className="planeta-textura" /></span></span>
+                      <span className="mv-num">{u.num}</span>
+                      <h2 className="mv-nombre">{u.nombre}</h2>
+                      <span className="mv-estado">{u.estado}</span>
+                      <div className="barra mv-card-barra"><i style={{ width: `${pr.n ? 100 * pr.v / pr.n : 0}%` }} /></div>
+                      <span className="stat-foot">{pr.v} / {pr.n} {tr('vistos', 'watched')}{sig ? <> · {tr('siguiente: ', 'next: ')}<b>{sig.item.t}</b></> : null}</span>
+                      <div className="mv-sel-acciones">
+                        <button className="accion-principal" onClick={() => { setMvSobre(null); abreTierra(u.num) }}>{tr('Entrar en esta Tierra', 'Enter this Earth')}</button>
+                        <button className="chip-btn" onClick={() => setMvSel(null)}>{tr('Cerrar', 'Close')}</button>
+                      </div>
+                    </section>
+                  )
+                })()}
                 {/* índice por anillo: en el móvil los planetas van sin nombre
                     (entre anillos quedan ~30 px y los nombres se pisaban) */}
                 <div className="mv-indice">
@@ -8757,7 +8841,7 @@ export default function App() {
                           return (
                             <button key={num} className={`mv-fila${pr.n && pr.v === pr.n ? ' completa' : ''}`} style={{ '--tc': u.c }} onClick={() => abreTierra(num)}>
                               <span className="mv-fila-punto" aria-hidden="true" />
-                              <span className="mv-fila-nombre"><b>{u.num}</b> {u.nombre}</span>
+                              <span className="mv-fila-nombre"><b>{u.num}</b> {u.nombre}{u.opc ? <small className="mv-fila-opc">{tr('opcional', 'optional')}</small> : null}</span>
                               <span className="mv-fila-cuenta">{pr.v}/{pr.n}</span>
                               <span className="mv-fila-barra" aria-hidden="true"><i style={{ width: `${pr.n ? 100 * pr.v / pr.n : 0}%` }} /></span>
                             </button>
