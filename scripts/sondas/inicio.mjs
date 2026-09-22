@@ -96,6 +96,26 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     filas.push([top !== null && top >= 0 && top < 400, `«Ver todo» con «Solo pendientes» y el primer título visto llega a la era (cabecera a ${top} px)`])
   } finally { await cierra() }
 }
+// sin TMDB (sin conexión o caído): las fotos de las filas anchas pasan a la
+// carátula local y la cartelera se queda con la suya, sin imágenes rotas
+{
+  const { cdp, navega, cierra } = await abre({ siembra: { 'maraton-marvel-v1': { 'first-class': Date.now() - 2e8, 'origins-wolverine': Date.now() - 1e8 }, 'maraton-marvel-eps-v1': { 'legion:1:1': 1 } } })
+  try {
+    await cdp.send('Network.enable')
+    await cdp.send('Network.setBlockedURLs', { urls: ['*image.tmdb.org*', '*api.themoviedb.org*'] })
+    await navega('')
+    await cdp.hasta(`!!document.querySelector('.inicio-nf .nf-cartel-t')`, 5000)
+    await cdp.eval(`document.querySelectorAll('.nf-ancha').forEach(f => f.scrollIntoView()); 1`); await espera(1500)
+    const r = await cdp.eval(`(() => {
+      const anchas = [...document.querySelectorAll('.nf-ancha .nf-img img')]
+      const rotas = anchas.filter(i => i.complete && !i.naturalWidth && i.style.visibility !== 'hidden').length
+      const locales = anchas.filter(i => i.naturalWidth && !i.src.includes('tmdb')).length
+      const previo = document.querySelector('.nf-cartel-previo, .nf-cartel-poster'), foto = document.querySelector('.nf-cartel-foto')
+      return { anchas: anchas.length, rotas, locales, previo: !!previo && previo.naturalWidth > 0, fotoOculta: !foto || foto.style.display === 'none' || !foto.classList.contains('cargada') }
+    })()`)
+    filas.push([r.anchas > 0 && r.rotas === 0 && r.locales === r.anchas && r.previo && r.fotoOculta, `sin TMDB: fichas anchas con la carátula local y cartelera con la suya, sin rotas: ${JSON.stringify(r)}`])
+  } finally { await cierra() }
+}
 // guía para quien empieza: con 0 marcas aparece, «Entendido» la cierra y no vuelve al recargar
 {
   const { cdp, navega, cierra } = await abre()

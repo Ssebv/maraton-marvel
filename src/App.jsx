@@ -3904,6 +3904,12 @@ const nfClave = d => d.item.id
 const KEY_GUIA_INICIO = 'maraton-marvel-guia-inicio-v1'
 // la carátula se funde al llegar en vez de aparecer de golpe sobre el hueco
 const nfCargada = e => e.currentTarget.classList.add('cargada')
+// si la foto de TMDB no llega (sin conexión, caída), la carátula local en su
+// lugar en vez de un hueco
+const nfFallo = poster => e => {
+  const img = e.currentTarget
+  if (poster && !img.dataset.caida) { img.dataset.caida = '1'; img.src = poster } else img.style.visibility = 'hidden'
+}
 // la nota con punto (6.5), como en las tarjetas y la ficha
 const nfNota = n => String(n)
 // onMarcar: la marca rápida de cada carátula (sin abrir la ficha); no va en
@@ -3940,7 +3946,7 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
               {numerada && <span className="nf-num" aria-hidden="true">{i + 1}</span>}
               <span className="nf-img">
                 {foto
-                  ? <img className="nf-f" src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} />
+                  ? <img className="nf-f" src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} onError={nfFallo(POSTERS[d.item.id])} />
                   : POSTERS[d.item.id]
                     ? <img className="nf-f" src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} />
                     : <span className="nf-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
@@ -4059,7 +4065,8 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
           <div className="nf-cartel-fondo" aria-hidden="true">
             {POSTERS[s.id] && <img className={foto ? 'nf-cartel-previo' : 'nf-cartel-poster'} src={POSTERS[s.id]} alt="" decoding="async" fetchpriority="high" />}
             {foto && <img key={foto} className="nf-cartel-foto" src={`${TMDB_IMG}w1280${foto}`} srcSet={`${TMDB_IMG}w780${foto} 780w, ${TMDB_IMG}w1280${foto} 1280w`} sizes="100vw" alt="" decoding="async" fetchpriority="high"
-              onLoad={e => e.currentTarget.classList.add('cargada')} />}
+              onLoad={e => e.currentTarget.classList.add('cargada')}
+              onError={e => { e.currentTarget.style.display = 'none' }} />}
           </div>
           {verTrailer && (
             <div className="nf-trailer">

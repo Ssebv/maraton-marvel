@@ -9,7 +9,17 @@ const CACHE = 'maraton-marvel-v4'
 // horario que escribe la app y las marcas de avisos ya enseñados. Barrerlas
 // mataba los recordatorios en cada despliegue y repetía a mitad de día las
 // notificaciones que ya habías visto.
-const PERMANENTES = [CACHE, 'maraton-marvel-horario', 'maraton-marvel-avisos']
+const PERMANENTES = [CACHE, 'maraton-marvel-horario', 'maraton-marvel-avisos', 'maraton-marvel-tmdb']
+// Fotos de TMDB (cartelera y filas de Inicio, fichas): no cambian nunca, así
+// que caché primero, en una caché propia que no se barre con cada versión y
+// con tope: son respuestas opacas y Chrome las cuenta muy infladas en la cuota.
+// Sin esto, sin conexión Inicio salía con huecos y cada visita las bajaba otra vez
+const CACHE_TMDB = 'maraton-marvel-tmdb'
+const TOPE_TMDB = 80
+async function recortaTmdb(c) {
+  const ks = await c.keys()
+  await Promise.all(ks.slice(0, Math.max(0, ks.length - TOPE_TMDB)).map(k => c.delete(k)))
+}
 
 self.addEventListener('install', e => self.skipWaiting())
 self.addEventListener('activate', e => e.waitUntil((async () => {
@@ -40,6 +50,16 @@ self.addEventListener('fetch', e => {
       // la textura de los planetas del Multiverso: sin ella, sin conexión eran bolas lisas (21 sep 2026)
       url.pathname.endsWith('/tierra.jpg'))) ||
     url.hostname === 'fonts.gstatic.com' || url.hostname === 'fonts.googleapis.com'
+  if (url.hostname === 'image.tmdb.org') {
+    e.respondWith(caches.open(CACHE_TMDB).then(c => c.match(e.request).then(hit => hit || fetch(e.request).then(r => {
+      if (r.ok || r.type === 'opaque') {
+        const copia = r.clone()
+        e.waitUntil(c.put(e.request, copia).then(() => recortaTmdb(c)))
+      }
+      return r
+    }))))
+    return
+  }
   if (esEstatico) {
     e.respondWith(
       caches.match(e.request).then(hit => hit || fetch(e.request).then(r => {
