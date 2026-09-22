@@ -3986,8 +3986,7 @@ function ProximamenteNf({ onAbrir }) {
 // búsqueda, país —que muta item.t sin cambiar su identidad— e idioma)
 const InicioNf = React.memo(InicioNfBase, (a, b) =>
   ['stats', 'vistas', 'eps', 'notas', 'listas', 'sinSpoilers', 'clave'].every(k => a[k] === b[k]))
-function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe, calendario }) {
-  const s = stats.siguiente
+function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe, calendario, filtrando }) {
   // todo lo que se ve (sin cómics ni bóveda), en el orden del maratón
   const todos = []
   const eras = []
@@ -4000,6 +3999,11 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
     })
   })
   const pendientes = todos.filter(d => !vistas[d.item.id])
+  // el siguiente sale de la MISMA lista que las filas (code-review del 22 sep):
+  // stats.siguiente no mira la búsqueda, y buscando «loki» la cartelera
+  // seguía con el título de antes, decía «0 / 3» y «A continuación» se
+  // comía el primer resultado
+  const s = pendientes.length ? pendientes[0].item : null
   const epsDe = d => (EPISODES[d.item.id] || []).length
   const continuar = todos.filter(d => !vistas[d.item.id] && d.item.tipo === 'serie' && epHechosDe(d.item) > 0)
   const siguienteEpDe = d => (EPISODES[d.item.id] || []).find(e => !eps[`${d.item.id}:${e.s}:${e.n}`])
@@ -4079,9 +4083,18 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
       ) : (
         <section className="nf-cartel nf-fin">
           <div className="nf-cartel-texto">
-            <span className="nf-eyebrow">{tr('Maratón completo', 'Marathon complete')}</span>
-            <h2 className="nf-cartel-t">{tr('Lo viste todo', 'You watched it all')}</h2>
-            <p className="nf-res">{tr('Quedan los cómics, la bóveda de animación y volver a tus favoritas.', 'There are still the comics, the animation vault and your favourites to rewatch.')}</p>
+            {todos.length === 0 ? (<>
+              <span className="nf-eyebrow">{tr('Sin resultados', 'No results')}</span>
+              <h2 className="nf-cartel-t">{tr('Nada coincide', 'Nothing matches')}</h2>
+              <p className="nf-res">{tr('Prueba con otra búsqueda o quita los filtros.', 'Try another search or clear the filters.')}</p>
+            </>) : filtrando ? (<>
+              <span className="nf-eyebrow">{tr('Con la búsqueda y los filtros', 'With your search and filters')}</span>
+              <h2 className="nf-cartel-t">{tr('Ya viste todo lo que coincide', 'You watched everything that matches')}</h2>
+            </>) : (<>
+              <span className="nf-eyebrow">{tr('Maratón completo', 'Marathon complete')}</span>
+              <h2 className="nf-cartel-t">{tr('Lo viste todo', 'You watched it all')}</h2>
+              <p className="nf-res">{tr('Quedan los cómics, la bóveda de animación y volver a tus favoritas.', 'There are still the comics, the animation vault and your favourites to rewatch.')}</p>
+            </>)}
           </div>
         </section>
       )}
@@ -8750,6 +8763,7 @@ export default function App() {
       {vista === 'inicio' ? (
         <InicioNf stats={stats} vistas={vistas} eps={eps} notas={notas} listas={listas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
           clave={`${JSON.stringify(filtros)}|${buscaLenta}|${pais}|${idioma}`}
+          filtrando={!!buscaLenta.trim() || Object.values(filtros).some(Boolean)}
           epHechosDe={epHechosDe} onAbrir={d => setDetalle(d)} onMarcar={marcaSiguiente}
           calendario={<CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />} />
       ) : vista === 'tiempo' ? (

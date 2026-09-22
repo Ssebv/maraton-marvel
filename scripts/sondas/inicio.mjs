@@ -52,6 +52,15 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     await cdp.eval(`[...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'A continuación').querySelector('.nf-tile').click()`)
     const ficha = await cdp.hasta(`!!document.querySelector('.overlay')`, 3000).then(() => true, () => false)
     filas.push([ficha, `${donde}: tocar una carátula abre su ficha`])
+    // buscar en Inicio (code-review del 22 sep): la cartelera es el primer
+    // resultado pendiente, con su puesto, y «A continuación» no se lo come
+    await cdp.eval(`(() => { const c = document.querySelector('.overlay .cerrar'); if (c) c.click(); return 1 })()`); await espera(600)
+    await cdp.eval(`(() => { const b = document.querySelector('input[name="busqueda"]'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+      set.call(b, 'loki'); b.dispatchEvent(new Event('input', { bubbles: true })); return 1 })()`)
+    await espera(900)
+    const bq = await cdp.eval(`({ t: document.querySelector('.nf-cartel-t').textContent, e: document.querySelector('.nf-eyebrow').textContent,
+      sig: (() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'A continuación'); return f ? [...f.querySelectorAll('.nf-tile')].map(x => x.getAttribute('aria-label')) : [] })() })`)
+    filas.push([/Loki/.test(bq.t) && !/ 0 \//.test(bq.e) && !bq.sig.some(l => l.startsWith(bq.t)), `${donde}: buscando «loki», la cartelera es «${bq.t}» (${bq.e.trim()}) y «A continuación» sigue: ${JSON.stringify(bq.sig)}`])
     await navega('#crono')
     const cards = await cdp.hasta(`document.querySelectorAll('.card').length > 10`, 5000).then(() => true, () => false)
     filas.push([cards, `${donde}: #crono sigue con la lista de tarjetas`])

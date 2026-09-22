@@ -3811,3 +3811,11 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   .nf-btn-mas .nf-btn-texto{display:none}
   .nf-btn-mas .nf-i{display:block}
 }
+/* Inicio en el móvil (22 sep): el titular de dos líneas y la etiqueta roja
+   empujaban la cartelera ~150 px. Aquí va en una línea y la etiqueta de la
+   cartelera hace de «guía» (en las demás vistas del maratón, igual que antes) */
+@media (max-width:640px){
+  .hero.en-inicio{padding-top: var(--e-4)}
+  .hero.en-inicio .hero-eyebrow{display:none}
+  .hero.en-inicio h1{font-size:clamp(18px, 5.4vw, 24px); line-height:1.1; white-space:nowrap; text-wrap:nowrap}
+}
