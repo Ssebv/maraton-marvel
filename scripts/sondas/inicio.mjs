@@ -30,6 +30,19 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     filas.push([extra.cal && extra.filas.includes('Próximamente') && extra.filas.includes('Con Cata'), `${donde}: calendario bajo la cartelera (no en la cabecera), «Próximamente» y la lista «Con Cata»`])
     const ancho = await cdp.eval(`({ doc: document.documentElement.scrollWidth, vw: innerWidth })`)
     filas.push([ancho.doc <= ancho.vw, `${donde}: los carriles no ensanchan la página (${ancho.doc} ≤ ${ancho.vw})`])
+    // tráiler (solo si TMDB respondió): abre dentro de la cartelera, sin tapar el texto, y se cierra
+    const tb = await cdp.hasta(`!!document.querySelector('.nf-btn[aria-pressed]')`, 8000).then(() => true, () => false)
+    if (tb) {
+      await cdp.eval(`document.querySelector('.nf-btn[aria-pressed]').click()`); await espera(300)
+      const t = await cdp.eval(`(() => { const f = document.querySelector('.nf-trailer'), e = document.querySelector('.nf-eyebrow'); if (!f) return null
+        return { encima: f.getBoundingClientRect().bottom <= e.getBoundingClientRect().top + 1 } })()`)
+      await cdp.eval(`document.querySelector('.nf-btn[aria-pressed]').click()`); await espera(200)
+      const cerrado = await cdp.eval(`!document.querySelector('.nf-trailer')`)
+      filas.push([!!t && t.encima && cerrado, `${donde}: el tráiler se abre en la cartelera por encima del texto y se cierra: ${JSON.stringify(t)}`])
+    } else filas.push([true, `${donde}: sin respuesta de TMDB, no hay botón de tráiler (se omite)`])
+    const lavado = await cdp.eval(`(() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'Visto hace poco')
+      const i = f && f.querySelector('.nf-img img'); return i ? getComputedStyle(i).opacity : null })()`)
+    filas.push([lavado === null || lavado === '1' || lavado === '0', `${donde}: «Visto hace poco» no se atenúa (opacidad ${lavado})`])
     await cdp.eval(`document.querySelector('.nf-btn-marcar').click()`)
     await cdp.hasta(`!!document.querySelector('.deshacer')`, 3000)
     await espera(300)

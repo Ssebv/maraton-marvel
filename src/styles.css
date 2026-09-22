@@ -3701,7 +3701,7 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 .nf-img{position:relative; display:block; aspect-ratio:2/3; border-radius:var(--r-s); overflow:hidden; background:var(--panel2)}
 .nf-img img{width:100%; height:100%; object-fit:cover; display:block}
 .nf-sin{display:grid; place-items:center; width:100%; height:100%; color:#fff; font-weight:700; font-size: var(--t-l)}
-.nf-tile.vista .nf-img img{opacity:.6}
+.nf-atenuar .nf-tile.vista .nf-img img{opacity:.6}
 .nf-check{
   position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%;
   display:grid; place-items:center; background:var(--done); color:#fff;
@@ -3761,7 +3761,7 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   .nf-img img{opacity:0; transition:opacity .3s ease-out}
   .nf-img img.cargada{opacity:1}
 }
-.nf-tile.vista .nf-img img.cargada{opacity:.6}
+.nf-atenuar .nf-tile.vista .nf-img img.cargada{opacity:.6}
 /* el color de la era del siguiente título, como un punto en la etiqueta */
 .nf-eyebrow{display:flex; align-items:center; flex-wrap:wrap; gap:0 .35em}
 .nf-eyebrow-punto{width:8px; height:8px; border-radius:50%; background:var(--c1); box-shadow:0 0 0 2px rgba(255,255,255,.25); flex:none}
@@ -3796,4 +3796,18 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
     -webkit-mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
     mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
   }
+}
+
+/* tráiler dentro de la cartelera (22 sep): arriba, y el texto debajo (encima
+   tapaba la etiqueta y parte del título) */
+.nf-cartel.con-trailer{flex-direction:column; align-items:stretch}
+.nf-trailer{position:relative; z-index:1; flex:none; align-self:center; width:min(100%, calc(60vh * 16 / 9)); aspect-ratio:16/9; background:#000}
+.nf-trailer iframe{width:100%; height:100%; border:0; display:block}
+.nf-btn svg{flex:none}
+.nf-i{display:none; width:22px; height:22px; border-radius:50%; border:2px solid currentColor; font:700 13px/18px Georgia, serif; text-align:center; font-style:italic}
+@media (max-width:640px){
+  /* tres botones: «Más información» se queda en su icono */
+  .nf-btn-mas{flex:0 0 48px; padding:0}
+  .nf-btn-mas .nf-btn-texto{display:none}
+  .nf-btn-mas .nf-i{display:block}
 }

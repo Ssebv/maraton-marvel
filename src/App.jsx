@@ -3903,9 +3903,9 @@ function MapaMultiverso({ onAbrir }) {
 const nfClave = d => d.item.id
 // la carátula se funde al llegar en vez de aparecer de golpe sobre el hueco
 const nfCargada = e => e.currentTarget.classList.add('cargada')
-// la nota con coma decimal en español (7,3), como en el resto de la app
-const nfNota = n => IDIOMA_ACTUAL === 'en' ? String(n) : String(n).replace('.', ',')
-function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, progreso }) {
+// la nota con punto (6.5), como en las tarjetas y la ficha
+const nfNota = n => String(n)
+function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, progreso, atenuar }) {
   const carril = useRef(null)
   if (!items.length) return null
   const mueve = dir => {
@@ -3913,7 +3913,7 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
     if (c) c.scrollBy({ left: dir * c.clientWidth * .85, behavior: movimientoReducido() ? 'instant' : 'smooth' })
   }
   return (
-    <section className={`nf-fila${ancha ? ' nf-ancha' : ''}${numerada ? ' nf-top' : ''}`}>
+    <section className={`nf-fila${ancha ? ' nf-ancha' : ''}${numerada ? ' nf-top' : ''}${atenuar ? ' nf-atenuar' : ''}`}>
       <div className="nf-fila-cab">
         <h2 className="nf-fila-t">{titulo}</h2>
         {sub && <span className="nf-fila-sub">{sub}</span>}
@@ -4016,12 +4016,16 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   const hechos = lista ? lista.length - lista.filter(x => !eps[`${s.id}:${x.s}:${x.n}`]).length : 0
   const puesto = s ? todos.findIndex(d => d.item.id === s.id) + 1 : 0
   const verRes = s && s.res && !sinSpoilers
+  // el tráiler, con lo mismo que la ficha (TMDB, caché de 7 días)
+  const [extraS] = useTmdb(s || { id: '' }, IDIOMA_ACTUAL)
+  const [trailerDe, setTrailerDe] = useState(null)
+  const verTrailer = s && trailerDe === s.id && extraS && extraS.trailer
   const eraS = s && (eras.find(x => x.its.some(d => d.item.id === s.id)) || {}).era?.era
   return (
     <main className="inicio-nf">
       {s ? (
         // key: al marcar vista, la cartelera nueva entra con su animación (se nota que avanzaste)
-        <section className="nf-cartel" key={s.id} style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
+        <section className={verTrailer ? 'nf-cartel con-trailer' : 'nf-cartel'} key={s.id} style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
           {/* La carátula local (mismo servidor, 30 kB, casi siempre en caché) se pinta
               al instante, difuminada, y el fotograma de TMDB se funde encima al
               llegar. Sin ella, en 4G lenta el recuadro más grande de la pantalla
@@ -4031,6 +4035,12 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
             {foto && <img key={foto} className="nf-cartel-foto" src={`${TMDB_IMG}w1280${foto}`} srcSet={`${TMDB_IMG}w780${foto} 780w, ${TMDB_IMG}w1280${foto} 1280w`} sizes="100vw" alt="" decoding="async" fetchpriority="high"
               onLoad={e => e.currentTarget.classList.add('cargada')} />}
           </div>
+          {verTrailer && (
+            <div className="nf-trailer">
+              <iframe src={`https://www.youtube-nocookie.com/embed/${extraS.trailer}?autoplay=1&playsinline=1`}
+                title={tr(`Tráiler de ${s.t}`, `Trailer for ${s.t}`)} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+            </div>
+          )}
           <div className="nf-cartel-texto">
             <span className="nf-eyebrow">
               <span className="nf-eyebrow-punto" aria-hidden="true" />
@@ -4055,7 +4065,14 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
               <button className="nf-btn nf-btn-marcar" onClick={() => onMarcar(s)}>
                 <CheckIcon /> {epSig ? tr(`Marcar T${epSig.s}·E${epSig.n}`, `Mark S${epSig.s}·E${epSig.n}`) : tr('Marcar vista', 'Mark watched')}
               </button>
-              {dS && <button className="nf-btn nf-btn-info" onClick={() => onAbrir(dS)}>{tr('Más información', 'More info')}</button>}
+              {extraS && extraS.trailer && (
+                <button className="nf-btn nf-btn-info" aria-pressed={!!verTrailer} onClick={() => setTrailerDe(verTrailer ? null : s.id)}>
+                  {verTrailer ? <IcoCerrar /> : <IcoPlay />}{verTrailer ? tr('Cerrar', 'Close') : tr('Tráiler', 'Trailer')}
+                </button>
+              )}
+              {dS && <button className="nf-btn nf-btn-info nf-btn-mas" onClick={() => onAbrir(dS)} aria-label={tr('Más información', 'More info')}>
+                <span className="nf-i" aria-hidden="true">i</span><span className="nf-btn-texto">{tr('Más información', 'More info')}</span>
+              </button>}
             </div>
           </div>
         </section>
@@ -4070,7 +4087,8 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
       )}
       {calendario}
       <FilaNf titulo={tr('Continuar viendo', 'Continue watching')} items={continuar} ancha vistas={vistas} onAbrir={onAbrir}
-        extra={d => { const e = siguienteEpDe(d), n = epsDe(d); return { pct: n ? 100 * epHechosDe(d.item) / n : 0, texto: e ? `T${e.s}·E${e.n}` : '' } }} />
+        extra={d => { const e = siguienteEpDe(d), n = epsDe(d), q = n - epHechosDe(d.item)
+          return { pct: n ? 100 * epHechosDe(d.item) / n : 0, texto: e ? `T${e.s}·E${e.n} · ${q === 1 ? tr('queda 1 episodio', '1 episode left') : tr(`quedan ${q} episodios`, `${q} episodes left`)}` : '' } }} />
       <FilaNf titulo={tr('A continuación', 'Up next')} sub={tr('en el orden del maratón', 'in marathon order')} items={pendientes.slice(s ? 1 : 0, 16)} vistas={vistas} onAbrir={onAbrir} />
       <FilaNf titulo={tr('Rumbo a Doomsday', 'Toward Doomsday')} sub={tr('la ruta express', 'the express route')} items={pendientes.filter(d => d.item.exp).slice(0, 20)} vistas={vistas} onAbrir={onAbrir} />
       <FilaNf titulo={tr('Top 10 del maratón', 'Marathon top 10')} sub={tr('por nota de IMDb', 'by IMDb rating')} items={top} numerada vistas={vistas} onAbrir={onAbrir} />
@@ -4085,7 +4103,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
       })}
       {eras.map(({ saga, era, its }) => (
         <FilaNf key={saga.saga + era.era} titulo={era.era} vistas={vistas} onAbrir={onAbrir} items={its}
-          progreso={100 * its.filter(d => vistas[d.item.id]).length / its.length}
+          progreso={100 * its.filter(d => vistas[d.item.id]).length / its.length} atenuar
           sub={`${nombreSaga(saga)} · ${era.rango} · ${its.filter(d => vistas[d.item.id]).length}/${its.length}`} />
       ))}
     </main>
