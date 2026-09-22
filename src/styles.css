@@ -3868,3 +3868,19 @@ div.nf-abrir{cursor:default}
   background:var(--done); color:#fff;
 }
 .nf-guia-circulo svg{width:16px; height:16px}
+/* Inicio en escritorio (22 sep): las dos cajas de cifras repetían lo que dice
+   la cartelera («5 / 111») y la empujaban fuera de la primera pantalla; aquí
+   va la línea de progreso del móvil */
+@media (min-width:641px){
+  .hero.en-inicio .stats-inicio{display:none}
+  .hero.en-inicio .progreso-movil{display:flex; flex-direction:column; gap: var(--e-2); margin: var(--e-4) 0 0; max-width:620px}
+  .hero.en-inicio .progreso-movil .barra{margin:0; display:block}
+  .hero.en-inicio .pm-texto{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+  .hero.en-inicio .pm-texto b{color:var(--ink); font-weight:700}
+  /* la cartelera, con sus botones a la vista en una pantalla de portátil */
+  .nf-cartel{min-height:clamp(380px, 33vw, 480px)}
+  /* carátulas algo mayores: a 1280 px entraban siete y pico */
+  .nf-tile{width:clamp(150px, 14vw, 186px)}
+  .nf-ancha .nf-tile{width:clamp(260px, 24vw, 320px)}
+  .nf-top .nf-tile{width:clamp(190px, 17vw, 230px)}
+}
