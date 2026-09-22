@@ -84,4 +84,30 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     filas.push([errores.length === 0, `${donde}: sin errores de consola (${errores.length})`])
   } finally { await cierra() }
 }
+// «Ver todo» con «Solo pendientes» (code-review del 22 sep): el primer título
+// de la era ya visto no tiene tarjeta en la lista; la era se busca por su id
+{
+  const { cdp, url, navega, cierra } = await abre({ siembra: { 'maraton-marvel-v1': { 'first-class': Date.now() - 1e8 } } })
+  try {
+    await navega('?f=vistas')
+    await cdp.hasta(`!!document.querySelector('.inicio-nf .nf-ver-todo')`, 5000)
+    await cdp.eval(`[...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'La línea original').querySelector('.nf-ver-todo').click()`)
+    const top = await cdp.hasta(`!!document.getElementById('era-first-class')`, 4000).then(async () => { await espera(300); return cdp.eval(`Math.round(document.getElementById('era-first-class').getBoundingClientRect().top)`) }, () => null)
+    filas.push([top !== null && top >= 0 && top < 400, `«Ver todo» con «Solo pendientes» y el primer título visto llega a la era (cabecera a ${top} px)`])
+  } finally { await cierra() }
+}
+// guía para quien empieza: con 0 marcas aparece, «Entendido» la cierra y no vuelve al recargar
+{
+  const { cdp, navega, cierra } = await abre()
+  try {
+    await navega('')
+    await cdp.hasta(`!!document.querySelector('.inicio-nf .nf-cartel-t')`, 5000)
+    const a = await cdp.eval(`!!document.querySelector('.nf-guia')`)
+    await cdp.eval(`document.querySelector('.nf-guia .chip-btn').click()`); await espera(300)
+    const b = await cdp.eval(`!!document.querySelector('.nf-guia')`)
+    await navega(''); await cdp.hasta(`!!document.querySelector('.inicio-nf .nf-cartel-t')`, 5000)
+    const c = await cdp.eval(`!!document.querySelector('.nf-guia')`)
+    filas.push([a && !b && !c, `guía para quien empieza: sale con 0 marcas (${a}), «Entendido» la cierra (${!b}) y no vuelve (${!c})`])
+  } finally { await cierra() }
+}
 process.exitCode = informe('Inicio estilo Netflix', filas) ? 1 : 0

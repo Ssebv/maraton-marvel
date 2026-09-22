@@ -3854,3 +3854,17 @@ div.nf-abrir{cursor:default}
 @media (hover:hover){ .nf-ver-todo:hover{color:var(--ink)} }
 .nf-fila-cab{align-items:center}
 @media (prefers-reduced-motion: reduce){ .nf-marca:active .nf-marca-circulo{transform:none} }
+
+/* guía para quien empieza, bajo la cartelera */
+.nf-guia{
+  display:grid; grid-template-columns:auto 1fr; gap: var(--e-3) var(--e-4); align-items:start;
+  padding: var(--e-5); border-radius:var(--r-m); background:var(--panel); border:1px solid var(--line);
+}
+.nf-guia p{margin:0; font-size: var(--t-m); line-height:1.5; color:var(--ink2)}
+.nf-guia p b{color:var(--ink)}
+.nf-guia .chip-btn{grid-column:2; justify-self:start}
+.nf-guia-circulo{
+  width:32px; height:32px; border-radius:50%; display:grid; place-items:center;
+  background:var(--done); color:#fff;
+}
+.nf-guia-circulo svg{width:16px; height:16px}

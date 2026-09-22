@@ -3901,6 +3901,7 @@ function MapaMultiverso({ onAbrir }) {
 // lo empezado, lo que viene, la ruta a Doomsday, lo mejor valorado y cada era
 // de la cronología. Tocar un título abre su ficha (ver, tráiler, marcar).
 const nfClave = d => d.item.id
+const KEY_GUIA_INICIO = 'maraton-marvel-guia-inicio-v1'
 // la carátula se funde al llegar en vez de aparecer de golpe sobre el hueco
 const nfCargada = e => e.currentTarget.classList.add('cargada')
 // la nota con punto (6.5), como en las tarjetas y la ficha
@@ -3916,7 +3917,7 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
     if (c) c.scrollBy({ left: dir * c.clientWidth * .85, behavior: movimientoReducido() ? 'instant' : 'smooth' })
   }
   return (
-    <section className={`nf-fila${ancha ? ' nf-ancha' : ''}${numerada ? ' nf-top' : ''}${atenuar ? ' nf-atenuar' : ''}`}>
+    <section className={`nf-fila${ancha ? ' nf-ancha' : ''}${numerada ? ' nf-top' : ''}${atenuar ? ' nf-atenuar' : ''}`} aria-label={titulo}>
       <div className="nf-fila-cab">
         <h2 className="nf-fila-t">{titulo}</h2>
         {sub && <span className="nf-fila-sub">{sub}</span>}
@@ -4039,6 +4040,11 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   // el tráiler, con lo mismo que la ficha (TMDB, caché de 7 días)
   const [extraS] = useTmdb(s || { id: '' }, IDIOMA_ACTUAL)
   const [trailerDe, setTrailerDe] = useState(null)
+  // guía para quien empieza (22 sep): con casi nada marcado, cómo ponerse al
+  // día con la marca rápida. Se cierra una vez y no vuelve
+  const [guiaVista, setGuiaVista] = useState(() => { try { return !!localStorage.getItem(KEY_GUIA_INICIO) } catch { return true } })
+  const verGuia = !guiaVista && Object.keys(vistas).length <= 2
+  const cierraGuia = () => { setGuiaVista(true); try { localStorage.setItem(KEY_GUIA_INICIO, '1') } catch {} }
   const verTrailer = s && trailerDe === s.id && extraS && extraS.trailer
   const eraS = s && (eras.find(x => x.its.some(d => d.item.id === s.id)) || {}).era?.era
   return (
@@ -4113,6 +4119,13 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
             </>)}
           </div>
         </section>
+      )}
+      {verGuia && (
+        <aside className="nf-guia" role="note">
+          <span className="nf-guia-circulo" aria-hidden="true"><CheckIcon /></span>
+          <p><b>{tr('¿Ya viste algunas?', 'Seen some already?')}</b> {tr('Toca el círculo de cada carátula para marcarla sin abrirla y ponerte al día en un minuto. La cartelera salta sola a lo siguiente que te toca.', 'Tap the circle on each cover to mark it without opening it and catch up in a minute. The billboard jumps to whatever is next for you.')}</p>
+          <button className="chip-btn" onClick={cierraGuia}>{tr('Entendido', 'Got it')}</button>
+        </aside>
       )}
       {calendario}
       <FilaNf titulo={tr('Continuar viendo', 'Continue watching')} items={continuar} ancha vistas={vistas} onAbrir={onAbrir}
@@ -8780,18 +8793,28 @@ export default function App() {
       {vista === 'inicio' ? (
         <InicioNf stats={stats} vistas={vistas} eps={eps} notas={notas} listas={listas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
           clave={`${JSON.stringify(filtros)}|${buscaLenta}|${pais}|${idioma}`}
-          filtrando={!!buscaLenta.trim() || Object.values(filtros).some(Boolean)}
+          // «Solo pendientes» no estrecha Inicio (pasaFiltro no lo mira): no cuenta
+          filtrando={!!buscaLenta.trim() || Object.entries(filtros).some(([k, v]) => v && k !== 'vistas')}
           onToggle={toggle}
           onVerEra={(saga, id) => {
             // a su era en la lista: la vista de su saga, la era desplegada y su cabecera arriba
+            // (code-review del 22 sep) la era se busca por su id, no por la tarjeta
+            // de su primer título, que con «Solo pendientes» no existe si ya lo
+            // viste; y se reintenta hasta que Cronológico esté pintado (la
+            // transición y el render pueden tardar más de 150 ms en un móvil lento)
             const v = saga === 'comics' ? 'comics' : saga === 'animacion' ? 'animacion' : 'crono'
             conTransicion('adelante', () => setVista(v))
             despliegaPara(id)
-            setTimeout(() => {
-              const el = document.getElementById('card-' + id)
-              const era = el && el.closest('.era')
-              if (era) era.scrollIntoView({ behavior: 'instant', block: 'start' })
-            }, 150)
+            const t0 = performance.now()
+            let sinFiltro = false
+            const busca = () => {
+              const era = document.getElementById('era-' + id)
+              if (era) { era.scrollIntoView({ behavior: 'instant', block: 'start' }); return }
+              // la era entera escondida por «Solo pendientes»: se pidió ver todo
+              if (!sinFiltro && filtros.vistas && performance.now() - t0 > 400) { sinFiltro = true; setFiltros(f => ({ ...f, vistas: false })) }
+              if (performance.now() - t0 < 2500) requestAnimationFrame(busca)
+            }
+            requestAnimationFrame(busca)
           }}
           epHechosDe={epHechosDe} onAbrir={d => setDetalle(d)} onMarcar={marcaSiguiente}
           calendario={<CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />} />
@@ -9464,7 +9487,7 @@ export default function App() {
                   const kEra = claveEra(era)
                   const eraPlegada = estaPlegado(kEra, vEra === numerados.length)
                   return (
-                    <div className={`era${eraPlegada ? ' plegada' : ''}`} key={era.items[0] ? era.items[0].id : era.rango} style={{ '--era': era.c[0] }}>
+                    <div className={`era${eraPlegada ? ' plegada' : ''}`} id={'era-' + (era.items[0] ? era.items[0].id : era.rango)} key={era.items[0] ? era.items[0].id : era.rango} style={{ '--era': era.c[0] }}>
                       <div className="era-head">
                         <h3>{era.era}</h3>
                         <span className="era-rango">{era.rango}</span>
