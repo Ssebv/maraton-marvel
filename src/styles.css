@@ -3694,9 +3694,12 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 }
 .nf-carril::-webkit-scrollbar{display:none}
 .nf-tile{
-  flex:none; width:clamp(112px, 28vw, 158px); scroll-snap-align:start; padding:0; border:none; background:none;
-  color:var(--ink); text-align:left; font:inherit; cursor:pointer; transition:transform var(--muelle-toque, .15s);
+  flex:none; width:clamp(112px, 28vw, 158px); scroll-snap-align:start; position:relative;
+  transition:transform var(--muelle-toque, .15s);
 }
+/* la carátula son dos botones hermanos: abrir la ficha y la marca rápida */
+div.nf-abrir{cursor:default}
+.nf-abrir{display:block; width:100%; padding:0; border:none; background:none; color:var(--ink); text-align:left; font:inherit; cursor:pointer; border-radius:var(--r-s)}
 .nf-tile:active{transform:scale(.97)}
 .nf-img{position:relative; display:block; aspect-ratio:2/3; border-radius:var(--r-s); overflow:hidden; background:var(--panel2)}
 .nf-img img{width:100%; height:100%; object-fit:cover; display:block}
@@ -3714,7 +3717,8 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 .nf-tile-t{display:block; margin-top: var(--e-2); font-size: var(--t-s); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .nf-tile-t small{display:block; font-weight:400; color:var(--ink2); font-size: var(--t-xs)}
 /* top 10: el número grande, en contorno, asoma detrás de la carátula */
-.nf-top .nf-tile{display:flex; align-items:flex-end; width:clamp(150px, 40vw, 200px)}
+.nf-top .nf-tile{width:clamp(150px, 40vw, 200px)}
+.nf-top .nf-abrir{display:flex; align-items:flex-end}
 .nf-num{
   flex:none; font-family:"Archivo Black","Archivo",sans-serif; font-size:clamp(84px, 22vw, 120px); line-height:.78;
   color:var(--bg); -webkit-text-stroke:2px var(--ink2); margin-right:-.12em; letter-spacing:-.06em; user-select:none;
@@ -3730,7 +3734,7 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 .nf-info span{color:rgba(255,255,255,.8); font-variant-numeric:tabular-nums}
 @media (hover:hover) and (pointer:fine){
   .nf-tile:hover{transform:scale(1.04)}
-  .nf-tile:hover .nf-info, .nf-tile:focus-visible .nf-info{opacity:1}
+  .nf-tile:hover .nf-info, .nf-abrir:focus-visible .nf-info{opacity:1}
 }
 .nf-img .cover{width:100%; height:100%; object-fit:cover}
 .inicio-nf > .calendario-inicio, .inicio-nf > [class*="calendario"]{margin:0}
@@ -3758,10 +3762,12 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   .nf-cartel-foto{transform:scale(1.05); transition:opacity .35s ease-out, transform 1.4s var(--curva)}
   .nf-cartel-foto.cargada{transform:none}
   /* las carátulas se funden al llegar */
-  .nf-img img{opacity:0; transition:opacity .3s ease-out}
-  .nf-img img.cargada{opacity:1}
+  /* solo las que avisan al cargar (nf-f): las de Próximamente van con
+     CaraEstreno y, con opacity 0 para todas, salían invisibles */
+  .nf-img img.nf-f{opacity:0; transition:opacity .3s ease-out}
+  .nf-img img.nf-f.cargada{opacity:1}
 }
-.nf-atenuar .nf-tile.vista .nf-img img.cargada{opacity:.6}
+.nf-atenuar .nf-tile.vista .nf-img img.nf-f.cargada{opacity:.6}
 /* el color de la era del siguiente título, como un punto en la etiqueta */
 .nf-eyebrow{display:flex; align-items:center; flex-wrap:wrap; gap:0 .35em}
 .nf-eyebrow-punto{width:8px; height:8px; border-radius:50%; background:var(--c1); box-shadow:0 0 0 2px rgba(255,255,255,.25); flex:none}
@@ -3819,3 +3825,32 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   .hero.en-inicio .hero-eyebrow{display:none}
   .hero.en-inicio h1{font-size:clamp(18px, 5.4vw, 24px); line-height:1.1; white-space:nowrap; text-wrap:nowrap}
 }
+
+/* marca rápida (22 sep): un círculo en la esquina de la carátula marca o
+   desmarca sin abrir la ficha, como la casilla de la lista. Diana de 44 px */
+.nf-marca{
+  position:absolute; top:0; right:0; z-index:2; width:44px; height:44px; padding:0; border:none; background:none;
+  display:grid; place-items:center; cursor:pointer;
+}
+.nf-marca-circulo{
+  width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
+  background:rgba(8,9,14,.55); border:1.5px solid rgba(255,255,255,.8); color:rgba(255,255,255,0);
+  transition:transform var(--muelle-toque, .15s);
+}
+.nf-marca-circulo svg{width:14px; height:14px}
+.nf-marca[aria-pressed="true"] .nf-marca-circulo{background:var(--done); border-color:var(--done); color:#fff}
+.nf-marca:active .nf-marca-circulo{transform:scale(.88)}
+@media (hover:hover) and (pointer:fine){
+  .nf-marca:hover .nf-marca-circulo{color:rgba(255,255,255,.75)}
+  .nf-marca[aria-pressed="true"]:hover .nf-marca-circulo{color:#fff}
+}
+.nf-marca:focus-visible{outline:none}
+.nf-marca:focus-visible .nf-marca-circulo{outline:2px solid var(--ink); outline-offset:2px}
+.nf-ver-todo{
+  margin-left:auto; flex:none; min-height:44px; padding:0 var(--e-1); border:none; background:none; cursor:pointer;
+  font:inherit; font-size: var(--t-s); font-weight:600; color:var(--ink2); white-space:nowrap;
+}
+.nf-ver-todo + .nf-flechas{margin-left: var(--e-3)}
+@media (hover:hover){ .nf-ver-todo:hover{color:var(--ink)} }
+.nf-fila-cab{align-items:center}
+@media (prefers-reduced-motion: reduce){ .nf-marca:active .nf-marca-circulo{transform:none} }

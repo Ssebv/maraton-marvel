@@ -3905,7 +3905,10 @@ const nfClave = d => d.item.id
 const nfCargada = e => e.currentTarget.classList.add('cargada')
 // la nota con punto (6.5), como en las tarjetas y la ficha
 const nfNota = n => String(n)
-function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, progreso, atenuar }) {
+// onMarcar: la marca rápida de cada carátula (sin abrir la ficha); no va en
+// las filas de tus listas, que llevan su propio progreso. onVerTodo: la era en
+// la lista cronológica
+function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, progreso, atenuar, onMarcar, onVerTodo }) {
   const carril = useRef(null)
   if (!items.length) return null
   const mueve = dir => {
@@ -3918,6 +3921,7 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
         <h2 className="nf-fila-t">{titulo}</h2>
         {sub && <span className="nf-fila-sub">{sub}</span>}
         {progreso != null && <span className="nf-fila-barra" aria-hidden="true"><i style={{ width: `${progreso}%` }} /></span>}
+        {onVerTodo && <button className="nf-ver-todo" onClick={onVerTodo}>{tr('Ver todo', 'See all')}<span aria-hidden="true"> ›</span></button>}
         <span className="nf-flechas" aria-hidden="true">
           <button tabIndex={-1} onClick={() => mueve(-1)}>‹</button>
           <button tabIndex={-1} onClick={() => mueve(1)}>›</button>
@@ -3929,16 +3933,17 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
           const foto = ancha && FOTOGRAMAS[d.item.id]
           const ex = extra ? extra(d) : null
           return (
-            <button key={nfClave(d)} className={`nf-tile${visto ? ' vista' : ''}`} onClick={() => onAbrir(d)}
+            <div key={nfClave(d)} className={`nf-tile${visto ? ' vista' : ''}`}>
+            <button className="nf-abrir" onClick={() => onAbrir(d)}
               aria-label={`${numerada ? `${i + 1}. ` : ''}${d.item.t}${visto ? tr(' (vista)', ' (watched)') : ''}${ex && ex.texto ? ` · ${ex.texto}` : ''}`}>
               {numerada && <span className="nf-num" aria-hidden="true">{i + 1}</span>}
               <span className="nf-img">
                 {foto
-                  ? <img src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} />
+                  ? <img className="nf-f" src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} />
                   : POSTERS[d.item.id]
-                    ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} />
+                    ? <img className="nf-f" src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} />
                     : <span className="nf-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
-                {visto && <span className="nf-check" aria-hidden="true"><CheckIcon /></span>}
+                {visto && !onMarcar && <span className="nf-check" aria-hidden="true"><CheckIcon /></span>}
                 {!ancha && (
                   <span className="nf-info" aria-hidden="true">
                     <b>{d.item.t}</b>
@@ -3949,6 +3954,13 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
               </span>
               {ancha && <span className="nf-tile-t">{d.item.t}{ex && ex.texto && <small>{ex.texto}</small>}</span>}
             </button>
+            {onMarcar && (
+              <button className="nf-marca" aria-pressed={visto} onClick={() => onMarcar(d.item.id)}
+                aria-label={visto ? tr(`Marcar pendiente: ${d.item.t}`, `Mark unwatched: ${d.item.t}`) : tr(`Marcar vista: ${d.item.t}`, `Mark watched: ${d.item.t}`)}>
+                <span className="nf-marca-circulo"><CheckIcon /></span>
+              </button>
+            )}
+            </div>
           )
         })}
       </div>
@@ -3972,9 +3984,13 @@ function ProximamenteNf({ onAbrir }) {
               <span className="nf-tile-t">{fmtFecha(e.fecha) || e.aprox}<small>{e.tipo}</small></span>
             </>
           )
-          return d
-            ? <button key={e.t} className="nf-tile" onClick={() => onAbrir(d)} aria-label={`${e.t} · ${fmtFecha(e.fecha) || e.aprox}`}>{cara}</button>
-            : <div key={e.t} className="nf-tile" role="group" aria-label={`${e.t} · ${fmtFecha(e.fecha) || e.aprox}`}>{cara}</div>
+          return (
+            <div key={e.t} className="nf-tile">
+              {d
+                ? <button className="nf-abrir" onClick={() => onAbrir(d)} aria-label={`${e.t} · ${fmtFecha(e.fecha) || e.aprox}`}>{cara}</button>
+                : <div className="nf-abrir" role="group" aria-label={`${e.t} · ${fmtFecha(e.fecha) || e.aprox}`}>{cara}</div>}
+            </div>
+          )
         })}
       </div>
     </section>
@@ -3986,7 +4002,7 @@ function ProximamenteNf({ onAbrir }) {
 // búsqueda, país —que muta item.t sin cambiar su identidad— e idioma)
 const InicioNf = React.memo(InicioNfBase, (a, b) =>
   ['stats', 'vistas', 'eps', 'notas', 'listas', 'sinSpoilers', 'clave'].every(k => a[k] === b[k]))
-function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe, calendario, filtrando }) {
+function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe, calendario, filtrando, onToggle, onVerEra }) {
   // todo lo que se ve (sin cómics ni bóveda), en el orden del maratón
   const todos = []
   const eras = []
@@ -4102,9 +4118,9 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
       <FilaNf titulo={tr('Continuar viendo', 'Continue watching')} items={continuar} ancha vistas={vistas} onAbrir={onAbrir}
         extra={d => { const e = siguienteEpDe(d), n = epsDe(d), q = n - epHechosDe(d.item)
           return { pct: n ? 100 * epHechosDe(d.item) / n : 0, texto: e ? `T${e.s}·E${e.n} · ${q === 1 ? tr('queda 1 episodio', '1 episode left') : tr(`quedan ${q} episodios`, `${q} episodes left`)}` : '' } }} />
-      <FilaNf titulo={tr('A continuación', 'Up next')} sub={tr('en el orden del maratón', 'in marathon order')} items={pendientes.slice(s ? 1 : 0, 16)} vistas={vistas} onAbrir={onAbrir} />
-      <FilaNf titulo={tr('Rumbo a Doomsday', 'Toward Doomsday')} sub={tr('la ruta express', 'the express route')} items={pendientes.filter(d => d.item.exp).slice(0, 20)} vistas={vistas} onAbrir={onAbrir} />
-      <FilaNf titulo={tr('Top 10 del maratón', 'Marathon top 10')} sub={tr('por nota de IMDb', 'by IMDb rating')} items={top} numerada vistas={vistas} onAbrir={onAbrir} />
+      <FilaNf titulo={tr('A continuación', 'Up next')} sub={tr('en el orden del maratón', 'in marathon order')} items={pendientes.slice(s ? 1 : 0, 16)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
+      <FilaNf titulo={tr('Rumbo a Doomsday', 'Toward Doomsday')} sub={tr('la ruta express', 'the express route')} items={pendientes.filter(d => d.item.exp).slice(0, 20)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
+      <FilaNf titulo={tr('Top 10 del maratón', 'Marathon top 10')} sub={tr('por nota de IMDb', 'by IMDb rating')} items={top} numerada vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
       <FilaNf titulo={tr('Visto hace poco', 'Recently watched')} items={recientes} ancha vistas={vistas} onAbrir={onAbrir} />
       <FilaNf titulo={tr('Tus favoritas', 'Your favourites')} sub={tr('4 y 5 estrellas', '4 and 5 stars')} items={favoritas} vistas={vistas} onAbrir={onAbrir} />
       <ProximamenteNf onAbrir={onAbrir} />
@@ -4115,7 +4131,8 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
           sub={`${tr('Tu lista', 'Your list')} · ${its.filter(d => (l.prog || {})[d.item.id]).length}/${its.length}`} />
       })}
       {eras.map(({ saga, era, its }) => (
-        <FilaNf key={saga.saga + era.era} titulo={era.era} vistas={vistas} onAbrir={onAbrir} items={its}
+        <FilaNf key={saga.saga + era.era} titulo={era.era} vistas={vistas} onAbrir={onAbrir} items={its} onMarcar={onToggle}
+          onVerTodo={() => onVerEra(saga.saga, its[0].item.id)}
           progreso={100 * its.filter(d => vistas[d.item.id]).length / its.length} atenuar
           sub={`${nombreSaga(saga)} · ${era.rango} · ${its.filter(d => vistas[d.item.id]).length}/${its.length}`} />
       ))}
@@ -8764,6 +8781,18 @@ export default function App() {
         <InicioNf stats={stats} vistas={vistas} eps={eps} notas={notas} listas={listas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
           clave={`${JSON.stringify(filtros)}|${buscaLenta}|${pais}|${idioma}`}
           filtrando={!!buscaLenta.trim() || Object.values(filtros).some(Boolean)}
+          onToggle={toggle}
+          onVerEra={(saga, id) => {
+            // a su era en la lista: la vista de su saga, la era desplegada y su cabecera arriba
+            const v = saga === 'comics' ? 'comics' : saga === 'animacion' ? 'animacion' : 'crono'
+            conTransicion('adelante', () => setVista(v))
+            despliegaPara(id)
+            setTimeout(() => {
+              const el = document.getElementById('card-' + id)
+              const era = el && el.closest('.era')
+              if (era) era.scrollIntoView({ behavior: 'instant', block: 'start' })
+            }, 150)
+          }}
           epHechosDe={epHechosDe} onAbrir={d => setDetalle(d)} onMarcar={marcaSiguiente}
           calendario={<CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />} />
       ) : vista === 'tiempo' ? (

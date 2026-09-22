@@ -27,6 +27,10 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     filas.push([!!cont && /Legion/.test(cont.t) && cont.w > 0, `${donde}: «Continuar viendo» con Legion, su episodio y su barra: ${JSON.stringify(cont)}`])
     const extra = await cdp.eval(`({ cal: !!document.querySelector('.inicio-nf .cal-inicio') && !document.querySelector('.hero .cal-inicio'),
       filas: [...document.querySelectorAll('.nf-fila-t')].map(x => x.textContent) })`)
+    // las carátulas de Próximamente se ven (el fundido de las filas las dejaba en opacidad 0)
+    const prox = await cdp.eval(`(() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'Próximamente')
+      f.scrollIntoView(); return [...f.querySelectorAll('.nf-img img')].map(i => getComputedStyle(i).opacity) })()`)
+    filas.push([prox.length > 0 && prox.every(o => o === '1'), `${donde}: las carátulas de «Próximamente» se ven (opacidades ${prox})`])
     filas.push([extra.cal && extra.filas.includes('Próximamente') && extra.filas.includes('Con Cata'), `${donde}: calendario bajo la cartelera (no en la cabecera), «Próximamente» y la lista «Con Cata»`])
     const ancho = await cdp.eval(`({ doc: document.documentElement.scrollWidth, vw: innerWidth })`)
     filas.push([ancho.doc <= ancho.vw, `${donde}: los carriles no ensanchan la página (${ancho.doc} ≤ ${ancho.vw})`])
@@ -49,7 +53,7 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     const t1 = await cdp.eval(`document.querySelector('.nf-cartel-t').textContent`)
     const marcada = await cdp.eval(`Object.keys(JSON.parse(localStorage.getItem('maraton-marvel-v1'))).length`)
     filas.push([t1 !== t0 && marcada === 3, `${donde}: «Marcar vista» marca «${t0}» y la cartelera pasa a «${t1}» (${marcada} marcas)`])
-    await cdp.eval(`[...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'A continuación').querySelector('.nf-tile').click()`)
+    await cdp.eval(`[...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'A continuación').querySelector('.nf-tile .nf-abrir').click()`)
     const ficha = await cdp.hasta(`!!document.querySelector('.overlay')`, 3000).then(() => true, () => false)
     filas.push([ficha, `${donde}: tocar una carátula abre su ficha`])
     // buscar en Inicio (code-review del 22 sep): la cartelera es el primer
@@ -59,8 +63,21 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
       set.call(b, 'loki'); b.dispatchEvent(new Event('input', { bubbles: true })); return 1 })()`)
     await espera(900)
     const bq = await cdp.eval(`({ t: document.querySelector('.nf-cartel-t').textContent, e: document.querySelector('.nf-eyebrow').textContent,
-      sig: (() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'A continuación'); return f ? [...f.querySelectorAll('.nf-tile')].map(x => x.getAttribute('aria-label')) : [] })() })`)
+      sig: (() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'A continuación'); return f ? [...f.querySelectorAll('.nf-tile .nf-abrir')].map(x => x.getAttribute('aria-label')) : [] })() })`)
     filas.push([/Loki/.test(bq.t) && !/ 0 \//.test(bq.e) && !bq.sig.some(l => l.startsWith(bq.t)), `${donde}: buscando «loki», la cartelera es «${bq.t}» (${bq.e.trim()}) y «A continuación» sigue: ${JSON.stringify(bq.sig)}`])
+    // marca rápida en la carátula: marca sin abrir la ficha, y desmarcar ofrece Deshacer
+    await cdp.eval(`document.querySelector('.input-limpio, input[name="busqueda"]') && (() => { const b = document.querySelector('input[name="busqueda"]'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(b, ''); b.dispatchEvent(new Event('input', { bubbles: true })) })(); 1`)
+    await espera(700)
+    const fila = `[...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'La línea original')`
+    const m0 = await cdp.eval(`(() => { const b = ${fila}.querySelectorAll('.nf-marca')[3]; const id = b.getAttribute('aria-label'); b.click(); return id })()`)
+    await espera(400)
+    const m1 = await cdp.eval(`({ pulsada: ${fila}.querySelectorAll('.nf-marca')[3].getAttribute('aria-pressed'), ficha: !!document.querySelector('.overlay') })`)
+    await cdp.eval(`${fila}.querySelectorAll('.nf-marca')[3].click()`)
+    const deshacer = await cdp.hasta(`!!document.querySelector('.deshacer')`, 3000).then(() => true, () => false)
+    filas.push([m1.pulsada === 'true' && !m1.ficha && deshacer, `${donde}: marca rápida «${m0}»: marca sin abrir la ficha (${JSON.stringify(m1)}) y desmarcar ofrece Deshacer (${deshacer})`])
+    await cdp.eval(`${fila}.querySelector('.nf-ver-todo').click()`)
+    const era = await cdp.hasta(`location.hash === '#crono' && !!document.getElementById('card-first-class')`, 4000).then(() => cdp.eval(`Math.round(document.getElementById('card-first-class').closest('.era').getBoundingClientRect().top)`), () => null)
+    filas.push([era !== null && era >= 0 && era < 400, `${donde}: «Ver todo» de «La línea original» lleva a su era en Cronológico (cabecera a ${era} px)`])
     await navega('#crono')
     const cards = await cdp.hasta(`document.querySelectorAll('.card').length > 10`, 5000).then(() => true, () => false)
     filas.push([cards, `${donde}: #crono sigue con la lista de tarjetas`])
