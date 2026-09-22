@@ -3931,9 +3931,9 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra })
               {numerada && <span className="nf-num" aria-hidden="true">{i + 1}</span>}
               <span className="nf-img">
                 {foto
-                  ? <img src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" />
+                  ? <img src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" fetchpriority="low" />
                   : POSTERS[d.item.id]
-                    ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />
+                    ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" fetchpriority="low" />
                     : <span className="nf-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
                 {visto && <span className="nf-check" aria-hidden="true"><CheckIcon /></span>}
                 {!ancha && (
@@ -3977,7 +3977,13 @@ function ProximamenteNf({ onAbrir }) {
     </section>
   )
 }
-function InicioNf({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe, calendario }) {
+// Memorizado (22 sep 2026): son ~375 botones con imagen y la app se vuelve a
+// pintar por cualquier cosa (un aviso, abrir una ficha…). Solo se repinta si
+// cambian sus datos; `clave` resume lo que cambia pasaFiltro (filtros,
+// búsqueda, país —que muta item.t sin cambiar su identidad— e idioma)
+const InicioNf = React.memo(InicioNfBase, (a, b) =>
+  ['stats', 'vistas', 'eps', 'notas', 'listas', 'sinSpoilers', 'clave'].every(k => a[k] === b[k]))
+function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe, calendario }) {
   const s = stats.siguiente
   // todo lo que se ve (sin cómics ni bóveda), en el orden del maratón
   const todos = []
@@ -4011,10 +4017,14 @@ function InicioNf({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMa
     <main className="inicio-nf">
       {s ? (
         <section className="nf-cartel" style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
+          {/* La carátula local (mismo servidor, 30 kB, casi siempre en caché) se pinta
+              al instante, difuminada, y el fotograma de TMDB se funde encima al
+              llegar. Sin ella, en 4G lenta el recuadro más grande de la pantalla
+              estaba vacío hasta ~4,9 s (LCP; antes de Inicio era ~2,3 s) */}
           <div className="nf-cartel-fondo" aria-hidden="true">
-            {foto
-              ? <img src={`${TMDB_IMG}w1280${foto}`} srcSet={`${TMDB_IMG}w780${foto} 780w, ${TMDB_IMG}w1280${foto} 1280w`} sizes="100vw" alt="" decoding="async" fetchpriority="high" />
-              : POSTERS[s.id] && <img className="nf-cartel-poster" src={POSTERS[s.id]} alt="" decoding="async" />}
+            {POSTERS[s.id] && <img className={foto ? 'nf-cartel-previo' : 'nf-cartel-poster'} src={POSTERS[s.id]} alt="" decoding="async" fetchpriority="high" />}
+            {foto && <img key={foto} className="nf-cartel-foto" src={`${TMDB_IMG}w1280${foto}`} srcSet={`${TMDB_IMG}w780${foto} 780w, ${TMDB_IMG}w1280${foto} 1280w`} sizes="100vw" alt="" decoding="async" fetchpriority="high"
+              onLoad={e => e.currentTarget.classList.add('cargada')} />}
           </div>
           <div className="nf-cartel-texto">
             <span className="nf-eyebrow">{tr('Siguiente en tu maratón', 'Next in your marathon')} · {puesto} / {todos.length}</span>
@@ -8712,6 +8722,7 @@ export default function App() {
       <Estrellas />
       {vista === 'inicio' ? (
         <InicioNf stats={stats} vistas={vistas} eps={eps} notas={notas} listas={listas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
+          clave={`${JSON.stringify(filtros)}|${buscaLenta}|${pais}|${idioma}`}
           epHechosDe={epHechosDe} onAbrir={d => setDetalle(d)} onMarcar={marcaSiguiente}
           calendario={<CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />} />
       ) : vista === 'tiempo' ? (

@@ -3636,6 +3636,11 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 .nf-cartel-fondo{position:absolute; inset:0; z-index:-1}
 .nf-cartel-fondo img{width:100%; height:100%; object-fit:cover; object-position:center 25%}
 .nf-cartel-fondo .nf-cartel-poster{object-fit:contain; object-position:right center; opacity:.5}
+.nf-cartel-fondo img{position:absolute; inset:0}
+.nf-cartel-previo{filter:blur(18px) saturate(1.2); transform:scale(1.15)}
+.nf-cartel-foto{opacity:0; transition:opacity .35s ease-out}
+.nf-cartel-foto.cargada{opacity:1}
+@media (prefers-reduced-motion: reduce){ .nf-cartel-foto{transition:none} }
 .nf-cartel-fondo::after{
   content:""; position:absolute; inset:0;
   background:
@@ -3672,7 +3677,11 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 
 /* filas */
 .nf-fila{min-width:0}
-.nf-fila-cab{display:flex; align-items:baseline; gap: var(--e-3); margin-bottom: var(--e-3)}
+/* las filas fuera de pantalla no se maquetan ni se pintan (~25 filas, ~375
+   carátulas). content-visibility recorta lo que sobresale: por eso la fila
+   entera llega al borde (margen negativo aquí, no en el carril) */
+.nf-fila{content-visibility:auto; contain-intrinsic-size:auto 300px; margin-inline:calc(-1 * var(--e-6))}
+.nf-fila-cab{display:flex; align-items:baseline; gap: var(--e-3); margin-bottom: var(--e-3); padding-inline: var(--e-6)}
 .nf-fila-t{margin:0; font-size: var(--t-l); font-weight:700; letter-spacing:0; text-transform:none}
 .nf-fila-sub{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .nf-flechas{margin-left:auto; display:none; gap: var(--e-2)}
@@ -3681,7 +3690,7 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 .nf-carril{
   display:flex; gap: var(--e-3); overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none;
   scroll-snap-type:x mandatory; scroll-padding-inline: var(--e-6);
-  margin-inline:calc(-1 * var(--e-6)); padding: 4px var(--e-6) 6px;
+  padding: 8px var(--e-6) 10px;
 }
 .nf-carril::-webkit-scrollbar{display:none}
 .nf-tile{

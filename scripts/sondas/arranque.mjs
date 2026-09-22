@@ -25,7 +25,11 @@ for (let i = 0; i < PASADAS; i++) {
       new PerformanceObserver(l => { for (const e of l.getEntries()) if (e.name === 'first-contentful-paint') window.__m.fcp = e.startTime }).observe({ type: 'paint', buffered: true })
       new PerformanceObserver(l => { const e = l.getEntries().at(-1); if (e) window.__m.lcp = e.startTime }).observe({ type: 'largest-contentful-paint', buffered: true })
       new PerformanceObserver(l => { for (const e of l.getEntries()) window.__m.largas.push([Math.round(e.startTime), Math.round(e.duration)]) }).observe({ type: 'longtask', buffered: true })
-      const mira = () => { if (!window.__m.usable && document.querySelector('.stats-inicio .siguiente-stat, .card')) window.__m.usable = performance.now(); if (!window.__m.usable) requestAnimationFrame(mira) }
+      // usable = lo siguiente que ver, A LA VISTA: el botón de la cartelera de
+      // Inicio (22 sep 2026) o, en la lista, la tarjeta «Siguiente» o una tarjeta.
+      // En Inicio la tarjeta de la cabecera existe pero está escondida: sin
+      // mirar offsetParent, «usable» llegaba antes de pintarse nada útil
+      const mira = () => { if (!window.__m.usable && [...document.querySelectorAll('.nf-btn-marcar, .stats-inicio .siguiente-stat, .card')].some(e => e.offsetParent)) window.__m.usable = performance.now(); if (!window.__m.usable) requestAnimationFrame(mira) }
       requestAnimationFrame(mira)
     })()` })
     // la primera carga de abre() dejó caché y service worker: se limpian
@@ -38,7 +42,8 @@ for (let i = 0; i < PASADAS; i++) {
     await s.cdp.send('Page.navigate', { url: 'about:blank' })
     await espera(100)
     bytes.total = 0
-    await s.cdp.send('Page.navigate', { url: s.url + '#crono' })
+    // RUTA='#crono' mide la lista; por defecto, la entrada (Inicio desde el 22 sep)
+    await s.cdp.send('Page.navigate', { url: s.url + (process.env.RUTA ?? '') })
     await s.cdp.hasta('window.__m && window.__m.usable', 60000)
     await espera(4000)
     const m = await s.cdp.eval(`(() => { const n = performance.getEntriesByType('navigation')[0]
