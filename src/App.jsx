@@ -3901,9 +3901,11 @@ function MapaMultiverso({ onAbrir }) {
 // lo empezado, lo que viene, la ruta a Doomsday, lo mejor valorado y cada era
 // de la cronología. Tocar un título abre su ficha (ver, tráiler, marcar).
 const nfClave = d => d.item.id
+// la carátula se funde al llegar en vez de aparecer de golpe sobre el hueco
+const nfCargada = e => e.currentTarget.classList.add('cargada')
 // la nota con coma decimal en español (7,3), como en el resto de la app
 const nfNota = n => IDIOMA_ACTUAL === 'en' ? String(n) : String(n).replace('.', ',')
-function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra }) {
+function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, progreso }) {
   const carril = useRef(null)
   if (!items.length) return null
   const mueve = dir => {
@@ -3915,6 +3917,7 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra })
       <div className="nf-fila-cab">
         <h2 className="nf-fila-t">{titulo}</h2>
         {sub && <span className="nf-fila-sub">{sub}</span>}
+        {progreso != null && <span className="nf-fila-barra" aria-hidden="true"><i style={{ width: `${progreso}%` }} /></span>}
         <span className="nf-flechas" aria-hidden="true">
           <button tabIndex={-1} onClick={() => mueve(-1)}>‹</button>
           <button tabIndex={-1} onClick={() => mueve(1)}>›</button>
@@ -3931,9 +3934,9 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra })
               {numerada && <span className="nf-num" aria-hidden="true">{i + 1}</span>}
               <span className="nf-img">
                 {foto
-                  ? <img src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" fetchpriority="low" />
+                  ? <img src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} />
                   : POSTERS[d.item.id]
-                    ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" fetchpriority="low" />
+                    ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} />
                     : <span className="nf-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
                 {visto && <span className="nf-check" aria-hidden="true"><CheckIcon /></span>}
                 {!ancha && (
@@ -4013,10 +4016,12 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   const hechos = lista ? lista.length - lista.filter(x => !eps[`${s.id}:${x.s}:${x.n}`]).length : 0
   const puesto = s ? todos.findIndex(d => d.item.id === s.id) + 1 : 0
   const verRes = s && s.res && !sinSpoilers
+  const eraS = s && (eras.find(x => x.its.some(d => d.item.id === s.id)) || {}).era?.era
   return (
     <main className="inicio-nf">
       {s ? (
-        <section className="nf-cartel" style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
+        // key: al marcar vista, la cartelera nueva entra con su animación (se nota que avanzaste)
+        <section className="nf-cartel" key={s.id} style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
           {/* La carátula local (mismo servidor, 30 kB, casi siempre en caché) se pinta
               al instante, difuminada, y el fotograma de TMDB se funde encima al
               llegar. Sin ella, en 4G lenta el recuadro más grande de la pantalla
@@ -4027,7 +4032,10 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
               onLoad={e => e.currentTarget.classList.add('cargada')} />}
           </div>
           <div className="nf-cartel-texto">
-            <span className="nf-eyebrow">{tr('Siguiente en tu maratón', 'Next in your marathon')} · {puesto} / {todos.length}</span>
+            <span className="nf-eyebrow">
+              <span className="nf-eyebrow-punto" aria-hidden="true" />
+              {tr('Siguiente en tu maratón', 'Next in your marathon')} · {puesto} / {todos.length}{eraS ? <span className="nf-eyebrow-era">{eraS}</span> : null}
+            </span>
             <h2 className="nf-cartel-t">{s.t}</h2>
             <span className="nf-meta">
               {s.s ? <b className="nf-nota">★ {nfNota(s.s)}</b> : null}
@@ -4077,6 +4085,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
       })}
       {eras.map(({ saga, era, its }) => (
         <FilaNf key={saga.saga + era.era} titulo={era.era} vistas={vistas} onAbrir={onAbrir} items={its}
+          progreso={100 * its.filter(d => vistas[d.item.id]).length / its.length}
           sub={`${nombreSaga(saga)} · ${era.rango} · ${its.filter(d => vistas[d.item.id]).length}/${its.length}`} />
       ))}
     </main>

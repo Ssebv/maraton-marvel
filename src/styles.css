@@ -3742,3 +3742,58 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   .nf-btn{flex:1; justify-content:center; padding: 0 var(--e-4)}
 }
 @media (prefers-reduced-motion: reduce){ .nf-tile:hover, .nf-tile:active, .nf-btn:active{transform:none} }
+
+/* ── Inicio: movimiento y detalles (22 sep 2026) ──
+   Solo transform y opacity; con «reducir movimiento», nada se mueve. */
+@keyframes nfSube{from{opacity:0; transform:translateY(14px)}}
+@media (prefers-reduced-motion: no-preference){
+  /* la cartelera entra escalonada: etiqueta, título, datos, botones */
+  .nf-cartel-texto > *{animation:nfSube var(--muelle-dur) var(--muelle-curva) both}
+  .nf-cartel-texto > :nth-child(2){animation-delay:50ms}
+  .nf-cartel-texto > :nth-child(3){animation-delay:90ms}
+  .nf-cartel-texto > :nth-child(4){animation-delay:120ms}
+  .nf-cartel-texto > :nth-child(5){animation-delay:150ms}
+  .nf-cartel-texto > :nth-child(6){animation-delay:180ms}
+  /* la foto se asienta: entra un poco ampliada y vuelve a su tamaño */
+  .nf-cartel-foto{transform:scale(1.05); transition:opacity .35s ease-out, transform 1.4s var(--curva)}
+  .nf-cartel-foto.cargada{transform:none}
+  /* las carátulas se funden al llegar */
+  .nf-img img{opacity:0; transition:opacity .3s ease-out}
+  .nf-img img.cargada{opacity:1}
+}
+.nf-tile.vista .nf-img img.cargada{opacity:.6}
+/* el color de la era del siguiente título, como un punto en la etiqueta */
+.nf-eyebrow{display:flex; align-items:center; flex-wrap:wrap; gap:0 .35em}
+.nf-eyebrow-punto{width:8px; height:8px; border-radius:50%; background:var(--c1); box-shadow:0 0 0 2px rgba(255,255,255,.25); flex:none}
+.nf-eyebrow-era{color:rgba(255,255,255,.62); font-weight:600}
+.nf-eyebrow-era::before{content:"· "}
+/* en el móvil la era va en su propia línea, alineada con el texto (sin «·» al principio) */
+@media (max-width:640px){
+  .nf-eyebrow-era{flex-basis:100%; padding-left:calc(8px + .35em)}
+  .nf-eyebrow-era::before{content:none}
+}
+/* lo que llevas de cada era, en la cabecera de su fila */
+.nf-fila-barra{flex:none; width:44px; height:4px; border-radius:var(--r-s); background:var(--panel2); overflow:hidden; align-self:center}
+.nf-fila-barra i{display:block; height:100%; background:var(--done)}
+@media (hover:hover) and (pointer:fine){
+  .nf-img{transition:box-shadow var(--dur-media) var(--curva)}
+  .nf-tile:hover .nf-img{box-shadow:0 12px 28px -8px rgba(0,0,0,.55)}
+}
+@supports (animation-timeline: view()){
+  @media (prefers-reduced-motion: no-preference){
+    /* parallax: al bajar, la foto se queda atrás. La capa es un 12 % más alta
+       por arriba para que al desplazarse nunca asome el hueco */
+    .nf-cartel-fondo{inset:-12% 0 0 0; animation:nfParallax linear both; animation-timeline:view(); animation-range:exit 0% exit 100%}
+    @keyframes nfParallax{to{transform:translateY(12%)}}
+    /* las filas suben al entrar en pantalla (las que ya se ven, quietas) */
+    .nf-fila{animation:nfSube linear both; animation-timeline:view(); animation-range:entry 0% entry 35%}
+  }
+}
+@supports (animation-timeline: scroll()){
+  /* los carriles se funden por el borde que tiene más: se ve que siguen */
+  .nf-carril{
+    animation:fundidoCarril linear both; animation-timeline:scroll(self inline);
+    -webkit-mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
+    mask-image:linear-gradient(to right, transparent, #000 var(--fun-izq), #000 calc(100% - var(--fun-der)), transparent);
+  }
+}
