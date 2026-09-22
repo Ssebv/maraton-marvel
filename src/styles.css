@@ -1565,21 +1565,27 @@ main.galeria{margin-top: var(--e-6)}
      pensados para el planeta grande (150) y en los de 56 del Sistema y las
      tarjetas la sombra de 64 px tapaba dos tercios: bolas casi negras */
   --p:150px;
-  border-radius:50%; flex:none; position:absolute;
-  /* tres capas (11 sep 2026): el halo en el planeta, la textura que gira
-     como hija recortada por el círculo, y el volumen encima. Antes se
-     animaba background-position, que repinta cada fotograma: con once
-     planetas el hilo principal no descansaba nunca en el Multiverso. */
-  overflow:hidden; isolation:isolate;
+  border-radius:50%; flex:none; position:absolute; isolation:isolate;
   box-shadow:0 0 26px -4px color-mix(in srgb, var(--tc, var(--blue)) 70%, transparent);
 }
+/* La textura gira dentro de .planeta-recorte, que la recorta con clip-path.
+   Hasta el 22 sep la recortaba .planeta con overflow:hidden + border-radius,
+   y Safari de iPhone NO recorta así a un hijo con transform animado dentro de
+   órbitas que giran: salían cuadrados con la Antártida como franja blanca
+   (captura de Sebastián). clip-path sí se respeta; el halo sigue fuera, en
+   el box-shadow de .planeta, que el recorte no toca. */
+.planeta-recorte{position:absolute; inset:0; border-radius:50%; overflow:hidden; clip-path:circle(50% at 50% 50%); background:#0b1030}
 .planeta-textura{
-  position:absolute; top:0; left:0; height:100%; width:calc(100% + 640px);
+  /* el mapa es 2:1: una vuelta mide dos diámetros (200 % del ancho). La
+     tira mide dos vueltas (400 %) y se desplaza la mitad, una vuelta exacta,
+     en cualquier tamaño (antes se movía 640 px fijos y el planeta de 56 px
+     pegaba un salto al final de cada giro) */
+  position:absolute; top:0; left:0; height:100%; width:400%;
   background-image:url('/maraton-marvel/tierra.jpg');
   background-size:auto 100%; background-repeat:repeat-x;
-  animation:girarPlaneta 28s linear infinite;
+  animation:girarPlaneta 32s linear infinite;
   /* cada Tierra en su punto del giro: todas enseñaban Australia a la vez */
-  animation-delay:calc(var(--fase, 0) * -2.6s);
+  animation-delay:calc(var(--fase, 0) * -2.9s);
 }
 .planeta::before{
   content:""; position:absolute; inset:0; border-radius:50%; z-index:1;
@@ -1597,7 +1603,7 @@ main.galeria{margin-top: var(--e-6)}
 .planeta-grande{width:150px; height:150px; right:30px; top:50%; transform:translateY(-50%)}
 @keyframes girarPlaneta{
   from{transform:translateX(0)}
-  to{transform:translateX(-640px)}
+  to{transform:translateX(-50%)}
 }
 .mv-card{position:relative; padding-right: 88px}
 @media (max-width:640px){
@@ -1609,34 +1615,45 @@ main.galeria{margin-top: var(--e-6)}
 /* ── Sistema solar del multiverso ── */
 .mv-cabecera{display:flex; align-items:center; gap: var(--e-5); flex-wrap:wrap; margin-bottom: var(--e-3)}
 .mv-cabecera .mv-intro{margin-bottom: 0; flex:1; min-width:260px}
-.sistema-wrap{display:flex; justify-content:center; overflow:hidden; padding: var(--e-4) 0 var(--e-7)}
-.sistema{position:relative; width:720px; height:720px; flex:none}
-.anillo{
-  position:absolute; left:50%; top:50%; border-radius:50%;
-  border:1px dashed color-mix(in srgb, var(--ink) 8%, transparent);
+/* El Sistema se mide con el ancho de su caja (22 sep 2026). Antes medía 720
+   px y en el móvil se encogía entero con scale(.48): planetas de 27 px,
+   nombres de 5 px compensados a mano y medio hueco vacío arriba y abajo.
+   Ahora --u es un píxel del diseño de 720 (o menos si no cabe) y --v el de
+   los planetas, que encogen menos que las órbitas. */
+.sistema-wrap{display:flex; justify-content:center; overflow:hidden; padding: var(--e-4) 0 var(--e-5); container-type:inline-size}
+.sistema{
+  --u:min(1px, calc(100cqw / 740)); --v:min(1px, calc(100cqw / 600));
+  position:relative; width:calc(720 * var(--u)); height:calc(720 * var(--u)); flex:none;
 }
-.orbita{position:absolute; left:50%; top:50%; border-radius:50%; pointer-events:none}
+.anillo, .orbita{
+  position:absolute; left:50%; top:50%; border-radius:50%;
+  width:calc(var(--r) * 2 * var(--u)); height:calc(var(--r) * 2 * var(--u));
+  margin:calc(var(--r) * -1 * var(--u)) 0 0 calc(var(--r) * -1 * var(--u));
+}
+.anillo{border:1px dashed color-mix(in srgb, var(--ink) 10%, transparent)}
+.orbita{pointer-events:none}
 .giro{position:absolute; inset:0; animation:girarOrbita linear infinite}
-.nav-pos{position:absolute; top:-31px; left:50%}
+.nav-pos{position:absolute; top:0; left:50%}
 .contra{animation:contraOrbita linear infinite}
 .orbita.inversa .giro{animation-direction:reverse}
 .orbita.inversa .contra{animation-direction:reverse}
 @keyframes girarOrbita{from{transform:rotate(0)} to{transform:rotate(360deg)}}
 @keyframes contraOrbita{from{transform:rotate(0)} to{transform:rotate(-360deg)}}
 .sistema:hover .giro, .sistema:hover .contra{animation-play-state:paused}
+/* el botón es el planeta y nada más: así queda centrado en su órbita. El
+   nombre cuelga debajo, fuera de la caja */
 .planeta-nav, .sol{
-  pointer-events:auto; background:none; border:none; padding: 0; cursor:pointer;
-  display:flex; flex-direction:column; align-items:center; gap: var(--e-2);
+  pointer-events:auto; background:none; border:none; padding: 0; cursor:pointer; position:relative;
+  display:block; width:calc(var(--t) * var(--v)); height:calc(var(--t) * var(--v));
   transition:transform var(--dur-media) var(--curva);
 }
+/* diana de 44 px aunque el planeta mida 30 en el móvil */
+.planeta-nav::before{content:""; position:absolute; inset:min(0px, calc((var(--t) * var(--v) - 44px) / 2)); border-radius:50%}
 .planeta-nav.sobre{transform:scale(1.18)}
-.planeta-orbe{position:relative; width:56px; height:56px; top:auto; right:auto; display:block}
+.planeta-orbe{--p:calc(var(--t) * var(--v)); position:absolute; inset:0; width:100%; height:100%; top:0; right:auto; display:block}
 .sol{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); z-index:2}
 .sol.sobre{transform:translate(-50%, -50%) scale(1.12)}
-.planeta-sol{
-  --p:92px; width:92px; height:92px;
-  box-shadow:0 0 55px 6px color-mix(in srgb, var(--tc, var(--red)) 55%, transparent);
-}
+.planeta-sol{box-shadow:0 0 calc(var(--p) * .6) calc(var(--p) * .06) color-mix(in srgb, var(--tc, var(--red)) 55%, transparent)}
 .planeta-sol::before{
   box-shadow:
     calc(var(--p) * -.033) 0 calc(var(--p) * .067) rgba(255,220,180,.5) inset,
@@ -1644,31 +1661,72 @@ main.galeria{margin-top: var(--e-6)}
     calc(var(--p) * -.107) calc(var(--p) * -.013) calc(var(--p) * .187) color-mix(in srgb, var(--tc, var(--red)) 50%, transparent) inset,
     calc(var(--p) * .467) 0 calc(var(--p) * .293) rgba(0,0,0,.5) inset;
 }
+/* lo que llevas de cada Tierra: un arco fino alrededor del planeta */
+.orbe-progreso{position:absolute; inset:-5px; width:calc(100% + 10px); height:calc(100% + 10px); transform:rotate(-90deg); overflow:visible; pointer-events:none}
+.orbe-progreso circle{fill:none; stroke-width:1.6; vector-effect:non-scaling-stroke}
+.orbe-pista{stroke:color-mix(in srgb, var(--ink) 12%, transparent)}
+.orbe-hecho{stroke:color-mix(in srgb, var(--tc) 70%, var(--ink)); stroke-linecap:round; stroke-width:2.2}
+.completa .orbe-hecho{stroke:var(--tc)}
 .nav-nombre{
+  position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%);
   font-size: var(--t-xs); font-weight:700; letter-spacing:.05em; color:var(--ink2);
   /* sin recuadro: desde que los nombres van encima de todo (17 sep), el
      recuadro opaco tapaba el planeta de al lado o el sol. Un contorno del
      color del fondo basta para leerlo sobre anillos y halos */
-  padding: var(--e-1) var(--e-3);
   text-shadow:0 0 2px var(--bg), 0 0 2px var(--bg), 0 0 4px var(--bg);
-  white-space:nowrap;
+  white-space:nowrap; pointer-events:none;
 }
 .sobre .nav-nombre{color:var(--ink)}
 /* los nombres van en su propia capa, encima de todos los planetas (App.jsx):
    la capa de planetas guarda el hueco del nombre sin pintarlo */
 .sistema-capa{position:absolute; inset:0}
-.sistema-capa:not(.sistema-nombres) .nav-nombre{visibility:hidden}
+/* invisible pero tocable: el nombre cuelga fuera de la caja del botón y,
+   con visibility:hidden, un clic en él caía en el vacío */
+.sistema-capa:not(.sistema-nombres) .nav-nombre{opacity:0; pointer-events:auto}
 .sistema-nombres{z-index:3; pointer-events:none}
 .sistema-nombres .sol, .sistema-nombres .planeta-nav{pointer-events:none; cursor:default}
-@media (max-width:720px){
-  .sistema-wrap{padding: 0}
-  .sistema{transform:scale(.48); transform-origin:center center; margin: -180px 0}
-  /* A escala .48 los 11 px de la etiqueta se quedaban en 5: se compensa.
-     Con ×1,8 y nombres largos se pisaban entre órbitas; con nombres cortos
-     basta ×1,7 (≈9 px en pantalla; a ×1,5 quedaban en 8, poco legibles).
-     Algún cruce momentáneo sigue siendo inevitable: giran con su planeta */
-  .nav-nombre{font-size:calc(var(--t-xs) * 1.7)}
+.sistema-nombres .planeta-nav::before{content:none}
+/* en el móvil entre anillo y anillo quedan ~30 px: los nombres de los
+   planetas se pisaban. Solo el del centro; el índice de debajo los nombra */
+@media (max-width:560px){
+  .planeta-nav .nav-nombre{display:none}
 }
+
+/* resumen del multiverso, sobre el Sistema */
+.mv-resumen{display:flex; flex-wrap:wrap; align-items:baseline; gap: var(--e-1) var(--e-3); margin: var(--e-2) 0 0; max-width:560px}
+.mv-resumen-cifra{font-size: var(--t-l); font-weight:700; font-variant-numeric:tabular-nums}
+.mv-resumen-texto{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+.mv-resumen-barra{flex-basis:100%; margin: var(--e-1) 0 0}
+
+/* índice por anillo, bajo el Sistema */
+.mv-indice{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap: var(--e-5) var(--e-6); margin: 0 0 var(--e-6)}
+.mv-anillo{min-width:0}
+.mv-anillo-t{
+  margin: 0 0 var(--e-1); font-size: var(--t-xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink2);
+  display:flex; flex-direction:column; gap:2px;
+}
+.mv-anillo-t span{font-size: var(--t-s); font-weight:400; letter-spacing:0; text-transform:none}
+.mv-fila{
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center; column-gap: var(--e-3); row-gap:6px;
+  width:100%; min-height:44px; padding: var(--e-2) 0; background:none; border:none; border-bottom:1px solid var(--line);
+  color:var(--ink); text-align:left; cursor:pointer; font:inherit;
+}
+.mv-fila-punto{width:10px; height:10px; border-radius:50%; background:var(--tc); grid-row:span 2}
+.mv-fila-nombre{font-size: var(--t-m); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.mv-fila-nombre b{font-weight:700; margin-right:.25em}
+.mv-fila-cuenta{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+.mv-fila-barra{grid-column:2 / 4; height:3px; border-radius:var(--r-s); background:var(--panel2); overflow:hidden}
+.mv-fila-barra i{display:block; height:100%; background:var(--tc)}
+.mv-fila.completa .mv-fila-cuenta{color:var(--ink)}
+@media (hover:hover){ .mv-fila:hover .mv-fila-nombre{color:color-mix(in srgb, var(--tc) 35%, var(--ink))} }
+
+/* «Rumbo a Doomsday» en la Tierra y en su tarjeta */
+.mv-doom{margin: var(--e-3) 0 0; font-size: var(--t-m); color:var(--ink2); line-height:1.5; max-width:72ch;
+  padding-left: var(--e-3); border-left:2px solid color-mix(in srgb, var(--tc) 60%, transparent)}
+.mv-doom b{color:var(--ink); font-weight:700; margin-right:.3em}
+.mv-card-barra{margin-top: auto}
+.mv-card-barra > i, .tierra-barra > i{background:var(--tc)}
+.mv-card-pie{display:flex; justify-content:space-between; align-items:baseline; gap: var(--e-3)}
 
 /* ── Cabecera de Perfil y Multiverso (14 sep 2026) ──
    Título grande en vez de repetir la cabecera del maratón. En móvil, la barra

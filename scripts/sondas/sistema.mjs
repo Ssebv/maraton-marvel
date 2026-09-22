@@ -53,19 +53,45 @@ const abierta = `!!document.querySelector('.tierra')`
   } finally { await cierra() }
 }
 
-// móvil: dedo (el mapa va a escala .48 y el nombre es media diana)
+// móvil: dedo. Desde el 22 sep el Sistema se mide con el ancho (sin
+// scale(.48)) y los planetas van sin nombre (los nombra el índice de debajo)
 {
   const { cdp, navega, cierra } = await abre()
   try {
     await navega('#multiverso')
-    await cdp.hasta(`!!document.querySelector('.sistema-nombres .nav-nombre')`, 5000)
+    await cdp.hasta(`!!document.querySelector('.sistema .planeta-nav')`, 5000)
     await espera(600)
-    const p = await cdp.eval(centroNombre(2))
+    const m = await cdp.eval(`(() => {
+      const s = document.querySelector('.sistema').getBoundingClientRect()
+      const orbes = [...document.querySelectorAll('.sistema-capa:not(.sistema-nombres) .planeta-orbe')].map(o => o.getBoundingClientRect().width)
+      const rec = document.querySelector('.planeta-recorte'), cs = getComputedStyle(rec)
+      const visibles = [...document.querySelectorAll('.sistema-nombres .nav-nombre')].filter(n => getComputedStyle(n).display !== 'none').map(n => n.textContent)
+      return { ancho: Math.round(s.width), vw: innerWidth, min: Math.round(Math.min(...orbes)), clip: cs.clipPath, visibles,
+        arcos: document.querySelectorAll('.sistema-capa:not(.sistema-nombres) .orbe-progreso').length,
+        filas: document.querySelectorAll('.mv-indice .mv-fila').length }
+    })()`)
+    filas.push([m.ancho <= m.vw - 32 && m.ancho >= m.vw - 60, `el Sistema ocupa el ancho del móvil sin salirse (${m.ancho} de ${m.vw})`])
+    filas.push([m.min >= 28, `planetas de al menos 28 px en el móvil (${m.min})`])
+    filas.push([/circle/.test(m.clip), `la textura se recorta con clip-path, no con overflow (Safari): ${m.clip}`])
+    filas.push([m.visibles.length === 1 && m.visibles[0] === 'Tierra-616', `solo el nombre del centro en el móvil: ${JSON.stringify(m.visibles)}`])
+    filas.push([m.arcos === 11 && m.filas === 11, `arco de progreso en los 11 planetas y 11 filas en el índice (${m.arcos}/${m.filas})`])
+    const p = await cdp.eval(`(() => { const b = document.querySelectorAll('.sistema-capa:not(.sistema-nombres) .planeta-nav')[2]
+      const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, t: b.title } })()`)
+    // el planeta gira: se pausa la animación para que el dedo caiga donde se midió
+    await cdp.eval(`document.getAnimations().forEach(a => a.pause()); 1`)
     const punto = [{ x: p.x, y: p.y }]
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: punto })
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
     const ok = await cdp.hasta(abierta, 2000).then(() => true, () => false)
-    filas.push([ok, `toque en el nombre «${p.t}» (móvil) abre su Tierra`])
+    filas.push([ok, `toque en el planeta «${p.t}» (móvil) abre su Tierra`])
+    await cdp.eval(`document.querySelector('.tierra .chip-btn').click()`)
+    await cdp.hasta(`!!document.querySelector('.mv-indice')`, 3000)
+    await cdp.eval(`document.querySelectorAll('.mv-fila')[4].scrollIntoView({ block: 'center', behavior: 'instant' })`); await espera(300)
+    const f = await cdp.eval(`(() => { const b = document.querySelectorAll('.mv-fila')[4], r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, t: b.querySelector('b').textContent } })()`)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: f.x, y: f.y }] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    const t = await cdp.hasta(abierta, 2000).then(() => cdp.eval(`document.querySelector('.tierra-num').textContent`), () => null)
+    filas.push([t === f.t, `la fila «${f.t}» del índice abre su Tierra (${t})`])
   } finally { await cierra() }
 }
 

@@ -2707,7 +2707,7 @@ function aplicaTitulos(pais, idioma = IDIOMA_ACTUAL) {
     e.t = (id && (en ? TITULOS_EN[id] : latino && TITULOS_LATAM[id])) || E_ES[i]
     traduce(e, ['n', 'tipo', 'aprox'], pasa)
   })
-  MULTIVERSO.forEach(u => traduce(u, ['nombre', 'estado', 'desc'], pasa))
+  MULTIVERSO.forEach(u => traduce(u, ['nombre', 'estado', 'desc', 'doom'], pasa))
   LOGROS.forEach(l => traduce(l, ['t', 'd'], pasa))
   MAPA_ARISTAS.forEach(a => traduce(a, ['t'], pasa))
   Object.entries(EPISODES).forEach(([id, eps]) => {
@@ -4524,17 +4524,27 @@ function Proximos() {
   )
 }
 
+// Cuatro anillos con sentido (22 sep 2026): antes diez órbitas a 20-30 px
+// una de otra, y a escala de móvil los planetas se montaban. En cada anillo
+// sus Tierras van a 120° y giran juntas, así que nunca chocan entre ellas.
+const ANILLOS = [
+  { r: 150, t: ['Rumbo a Doomsday', 'Toward Doomsday'], d: ['Mutantes, 4 Fantásticos e Illuminati', 'Mutants, Fantastic Four and Illuminati'] },
+  { r: 215, t: ['Las Tierras arácnidas', 'The Spider Earths'], d: ['Los Spider-Man de Sony', "Sony's Spider-Men"] },
+  { r: 280, t: ['Otras ramas', 'Other branches'], d: ['El Vigilante, la plaga y el papel', 'The Watcher, the plague and the page'] },
+  { r: 335, t: ['Fuera del tiempo', 'Outside time'], d: ['Donde acaba lo podado', 'Where the pruned end up'] },
+]
+// [radio, ángulo de salida, segundos por vuelta, sentido, diámetro]
 const ORBITAS = {
-  'Tierra-10005':       [118, 20,  48,  1, 60],
-  'Tierra-828':         [148, 150, 63, -1, 52],
-  'Tierra-838':         [176, 260, 55,  1, 50],
-  'Tierra-96283':       [204, 60,  86, -1, 56],
-  'Tierra-120703':      [228, 190, 74,  1, 50],
-  'Universo Sony':      [252, 300, 105, -1, 54],
-  'Universos What If':  [276, 100, 92,  1, 58],
-  'Marvel Zombies':     [298, 230, 132, -1, 48],
-  'Tierra-616 (cómics)':[318, 330, 118,  1, 54],
-  'El Vacío':           [336, 40,  150, -1, 62],
+  'Tierra-10005':       [150, 20,  80,  1, 60],
+  'Tierra-828':         [150, 140, 80,  1, 56],
+  'Tierra-838':         [150, 260, 80,  1, 54],
+  'Tierra-96283':       [215, 80,  120, -1, 54],
+  'Tierra-120703':      [215, 200, 120, -1, 52],
+  'Universo Sony':      [215, 320, 120, -1, 52],
+  'Universos What If':  [280, 50,  160,  1, 56],
+  'Marvel Zombies':     [280, 170, 160,  1, 50],
+  'Tierra-616 (cómics)':[280, 290, 160,  1, 54],
+  'El Vacío':           [335, 230, 220, -1, 62],
 }
 // en el sistema solar las etiquetas giran con su planeta y, a escala de
 // móvil, las largas se pisaban con las vecinas: nombre corto (el completo va
@@ -7777,6 +7787,22 @@ export default function App() {
     })))
     return m
   }, [])
+  // lo que ocurre en cada Tierra del Multiverso y cuánto llevas de cada una
+  const itemsTierra = u => u.grupo
+    ? DATA.find(sg => sg.saga === u.grupo).eras.flatMap(era => era.items
+        .filter(it => u.grupo !== 'ucm' || !it.uni)
+        .map(item => ({ item, c: era.c })))
+    : u.ids.map(id => indice[id]).filter(Boolean)
+  const progTierras = useMemo(() => {
+    const por = {}, todos = new Set()
+    for (const u of MULTIVERSO) {
+      const its = itemsTierra(u)
+      its.forEach(({ item }) => todos.add(item.id))
+      por[u.num] = { v: its.filter(({ item }) => vistas[item.id]).length, n: its.length }
+    }
+    const vistos = [...todos].filter(id => vistas[id]).length
+    return { por, vistos, total: todos.size, completas: MULTIVERSO.filter(u => por[u.num].n && por[u.num].v === por[u.num].n).length }
+  }, [vistas, indice])
 
   const cineLista = useMemo(() => {
     const pendientes = []
@@ -8602,21 +8628,18 @@ export default function App() {
           {tierra ? (() => {
             const u = MULTIVERSO.find(x => x.num === tierra)
             if (!u) { setTierra(null); return null }
-            const items = u.grupo
-              ? DATA.find(sg => sg.saga === u.grupo).eras.flatMap(era => era.items
-                  .filter(it => u.grupo !== 'ucm' || !it.uni)
-                  .map(item => ({ item, c: era.c })))
-              : u.ids.map(id => indice[id]).filter(Boolean)
+            const items = itemsTierra(u)
             const v = items.filter(({ item }) => vistas[item.id]).length
             return (
               <div className="tierra" style={{ '--tc': u.c }}>
                 <button className="chip-btn" onClick={cierraTierra}>{tr('← Volver al multiverso', '← Back to the multiverse')}</button>
                 <header className="tierra-hero">
-                  <span className="planeta planeta-grande" aria-hidden="true"><span className="planeta-textura" /></span>
+                  <span className="planeta planeta-grande" aria-hidden="true"><span className="planeta-recorte"><span className="planeta-textura" /></span></span>
                   <span className="mv-num tierra-num">{u.num}</span>
                   <h2 className="tierra-nombre">{u.nombre}</h2>
                   <span className="tierra-estado">{u.estado}</span>
                   <p className="tierra-desc">{u.desc}</p>
+                  {u.doom && <p className="mv-doom"><b>{tr('Rumbo a Doomsday', 'Toward Doomsday')}</b> {u.doom}</p>}
                   <div className="barra tierra-barra">
                     <i style={{ width: `${items.length ? 100 * v / items.length : 0}%` }} />
                   </div>
@@ -8645,16 +8668,23 @@ export default function App() {
                   <span className="indicador" ref={mvIndicador} aria-hidden="true" />
                   <button className="tab" aria-pressed={mvModo === 'sistema'} onClick={() => setMvModo('sistema')}>{tr('Sistema', 'System')}</button>
                   <button className="tab" aria-pressed={mvModo === 'mapa'} onClick={() => setMvModo('mapa')}>{tr('Mapa', 'Map')}</button>
-                  <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>{tr('Tarjetas', 'Cards')}</button>
+                  <button className="tab" aria-pressed={mvModo === 'tarjetas'} onClick={() => setMvModo('tarjetas')}>{tr('Tierras', 'Earths')}</button>
                 </div>
+              </div>
+              <div className="mv-resumen">
+                <span className="mv-resumen-cifra">{progTierras.total ? Math.round(100 * progTierras.vistos / progTierras.total) : 0} %</span>
+                <span className="mv-resumen-texto">
+                  {tr('del multiverso visto', 'of the multiverse watched')} · {progTierras.completas} {tr(`de ${MULTIVERSO.length} Tierras completas`, `of ${MULTIVERSO.length} Earths complete`)}
+                </span>
+                <div className="barra mv-resumen-barra"><i style={{ width: `${progTierras.total ? 100 * progTierras.vistos / progTierras.total : 0}%` }} /></div>
               </div>
               {mvModo === 'mapa' && <MapaMultiverso onAbrir={d => setDetalle(d)} />}
               {mvModo === 'mapa' ? null : mvModo === 'sistema' ? (
+                <>
                 <div className="sistema-wrap">
                   <div className="sistema">
-                    {Object.values(ORBITAS).map(([r]) => (
-                      <span key={r} className="anillo"
-                        style={{ width: r * 2, height: r * 2, marginLeft: -r, marginTop: -r }} />
+                    {ANILLOS.map(a => (
+                      <span key={a.r} className="anillo" style={{ '--r': a.r }} />
                     ))}
                     {/* Dos pasadas con las mismas órbitas: planetas y, encima de
                         todos, sus nombres. Cada órbita gira en su propio contexto
@@ -8665,32 +8695,44 @@ export default function App() {
                     {[false, true].map(nombres => {
                       const u616 = MULTIVERSO.find(u => u.num === 'Tierra-616')
                       const Pieza = nombres ? 'span' : 'button'
-                      const pieza = (u, clase, orbe, nombre) => (
-                        <Pieza className={mvSobre === u.num ? `${clase} sobre` : clase} style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u) }}
-                          {...(nombres ? {} : {
-                            onClick: () => { setMvSobre(null); abreTierra(u.num) }, title: u.nombre, 'aria-label': nombre,
-                            onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null),
-                            onFocus: () => setMvSobre(u.num), onBlur: () => setMvSobre(null),
-                          })}>
-                          {orbe}
-                          <span className="nav-nombre">{nombre}</span>
-                        </Pieza>
-                      )
+                      const pieza = (u, clase, tam, nombre) => {
+                        const pr = progTierras.por[u.num]
+                        const hecho = pr.n ? pr.v / pr.n : 0
+                        return (
+                          <Pieza className={`${clase}${mvSobre === u.num ? ' sobre' : ''}${pr.n && pr.v === pr.n ? ' completa' : ''}`}
+                            style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u), '--t': tam }}
+                            {...(nombres ? {} : {
+                              onClick: () => { setMvSobre(null); abreTierra(u.num) }, title: u.nombre,
+                              'aria-label': `${u.num}: ${u.nombre}. ${pr.v} / ${pr.n}`,
+                              onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null),
+                              onFocus: () => setMvSobre(u.num), onBlur: () => setMvSobre(null),
+                            })}>
+                            {nombres ? <span className="planeta-orbe planeta-hueco" /> : (
+                              <>
+                                <span className={`planeta planeta-orbe${clase === 'sol' ? ' planeta-sol' : ''}`}><span className="planeta-recorte"><span className="planeta-textura" /></span></span>
+                                {/* lo que llevas de esa Tierra, como un arco a su alrededor */}
+                                <svg className="orbe-progreso" viewBox="0 0 40 40" aria-hidden="true">
+                                  <circle cx="20" cy="20" r="19" pathLength="100" className="orbe-pista" />
+                                  {hecho > 0 && <circle cx="20" cy="20" r="19" pathLength="100" className="orbe-hecho" strokeDasharray={`${100 * hecho} 100`} />}
+                                </svg>
+                              </>
+                            )}
+                            <span className="nav-nombre">{nombre}</span>
+                          </Pieza>
+                        )
+                      }
                       return (
                         <div className={nombres ? 'sistema-capa sistema-nombres' : 'sistema-capa'} key={String(nombres)} aria-hidden={nombres || undefined}>
-                          {pieza(u616, 'sol', nombres ? <span className="planeta-orbe planeta-hueco" style={{ width: 92, height: 92 }} />
-                            : <span className="planeta planeta-orbe planeta-sol"><span className="planeta-textura" /></span>, 'Tierra-616')}
+                          {pieza(u616, 'sol', 92, 'Tierra-616')}
                           {MULTIVERSO.filter(u => ORBITAS[u.num]).map(u => {
                             const [r, fase, dur, dir, tam] = ORBITAS[u.num]
                             return (
                               <div className={`orbita${dir < 0 ? ' inversa' : ''}`} key={u.num}
-                                style={{ width: r * 2, height: r * 2, marginLeft: -r, marginTop: -r, transform: `rotate(${fase}deg)` }}>
+                                style={{ '--r': r, transform: `rotate(${fase}deg)` }}>
                                 <div className="giro" style={{ animationDuration: dur + 's' }}>
-                                  <div className="nav-pos" style={{ transform: `translateX(-50%) rotate(${-fase}deg)` }}>
+                                  <div className="nav-pos" style={{ transform: `translate(-50%, -50%) rotate(${-fase}deg)` }}>
                                     <div className="contra" style={{ animationDuration: dur + 's' }}>
-                                      {pieza(u, 'planeta-nav', nombres ? <span className="planeta-orbe planeta-hueco" style={{ width: tam, height: tam }} />
-                                        : <span className="planeta planeta-orbe" style={{ width: tam, height: tam, '--p': tam + 'px' }}><span className="planeta-textura" /></span>,
-                                        CORTO_SISTEMA[u.num] || u.num.replace('Tierra-', 'T-'))}
+                                      {pieza(u, 'planeta-nav', tam, CORTO_SISTEMA[u.num] || u.num.replace('Tierra-', 'T-'))}
                                     </div>
                                   </div>
                                 </div>
@@ -8702,21 +8744,52 @@ export default function App() {
                     })}
                   </div>
                 </div>
+                {/* índice por anillo: en el móvil los planetas van sin nombre
+                    (entre anillos quedan ~30 px y los nombres se pisaban) */}
+                <div className="mv-indice">
+                  {[{ t: ['El centro', 'The centre'], d: ['La línea sagrada', 'The sacred timeline'], nums: ['Tierra-616'] }, ...ANILLOS].map(a => {
+                    const nums = a.nums || MULTIVERSO.filter(u => ORBITAS[u.num] && ORBITAS[u.num][0] === a.r).map(u => u.num)
+                    return (
+                      <section className="mv-anillo" key={a.t[0]}>
+                        <h3 className="mv-anillo-t">{tr(...a.t)}<span>{tr(...a.d)}</span></h3>
+                        {nums.map(num => {
+                          const u = MULTIVERSO.find(x => x.num === num), pr = progTierras.por[num]
+                          return (
+                            <button key={num} className={`mv-fila${pr.n && pr.v === pr.n ? ' completa' : ''}`} style={{ '--tc': u.c }} onClick={() => abreTierra(num)}>
+                              <span className="mv-fila-punto" aria-hidden="true" />
+                              <span className="mv-fila-nombre"><b>{u.num}</b> {u.nombre}</span>
+                              <span className="mv-fila-cuenta">{pr.v}/{pr.n}</span>
+                              <span className="mv-fila-barra" aria-hidden="true"><i style={{ width: `${pr.n ? 100 * pr.v / pr.n : 0}%` }} /></span>
+                            </button>
+                          )
+                        })}
+                      </section>
+                    )
+                  })}
+                </div>
+                </>
               ) : (
               <div className="mv-grid">
-                {MULTIVERSO.map(u => (
-                  <article className="mv-card" key={u.num} style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u) }}
-                    role="button" tabIndex={0}
-                    onClick={() => abreTierra(u.num)}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abreTierra(u.num) } }}>
-                    <span className="planeta planeta-mini" aria-hidden="true"><span className="planeta-textura" /></span>
-                    <span className="mv-num">{u.num}</span>
-                    <h2 className="mv-nombre">{u.nombre}</h2>
-                    <p className="mv-desc">{u.desc}</p>
-                    <span className="mv-estado">{u.estado}</span>
-                    <span className="mv-entrar">{tr('Entrar en esta Tierra →', 'Enter this Earth →')}</span>
-                  </article>
-                ))}
+                {MULTIVERSO.map(u => {
+                  const pr = progTierras.por[u.num]
+                  return (
+                    <article className="mv-card" key={u.num} style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u) }}
+                      role="button" tabIndex={0}
+                      onClick={() => abreTierra(u.num)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abreTierra(u.num) } }}>
+                      <span className="planeta planeta-mini" aria-hidden="true"><span className="planeta-recorte"><span className="planeta-textura" /></span></span>
+                      <span className="mv-num">{u.num}</span>
+                      <h2 className="mv-nombre">{u.nombre}</h2>
+                      <p className="mv-desc">{u.desc}</p>
+                      <span className="mv-estado">{u.estado}</span>
+                      <div className="barra mv-card-barra"><i style={{ width: `${pr.n ? 100 * pr.v / pr.n : 0}%` }} /></div>
+                      <span className="mv-card-pie">
+                        <span className="stat-foot">{pr.v} / {pr.n} {tr('vistos', 'watched')}</span>
+                        <span className="mv-entrar">{tr('Entrar →', 'Enter →')}</span>
+                      </span>
+                    </article>
+                  )
+                })}
               </div>
               )}
             </>

@@ -4,7 +4,7 @@
 // La versión va en el nombre: al subirla, el activate borra las cachés viejas.
 // Sin esto una carátula sustituida se quedaba con la vieja para siempre en quien
 // ya la tuviera guardada.
-const CACHE = 'maraton-marvel-v3'
+const CACHE = 'maraton-marvel-v4'
 // Cachés propias que NUNCA se barren al subir de versión: el espejo del
 // horario que escribe la app y las marcas de avisos ya enseñados. Barrerlas
 // mataba los recordatorios en cada despliegue y repetía a mitad de día las
