@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Comprobaciones que antes se hacían a mano y por eso a veces no se hacían.
 // Corre con `npm test`, y `npm run build` la ejecuta antes de compilar.
-import { readdirSync, existsSync, readFileSync } from 'node:fs'
+import { readdirSync, existsSync, readFileSync, mkdtempSync, copyFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { pathToFileURL } from 'node:url'
 import { raiz, cargaFuentes, ordenes, leeLock } from './contrato.mjs'
 
 const fallos = [], avisos = []
@@ -167,6 +169,30 @@ bien.push('ni dist/ ni docs/ llevan páginas de prueba')
     if (faltan.length) ojo(`supabase/catalogo.sql desfasado en ${faltan.length} título(s) (${faltan.slice(0, 3).map(x => x.id).join(', ')}…): npm run comunidad:catalogo y aplícalo en el SQL Editor`)
     else bien.push(`catálogo de la comunidad al día (${items.length} títulos)`)
   }
+}
+
+// ── 9 · Textos sin inglés ──
+// La prosa de data.js se traduce por src/en-textos.js con el texto EXACTO en
+// español como clave: un texto nuevo o retocado sin su entrada sale en español
+// a quien usa la app en inglés, sin que nada lo avise (23 sep 2026).
+{
+  const t = mkdtempSync(join(tmpdir(), 'maraton-en-'))
+  copyFileSync(join(raiz, 'src', 'en-textos.js'), join(t, 'en.mjs'))
+  const { EN_TEXTOS } = await import(pathToFileURL(join(t, 'en.mjs')))
+  const NEUTROS = new Set(['Sony', 'Fox', 'Disney+'])
+  const textos = []
+  const mira = (o, campos, donde) => o && campos.forEach(c => typeof o[c] === 'string' && o[c].trim() && textos.push([o[c], `${donde}.${c}`]))
+  DATA.forEach(sg => {
+    mira(sg, ['titulo', 'desc', 'uni'], sg.saga)
+    ;(sg.guia || []).forEach(g => mira(g, ['t', 'p'], `${sg.saga} (guía)`))
+    sg.eras.forEach(era => { mira(era, ['era'], sg.saga); era.items.forEach(it => mira(it, ['res', 'n', 'pc', 'pcn', 'uni', 'h'], it.id)) })
+  })
+  ESTRENOS.forEach(e => mira(e, ['n', 'tipo', 'aprox'], 'estreno'))
+  ;(fuentes.MULTIVERSO || []).forEach(u => mira(u, ['nombre', 'estado', 'desc', 'doom'], u.num))
+  const faltan = textos.filter(([x]) => EN_TEXTOS[x] === undefined && !NEUTROS.has(x) && !/^[^A-Za-zÀ-ÿ]+$/.test(x))
+  if (faltan.length) ojo(`${faltan.length} texto(s) sin inglés en src/en-textos.js (salen en español en English):\n` +
+    faltan.slice(0, 8).map(([x, d]) => `      ${d}: «${x.slice(0, 70)}»`).join('\n'))
+  else bien.push(`los ${textos.length} textos de data.js tienen su inglés`)
 }
 
 // ── informe ──

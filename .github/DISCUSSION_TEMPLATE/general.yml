@@ -4,29 +4,31 @@ body:
     attributes:
       value: |
         Charla, teorías y todo lo que sea Marvel y X-Men. Antes de publicar, recuerda las [normas](https://github.com/Ssebv/maraton-marvel/blob/main/comunidad/normas.md): respeto siempre y nada de piratería.
+
+        *Chat, theories and all things Marvel and X-Men, in English or Spanish. Be respectful, no piracy.*
   - type: dropdown
     id: tipo
     attributes:
-      label: ¿De qué va?
+      label: ¿De qué va? · What's it about?
       options:
-        - Charla
-        - Teoría
-        - Reseña
-        - Noticia
+        - Charla · Chat
+        - Teoría · Theory
+        - Reseña · Review
+        - Noticia · News
         - Meme
     validations:
       required: true
   - type: input
     id: spoilers
     attributes:
-      label: ¿Tiene spoilers? ¿De qué?
-      description: Si tiene, ponlo también en el título, por ejemplo «[Spoilers de Loki T2] …». Así nadie se come uno sin querer.
-      placeholder: "Ej.: spoilers de Endgame / sin spoilers"
+      label: ¿Tiene spoilers? ¿De qué? · Any spoilers? For what?
+      description: Si tiene, ponlo también en el título, por ejemplo «[Spoilers de Loki T2] …». Así nadie se come uno sin querer. · If so, put them in the title too, e.g. «[Loki S2 spoilers] …».
+      placeholder: "Ej. / e.g.: Endgame spoilers / no spoilers"
     validations:
       required: true
   - type: textarea
     id: texto
     attributes:
-      label: Cuéntanos
+      label: Cuéntanos · Tell us
     validations:
       required: true

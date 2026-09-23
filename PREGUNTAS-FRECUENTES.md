@@ -1,5 +1,7 @@
 # Preguntas frecuentes
 
+🇬🇧 [FAQ in English](FAQ.md)
+
 ¿No encuentras tu respuesta? Pregunta en las [Discusiones](https://github.com/Ssebv/maraton-marvel/discussions/categories/q-a).
 
 **Índice**

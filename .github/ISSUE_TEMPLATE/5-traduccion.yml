@@ -1,0 +1,33 @@
+name: 🌐 Traducción · Translation
+description: Algo en español dentro de la app en inglés, o una traducción rara. · Spanish showing in the English app, or an odd translation.
+title: "[Translation] "
+labels: [translation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping the app speak English! If you'd rather fix it yourself, [TRANSLATING.md](https://github.com/Ssebv/maraton-marvel/blob/main/TRANSLATING.md) shows where each text lives.
+
+        *¡Gracias! Puedes escribir en español o en inglés.*
+  - type: textarea
+    id: donde
+    attributes:
+      label: Where did you see it? · ¿Dónde lo viste?
+      description: The screen or title, and the text as it appears. A screenshot helps a lot (drag it here).
+      placeholder: "e.g.: on the Loki page, under the rating, it says «Fuera del tiempo»"
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: How would you word it? · ¿Cómo lo dirías?
+      placeholder: "e.g.: Outside time"
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: What kind of text? · ¿Qué tipo de texto?
+      options:
+        - A button, menu or message · Un botón, menú o mensaje
+        - A synopsis, note or guide · Una sinopsis, nota o guía
+        - A movie, series or episode title · Un título de película, serie o episodio
+        - Not sure · No sé

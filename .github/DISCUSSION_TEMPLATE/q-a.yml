@@ -4,9 +4,11 @@ body:
     attributes:
       value: |
         Preguntas sobre la app o sobre la maratón («¿hace falta ver Agents of S.H.I.E.L.D.?»). Cuando alguien te responda bien, márcala como respuesta.
+
+        *Questions about the app or the marathon ("do I need Agents of S.H.I.E.L.D.?"), in English or Spanish. Mark the best reply as the answer.*
   - type: textarea
     id: pregunta
     attributes:
-      label: Tu pregunta
+      label: Tu pregunta · Your question
     validations:
       required: true

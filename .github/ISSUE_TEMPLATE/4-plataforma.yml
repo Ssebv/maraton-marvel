@@ -1,5 +1,5 @@
-name: 📺 Plataforma mal en mi país
-description: La app dice que algo está en una plataforma y no está (o al revés).
+name: 📺 Plataforma mal en mi país · Wrong streaming service in my country
+description: La app dice que algo está en una plataforma y no está (o al revés). · The app says a title is on a service and it isn't (or vice versa).
 title: "[Plataforma] "
 labels: [plataforma]
 body:
@@ -7,16 +7,18 @@ body:
     attributes:
       value: |
         Los datos de plataformas vienen de JustWatch y cambian seguido. Con tu aviso lo revisamos a mano.
+
+        *Streaming data comes from JustWatch and changes often. We'll check it by hand.*
   - type: input
     id: titulo
     attributes:
-      label: ¿Qué título?
+      label: ¿Qué título? · Which title?
     validations:
       required: true
   - type: dropdown
     id: pais
     attributes:
-      label: ¿En qué país estás?
+      label: ¿En qué país estás? · Which country are you in?
       options:
         - España
         - Argentina
@@ -42,7 +44,7 @@ body:
   - type: textarea
     id: que-dice
     attributes:
-      label: ¿Qué dice la app y qué es lo correcto?
-      placeholder: "Ej.: dice Disney+, pero hoy solo está para arrendar en Apple TV"
+      label: ¿Qué dice la app y qué es lo correcto? · What does the app say, and what's right?
+      placeholder: "Ej. / e.g.: it says Disney+, but today it is rent-only on Apple TV"
     validations:
       required: true

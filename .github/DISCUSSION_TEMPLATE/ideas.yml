@@ -4,13 +4,15 @@ body:
     attributes:
       value: |
         Ideas para la app que quieras conversar con la comunidad antes de pedirlas. Si ya la tienes clara, también puedes [abrir un aviso](https://github.com/Ssebv/maraton-marvel/issues/new/choose).
+
+        *Ideas for the app you'd like to talk over with the community first, in English or Spanish.*
   - type: textarea
     id: idea
     attributes:
-      label: ¿Qué te gustaría?
+      label: ¿Qué te gustaría? · What would you like?
     validations:
       required: true
   - type: textarea
     id: para-que
     attributes:
-      label: ¿Para qué te serviría?
+      label: ¿Para qué te serviría? · How would it help you?

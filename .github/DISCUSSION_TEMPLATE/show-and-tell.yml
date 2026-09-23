@@ -4,10 +4,12 @@ body:
     attributes:
       value: |
         Muestra en qué va tu maratón: una captura de tu progreso, tu calendario, tus logros o tu plan para llegar a Doomsday.
+
+        *Show where your marathon is at: a screenshot of your progress, calendar, achievements or Doomsday plan.*
   - type: textarea
     id: muestra
     attributes:
-      label: Tu maratón
-      description: Arrastra aquí tus capturas. Si quieres, pega el enlace de tu perfil (Perfil › Compartir perfil).
+      label: Tu maratón · Your marathon
+      description: Arrastra aquí tus capturas. Si quieres, pega el enlace de tu perfil (Perfil › Compartir perfil). · Drag your screenshots here, or paste your profile link (Profile › Share profile).
     validations:
       required: true

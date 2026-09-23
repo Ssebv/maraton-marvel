@@ -2674,7 +2674,9 @@ const ORIGINALES = new WeakMap()
 function traduce(obj, campos, pasa) {
   if (!obj) return
   let orig = ORIGINALES.get(obj)
-  if (!orig) { orig = {}; campos.forEach(c => { orig[c] = obj[c] }); ORIGINALES.set(obj, orig) }
+  if (!orig) { orig = {}; ORIGINALES.set(obj, orig) }
+  // por campo: un objeto puede pasar por dos llamadas con campos distintos
+  campos.forEach(c => { if (!(c in orig)) orig[c] = obj[c] })
   campos.forEach(c => { if (typeof orig[c] === 'string') obj[c] = pasa(orig[c]) })
 }
 // El idioma vivo, a nivel de módulo: lo fija aplicaTitulos antes de cada
@@ -2721,7 +2723,9 @@ function aplicaTitulos(pais, idioma = IDIOMA_ACTUAL) {
       era.items.forEach(it => {
         it.t = titulo(it.id, s.saga)
         TITULOS[it.id] = it.t
-        traduce(it, ['res', 'n', 'pc', 'pcn', 'uni'], pasa)
+        traduce(it, ['res', 'n', 'pc', 'pcn', 'uni', 'h'], pasa)
+        // autores y dirección: «Lee y Kirby» → «Lee & Kirby», «(creadores)» → «(creators)»
+        traduce(it, ['a', 'dir'], en ? x => x.replace(/ y /g, ' & ').replace(/\(creador(a?)\)/, '(creator)').replace('(creadores)', '(creators)') : x => x)
       })
     })
   })
@@ -4150,7 +4154,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
             </>) : (<>
               <span className="nf-eyebrow">{tr('Maratón completo', 'Marathon complete')}</span>
               <h2 className="nf-cartel-t">{tr('Lo viste todo', 'You watched it all')}</h2>
-              <p className="nf-res">{tr('Quedan los cómics, la bóveda de animación y volver a tus favoritas.', 'There are still the comics, the animation vault and your favourites to rewatch.')}</p>
+              <p className="nf-res">{tr('Quedan los cómics, la bóveda de animación y volver a tus favoritas.', 'There are still the comics, the animation vault and your favorites to rewatch.')}</p>
             </>)}
           </div>
         </section>
@@ -4170,7 +4174,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
       <FilaNf titulo={tr('Rumbo a Doomsday', 'Toward Doomsday')} sub={tr('la ruta express', 'the express route')} items={pendientes.filter(d => d.item.exp).slice(0, 20)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
       <FilaNf titulo={tr('Top 10 del maratón', 'Marathon top 10')} sub={tr('por nota de IMDb', 'by IMDb rating')} items={top} numerada vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
       <FilaNf titulo={tr('Visto hace poco', 'Recently watched')} items={recientes} ancha vistas={vistas} onAbrir={onAbrir} />
-      <FilaNf titulo={tr('Tus favoritas', 'Your favourites')} sub={tr('4 y 5 estrellas', '4 and 5 stars')} items={favoritas} vistas={vistas} onAbrir={onAbrir} />
+      <FilaNf titulo={tr('Tus favoritas', 'Your favorites')} sub={tr('4 y 5 estrellas', '4 and 5 stars')} items={favoritas} vistas={vistas} onAbrir={onAbrir} />
       <ProximamenteNf onAbrir={onAbrir} />
       {/* tus listas, con su propio progreso (el de re-ver con alguien) */}
       {listas.map(l => {
@@ -4876,6 +4880,12 @@ const ORBITAS = {
 // en el sistema solar las etiquetas giran con su planeta y, a escala de
 // móvil, las largas se pisaban con las vecinas: nombre corto (el completo va
 // en el title y en la ficha de la Tierra)
+// El nombre de una Tierra (`num`) es también su clave (órbitas, colores, la
+// Tierra abierta), así que no pasa por aplicaTitulos: se traduce al pintarlo.
+// En inglés salían «Tierra-616», «El Vacío» y «4F de Fox» (23 sep 2026).
+const NUM_EN = { 'El Vacío': 'The Void', 'Universos What If': 'What If universes', 'Universo Sony': 'Sony universe',
+  'Tierra-616 (cómics)': 'Earth-616 (comics)', '616 cómics': '616 comics', '4F de Fox': "Fox's FF" }
+const numTierra = s => (IDIOMA_ACTUAL === 'en' ? NUM_EN[s] || s.replace(/^Tierra-/, 'Earth-').replace(/^T-/, 'E-') : s)
 const CORTO_SISTEMA = { 'Universo Sony': 'Sony', 'Universos What If': 'What If', 'Tierra-616 (cómics)': '616 cómics', 'Marvel Zombies': 'Zombies', 'Tierra-121698': '4F de Fox' }
 
 // Cabecera de Perfil y Multiverso (14 sep 2026): antes repetían la del
@@ -8863,7 +8873,7 @@ export default function App() {
               sg.eras.forEach(era => era.items.forEach(item => {
                 const m = (item.h || '').match(/\d{4}/g)
                 let inicio = m ? parseInt(m[0]) : null
-                if (!inicio && /años 60/i.test(item.h || '')) inicio = 1965
+                if (!inicio && /años 60|'60s/i.test(item.h || '')) inicio = 1965
                 const entrada = { item, c: era.c, saga: sg.saga }
                 if (!inicio) { fuera.push(entrada); return }
                 if (!años.has(inicio)) años.set(inicio, [])
@@ -9025,7 +9035,7 @@ export default function App() {
                 <header className="tierra-hero">
                   <Orbe clase="planeta-grande" rasgo={u.rasgo} />
                   <div className="tierra-cab">
-                    <span className="mv-num tierra-num">{u.num}</span>
+                    <span className="mv-num tierra-num">{numTierra(u.num)}</span>
                     <h2 className="tierra-nombre">{u.nombre}</h2>
                     <span className="tierra-estado">{u.estado}</span>
                   </div>
@@ -9050,7 +9060,7 @@ export default function App() {
                           <button key={o.num} className="cruce" style={{ '--tc': o.c }}
                             onClick={() => conTransicion('adelante', () => setTierra(o.num))}
                             aria-label={`${o.num}: ${o.nombre}. ${n} ${n === 1 ? tr('título en común', 'shared title') : tr('títulos en común', 'shared titles')}`}>
-                            <span className="mv-fila-punto" aria-hidden="true" />{CORTO_SISTEMA[o.num] || o.num}<small>{n}</small>
+                            <span className="mv-fila-punto" aria-hidden="true" />{numTierra(CORTO_SISTEMA[o.num] || o.num)}<small>{n}</small>
                           </button>
                         ))}
                       </div>
@@ -9149,7 +9159,7 @@ export default function App() {
                             style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u), '--t': tam }}
                             {...(nombres ? {} : {
                               onClick: () => pulsaPlaneta(u), title: u.nombre, 'aria-pressed': mvSel === u.num, 'data-tierra': u.num,
-                              'aria-label': `${u.num}: ${u.nombre}. ${pr.v} / ${pr.n}`,
+                              'aria-label': `${numTierra(u.num)}: ${u.nombre}. ${pr.v} / ${pr.n}`,
                               onPointerEnter: () => setMvSobre(u.num), onPointerLeave: () => setMvSobre(null),
                               onFocus: () => setMvSobre(u.num), onBlur: () => setMvSobre(null),
                             })}>
@@ -9173,7 +9183,7 @@ export default function App() {
                       }
                       return (
                         <div className={nombres ? 'sistema-capa sistema-nombres' : 'sistema-capa'} key={String(nombres)} aria-hidden={nombres || undefined}>
-                          {pieza(u616, 'sol', 92, 'Tierra-616')}
+                          {pieza(u616, 'sol', 92, numTierra('Tierra-616'))}
                           {MULTIVERSO.filter(u => ORBITAS[u.num]).map(u => {
                             const [r, fase, dur, dir, tam] = ORBITAS[u.num]
                             return (
@@ -9182,7 +9192,7 @@ export default function App() {
                                 <div className="giro" style={{ animationDuration: dur + 's' }}>
                                   <div className="nav-pos" style={{ transform: `translate(-50%, -50%) rotate(${-fase}deg)` }}>
                                     <div className="contra" style={{ animationDuration: dur + 's' }}>
-                                      {pieza(u, 'planeta-nav', tam, CORTO_SISTEMA[u.num] || u.num.replace('Tierra-', 'T-'))}
+                                      {pieza(u, 'planeta-nav', tam, numTierra(CORTO_SISTEMA[u.num] || u.num.replace('Tierra-', 'T-')))}
                                     </div>
                                   </div>
                                 </div>
@@ -9202,7 +9212,7 @@ export default function App() {
                   return (
                     <section className="mv-sel" style={{ '--tc': u.c, '--fase': MULTIVERSO.indexOf(u) }} aria-live="polite" key={u.num}>
                       <Orbe clase="planeta-mini" rasgo={u.rasgo} />
-                      <span className="mv-num">{u.num}</span>
+                      <span className="mv-num">{numTierra(u.num)}</span>
                       <h2 className="mv-nombre">{u.nombre}</h2>
                       <span className="mv-estado">{u.estado}</span>
                       <div className="barra mv-card-barra"><i style={{ width: `${pr.n ? 100 * pr.v / pr.n : 0}%` }} /></div>
@@ -9217,7 +9227,7 @@ export default function App() {
                 {/* índice por anillo: en el móvil los planetas van sin nombre
                     (entre anillos quedan ~30 px y los nombres se pisaban) */}
                 <div className="mv-indice">
-                  {[{ t: ['El centro', 'The centre'], d: ['La línea sagrada', 'The sacred timeline'], nums: ['Tierra-616'] }, ...ANILLOS].map(a => {
+                  {[{ t: ['El centro', 'The center'], d: ['La línea sagrada', 'The sacred timeline'], nums: ['Tierra-616'] }, ...ANILLOS].map(a => {
                     const nums = a.nums || MULTIVERSO.filter(u => ORBITAS[u.num] && ORBITAS[u.num][0] === a.r).map(u => u.num)
                     return (
                       <section className="mv-anillo" key={a.t[0]}>
@@ -9227,7 +9237,7 @@ export default function App() {
                           return (
                             <button key={num} className={`mv-fila${pr.n && pr.v === pr.n ? ' completa' : ''}`} style={{ '--tc': u.c }} onClick={() => abreTierra(num)}>
                               <span className="mv-fila-punto" aria-hidden="true" />
-                              <span className="mv-fila-nombre"><b>{u.num}</b> {u.nombre}{u.opc ? <small className="mv-fila-opc">{tr('opcional', 'optional')}</small> : null}</span>
+                              <span className="mv-fila-nombre"><b>{numTierra(u.num)}</b> {u.nombre}{u.opc ? <small className="mv-fila-opc">{tr('opcional', 'optional')}</small> : null}</span>
                               <span className="mv-fila-cuenta">{pr.v}/{pr.n}</span>
                               <span className="mv-fila-barra" aria-hidden="true"><i style={{ width: `${pr.n ? 100 * pr.v / pr.n : 0}%` }} /></span>
                             </button>
@@ -9248,7 +9258,7 @@ export default function App() {
                       onClick={() => abreTierra(u.num)}
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abreTierra(u.num) } }}>
                       <Orbe clase="planeta-mini" rasgo={u.rasgo} />
-                      <span className="mv-num">{u.num}</span>
+                      <span className="mv-num">{numTierra(u.num)}</span>
                       <h2 className="mv-nombre">{u.nombre}</h2>
                       <p className="mv-desc">{u.desc}</p>
                       <span className="mv-estado">{u.estado}</span>

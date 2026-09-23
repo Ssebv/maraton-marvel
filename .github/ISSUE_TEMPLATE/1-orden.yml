@@ -1,5 +1,5 @@
-name: 🧭 Sugerir un cambio de orden
-description: ¿Algún título va antes o después de donde está? Cuéntanos.
+name: 🧭 Sugerir un cambio de orden · Suggest an order change
+description: ¿Algún título va antes o después de donde está? · Should a title come earlier or later?
 title: "[Orden] "
 labels: [orden]
 body:
@@ -7,24 +7,26 @@ body:
     attributes:
       value: |
         ¡Gracias! El orden de la app sigue la historia (cuándo ocurre), no la fecha de estreno. Si crees que algo está fuera de su sitio, cuéntanos por qué.
+
+        *Thanks! The app follows story order (when things happen), not release date. Write in English or Spanish, whichever you prefer.*
   - type: input
     id: titulo
     attributes:
-      label: ¿Qué título moverías?
-      placeholder: "Ej.: Capitana Marvel"
+      label: ¿Qué título moverías? · Which title would you move?
+      placeholder: "Ej. / e.g.: Captain Marvel"
     validations:
       required: true
   - type: input
     id: donde
     attributes:
-      label: ¿Dónde lo pondrías?
-      placeholder: "Ej.: justo antes de Iron Man"
+      label: ¿Dónde lo pondrías? · Where would you put it?
+      placeholder: "Ej. / e.g.: right before Iron Man"
     validations:
       required: true
   - type: textarea
     id: por-que
     attributes:
-      label: ¿Por qué?
-      description: Una escena, una fecha que sale en pantalla, un enlace… lo que te haga pensarlo. Si hay spoilers, avísalo al principio.
+      label: ¿Por qué? · Why?
+      description: Una escena, una fecha en pantalla, un enlace… Si hay spoilers, avísalo al principio. · A scene, an on-screen date, a link… Flag any spoilers up front.
     validations:
       required: true

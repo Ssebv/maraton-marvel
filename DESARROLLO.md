@@ -167,6 +167,7 @@ npm test        # comprueba el contrato, el dataset, los archivos y las reglas d
 npm run desplegar   # verifica → compila → copia a docs/ → vuelve a verificar
 npm run sonda       # Chrome sin cabeza contra dist/: humo, cupo, HIG, detalles, barra, fluidez, navegación, sistema, arranque y memoria
 npm run produccion  # tras el push: espera a que Pages sirva el md5 de docs/
+npm run build && node scripts/sondas/ingles.mjs  # recorre la app en inglés y lista lo que aún parece español
 npm run capturas    # rehace las capturas del README (capturas/es y capturas/en) contra dist/; luego a JPG con sips
 npm run comunidad:rls       # reglas de la base de la comunidad en un PostgreSQL local (67 comprobaciones)
 npm run comunidad:catalogo  # regenera supabase/catalogo.sql cuando entra un título
@@ -185,6 +186,8 @@ npm run comunidad:sonda     # reglas + cuenta + perfil y seguir + comunidades + 
 5. **TMDB**: el mapeo cuadra con `data.js` y avisa de los títulos sin mapear — sin él un título nace sin tráiler, sin reparto y sin plataforma.
 6. **Reglas del CSS**: ni `transition: all`, ni transiciones con `color`, `border-color` o `background` (se congelan al cambiar de tema), ni `border-radius` con valores sueltos.
 7. **Que no se publique una página de sonda**: las de prueba van a `dist/`, y `dist` se copia a `docs`. Ha pasado.
+8. **Catálogo de la comunidad** al día con `data.js` (aviso).
+9. **Textos sin inglés** (aviso, 23 sep 2026): cada texto de `data.js` que pasa por `aplicaTitulos` (sinopsis, notas, guías, eras, `uni`, `h`, estrenos y multiverso) tiene que tener su entrada en `src/en-textos.js`, con el español EXACTO como clave; si no, sale en español a quien usa la app en inglés. Los autores de cómic y la dirección no van al diccionario: en inglés «y» pasa a «&» y «(creador)» a «(creator)». Los nombres de las Tierras (`num`) son clave de órbitas y colores y se traducen al pintarlos con `numTierra()`. La guía para quien traduce, en inglés, está en `TRANSLATING.md`.
 
 **Qué comprueba `npm run sonda`** (`scripts/sondas/`, desde el 16 de septiembre de 2026; antes cada sesión rehacía estas sondas en una carpeta temporal y se perdían). Todas abren Chrome sin cabeza con un perfil nuevo que se borra al salir (un perfil reutilizado guarda el service worker y sirve la build vieja), un servidor propio sobre `dist/` y el protocolo de depuración por tubería; siembran el progreso y salen con código 1 si una comprobación falla. Cada comprobación mira el VALOR, no que la línea exista.
 

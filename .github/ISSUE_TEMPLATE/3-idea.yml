@@ -1,17 +1,17 @@
-name: 💡 Tengo una idea
-description: Una vista, un reto, un filtro, algo que te gustaría tener.
+name: 💡 Tengo una idea · I have an idea
+description: Una vista, un reto, un filtro… · A view, a challenge, a filter…
 title: "[Idea] "
 labels: [enhancement]
 body:
   - type: textarea
     id: idea
     attributes:
-      label: ¿Qué te gustaría?
-      placeholder: "Ej.: poder ver la maratón con un amigo y que se marque para los dos"
+      label: ¿Qué te gustaría? · What would you like?
+      placeholder: "Ej. / e.g.: watch with a friend and have it check off for both of us"
     validations:
       required: true
   - type: textarea
     id: para-que
     attributes:
-      label: ¿Para qué te serviría?
-      description: Saber qué problema resuelve ayuda a hacerlo bien.
+      label: ¿Para qué te serviría? · How would it help you?
+      description: Saber qué problema resuelve ayuda a hacerlo bien. · Knowing the problem helps get it right.

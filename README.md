@@ -1,5 +1,7 @@
 # 🍿 Maratón Marvel & X-Men
 
+🇬🇧 [Read in English](README.en.md)
+
 **Todo Marvel y X-Men, en el orden en que ocurre la historia.** Marca lo que vas viendo, descubre qué te falta y llega a *Vengadores: Doomsday* (18 de diciembre de 2026) al día.
 
 ### ➡️ [Abrir la app: ssebv.github.io/maraton-marvel](https://ssebv.github.io/maraton-marvel/)
@@ -68,6 +70,7 @@ Esta app mejora con la gente que la usa. Si tienes algo que decir, [abre un avis
 - 🐞 **¿Algo no funciona?** Cuéntanos qué pasó y desde qué teléfono o navegador.
 - 💡 **¿Se te ocurre una idea?** Una vista, un reto, un filtro… todo sirve.
 - 📺 **¿Una plataforma de tu país está mal?** Avísanos cuál y dónde la viste.
+- 🌐 **¿Algo sale en español con la app en inglés, o se tradujo raro?** Cuéntanos dónde. Si sabes inglés, aquí está [cómo se traduce](TRANSLATING.md).
 
 ¿Prefieres conversar? En las [**Discusiones**](https://github.com/Ssebv/maraton-marvel/discussions) puedes compartir teorías, preguntar si hace falta ver tal serie, proponer ideas o mostrar en qué va tu maratón.
 

@@ -1,37 +1,37 @@
-name: 🐞 Algo no funciona
-description: Un botón que no responde, algo que se ve mal, un dato equivocado…
+name: 🐞 Algo no funciona · Something's broken
+description: Un botón que no responde, algo que se ve mal, un dato equivocado… · A button that doesn't work, something that looks wrong, bad data…
 title: "[Error] "
 labels: [bug]
 body:
   - type: textarea
     id: que-paso
     attributes:
-      label: ¿Qué pasó?
-      description: Cuéntalo como se lo contarías a un amigo. Si puedes, adjunta una captura (arrástrala aquí).
+      label: ¿Qué pasó? · What happened?
+      description: Cuéntalo como se lo contarías a un amigo; si puedes, adjunta una captura. · Tell it like you'd tell a friend; a screenshot helps (drag it here).
     validations:
       required: true
   - type: textarea
     id: pasos
     attributes:
-      label: ¿Qué estabas haciendo justo antes?
-      placeholder: "Ej.: abrí la ficha de Loki, toqué «Episodios» y…"
+      label: ¿Qué estabas haciendo justo antes? · What were you doing right before?
+      placeholder: "Ej. / e.g.: I opened Loki, tapped Episodes and…"
   - type: dropdown
     id: dispositivo
     attributes:
-      label: ¿Desde dónde la usas?
+      label: ¿Desde dónde la usas? · What are you using it on?
       options:
         - iPhone o iPad
-        - Teléfono Android
-        - Computador
-        - Tele o tablet
-        - Otro
+        - Android
+        - Computador · Computer
+        - Tele o tablet · TV or tablet
+        - Otro · Other
     validations:
       required: true
   - type: dropdown
     id: instalada
     attributes:
-      label: ¿La tienes instalada como app o la abres en el navegador?
+      label: ¿Instalada como app o en el navegador? · Installed as an app or in the browser?
       options:
-        - Instalada (ícono en la pantalla de inicio)
-        - En el navegador
-        - No sé
+        - Instalada · Installed (home screen icon)
+        - En el navegador · In the browser
+        - No sé · Not sure

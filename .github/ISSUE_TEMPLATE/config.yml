@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: 🍿 Abrir la app
+  - name: 🍿 Abrir la app · Open the app
     url: https://ssebv.github.io/maraton-marvel/
-    about: Por si llegaste aquí buscando la maratón.
-  - name: 📜 Normas de la comunidad
+    about: Por si llegaste aquí buscando la maratón. · In case you came looking for the marathon.
+  - name: 📜 Normas de la comunidad · Community guidelines
     url: https://github.com/Ssebv/maraton-marvel/blob/main/comunidad/normas.md
-    about: Nada de spoilers fuera de su sitio, respeto siempre y nada de piratería.
+    about: Sin spoilers fuera de su sitio, respeto y nada de piratería. · No stray spoilers, be respectful, no piracy.
