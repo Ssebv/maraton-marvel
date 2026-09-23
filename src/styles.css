@@ -58,7 +58,20 @@
   --peligro:#C8102E;  /* lo destructivo y los errores: NO sigue al acento de universo */
   --sobre-acento:#fff;
   --tinte:10%; --cristal:72%;
-  --r-s:4px; --r-m:10px; --r-l:16px; --r-pill:999px;
+  --r-s:4px; --r-m:12px; --r-l:16px; --r-xl:24px; --r-pill:999px;
+  /* Estilo Norte (23 sep 2026, Sebastián: «quiero un estilo de mi app de
+     ahorro»): la FORMA de Norte con los colores de Marvel. Letra del sistema
+     (SF en Apple) para todo menos el titular, que sigue en Archivo Black;
+     superficies con filo de 1 px, brillo interior arriba y sombra en dos
+     capas; botones en píldora. */
+  --f-texto:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Roboto, sans-serif;
+  --f-titulo:-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, Roboto, sans-serif;
+  --filo:rgba(25,21,33,.08);
+  --sup-brillo:inset 0 1px 0 rgba(255,255,255,.7);
+  --sup-lustre:linear-gradient(180deg, rgba(255,255,255,.5), transparent 140px);
+  --sup-sombra:0 1px 2px rgba(25,21,33,.04), 0 10px 30px rgba(25,21,33,.06);
+  --sup-sombra-up:0 2px 4px rgba(25,21,33,.06), 0 18px 40px rgba(25,21,33,.12);
+  --marca-sombra:0 8px 22px color-mix(in srgb, var(--sello) 28%, transparent);
   /* Tipografía: siete pasos. La única excepción es el clamp del titular. */
   --t-xs:11px; --t-s:12px; --t-m:13px; --t-b:15px;
   --t-l:19px; --t-xl:24px; --t-xxl:40px;
@@ -123,6 +136,11 @@
     --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
     --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
     --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
+    --filo:rgba(255,255,255,.075);
+    --sup-brillo:inset 0 1px 0 rgba(255,255,255,.06);
+    --sup-lustre:linear-gradient(180deg, rgba(255,255,255,.03), transparent 140px);
+    --sup-sombra:0 1px 2px rgba(0,0,0,.45), 0 10px 30px rgba(0,0,0,.35);
+    --sup-sombra-up:0 2px 4px rgba(0,0,0,.45), 0 18px 40px rgba(0,0,0,.55);
   }
 }
 :root[data-theme="dark"]{
@@ -138,6 +156,11 @@
   --era-tinta:60%;  /* parte de color de era o de Tierra en su texto */
   --card-shadow:0 1px 1px rgba(0,0,0,.30), 0 3px 10px rgba(0,0,0,.26);
   --card-shadow-up:0 2px 8px rgba(0,0,0,.40), 0 20px 50px rgba(0,0,0,.50);
+  --filo:rgba(255,255,255,.075);
+  --sup-brillo:inset 0 1px 0 rgba(255,255,255,.06);
+  --sup-lustre:linear-gradient(180deg, rgba(255,255,255,.03), transparent 140px);
+  --sup-sombra:0 1px 2px rgba(0,0,0,.45), 0 10px 30px rgba(0,0,0,.35);
+  --sup-sombra-up:0 2px 4px rgba(0,0,0,.45), 0 18px 40px rgba(0,0,0,.55);
 }
 
 /* Reducir transparencia (ajuste del sistema): el velo del modal deja de
@@ -194,7 +217,8 @@ html{
 html{-webkit-text-size-adjust:100%}
 body{
   background:var(--bg); color:var(--ink);
-  font:15px/1.55 "Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font:15px/1.5 var(--f-texto); letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
   margin: 0;
   padding-top:env(safe-area-inset-top);
   padding-left:env(safe-area-inset-left);
@@ -297,9 +321,9 @@ h1 .rojo{color:var(--red)}
    y sombra; el fondo se queda porque van sobre el fotograma del hero y el
    texto necesita superficie para leerse. El único foco es la cuenta atrás. */
 .stat{
-  background:var(--panel); border:none; border-radius:var(--r-m);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
   padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-2);
-  box-shadow:none;
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .stat-label{
   font-size: var(--t-xs); font-weight:600; letter-spacing:.02em;
@@ -307,7 +331,7 @@ h1 .rojo{color:var(--red)}
 }
 .siguiente-stat .stat-label{color:var(--red)}
 .stat-num{
-  font-family:"Archivo",sans-serif; font-weight:700;
+  font-family:var(--f-titulo); font-weight:700;
   font-size: var(--t-xl); letter-spacing:-.01em; line-height:1.1;
   font-variant-numeric:tabular-nums;
 }
@@ -339,9 +363,9 @@ h1 .rojo{color:var(--red)}
 }
 .mapa{
   width:100%;
-  background:var(--panel); border:none; border-radius:var(--r-m);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
   padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-4);
-  box-shadow:none;
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .mapa-fila{display:flex; align-items:center; gap: var(--e-4)}
 .mapa-label{
@@ -364,22 +388,23 @@ h1 .rojo{color:var(--red)}
 
 .cuenta{
   display:flex; align-items:center; justify-content:space-between; gap: var(--e-6); flex-wrap:wrap;
-  background:var(--panel);
-  border:1.5px solid color-mix(in srgb, var(--doom) 55%, var(--line));
-  border-radius:var(--r-m); padding: var(--e-5) var(--e-6);
+  background:var(--sup-lustre), var(--panel);
+  border:1px solid color-mix(in srgb, var(--doom) 45%, var(--filo));
+  border-radius:var(--r-xl); padding: var(--e-5) var(--e-6);
   animation:riseIn .5s var(--curva) both;
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .cuenta-info{display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
 .cuenta-label{
   font-size: var(--t-xs); font-weight:700; letter-spacing:.02em;
   color:var(--doom);
 }
-.cuenta-titulo{font-family:"Archivo",sans-serif; font-weight:700; font-size: var(--t-l); text-transform:uppercase; letter-spacing:.01em}
+.cuenta-titulo{font-family:var(--f-titulo); font-weight:700; font-size: var(--t-l); text-transform:uppercase; letter-spacing:.01em}
 .cuenta-fecha{font-size: var(--t-m); color:var(--ink2)}
 .cuenta-reloj{display:flex; align-items:baseline; gap: var(--e-3)}
 .cr-bloque{display:flex; flex-direction:column; align-items:center; min-width:52px}
 .cr-bloque b{
-  font-family:"Archivo",sans-serif; font-weight:700;
+  font-family:var(--f-titulo); font-weight:700;
   font-size: var(--t-xl); font-variant-numeric:tabular-nums;
   letter-spacing:-.01em; color:var(--doom); line-height:1.1;
 }
@@ -387,9 +412,9 @@ h1 .rojo{color:var(--red)}
 .cr-sep{font-size: var(--t-xl); font-weight:700; color:var(--ink3); align-self:flex-start; padding-top: var(--e-1)}
 .proximos{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap: var(--e-4)}
 .proximo{
-  background:var(--panel); border:none; border-radius:var(--r-m);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
   padding: var(--e-4) var(--e-5); display:flex; flex-direction:row; align-items:flex-start; gap: var(--e-4);
-  box-shadow:none;
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 /* carátula a la izquierda y el texto en columna, como en las tarjetas de la lista */
 .proximo-cara{flex:none}
@@ -524,7 +549,7 @@ h1 .rojo{color:var(--red)}
 .pf-cabecera .avatar-ini.avatar-grande{font-size: var(--t-xl)}
 .pf-titulos{display:flex; flex-direction:column; gap: var(--e-2); min-width:0}
 .pf-nombre{
-  margin: 0; font-family:"Archivo",sans-serif; font-weight:700; font-size: var(--t-xl);
+  margin: 0; font-family:var(--f-titulo); font-weight:700; font-size: var(--t-xl);
   letter-spacing:-.01em; text-transform:none; color:var(--ink);
 }
 .pf-papel{margin: 0; font-size: var(--t-b); color:var(--ink2)}
@@ -561,10 +586,11 @@ h1 .rojo{color:var(--red)}
 /* Bloques de mensaje: misma caja, tres intenciones.
    neutro = no hay nada · info = algo que conviene saber · peligro = vas a destruir algo */
 .aviso{
-  padding: var(--e-5) var(--e-5); border-radius:var(--r-m);
-  background:var(--panel); border:1.5px dashed var(--line);
+  padding: var(--e-5) var(--e-5); border-radius:var(--r-l);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo);
   display:flex; flex-direction:column; gap: var(--e-4);
   animation:entraVista var(--dur-media) var(--curva) both;
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .aviso.info{background:var(--gold-soft); border-color:color-mix(in srgb, var(--gold) 45%, transparent)}
 .aviso.peligro{background:var(--peligro-soft); border-style:solid; border-color:color-mix(in srgb, var(--peligro) 45%, var(--line))}
@@ -582,7 +608,7 @@ h1 .rojo{color:var(--red)}
 
 
 .sr-titulo{
-  margin: 0; font-family:"Archivo",sans-serif; font-weight:700; font-size: var(--t-l);
+  margin: 0; font-family:var(--f-titulo); font-weight:700; font-size: var(--t-l);
   text-transform:uppercase; letter-spacing:.01em;
 }
 .sr-detalle{margin: 0 0 var(--e-3); font-size: var(--t-b); color:var(--ink2); max-width:52ch; text-wrap:pretty}
@@ -590,7 +616,7 @@ h1 .rojo{color:var(--red)}
 /* un botón que no puede hacer nada debe parecerlo */
 /* Apagado = neutro, no el degradado rojo lavado: «Crear lista» sin nombre
    salía como una pastilla roja sucia y parecía un fallo, no un estado. */
-.accion-principal:disabled{background:var(--panel2); color:var(--ink3); cursor:not-allowed; opacity:1; filter:none}
+.accion-principal:disabled{background:var(--panel2); color:var(--ink3); cursor:not-allowed; opacity:1; filter:none; box-shadow:none}
 .accion-principal:disabled:hover{filter:none}
 
 /* ── Barra de herramientas fija ── */
@@ -658,10 +684,10 @@ h1 .rojo{color:var(--red)}
 .toolbar{
   position:sticky; top:calc(env(safe-area-inset-top, 0px) + 10px); z-index:10;
   margin: var(--e-5) 0 var(--e-2); padding: var(--e-4) var(--e-5);
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:var(--r-l);
-  box-shadow:0 14px 34px -18px rgba(0,0,0,.55);
+  background:var(--sup-lustre), var(--panel);
+  border:1px solid var(--filo);
+  border-radius:var(--r-xl);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 @supports not (background:color-mix(in srgb, red 50%, blue)){
   .toolbar{background:var(--bg)}
@@ -779,7 +805,7 @@ a.tab{text-decoration:none}
 .saga{margin-top: var(--e-9); scroll-margin-top:80px}
 .saga-head{display:flex; align-items:baseline; gap: var(--e-4); flex-wrap:wrap}
 h2{
-  margin: 0; font-family:"Archivo",sans-serif; font-weight:700;
+  margin: 0; font-family:var(--f-titulo); font-weight:700;
   font-size: var(--t-l); text-transform:uppercase; letter-spacing:.01em;
 }
 .saga[data-saga="xmen"] h2{color:var(--gold-texto)}
@@ -915,10 +941,10 @@ h3{
      y cuatro cajas flotando no destacan nada y el ojo lo paga igual.
      La sombra sólida desplazada se queda, pero solo al pasar por encima:
      ahí sí significa algo, y es identidad de la casa. */
-  background:var(--panel);
-  border:none;
-  border-radius:var(--r-m); padding: var(--e-5);
-  box-shadow:none;
+  background:var(--sup-lustre), var(--panel);
+  border:1px solid var(--filo);
+  border-radius:var(--r-xl); padding: var(--e-5);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
   transition:transform var(--muelle), box-shadow var(--dur-media), opacity var(--dur-larga);
   /* La lista entra escalonada (30 ms por tarjeta, tope 360): es LA animación
      de la vista, así que main no se funde además — ver main.crono más abajo. */
@@ -930,8 +956,8 @@ h3{
    cambio de borde saltaba sin transición (no puede llevarla: congela el
    tema) y el giro de la carátula era un cuarto movimiento simultáneo. */
 .card:hover{
-  transform:translate(-2px, -3px);
-  box-shadow:5px 6px 0 color-mix(in srgb, var(--glow, var(--red)) 40%, transparent);
+  transform:translateY(-3px);
+  box-shadow:var(--sup-brillo), var(--sup-sombra-up);
 }
 .card:active{transform:translateY(-1px) scale(.997)}
 /* El check verde, el sello y la carátula apagada ya dicen "vista": la
@@ -1076,7 +1102,8 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
    Los 44 se completan en táctil, creciendo de verdad y separando las filas. */
 .ghost{position:relative}
 .ghost::after{content:""; position:absolute; inset:-4px 0}
-.ghost:hover{color:var(--ink); border-color:var(--ink2); background:var(--panel2)}
+.ghost:hover{color:var(--ink); border-color:var(--ink3); background:var(--panel2)}
+.ghost:active{transform:scale(.96)}
 
 /* ── Ficha de detalle ── */
 .overlay{
@@ -1100,13 +1127,13 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 @keyframes fueraVelo{to{opacity:0}}
 @keyframes fueraHoja{to{opacity:0; transform:translateY(8px) scale(.98)}}
 .modal{
-  position:relative; background:var(--panel); border:1px solid var(--line);
-  border-radius:var(--r-l); max-width:900px; width:100%; max-height:88vh;
+  position:relative; background:var(--sup-lustre), var(--panel); border:1px solid var(--filo);
+  border-radius:var(--r-xl); max-width:900px; width:100%; max-height:88vh;
   overflow-y:auto; overflow-x:clip;
   overscroll-behavior:contain;
   --pad: var(--e-7);
   padding: var(--pad); display:flex; gap: var(--e-7);
-  box-shadow:var(--card-shadow-up);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
   animation:riseIn var(--muelle) both;
 }
 .cerrar{
@@ -1132,7 +1159,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 @media (max-width:900px){ .modal-cover .cover{width:190px; height:285px} }
 .modal-info{flex:1; min-width:0; display:flex; flex-direction:column; gap: var(--e-4)}
 .modal-chips{display:flex; flex-wrap:wrap; gap: var(--e-3)}
-.modal-titulo{font-family:"Archivo",sans-serif; font-weight:700; font-size: var(--t-xl); margin: 0; text-transform:none; letter-spacing:-.01em}
+.modal-titulo{font-family:var(--f-titulo); font-weight:700; font-size: var(--t-xl); margin: 0; text-transform:none; letter-spacing:-.01em}
 .modal-meta{margin: 0; font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
 .modal-meta .star{color:var(--gold-texto); font-weight:700}
 .modal-meta .hist{color:var(--blue); font-weight:600}
@@ -1183,15 +1210,25 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 .persona-rol{font-size: var(--t-xs); font-weight:600; letter-spacing:0; color:var(--ink3)}
 .modal-acciones{display:flex; gap: var(--e-3); flex-wrap:wrap; margin-top: var(--e-3); align-items:center}
 .accion-principal{
-  border:none; border-radius:var(--r-pill); padding: var(--e-4) var(--e-6); cursor:pointer;
-  font-size: var(--t-b); font-weight:700; color:#fff;
-  background:linear-gradient(120deg, var(--sello), var(--calido));
+  border:none; border-radius:var(--r-pill); padding: var(--e-3) var(--e-6); min-height:44px; cursor:pointer;
+  font-size: var(--t-b); font-weight:600; color:#fff;
+  background:linear-gradient(135deg, color-mix(in srgb, var(--sello) 80%, #fff), var(--sello) 45%, var(--calido));
+  box-shadow:var(--marca-sombra);
   transition:transform var(--muelle-toque), filter var(--dur-corta);
   position:relative; overflow:hidden;
 }
-.accion-principal:hover{filter:brightness(1.1)}
-.accion-principal:active{transform:scale(.97)}
-.accion-principal.hecha{background:var(--done); color:var(--sobre-acento)}
+/* el brillo que cruza el botón al pasar el ratón, como en Norte */
+.accion-principal::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(100deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
+  transform:translateX(-120%);
+}
+@media (hover:hover) and (prefers-reduced-motion:no-preference){
+  .accion-principal:hover::after{transform:translateX(120%); transition:transform .7s var(--curva)}
+}
+.accion-principal:hover{filter:brightness(1.06)}
+.accion-principal:active{transform:scale(.96)}
+.accion-principal.hecha{background:var(--done); color:var(--sobre-acento); box-shadow:0 8px 22px color-mix(in srgb, var(--done) 26%, transparent)}
 @media (max-width:640px){
   .modal{--pad: var(--e-6); flex-direction:column; padding: var(--pad); gap: var(--e-5)}
   /* apilado no hay columna que seguir: el sticky estorbaría */
@@ -1364,8 +1401,9 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 .stats-vista{display:flex; flex-direction:column; gap: var(--e-6); margin-top: var(--e-6)}
 .stats-tiles{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap: var(--e-4)}
 .grafica{
-  background:var(--panel); border:none; border-radius:var(--r-m);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
   padding: var(--e-6) var(--e-6);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .grafica-titulo{margin: 0 0 var(--e-1); font-size: var(--t-b); font-weight:700; letter-spacing:normal; text-transform:none; color:var(--ink)}
 .grafica-sub{margin: 0 0 var(--e-5); font-size: var(--t-s); color:var(--ink2)}
@@ -1714,8 +1752,9 @@ main.galeria{margin-top: var(--e-6)}
 .mv-sel-ayuda{margin: 0 0 var(--e-5); text-align:center; font-size: var(--t-s); color:var(--ink2)}
 .mv-sel{
   position:relative; margin: 0 auto var(--e-6); max-width:560px; padding: var(--e-5) var(--e-6); padding-right:88px;
-  background:var(--panel); border:1.5px solid color-mix(in srgb, var(--tc) 45%, var(--line)); border-radius:var(--r-m);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
   display:flex; flex-direction:column; gap: var(--e-2); animation:entraVista var(--dur-media) var(--curva) both;
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .mv-sel .mv-num{align-self:flex-start; color:color-mix(in srgb, var(--tc) var(--era-tinta), var(--ink)); background:color-mix(in srgb, var(--tc) 15%, transparent)}
 .mv-sel .mv-card-barra{margin-top: var(--e-2)}
@@ -1874,11 +1913,12 @@ main.multiverso{margin-top: var(--e-6)}
    escalonadas: dos animaciones y más del doble del tope de 300 ms. */
 .tierra{animation:entraVista var(--dur-media) var(--curva) both}
 .tierra-hero{
-  margin: var(--e-5) 0 var(--e-5); padding: var(--e-6) var(--e-7); padding-right: 210px; border-radius:var(--r-l);
+  margin: var(--e-5) 0 var(--e-5); padding: var(--e-6) var(--e-7); padding-right: 210px; border-radius:var(--r-xl);
   position:relative;
-  border:1.5px solid color-mix(in srgb, var(--tc) 45%, var(--line));
-  background:var(--panel);
+  border:1px solid var(--filo);
+  background:var(--sup-lustre), var(--panel);
   display:flex; flex-direction:column; gap: var(--e-3);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 /* El color de una Tierra pinta el planeta, no sirve de texto (el dorado sobre
    pergamino se quedaba en 1,9:1): para leerse se mezcla con la tinta en la
@@ -1965,9 +2005,10 @@ main.listas-vista{margin-top: var(--e-6)}
   .crear-lista .accion-principal{flex:none; padding: var(--e-3) var(--e-5)}
 }
 .lista-hero{
-  margin: var(--e-5) 0 var(--e-5); padding: var(--e-6) var(--e-6); border-radius:var(--r-l);
-  border:none; background:var(--panel);
+  margin: var(--e-5) 0 var(--e-5); padding: var(--e-6) var(--e-6); border-radius:var(--r-xl);
+  border:1px solid var(--filo); background:var(--sup-lustre), var(--panel);
   display:flex; flex-direction:column; gap: var(--e-3);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .lista-nombre{margin: 0; font-size: var(--t-xl); font-weight:700; text-transform:none; letter-spacing:-.01em}
 .agregar-lista{display:flex; flex-direction:column; gap: var(--e-3); margin-top: var(--e-3)}
@@ -1988,7 +2029,7 @@ main.tiempo{margin-top: var(--e-6)}
 .tl-fila{display:grid; grid-template-columns:1fr 96px 1fr; gap: var(--e-4); align-items:start; margin: var(--e-3) 0}
 .tl-nodo{display:flex; justify-content:center; position:relative; z-index:1; padding-top: var(--e-3)}
 .tl-nodo span{
-  font-family:"Archivo",sans-serif; font-weight:700; font-size: var(--t-b);
+  font-family:var(--f-titulo); font-weight:700; font-size: var(--t-b);
   font-variant-numeric:tabular-nums;
   background:var(--bg); border:1.5px solid var(--line); border-radius:var(--r-m); padding: var(--e-2) var(--e-4);
 }
@@ -2002,9 +2043,10 @@ main.tiempo{margin-top: var(--e-6)}
 .tl-lado.der{align-items:flex-start}
 .tl-card{
   display:flex; align-items:center; gap: var(--e-4); text-align:left;
-  background:var(--panel); border:none; border-radius:var(--r-m);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
   padding: var(--e-3) var(--e-4); max-width:340px; cursor:pointer; color:inherit;
   transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-media);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .tl-card:hover{
   transform:translate(-1px, -2px);
@@ -2096,7 +2138,7 @@ main.tiempo{margin-top: var(--e-6)}
 .anio{margin-top: var(--e-7)}
 .anio-head{display:flex; align-items:center; gap: var(--e-5); margin-bottom: var(--e-4)}
 .anio-num{
-  font-family:"Archivo",sans-serif; font-weight:700;
+  font-family:var(--f-titulo); font-weight:700;
   font-size: var(--t-xl); font-variant-numeric:tabular-nums;
 }
 .anio-head .linea{flex:1; height:1px; background:var(--line)}
@@ -2155,9 +2197,18 @@ main.crono, main.comics, main.estreno{animation:none}
   .saga-guia summary:active, .estrella:active, .tab:active, .cerrar:active, .ep:active{transform:none}
 }
 /* Un número que cambia rueda hacia su sitio en vez de saltar. */
-@keyframes cifraRueda{from{opacity:0; transform:translateY(.45em)} to{opacity:1; transform:none}}
-.cifra{display:inline-block}
-.cifra-cambio{animation:cifraRueda var(--muelle) both}
+.cifra{display:inline-block; font-variant-numeric:tabular-nums}
+.odo{display:inline}
+/* El dígito real queda invisible: da el ancho y la línea base, así la columna
+   se alinea con el texto de al lado. Encima rueda la tira 0–9, recortada. */
+.odo-d{display:inline-block; position:relative; -webkit-text-fill-color:transparent; clip-path:inset(0)}
+.odo-d::before{
+  content:"0\A 1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9"; white-space:pre; -webkit-text-fill-color:currentColor;
+  position:absolute; left:0; right:0; top:0; text-align:center;
+  transform:translateY(calc(var(--d) * -1lh));
+  transition:transform .7s cubic-bezier(.2, .9, .25, 1) calc(var(--i) * 25ms);
+}
+@media (prefers-reduced-motion: reduce){ .odo-d::before{transition:none} }
 /* Pasar de título dentro de la ficha (flechas o deslizar) cambiaba el contenido
    de golpe; el mismo fundido corto, solo al navegar, nunca al abrir. */
 .modal-cambio{animation:entraVista var(--dur-corta) var(--curva) both}
@@ -2535,9 +2586,18 @@ main.crono, main.comics, main.estreno{animation:none}
      icono y el rótulo (como la barra de iOS 26), no la píldora de escritorio */
   nav.tabs .indicador{background:none; box-shadow:none}
   /* la cápsula ocupa la pestaña entera (48 px) y viaja entre ellas */
+  /* Estilo Norte (23 sep 2026): la cápsula ya no ocupa la pestaña entera,
+     va detrás del icono (56×28) con un halo rojo suave, y viaja igual */
   nav.tabs .indicador::before{
-    content:""; position:absolute; inset:0; border-radius:var(--r-pill);
-    background:color-mix(in srgb, var(--red) 15%, transparent);
+    content:""; position:absolute; top:3px; height:28px; left:calc(50% - 28px); width:56px;
+    border-radius:var(--r-pill);
+    background:color-mix(in srgb, var(--red) 16%, transparent);
+    box-shadow:0 0 18px -4px color-mix(in srgb, var(--red) 45%, transparent);
+  }
+  /* la línea de luz del borde de arriba, la firma de la barra de Norte */
+  nav.tabs::before{
+    content:""; position:absolute; top:-1px; left:14%; right:14%; height:1px; pointer-events:none;
+    background:linear-gradient(90deg, transparent, color-mix(in srgb, var(--red) 80%, transparent) 55%, transparent);
   }
 
   /* Sin blur bajo la hoja: desenfocar una página llena de carátulas mientras
@@ -2549,7 +2609,7 @@ main.crono, main.comics, main.estreno{animation:none}
   .overlay{place-items:end center; padding: 0; -webkit-backdrop-filter:none; backdrop-filter:none; background:transparent}
   .overlay::before{content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:rgba(8,10,14,.74); opacity:calc(1 - var(--arrastre))}
   .modal{
-    max-width:none; width:100%; border-radius:var(--r-l) var(--r-l) 0 0; border-bottom:none;
+    max-width:none; width:100%; border-radius:var(--r-xl) var(--r-xl) 0 0; border-bottom:none;
     max-height:92vh; max-height:92dvh; padding-top: var(--e-6);
     padding-bottom:calc(20px + env(safe-area-inset-bottom));
     animation:sheetUp var(--muelle-hoja) both;
@@ -2617,9 +2677,9 @@ main.crono, main.comics, main.estreno{animation:none}
   top:calc(10px + env(safe-area-inset-top, 0px));
   display:flex; align-items:center; gap: var(--e-4);
   padding: var(--e-3) var(--e-6) var(--e-3) var(--e-4); border-radius:var(--r-l);
-  background:var(--panel); color:var(--ink); font:inherit; text-align:left; cursor:pointer;
-  border:1.5px solid color-mix(in srgb, var(--gold) 55%, var(--line));
-  box-shadow:var(--card-shadow-up);
+  background:var(--sup-lustre), var(--panel); color:var(--ink); font:inherit; text-align:left; cursor:pointer;
+  border:1px solid var(--filo);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
   animation:logroEntra var(--muelle-pop) both;
 }
 .logro-aviso.sale{animation:logroSale var(--dur-media) var(--curva) both; pointer-events:none}
@@ -2681,8 +2741,9 @@ main.crono, main.comics, main.estreno{animation:none}
 /* ── Duelo de maratones ── */
 .duelo{
   margin-top: var(--e-6); padding: var(--e-5) var(--e-6);
-  background:var(--panel); border:none; border-radius:var(--r-m);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
   display:flex; flex-direction:column; gap: var(--e-4);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .duelo-cab{display:flex; align-items:center; justify-content:space-between; gap: var(--e-4)}
 .duelo-cab h2{margin: 0}
@@ -2792,8 +2853,9 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .nodo.off{opacity:.45}
 .mapa-leyenda{
   max-width:920px; margin: 0 auto; width:100%;
-  background:var(--panel); border:none; border-radius:var(--r-m);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
   padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-3);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .mapa-leyenda-cab{display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap}
 .mapa-leyenda-cab b{flex:1; font-size: var(--t-b)}
@@ -2890,7 +2952,9 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .comunidades-bloque .grafica-titulo{margin:0}
 .comunidades-lista{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap: var(--e-3)}
 .comunidad-tarjeta{width:100%; display:flex; align-items:center; gap: var(--e-4); padding: var(--e-3); min-height:72px; text-align:left;
-  background:var(--panel); border:none; border-radius:var(--r-m); color:var(--ink); font:inherit; cursor:pointer; transition:transform var(--muelle-toque)}
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl); color:var(--ink); font:inherit; cursor:pointer; transition:transform var(--muelle-toque);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
+}
 .comunidad-tarjeta:active{transform:scale(.98)}
 .comunidad-tarjeta img, .comunidad-sin-portada{width:44px; height:56px; border-radius:var(--r-s); object-fit:cover; flex:none; background:var(--panel2)}
 .comunidad-textos{display:flex; flex-direction:column; gap: var(--e-1); min-width:0; flex:1}
@@ -2993,8 +3057,10 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .respuesta-cab{display:flex; align-items:baseline; gap: var(--e-3); flex-wrap:wrap}
 .reportar{display:inline-flex; align-items:center; gap: var(--e-2)}
 .reportar .selector{min-height:36px; font-size: var(--t-s)}
-.aviso-fila{width:100%; display:flex; flex-direction:column; gap: var(--e-1); padding: var(--e-3) var(--e-4); text-align:left; border:none; border-radius:var(--r-m);
-  background:var(--panel); color:var(--ink); font:inherit; font-size: var(--t-m); cursor:pointer}
+.aviso-fila{width:100%; display:flex; flex-direction:column; gap: var(--e-1); padding: var(--e-3) var(--e-4); text-align:left; border:1px solid var(--filo); border-radius:var(--r-l);
+  background:var(--sup-lustre), var(--panel); color:var(--ink); font:inherit; font-size: var(--t-m); cursor:pointer;
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
+}
 .tab-insignia-texto{display:inline-grid; place-items:center; min-width:22px; height:22px; padding:0 var(--e-2); border-radius:var(--r-pill); background:var(--red); color:var(--sobre-acento); font-size: var(--t-xs); vertical-align:middle}
 
 /* el perfil de la comunidad */
@@ -3232,8 +3298,9 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .seguir-lista{display:flex; gap: var(--e-4); overflow-x:auto; scroll-snap-type:x proximity; padding-bottom: var(--e-2); scroll-padding-inline: var(--e-2)}
 .seguir-item{
   flex:none; scroll-snap-align:start; display:flex; align-items:center; gap: var(--e-4); min-width:0; width:min(300px, 80vw);
-  padding: var(--e-3); border:1px solid var(--line); border-radius:var(--r-m); background:var(--panel);
+  padding: var(--e-3); border:1px solid var(--filo); border-radius:var(--r-l); background:var(--sup-lustre), var(--panel);
   color:inherit; font:inherit; text-align:left; cursor:pointer;
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .seguir-item:hover{border-color:var(--ink3)}
 .seguir-item:active{transform:scale(.98)}
@@ -3325,7 +3392,10 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .aviso-sin-red{margin:0; font-size: var(--t-s); color:var(--ink2); line-height:1.45; text-wrap:pretty}
 
 /* ── Tu calendario en la portada: plegable, con la cuadrícula de Perfil ── */
-.cal-inicio{margin-top: var(--e-5); background:var(--panel); border-radius:var(--r-m); padding: var(--e-4) var(--e-5)}
+.cal-inicio{margin-top: var(--e-5); background:var(--sup-lustre), var(--panel); border-radius:var(--r-xl); padding: var(--e-4) var(--e-5);
+  border:1px solid var(--filo);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
+}
 .cal-inicio > summary{
   list-style:none; cursor:pointer; display:flex; align-items:baseline; flex-wrap:wrap; gap: var(--e-1) var(--e-3);
   position:relative; padding-right: var(--e-7);
@@ -3666,17 +3736,17 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 .nf-botones{display:flex; flex-wrap:wrap; gap: var(--e-3); margin-top: var(--e-2)}
 .nf-btn{
   display:inline-flex; align-items:center; gap: var(--e-2); min-height:48px; padding: 0 var(--e-6);
-  border:none; border-radius:var(--r-s); font:inherit; font-size: var(--t-b); font-weight:700; cursor:pointer;
+  border:none; border-radius:var(--r-pill); font:inherit; font-size: var(--t-b); font-weight:600; cursor:pointer;
   transition:transform var(--muelle-toque, .15s);
 }
 .nf-btn svg{width:20px; height:20px}
 .nf-btn-marcar{background:#fff; color:#0b0c10}
-.nf-btn-info{background:rgba(120,120,128,.55); color:#fff}
+.nf-btn-info{background:rgba(255,255,255,.16); color:#fff; box-shadow:inset 0 0 0 1px rgba(255,255,255,.24); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
 @media (hover:hover){
   .nf-btn-marcar:hover{background:rgba(255,255,255,.82)}
-  .nf-btn-info:hover{background:rgba(120,120,128,.4)}
+  .nf-btn-info:hover{background:rgba(255,255,255,.24)}
 }
-.nf-btn:active{transform:scale(.97)}
+.nf-btn:active{transform:scale(.96)}
 .nf-fin{min-height:260px}
 
 /* filas */
@@ -3862,7 +3932,8 @@ div.nf-abrir{cursor:default}
 /* guía para quien empieza, bajo la cartelera */
 .nf-guia{
   display:grid; grid-template-columns:auto 1fr; gap: var(--e-3) var(--e-4); align-items:start;
-  padding: var(--e-5); border-radius:var(--r-m); background:var(--panel); border:1px solid var(--line);
+  padding: var(--e-5); border-radius:var(--r-xl); background:var(--sup-lustre), var(--panel); border:1px solid var(--filo);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .nf-guia p{margin:0; font-size: var(--t-m); line-height:1.5; color:var(--ink2)}
 .nf-guia p b{color:var(--ink)}

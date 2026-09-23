@@ -104,8 +104,11 @@ for (const ancho of [1280, 1920]) {
     filas.push([acciones.length === 4 && acciones.includes('Modo cine'), `hoja de Más: ${JSON.stringify(acciones)}`])
     // atrás cierra la hoja abierta sin salir de la vista (regla del proyecto:
     // toda capa nueva se registra en useVolverCierra)
+    // Preact registra la capa en un efecto, un fotograma después de pintar la hoja
+    await cdp.hasta(`(history.state || {}).capa === 1`, 2000).catch(() => null)
     const conCapa = await cdp.eval(`({ capa: (history.state || {}).capa || 0 })`)
-    await cdp.eval(`history.back()`)
+    // fuera de la evaluación: si atrás navegara, CDP cortaría la respuesta
+    await cdp.eval(`setTimeout(() => history.back(), 0), 1`)
     await espera(800)
     const tras = await cdp.eval(`({ hoja: !!document.querySelector('.overlay:not(.saliendo)'), hash: location.hash })`)
     filas.push([conCapa.capa >= 1 && !tras.hoja && tras.hash === '#crono', `la hoja añade su paso atrás (capa ${conCapa.capa}) y atrás la cierra sin salir de la vista (${JSON.stringify(tras)})`])

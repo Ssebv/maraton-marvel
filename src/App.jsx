@@ -2181,13 +2181,25 @@ const YA_INSTALADA = (window.matchMedia && window.matchMedia('(display-mode: sta
 const ES_TACTIL = !!(window.matchMedia && window.matchMedia('(hover: none)').matches)
 
 // Un contador que cambia (17 → 18) rueda hacia su sitio; al montar, quieto.
+// Odómetro (23 sep 2026, estilo Norte): cada dígito es una columna 0–9 que
+// rueda hasta el suyo, empezando por la derecha. La columna se identifica por
+// su posición contando desde la derecha, así que 19 → 20 mueve las dos y
+// 99 → 100 añade una. El número de verdad va aparte para el lector de pantalla.
 function Cifra({ n }) {
-  const previo = useRef(n)
-  const [vuelta, setVuelta] = useState(0)
-  useEffect(() => {
-    if (previo.current !== n) { previo.current = n; setVuelta(v => v + 1) }
-  }, [n])
-  return <span key={vuelta} className={vuelta ? 'cifra cifra-cambio' : 'cifra'}>{n}</span>
+  const t = String(n)
+  return (
+    <span className="cifra">
+      <span className="solo-lector">{t}</span>
+      <span className="odo" aria-hidden="true">
+        {[...t].map((c, i) => {
+          const pos = t.length - 1 - i
+          return /\d/.test(c)
+            ? <span key={'d' + pos} className="odo-d" style={{ '--d': c, '--i': pos }}>{c}</span>
+            : <span key={'s' + pos}>{c}</span>
+        })}
+      </span>
+    </span>
+  )
 }
 
 function AvisosBtn() {
@@ -2249,6 +2261,10 @@ function conciliaAtras() {
   queueMicrotask(() => {
     if (capasAtras.length && !entradaAtras) {
       if (consumoPendiente) { clearTimeout(consumoPendiente); consumoPendiente = null; entradaAtras = true; return }
+      // una vuelta ya salió y su popstate no ha llegado: si se apila ahora,
+      // esa vuelta se come la entrada nueva (cerrar Filtros y abrir Más a los
+      // 360 ms dejaba Más sin paso atrás, 23 sep 2026). La pide el popstate.
+      if (consumiendoAtras) return
       history.pushState({ capa: 1 }, ''); entradaAtras = true; largoAtras = history.length
     } else if (!capasAtras.length && entradaAtras) {
       entradaAtras = false
@@ -2261,6 +2277,8 @@ window.addEventListener('popstate', () => {
   if (consumiendoAtras) {
     consumiendoAtras = false
     if (urlEstado != null) history.replaceState(history.state, '', urlEstado)
+    // una capa se abrió mientras volvía: ahora sí, su entrada
+    if (capasAtras.length && !entradaAtras) { history.pushState({ capa: 1 }, ''); entradaAtras = true; largoAtras = history.length }
     return
   }
   if (!capasAtras.length || !entradaAtras) return
@@ -8630,7 +8648,7 @@ export default function App() {
           </div>
           <div className="stat">
             <span className="stat-label">{tr('Te quedan', 'Left to watch')}</span>
-            <span className="stat-num">{Math.round(stats.mins / 60)}<small> h</small></span>
+            <span className="stat-num"><Cifra n={Math.round(stats.mins / 60)} /><small> h</small></span>
             <span className="stat-foot">{tr('de películas y series', 'of movies and series')}</span>
           </div>
           {stats.siguiente && (
@@ -8696,7 +8714,7 @@ export default function App() {
         <p className="progreso-movil">
           <span className="barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
           <span className="pm-texto">
-            <b>{stats.totV}</b> / {stats.totN} {tr('completados', 'completed')} · {pct} % · {tr('te quedan', 'left:')} <b>{Math.round(stats.mins / 60)} h</b>
+            <b><Cifra n={stats.totV} /></b> / {stats.totN} {tr('completados', 'completed')} · {pct} % · {tr('te quedan', 'left:')} <b>{Math.round(stats.mins / 60)} h</b>
           </span>
         </p>
         {/* en el móvil los filtros viven en un carril que se desliza: con uno
@@ -9309,18 +9327,18 @@ export default function App() {
           <div className="stats-tiles">
             <div className="stat">
               <span className="stat-label">{tr('Horas vistas', 'Hours watched')}</span>
-              <span className="stat-num">{Math.round(estadisticas.vistoMin / 60)}<small> / {Math.round(estadisticas.totMin / 60)} h</small></span>
+              <span className="stat-num"><Cifra n={Math.round(estadisticas.vistoMin / 60)} /><small> / {Math.round(estadisticas.totMin / 60)} h</small></span>
               <div className="barra"><i style={{ width: `${estadisticas.totMin ? 100 * estadisticas.vistoMin / estadisticas.totMin : 0}%` }} /></div>
               <span className="stat-foot">{estadisticas.totMin ? Math.round(100 * estadisticas.vistoMin / estadisticas.totMin) : 0}{tr('% del tiempo total', '% of the total time')}</span>
             </div>
             <div className="stat">
               <span className="stat-label">{tr('Títulos vistos', 'Titles watched')}</span>
-              <span className="stat-num">{estadisticas.titulosVistos}<small> / {estadisticas.titulosTot}</small></span>
+              <span className="stat-num"><Cifra n={estadisticas.titulosVistos} /><small> / {estadisticas.titulosTot}</small></span>
               <span className="stat-foot">{tr('películas, series y especiales', 'movies, series and specials')}</span>
             </div>
             <div className="stat">
               <span className="stat-label">{tr('Episodios vistos', 'Episodes watched')}</span>
-              <span className="stat-num">{estadisticas.epVistos}<small> / {estadisticas.epTot}</small></span>
+              <span className="stat-num"><Cifra n={estadisticas.epVistos} /><small> / {estadisticas.epTot}</small></span>
               <span className="stat-foot">{tr('de las series con lista', 'from series with episode lists')}</span>
             </div>
             {/* cómics y bóveda son opcionales: en cero no ocupan una caja cada uno */}
