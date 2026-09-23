@@ -1747,13 +1747,13 @@ function CuentaAtras({ meta, horario, sesionHoy, sim, onHorario }) {
             <span className="cuenta-fecha">{fmtFecha(objetivo.fecha)} · {objetivo.tipo}</span>
           </div>
       <div className="cuenta-reloj" role="timer">
-        <span className="cr-bloque"><b>{cuenta.dias}</b><small>{tr('días', 'days')}</small></span>
+        <span className="cr-bloque"><b><Cifra n={cuenta.dias} /></b><small>{tr('días', 'days')}</small></span>
         <span className="cr-sep">:</span>
-        <span className="cr-bloque"><b>{cuenta.hh}</b><small>{tr('horas', 'hours')}</small></span>
+        <span className="cr-bloque"><b><Cifra n={cuenta.hh} /></b><small>{tr('horas', 'hours')}</small></span>
         <span className="cr-sep">:</span>
-        <span className="cr-bloque"><b>{cuenta.mm}</b><small>min</small></span>
+        <span className="cr-bloque"><b><Cifra n={cuenta.mm} /></b><small>min</small></span>
         <span className="cr-sep">:</span>
-        <span className="cr-bloque"><b>{cuenta.ss}</b><small>{tr('seg', 'sec')}</small></span>
+        <span className="cr-bloque"><b><Cifra n={cuenta.ss} /></b><small>{tr('seg', 'sec')}</small></span>
       </div>
       {meta && (
         <div className="objetivo">
@@ -2181,6 +2181,32 @@ const YA_INSTALADA = (window.matchMedia && window.matchMedia('(display-mode: sta
 const ES_TACTIL = !!(window.matchMedia && window.matchMedia('(hover: none)').matches)
 
 // Un contador que cambia (17 → 18) rueda hacia su sitio; al montar, quieto.
+// Foco que sigue al puntero (23 sep 2026, estilo Norte): sobre una superficie
+// (tarjeta, estadística, panel) una luz roja muy suave sigue al ratón. Una sola
+// escucha para toda la app, a un fotograma por movimiento; solo con ratón.
+// El dibujo es CSS (--foco-luz en styles.css), aquí solo --mx y --my.
+const SUPERFICIES_FOCO = '.card, .stat, .grafica, .mapa, .cuenta, .duelo, .tl-card, .comunidad-tarjeta, .nf-guia, .cal-inicio, .proximo, .mv-sel, .seguir-item'
+if (typeof window !== 'undefined' && window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches
+  && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  let ultimo = null, ev = null, cuadro = 0
+  const apaga = () => { if (ultimo) { ultimo.style.removeProperty('--mx'); ultimo.style.removeProperty('--my'); ultimo = null } }
+  document.addEventListener('pointermove', e => {
+    ev = e
+    if (cuadro) return
+    cuadro = requestAnimationFrame(() => {
+      cuadro = 0
+      const el = ev.target instanceof Element ? ev.target.closest(SUPERFICIES_FOCO) : null
+      if (el !== ultimo) apaga()
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      el.style.setProperty('--mx', `${Math.round(ev.clientX - r.left)}px`)
+      el.style.setProperty('--my', `${Math.round(ev.clientY - r.top)}px`)
+      ultimo = el
+    })
+  }, { passive: true })
+  document.addEventListener('pointerleave', apaga)
+}
+
 // Odómetro (23 sep 2026, estilo Norte): cada dígito es una columna 0–9 que
 // rueda hasta el suyo, empezando por la derecha. La columna se identifica por
 // su posición contando desde la derecha, así que 19 → 20 mueve las dos y

@@ -12,6 +12,7 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 
 ### Semana del 22
 - **Estilo nuevo, hermano de Norte:** letra del sistema, tarjetas redondeadas con un brillo arriba, botones en píldora que se hunden al tocarlos, la barra de abajo con su línea de luz y la cápsula que viaja, y los números de tu avance que ruedan como un contador. El rojo Marvel y el titular de siempre se quedan.
+- En el computador, una luz roja suave sigue al ratón sobre las tarjetas; la portada recibe un barrido de luz al llegar, y la cuenta atrás a Doomsday rueda cada segundo.
 - Arreglado: al cerrar Filtros y abrir Más enseguida, el botón atrás podía sacarte de la vista en vez de cerrar la hoja.
 - **Inicio nuevo, al estilo de las apps de streaming.** Al abrir la app ves en grande lo siguiente de tu maratón, con su tráiler y un botón para marcarlo como visto. Debajo hay filas para «Continuar viendo», «A continuación», «Rumbo a Doomsday», el top 10 y tus favoritas.
 - **Inicio funciona sin conexión:** las imágenes quedan guardadas y lo siguiente ya está cargado cuando marcas un título.

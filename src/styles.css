@@ -72,6 +72,7 @@
   --sup-sombra:0 1px 2px rgba(25,21,33,.04), 0 10px 30px rgba(25,21,33,.06);
   --sup-sombra-up:0 2px 4px rgba(25,21,33,.06), 0 18px 40px rgba(25,21,33,.12);
   --marca-sombra:0 8px 22px color-mix(in srgb, var(--sello) 28%, transparent);
+  --foco-luz:linear-gradient(transparent, transparent);
   /* Tipografía: siete pasos. La única excepción es el clamp del titular. */
   --t-xs:11px; --t-s:12px; --t-m:13px; --t-b:15px;
   --t-l:19px; --t-xl:24px; --t-xxl:40px;
@@ -112,6 +113,12 @@
   }
 }
 /* muelles:fin */
+/* Foco que sigue al puntero (estilo Norte): se define EN la superficie para que
+   --mx/--my (los pone App.jsx al mover el ratón) se resuelvan en ella; sin
+   ratón encima quedan en −999 px y no se ve nada */
+:where(.card, .stat, .grafica, .mapa, .cuenta, .duelo, .tl-card, .comunidad-tarjeta, .nf-guia, .cal-inicio, .proximo, .mv-sel, .seguir-item){
+  --foco-luz:radial-gradient(420px circle at var(--mx, -999px) var(--my, -999px), color-mix(in srgb, var(--red) 8%, transparent), transparent 45%);
+}
 /* Tintes derivados: se calculan del acento que esté vigente (tema y universo) */
 :root{
   --red-soft:color-mix(in srgb, var(--red) var(--tinte), transparent);
@@ -321,7 +328,7 @@ h1 .rojo{color:var(--red)}
    y sombra; el fondo se queda porque van sobre el fotograma del hero y el
    texto necesita superficie para leerse. El único foco es la cuenta atrás. */
 .stat{
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
   padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-2);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -363,7 +370,7 @@ h1 .rojo{color:var(--red)}
 }
 .mapa{
   width:100%;
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
   padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-4);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -388,7 +395,7 @@ h1 .rojo{color:var(--red)}
 
 .cuenta{
   display:flex; align-items:center; justify-content:space-between; gap: var(--e-6); flex-wrap:wrap;
-  background:var(--sup-lustre), var(--panel);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel);
   border:1px solid color-mix(in srgb, var(--doom) 45%, var(--filo));
   border-radius:var(--r-xl); padding: var(--e-5) var(--e-6);
   animation:riseIn .5s var(--curva) both;
@@ -412,7 +419,7 @@ h1 .rojo{color:var(--red)}
 .cr-sep{font-size: var(--t-xl); font-weight:700; color:var(--ink3); align-self:flex-start; padding-top: var(--e-1)}
 .proximos{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap: var(--e-4)}
 .proximo{
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
   padding: var(--e-4) var(--e-5); display:flex; flex-direction:row; align-items:flex-start; gap: var(--e-4);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -587,7 +594,7 @@ h1 .rojo{color:var(--red)}
    neutro = no hay nada · info = algo que conviene saber · peligro = vas a destruir algo */
 .aviso{
   padding: var(--e-5) var(--e-5); border-radius:var(--r-l);
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo);
   display:flex; flex-direction:column; gap: var(--e-4);
   animation:entraVista var(--dur-media) var(--curva) both;
   box-shadow:var(--sup-brillo), var(--sup-sombra);
@@ -684,7 +691,7 @@ h1 .rojo{color:var(--red)}
 .toolbar{
   position:sticky; top:calc(env(safe-area-inset-top, 0px) + 10px); z-index:10;
   margin: var(--e-5) 0 var(--e-2); padding: var(--e-4) var(--e-5);
-  background:var(--sup-lustre), var(--panel);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel);
   border:1px solid var(--filo);
   border-radius:var(--r-xl);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
@@ -941,7 +948,7 @@ h3{
      y cuatro cajas flotando no destacan nada y el ojo lo paga igual.
      La sombra sólida desplazada se queda, pero solo al pasar por encima:
      ahí sí significa algo, y es identidad de la casa. */
-  background:var(--sup-lustre), var(--panel);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel);
   border:1px solid var(--filo);
   border-radius:var(--r-xl); padding: var(--e-5);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
@@ -1127,7 +1134,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 @keyframes fueraVelo{to{opacity:0}}
 @keyframes fueraHoja{to{opacity:0; transform:translateY(8px) scale(.98)}}
 .modal{
-  position:relative; background:var(--sup-lustre), var(--panel); border:1px solid var(--filo);
+  position:relative; background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo);
   border-radius:var(--r-xl); max-width:900px; width:100%; max-height:88vh;
   overflow-y:auto; overflow-x:clip;
   overscroll-behavior:contain;
@@ -1401,7 +1408,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 .stats-vista{display:flex; flex-direction:column; gap: var(--e-6); margin-top: var(--e-6)}
 .stats-tiles{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap: var(--e-4)}
 .grafica{
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
   padding: var(--e-6) var(--e-6);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -1752,7 +1759,7 @@ main.galeria{margin-top: var(--e-6)}
 .mv-sel-ayuda{margin: 0 0 var(--e-5); text-align:center; font-size: var(--t-s); color:var(--ink2)}
 .mv-sel{
   position:relative; margin: 0 auto var(--e-6); max-width:560px; padding: var(--e-5) var(--e-6); padding-right:88px;
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
   display:flex; flex-direction:column; gap: var(--e-2); animation:entraVista var(--dur-media) var(--curva) both;
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -1916,7 +1923,7 @@ main.multiverso{margin-top: var(--e-6)}
   margin: var(--e-5) 0 var(--e-5); padding: var(--e-6) var(--e-7); padding-right: 210px; border-radius:var(--r-xl);
   position:relative;
   border:1px solid var(--filo);
-  background:var(--sup-lustre), var(--panel);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel);
   display:flex; flex-direction:column; gap: var(--e-3);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -2006,7 +2013,7 @@ main.listas-vista{margin-top: var(--e-6)}
 }
 .lista-hero{
   margin: var(--e-5) 0 var(--e-5); padding: var(--e-6) var(--e-6); border-radius:var(--r-xl);
-  border:1px solid var(--filo); background:var(--sup-lustre), var(--panel);
+  border:1px solid var(--filo); background:var(--foco-luz), var(--sup-lustre), var(--panel);
   display:flex; flex-direction:column; gap: var(--e-3);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -2043,7 +2050,7 @@ main.tiempo{margin-top: var(--e-6)}
 .tl-lado.der{align-items:flex-start}
 .tl-card{
   display:flex; align-items:center; gap: var(--e-4); text-align:left;
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
   padding: var(--e-3) var(--e-4); max-width:340px; cursor:pointer; color:inherit;
   transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-media);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
@@ -2677,7 +2684,7 @@ main.crono, main.comics, main.estreno{animation:none}
   top:calc(10px + env(safe-area-inset-top, 0px));
   display:flex; align-items:center; gap: var(--e-4);
   padding: var(--e-3) var(--e-6) var(--e-3) var(--e-4); border-radius:var(--r-l);
-  background:var(--sup-lustre), var(--panel); color:var(--ink); font:inherit; text-align:left; cursor:pointer;
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); color:var(--ink); font:inherit; text-align:left; cursor:pointer;
   border:1px solid var(--filo);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
   animation:logroEntra var(--muelle-pop) both;
@@ -2741,7 +2748,7 @@ main.crono, main.comics, main.estreno{animation:none}
 /* ── Duelo de maratones ── */
 .duelo{
   margin-top: var(--e-6); padding: var(--e-5) var(--e-6);
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
   display:flex; flex-direction:column; gap: var(--e-4);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -2853,7 +2860,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .nodo.off{opacity:.45}
 .mapa-leyenda{
   max-width:920px; margin: 0 auto; width:100%;
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
   padding: var(--e-5) var(--e-5); display:flex; flex-direction:column; gap: var(--e-3);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -2952,7 +2959,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .comunidades-bloque .grafica-titulo{margin:0}
 .comunidades-lista{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap: var(--e-3)}
 .comunidad-tarjeta{width:100%; display:flex; align-items:center; gap: var(--e-4); padding: var(--e-3); min-height:72px; text-align:left;
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl); color:var(--ink); font:inherit; cursor:pointer; transition:transform var(--muelle-toque);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl); color:var(--ink); font:inherit; cursor:pointer; transition:transform var(--muelle-toque);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .comunidad-tarjeta:active{transform:scale(.98)}
@@ -3058,7 +3065,7 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .reportar{display:inline-flex; align-items:center; gap: var(--e-2)}
 .reportar .selector{min-height:36px; font-size: var(--t-s)}
 .aviso-fila{width:100%; display:flex; flex-direction:column; gap: var(--e-1); padding: var(--e-3) var(--e-4); text-align:left; border:1px solid var(--filo); border-radius:var(--r-l);
-  background:var(--sup-lustre), var(--panel); color:var(--ink); font:inherit; font-size: var(--t-m); cursor:pointer;
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); color:var(--ink); font:inherit; font-size: var(--t-m); cursor:pointer;
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .tab-insignia-texto{display:inline-grid; place-items:center; min-width:22px; height:22px; padding:0 var(--e-2); border-radius:var(--r-pill); background:var(--red); color:var(--sobre-acento); font-size: var(--t-xs); vertical-align:middle}
@@ -3298,7 +3305,7 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .seguir-lista{display:flex; gap: var(--e-4); overflow-x:auto; scroll-snap-type:x proximity; padding-bottom: var(--e-2); scroll-padding-inline: var(--e-2)}
 .seguir-item{
   flex:none; scroll-snap-align:start; display:flex; align-items:center; gap: var(--e-4); min-width:0; width:min(300px, 80vw);
-  padding: var(--e-3); border:1px solid var(--filo); border-radius:var(--r-l); background:var(--sup-lustre), var(--panel);
+  padding: var(--e-3); border:1px solid var(--filo); border-radius:var(--r-l); background:var(--foco-luz), var(--sup-lustre), var(--panel);
   color:inherit; font:inherit; text-align:left; cursor:pointer;
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -3392,7 +3399,7 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .aviso-sin-red{margin:0; font-size: var(--t-s); color:var(--ink2); line-height:1.45; text-wrap:pretty}
 
 /* ── Tu calendario en la portada: plegable, con la cuadrícula de Perfil ── */
-.cal-inicio{margin-top: var(--e-5); background:var(--sup-lustre), var(--panel); border-radius:var(--r-xl); padding: var(--e-4) var(--e-5);
+.cal-inicio{margin-top: var(--e-5); background:var(--foco-luz), var(--sup-lustre), var(--panel); border-radius:var(--r-xl); padding: var(--e-4) var(--e-5);
   border:1px solid var(--filo);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
@@ -3702,12 +3709,23 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 .hero.en-inicio .siguiente-stat, .hero.en-inicio .siguiente-marcar{display:none}
 .inicio-nf{display:flex; flex-direction:column; gap: var(--e-6); margin-top: var(--e-4); padding-bottom: var(--e-7)}
 .nf-cartel{
-  position:relative; overflow:hidden; border-radius:var(--r-l); isolation:isolate;
+  position:relative; overflow:hidden; border-radius:var(--r-xl); isolation:isolate;
   min-height:clamp(440px, 56vw, 560px); display:flex; align-items:flex-end;
   background:linear-gradient(160deg, var(--c1, #333), var(--c2, #111));
   color:#fff;
 }
 .nf-cartel-fondo{position:absolute; inset:0; z-index:-1}
+/* un barrido de luz cruza la cartelera una vez al llegar (el de la tarjeta
+   principal de Norte); con cada título nuevo, porque la sección lleva su key */
+.nf-cartel::after{
+  content:""; position:absolute; inset:0; pointer-events:none; z-index:1;
+  background:linear-gradient(105deg, transparent 35%, rgba(255,255,255,.14) 50%, transparent 65%);
+  transform:translateX(-110%);
+}
+@media (prefers-reduced-motion: no-preference){
+  .nf-cartel::after{animation:barridoCartel 1.6s var(--curva) .25s both}
+}
+@keyframes barridoCartel{to{transform:translateX(110%)}}
 .nf-cartel-fondo img{width:100%; height:100%; object-fit:cover; object-position:center 25%}
 .nf-cartel-fondo .nf-cartel-poster{object-fit:contain; object-position:right center; opacity:.5}
 .nf-cartel-fondo img{position:absolute; inset:0}
@@ -3932,7 +3950,7 @@ div.nf-abrir{cursor:default}
 /* guía para quien empieza, bajo la cartelera */
 .nf-guia{
   display:grid; grid-template-columns:auto 1fr; gap: var(--e-3) var(--e-4); align-items:start;
-  padding: var(--e-5); border-radius:var(--r-xl); background:var(--sup-lustre), var(--panel); border:1px solid var(--filo);
+  padding: var(--e-5); border-radius:var(--r-xl); background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
 .nf-guia p{margin:0; font-size: var(--t-m); line-height:1.5; color:var(--ink2)}

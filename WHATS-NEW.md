@@ -12,6 +12,7 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 
 ### Week of the 22nd
 - **A fresh look:** system font, rounded cards with a soft top highlight, pill buttons that press in when tapped, a bottom bar with a light line and a sliding capsule, and your progress numbers roll like a counter. The Marvel red and the classic title stay.
+- On computers, a soft red light follows your mouse over cards; the Home poster gets a sweep of light when it appears, and the Doomsday countdown rolls every second.
 - Fixed: closing Filters and quickly opening More could make the back button leave the view instead of closing the sheet.
 - **A new Home, streaming-app style.** When you open the app you see what's next in your marathon, big, with its trailer and a button to mark it watched. Below are rows for "Continue watching", "Up next", "Toward Doomsday", the top 10 and your favorites.
 - **Home works offline:** images are saved, and the next title is already loaded when you mark one watched.
