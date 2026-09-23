@@ -77,9 +77,15 @@ for (const ancho of [1280, 1920]) {
     filas.push([hoja, 'Filtros abre su hoja'])
     await cdp.eval(`document.querySelector('.overlay .cerrar').click()`)
     await cdp.hasta(`!document.querySelector('.overlay')`, 3000).catch(() => null)
+    // el panel (mapa, estrenos, cuenta atrás) no va en la página: sale en vertical junto a la lateral
+    const enPagina = await cdp.eval(`!!document.querySelector('.panel-superior, .panel-resumen')`)
     await cdp.eval(`document.querySelector('.lat-tarjeta').click()`)
     await espera(600)
-    filas.push([await cdp.eval(`(() => { const p = document.querySelector('.panel-superior'); return !!p && !p.hidden })()`), 'la tarjeta de la cuenta atrás abre el panel completo'])
+    const pv = await cdp.eval(`({ p: !!document.querySelector('.panel-lat .mapa') && !!document.querySelector('.panel-lat .cuenta'), capa: (history.state || {}).capa || 0 })`)
+    filas.push([!enPagina && pv.p && pv.capa === 1, `panel solo en vertical: en la página ${enPagina}, la tarjeta lo abre con mapa y cuenta atrás (capa ${pv.capa})`])
+    await cdp.eval(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`)
+    await espera(500)
+    filas.push([await cdp.eval(`!document.querySelector('.panel-lat')`), 'Esc cierra el panel vertical'])
     // tecla 2 → Perfil, con Estadísticas activa en la lateral
     await cdp.eval(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }))`)
     await cdp.hasta(`location.hash === '#stats'`, 4000).catch(() => null)

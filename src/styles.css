@@ -4141,7 +4141,7 @@ div.nf-abrir{cursor:default}
 :root{--lat-w:248px}
 html.con-lateral body{padding-left:var(--lat-w)}
 /* toda la página a la derecha de la lateral (Sebastián, con captura a 1920: «necesito ocupar toda la página, no solo el medio») */
-html.con-lateral .wrap{max-width:none; padding-inline:clamp(24px, 2.6vw, 56px)}
+html.con-lateral .wrap{max-width:none; padding-inline:clamp(32px, 4.2vw, 88px)}
 html.con-lateral .cd-ajustes{display:none}
 .lateral{
   position:fixed; z-index:30; left:0; top:0; bottom:0; width:var(--lat-w);
@@ -4211,3 +4211,24 @@ html.con-lateral .cd-ajustes{display:none}
 @media (prefers-reduced-motion: reduce){ .lat-fila, .lat-tarjeta{transition:none} }
 /* con la barra lateral, Perfil y Multiverso titulan como las páginas del maratón */
 html.con-lateral .cd-titulo{font-family:var(--f-titulo); font-weight:800; font-size:34px; letter-spacing:-.025em; line-height:1.1; text-transform:none}
+
+/* Panel vertical junto a la lateral (23 sep 2026): el mapa de progreso, los
+   próximos estrenos y la cuenta atrás, fuera de la página. Sale de detrás de
+   la barra; un velo sobre el contenido lo cierra al tocar fuera. */
+.panel-lat-velo{position:fixed; z-index:28; top:0; bottom:0; right:0; left:var(--lat-w); background:rgba(6,8,12,.42); animation:fadeIn var(--dur-media) var(--curva) both}
+.panel-lat{
+  position:fixed; z-index:29; top:0; bottom:0; left:var(--lat-w); width:min(420px, calc(100vw - var(--lat-w) - 40px));
+  display:flex; flex-direction:column; gap: var(--e-3); padding: var(--e-6) var(--e-5) var(--e-7);
+  overflow-y:auto; overscroll-behavior:contain;
+  background:var(--sup-lustre), var(--panel); border-right:1px solid var(--filo);
+  box-shadow:24px 0 60px rgba(0,0,0,.45);
+  animation:panelLatEntra var(--muelle-hoja) both;
+}
+@keyframes panelLatEntra{from{transform:translateX(-24px); opacity:0}}
+.panel-lat-cab{display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--e-2)}
+.panel-lat-cab b{font-family:var(--f-titulo); font-size: var(--t-xl); font-weight:800; letter-spacing:-.02em}
+.panel-lat .lat-grupo-t{margin-top: var(--e-4)}
+/* aside + clase doble: gana a la regla de cuatro estrenos a dos columnas (:has) */
+aside.panel-lat .proximos.proximos{grid-template-columns:1fr}
+.panel-lat .cuenta{margin:0}
+@media (prefers-reduced-motion: reduce){ .panel-lat, .panel-lat-velo{animation:none} }

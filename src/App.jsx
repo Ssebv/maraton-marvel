@@ -7307,6 +7307,19 @@ export default function App() {
     return () => mq.removeEventListener('change', on)
   }, [])
   useEffect(() => { document.documentElement.classList.toggle('con-lateral', conLateral) }, [conLateral])
+  // Con la lateral, el panel (mapa de progreso, próximos estrenos, cuenta
+  // atrás) ya no va en la página: sale como un panel vertical junto a la
+  // barra (Sebastián: «quiero dejar esto solo en el panel vertical»). Es una
+  // capa: atrás, Esc o tocar fuera la cierran.
+  const [panelLat, setPanelLat] = useState(false)
+  useVolverCierra(conLateral && panelLat, () => setPanelLat(false))
+  useEffect(() => {
+    if (!panelLat) return undefined
+    const tecla = e => { if (e.key === 'Escape') setPanelLat(false) }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  }, [panelLat])
+  useEffect(() => { if (!conLateral) setPanelLat(false) }, [conLateral])
   useEffect(() => {
     if (!window.matchMedia) return
     const mq = window.matchMedia('(max-width:720px)')
@@ -9002,18 +9015,58 @@ export default function App() {
         </button>
       </nav>
       <div className="lat-pie">
-        <button type="button" className="lat-tarjeta" aria-expanded={panelAbierto} onClick={() => { if (!enMaraton) setVista(ultimaVista.maraton || 'inicio'); if (!panelAbierto) alternaPanel(); else if (enMaraton) alternaPanel() }}>
+        <button type="button" className="lat-tarjeta" aria-haspopup="dialog" aria-expanded={panelLat} onClick={() => setPanelLat(v => !v)}>
           {proxEstreno && objetivo && (
             <span className="lat-cuenta-atras"><b>{proxEstreno.t.replace(/^(Vengadores|Avengers): /, '')}</b> {tr('en', 'in')} <b className="pr-dias"><Cifra n={objetivo.dias} /> {tr('días', 'days')}</b></span>
           )}
           <span className="barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
           <span className="lat-prog"><b><Cifra n={stats.totV} /></b> / {stats.totN} · {pct} %<span className="lat-prog-h">{tr('quedan', 'left')} {Math.round(stats.mins / 60)} h</span></span>
-          <span className="lat-panel">{panelAbierto && enMaraton ? tr('Ocultar panel', 'Hide panel') : tr('Ver panel completo', 'Open full panel')}</span>
+          <span className="lat-panel">{panelLat ? tr('Cerrar panel', 'Close panel') : tr('Mapa, estrenos y cuenta atrás', 'Map, premieres and countdown')}</span>
         </button>
         {botonSync}
         <button type="button" className="lat-fila" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{ICO_LAT.ajustes}<span>{tr('Ajustes', 'Settings')}</span></button>
       </div>
     </aside>
+  )
+  const mapaProgreso = (
+        <div className="mapa" aria-label={tr('Mapa de progreso', 'Progress map')}>
+          {DATA.map(saga => {
+            const items = saga.eras.flatMap(era => era.items.map(item => ({ item, c: era.c })))
+            const v = items.filter(({ item }) => vistas[item.id]).length
+            return (
+              <div className="mapa-fila" key={saga.saga}>
+                <span className="mapa-label">
+                  {saga.saga === 'xmen' ? 'X-Men' : saga.saga === 'ucm' ? tr('UCM', 'MCU') : saga.saga === 'animacion' ? 'Anim.' : tr('Cómics', 'Comics')}
+                </span>
+                <div className="mapa-dots">
+                  {items.map(({ item, c }) => (
+                    <button key={item.id} className={`dot${vistas[item.id] ? ' on' : ''}`}
+                      style={{ '--dc': c[0] }} title={item.t}
+                      onClick={() => setDetalle({ item, c, esComic: saga.saga === 'comics' })} />
+                  ))}
+                </div>
+                <span className="mapa-count">{v}/{items.length}</span>
+              </div>
+            )
+          })}
+        </div>
+  )
+  const panelVertical = conLateral && panelLat && createPortal(
+    <>
+      <div className="panel-lat-velo" onClick={() => setPanelLat(false)} aria-hidden="true" />
+      <aside className="panel-lat" role="dialog" aria-modal="false" aria-label={tr('Mapa, estrenos y cuenta atrás', 'Map, premieres and countdown')}>
+        <div className="panel-lat-cab">
+          <b>{tr('Tu maratón', 'Your marathon')}</b>
+          <button className="cerrar" onClick={() => setPanelLat(false)} aria-label={tr('Cerrar panel', 'Close panel')}>✕</button>
+        </div>
+        <CuentaAtras meta={objetivo} horario={horario} sesionHoy={sesionHoy} sim={simHorario} onHorario={() => { setPanelLat(false); setHorarioModal(true) }} />
+        <p className="lat-grupo-t">{tr('Tu progreso', 'Your progress')}</p>
+        {mapaProgreso}
+        <p className="lat-grupo-t">{tr('Próximos estrenos', 'Coming up')}</p>
+        <Proximos />
+      </aside>
+    </>,
+    document.body
   )
   // título de la página en el contenido cuando manda la barra lateral
   const pestanaActual = PESTANAS.find(x => x.id === vista)
@@ -9021,6 +9074,7 @@ export default function App() {
     <div className="wrap">
       <a className="saltar" href="#contenido">{tr('Saltar al contenido', 'Skip to content')}</a>
       {lateral}
+      {panelVertical}
       {/* Escritorio (16 sep 2026): las secciones viven en una barra propia,
           fija arriba y separada de los filtros, como en una app. Antes
           compartían bloque con filtros y herramientas, y fuera del maratón
@@ -9205,29 +9259,10 @@ export default function App() {
           <span className="pr-abrir">{tr('Panel completo', 'Full panel')}</span>
         </button>
       )}
+      {!conLateral && (<>
       <div className="panel-superior" hidden={!panelAbierto}>
         <div className="panel-izq">
-        <div className="mapa" aria-label={tr('Mapa de progreso', 'Progress map')}>
-          {DATA.map(saga => {
-            const items = saga.eras.flatMap(era => era.items.map(item => ({ item, c: era.c })))
-            const v = items.filter(({ item }) => vistas[item.id]).length
-            return (
-              <div className="mapa-fila" key={saga.saga}>
-                <span className="mapa-label">
-                  {saga.saga === 'xmen' ? 'X-Men' : saga.saga === 'ucm' ? tr('UCM', 'MCU') : saga.saga === 'animacion' ? 'Anim.' : tr('Cómics', 'Comics')}
-                </span>
-                <div className="mapa-dots">
-                  {items.map(({ item, c }) => (
-                    <button key={item.id} className={`dot${vistas[item.id] ? ' on' : ''}`}
-                      style={{ '--dc': c[0] }} title={item.t}
-                      onClick={() => setDetalle({ item, c, esComic: saga.saga === 'comics' })} />
-                  ))}
-                </div>
-                <span className="mapa-count">{v}/{items.length}</span>
-              </div>
-            )
-          })}
-        </div>
+        {mapaProgreso}
         <Proximos />
         </div>
         <CuentaAtras meta={objetivo} horario={horario} sesionHoy={sesionHoy} sim={simHorario} onHorario={() => setHorarioModal(true)} />
@@ -9235,6 +9270,7 @@ export default function App() {
       {panelAbierto && (
         <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>{tr('Ocultar panel', 'Hide panel')}</button>
       )}
+      </>)}
       </>)}
 
       {!conLateral && (
