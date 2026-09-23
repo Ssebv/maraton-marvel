@@ -6,6 +6,8 @@
 
 Es gratis, no tiene anuncios y no hace falta crear cuenta.
 
+![Inicio: lo que viene, la cuenta atrás a Doomsday y lo siguiente de tu maratón](capturas/inicio.jpg)
+
 ---
 
 ## Qué puedes hacer
@@ -14,6 +16,8 @@ Es gratis, no tiene anuncios y no hace falta crear cuenta.
 
 📺 **Marcar episodio por episodio.** Más de 1.600 episodios, con su foto y una sinopsis que se queda borrosa hasta que la pides, para no comerte ningún spoiler.
 
+![Filas de títulos: lo siguiente en orden, la ruta hacia Doomsday y el top 10](capturas/filas.jpg)
+
 🗓️ **Armar tu plan.** Dile cuántas horas tienes y qué días ves, y la app te arma el horario, te dice qué toca hoy y si llegas al estreno. Lo puedes pasar a tu calendario.
 
 📍 **Saber dónde verla.** Cada título te dice en qué plataforma está en tu país (19 países, incluidos Chile, México, Argentina, Colombia, Perú y España), con tráiler, reparto y escenas post-créditos.
@@ -21,6 +25,8 @@ Es gratis, no tiene anuncios y no hace falta crear cuenta.
 📚 **Leer los cómics.** Cada cómic dice dónde leerlo legalmente, y si ya tienes el archivo, lo puedes abrir dentro de la app.
 
 🌌 **Explorar el multiverso.** Las distintas Tierras de Marvel en un sistema solar, un mapa de conexiones y tarjetas para recorrer.
+
+![Multiverso: cada Tierra es un planeta y se entra tocándolo](capturas/multiverso.jpg)
 
 🏆 **Ver tu avance.** Logros, rachas, tu calendario de lo que has visto y un resumen de tu mes.
 
