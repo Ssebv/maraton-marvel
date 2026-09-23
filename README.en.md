@@ -60,7 +60,7 @@ It works like a regular app, with an icon and offline support:
 
 Your progress is saved on your phone. From Settings you can back it up or move it to another device.
 
-Questions? See the [**FAQ**](FAQ.md): how not to lose your progress, why this order, the bare minimum to be ready for Doomsday and more.
+Questions? See the [**FAQ**](FAQ.md): how not to lose your progress, why this order, the bare minimum to be ready for Doomsday and more. To see what each update brings, check [**what's new**](WHATS-NEW.md).
 
 ## Join in
 

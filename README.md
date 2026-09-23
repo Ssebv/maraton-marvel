@@ -60,7 +60,7 @@ Funciona como una app normal, con ícono y sin conexión:
 
 Tu progreso se guarda en tu teléfono. Desde Ajustes puedes sacar una copia o pasarlo a otro dispositivo.
 
-¿Dudas? Mira las [**preguntas frecuentes**](PREGUNTAS-FRECUENTES.md): cómo no perder tu progreso, por qué va este orden, cuál es lo mínimo para llegar a Doomsday y más.
+¿Dudas? Mira las [**preguntas frecuentes**](PREGUNTAS-FRECUENTES.md): cómo no perder tu progreso, por qué va este orden, cuál es lo mínimo para llegar a Doomsday y más. Y para ver qué trae cada versión, están las [**novedades**](NOVEDADES.md).
 
 ## Súmate
 
