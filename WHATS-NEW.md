@@ -11,6 +11,7 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 ## September 2026
 
 ### Week of the 22nd
+- **Refreshed sidebar:** wider and translucent, with "Recently watched" (your latest titles) and your account at the bottom; Filters and "Plan, schedule and more" sit next to search. The "Your marathon" panel is big and fits without scrolling.
 - **Sidebar on computers, like Norte:** sections, views, search, filters and the countdown live on the left, and every page starts with its title and the content, no header in the way. On narrower screens and phones everything stays as before.
 - **iPhone alerts, through your calendar:** "Premieres in my calendar" (in Settings › Alerts and the Doomsday panel) subscribes your calendar to premieres and new episodes; it updates itself and alerts you at 10:00 that day. The schedule you add to your calendar now alerts you 15 minutes before each session.
 - **iPhone install guide:** if you open it in Safari without installing, a card shows you the three steps. Once installed, the app also asks the iPhone not to delete your data.

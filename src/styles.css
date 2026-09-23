@@ -2245,7 +2245,8 @@ main.crono, main.comics, main.estreno{animation:none}
 .odo{display:inline}
 /* El dígito real queda invisible: da el ancho y la línea base, así la columna
    se alinea con el texto de al lado. Encima rueda la tira 0–9, recortada. */
-.odo-d{display:inline-block; position:relative; -webkit-text-fill-color:transparent; clip-path:inset(0)}
+.odo-d{display:inline-block; position:relative; -webkit-text-fill-color:transparent; clip-path:inset(0); overflow:clip}
+/* overflow:clip, no hidden: recorta sin cambiar la línea base y la tira 0–9 ya no suma alto desplazable (la barra lateral crecía 50 px) */
 .odo-d::before{
   content:"0\A 1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9"; white-space:pre; -webkit-text-fill-color:currentColor;
   position:absolute; left:0; right:0; top:0; text-align:center;
@@ -4138,23 +4139,25 @@ div.nf-abrir{cursor:default}
    Desde 1100 px: secciones, vistas y herramientas a la izquierda, fijas; el
    contenido empieza arriba con el título de la página. La fila activa lleva
    el tinte rojo y una barrita de 3 px con halo en el borde, como en Norte. */
-:root{--lat-w:248px}
+:root{--lat-w:288px}
 html.con-lateral body{padding-left:var(--lat-w)}
 /* toda la página a la derecha de la lateral (Sebastián, con captura a 1920: «necesito ocupar toda la página, no solo el medio») */
 html.con-lateral .wrap{max-width:none; padding-inline:clamp(32px, 4.2vw, 88px)}
 html.con-lateral .cd-ajustes{display:none}
 .lateral{
   position:fixed; z-index:30; left:0; top:0; bottom:0; width:var(--lat-w);
-  display:flex; flex-direction:column; gap: var(--e-4); padding: var(--e-6) var(--e-4) var(--e-5);
-  background:color-mix(in srgb, var(--panel) 82%, transparent);
+  display:flex; flex-direction:column; gap: var(--e-3); padding: var(--e-5) var(--e-4) var(--e-4);
+  /* más traslúcida (23 sep 2026, «hazlo más traslúcido»): se ve el cielo detrás */
+  background:linear-gradient(180deg, color-mix(in srgb, var(--panel) 58%, transparent), color-mix(in srgb, var(--panel) 44%, transparent));
   border-right:1px solid var(--filo);
-  -webkit-backdrop-filter:blur(20px) saturate(1.3); backdrop-filter:blur(20px) saturate(1.3);
+  box-shadow:inset -1px 0 0 color-mix(in srgb, #fff 4%, transparent);
+  -webkit-backdrop-filter:blur(28px) saturate(1.5); backdrop-filter:blur(28px) saturate(1.5);
   overflow-y:auto; overscroll-behavior:contain; scrollbar-width:none;
 }
 .lateral::-webkit-scrollbar{display:none}
 .lat-marca{
   display:block; padding: 0 var(--e-3); text-decoration:none; color:var(--ink);
-  font-family:"Archivo Black","Archivo",sans-serif; font-size:17px; line-height:1.1; letter-spacing:-.005em; text-transform:uppercase;
+  font-family:"Archivo Black","Archivo",sans-serif; font-size:15px; line-height:1.15; letter-spacing:-.005em; text-transform:uppercase; white-space:nowrap;
 }
 .lat-marca .rojo{color:var(--red)}
 .lat-busca{
@@ -4167,11 +4170,11 @@ html.con-lateral .cd-ajustes{display:none}
 .lat-busca input::-webkit-search-cancel-button{display:none}
 .lat-busca kbd{font:600 11px/1 var(--f-texto); padding:3px 6px; border-radius:var(--r-s); border:1px solid var(--filo); color:var(--ink3)}
 .lat-nav{display:flex; flex-direction:column; gap:2px}
-.lat-grupo-t{margin: var(--e-4) 0 var(--e-1); padding: 0 var(--e-3); font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
+.lat-grupo-t{margin: var(--e-3) 0 2px; padding: 0 var(--e-3); font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
 .lat-grupo-t:first-child{margin-top:0}
 .lat-fila{
   position:relative; display:flex; align-items:center; gap: var(--e-3); width:100%;
-  min-height:36px; padding: 0 var(--e-3); border-radius:var(--r-m); border:none; background:none; cursor:pointer;
+  min-height:32px; padding: 0 var(--e-3); border-radius:var(--r-m); border:none; background:none; cursor:pointer;
   font:inherit; font-size: var(--t-m); font-weight:500; color:var(--ink2); text-align:left; text-decoration:none;
   transition:transform var(--muelle-toque);
 }
@@ -4181,15 +4184,15 @@ html.con-lateral .cd-ajustes{display:none}
 .lat-fila[aria-current="page"]{background:var(--red-soft); color:var(--ink); font-weight:600}
 .lat-fila[aria-current="page"] .lat-ico{color:var(--red)}
 .lat-fila[aria-current="page"]::before{
-  content:""; position:absolute; left:-16px; top:8px; bottom:8px; width:3px; border-radius:0 var(--r-s) var(--r-s) 0;
+  content:""; position:absolute; left:calc(-1 * var(--e-4)); top:8px; bottom:8px; width:3px; border-radius:0 var(--r-s) var(--r-s) 0;
   background:var(--red); box-shadow:0 0 10px 1px color-mix(in srgb, var(--red) 55%, transparent);
 }
 .lat-cuenta{margin-left:auto; min-width:20px; padding:0 6px; border-radius:var(--r-pill); background:var(--red); color:var(--sobre-acento); font-size: var(--t-xs); font-weight:700; text-align:center; line-height:20px}
 .lat-insignia{margin-left:auto; width:8px; height:8px; border-radius:var(--r-pill); background:var(--red)}
-.lat-pie{margin-top:auto; display:flex; flex-direction:column; gap: var(--e-2); padding-top: var(--e-4)}
+.lat-pie{margin-top:auto; display:flex; flex-direction:column; gap: var(--e-2); padding-top: var(--e-2)}
 .lat-tarjeta{
   display:flex; flex-direction:column; gap: var(--e-2); width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--ink);
-  padding: var(--e-4); border-radius:var(--r-l);
+  padding: var(--e-3) var(--e-4); border-radius:var(--r-l);
   background:var(--sup-lustre), var(--panel2); border:1px solid var(--filo); box-shadow:var(--sup-brillo);
   transition:transform var(--muelle-toque);
 }
@@ -4284,3 +4287,43 @@ button.pm-proximo-t{cursor:pointer}
 button.pm-proximo-t:hover{text-decoration:underline}
 .pm-proximo-tipo{font-size: var(--t-xs); color:var(--ink3)}
 .pm-proximo .proximo-cal{align-self:flex-start; margin-top:auto}
+
+/* «Visto hace poco» en la lateral: lo último que marcaste, con su carátula */
+.lat-recientes{display:flex; flex-direction:column; gap:2px}
+.lat-reciente{
+  display:flex; align-items:center; gap: var(--e-3); width:100%; padding: 3px var(--e-3); cursor:pointer; text-align:left;
+  border:none; border-radius:var(--r-m); background:none; font:inherit; color:var(--ink); transition:transform var(--muelle-toque);
+}
+.lat-reciente:hover{background:color-mix(in srgb, var(--ink) 6%, transparent)}
+.lat-reciente:active{transform:scale(.98)}
+.lat-reciente img, .lat-reciente-sin{flex:none; width:26px; height:39px; border-radius:var(--r-s); object-fit:cover; box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.lat-reciente-texto{display:flex; flex-direction:column; min-width:0}
+.lat-reciente-texto b{font-size: var(--t-m); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.lat-reciente-texto small{font-size: var(--t-xs); color:var(--ink3)}
+/* la cuenta, abajo del todo */
+.lat-cuenta{
+  display:flex; align-items:center; gap: var(--e-3); width:100%; padding: var(--e-2) var(--e-3); cursor:pointer; text-align:left;
+  border:1px solid var(--filo); border-radius:var(--r-l); background:color-mix(in srgb, var(--panel2) 70%, transparent);
+  font:inherit; color:var(--ink); transition:transform var(--muelle-toque);
+}
+.lat-cuenta:hover{border-color:color-mix(in srgb, var(--ink) 18%, transparent)}
+.lat-cuenta:active{transform:scale(.98)}
+.lat-cuenta > .lat-ico{margin-left:auto; color:var(--ink3)}
+.lat-avatar{flex:none; width:36px; height:36px; border-radius:var(--r-pill); object-fit:cover; object-position:center 20%}
+.lat-avatar-vacio{display:grid; place-items:center; font-weight:700; color:#fff; background:linear-gradient(135deg, color-mix(in srgb, var(--sello) 80%, #fff), var(--sello) 45%, var(--calido))}
+.lat-avatar-vacio .lat-ico{width:18px; height:18px}
+.lat-cuenta-texto{display:flex; flex-direction:column; min-width:0}
+.lat-cuenta-texto b{font-size: var(--t-m); font-weight:700}
+.lat-cuenta-texto small{font-size: var(--t-xs); color:var(--ink3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+/* búsqueda con Filtros y «Plan, horario y más» al lado, como iconos */
+.lat-herr{display:flex; gap: var(--e-2); align-items:stretch}
+.lat-herr .lat-busca{flex:1; min-width:0}
+.lat-icono{
+  position:relative; flex:none; width:38px; display:grid; place-items:center; padding:0; cursor:pointer;
+  border-radius:var(--r-m); border:1px solid transparent; background:var(--panel2); color:var(--ink2);
+  transition:transform var(--muelle-toque);
+}
+.lat-icono:hover{color:var(--ink); border-color:var(--filo)}
+.lat-icono:active{transform:scale(.94)}
+.lat-icono-cuenta{position:absolute; top:-5px; right:-5px; min-width:17px; height:17px; padding:0 4px; border-radius:var(--r-pill);
+  background:var(--red); color:var(--sobre-acento); font-size:10px; font-weight:700; line-height:17px; text-align:center}

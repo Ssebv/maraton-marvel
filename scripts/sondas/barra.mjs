@@ -59,8 +59,10 @@ for (const ancho of [1280, 1920]) {
         viejas: ['.barra-app', '.toolbar', '.subvistas', '.hero-maraton'].filter(s => document.querySelector(s)),
         titulo: (document.querySelector('.pagina-t') || {}).textContent, main: Math.round(document.querySelector('main').getBoundingClientRect().left),
         ancho: document.documentElement.scrollWidth, vp: innerWidth } })()`)
-    filas.push([l.lateral && l.filas >= 12 && l.activa === 'Cronológico' && !l.viejas.length, `lateral con ${l.filas} filas, activa «${l.activa}», sin barra de arriba ni herramientas (${JSON.stringify(l.viejas)})`])
-    filas.push([l.titulo === 'Cronológico' && l.main >= 248 && l.ancho <= l.vp, `título «${l.titulo}», contenido desde x=${l.main}, sin scroll horizontal (${l.ancho}/${l.vp})`])
+    filas.push([l.lateral && l.filas >= 10 && l.activa === 'Cronológico' && !l.viejas.length, `lateral con ${l.filas} filas, activa «${l.activa}», sin barra de arriba ni herramientas (${JSON.stringify(l.viejas)})`])
+    const alto = await cdp.eval(`(() => { const a = document.querySelector('.lateral'); return a.scrollHeight - a.clientHeight })()`)
+    filas.push([alto <= 0, `la barra lateral no se desplaza a 900 px de alto (sobra ${alto} px)`])
+    filas.push([l.titulo === 'Cronológico' && l.main >= 288 && l.ancho <= l.vp, `título «${l.titulo}», contenido desde x=${l.main}, sin scroll horizontal (${l.ancho}/${l.vp})`])
     // «/» enfoca la búsqueda de la lateral
     await cdp.eval(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }))`)
     await espera(150)
@@ -72,7 +74,7 @@ for (const ancho of [1280, 1920]) {
     await espera(700)
     filas.push([await cdp.eval(`location.hash === '#galeria' && (document.querySelector('.lat-fila[aria-current="page"]') || {}).textContent === 'Galería'`), 'la fila «Galería» lleva a su vista y queda activa'])
     // Filtros abre su hoja; la tarjeta de abajo abre el panel
-    await cdp.eval(`[...document.querySelectorAll('.lat-fila')].find(a => /^Filtros/.test(a.textContent)).click()`)
+    await cdp.eval(`document.querySelector('.lat-icono[aria-label^="Filtros"]').click()`)
     const hoja = await cdp.hasta(`!!document.querySelector('.overlay:not(.saliendo) .filtro-fila')`, 3000).then(() => true, () => false)
     filas.push([hoja, 'Filtros abre su hoja'])
     await cdp.eval(`document.querySelector('.overlay .cerrar').click()`)

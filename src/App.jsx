@@ -1483,6 +1483,7 @@ const ICO_LAT = (() => {
     multiverso: i(<><circle cx="12" cy="12" r="4" /><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-20 12 12)" /></>),
     filtros: i(<><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></>),
     mas: i(<><circle cx="6" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="18" cy="12" r="1.2" /></>),
+    cuenta: i(<><circle cx="12" cy="9" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></>),
     ajustes: i(<><circle cx="12" cy="12" r="3" /><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" /></>),
   }
 })()
@@ -9072,14 +9073,24 @@ export default function App() {
       <a className="lat-marca" href={'#' + (ultimaVista.maraton || 'inicio')} onClick={e => irAVista(ultimaVista.maraton || 'inicio', e)}>
         {tr(<>Maratón <span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span></>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}
       </a>
-      <label className="lat-busca">
-        <svg className="lat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.3-4.3" /></svg>
-        <input type="search" name="busqueda" placeholder={tr('Buscar', 'Search')} value={busca} spellCheck={false} autoComplete="off"
-          title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')}
-          aria-label={tr('Buscar título', 'Search titles')}
-          onChange={e => { setBusca(e.target.value); if (!enMaraton && e.target.value) setVista('inicio') }} />
-        <kbd aria-hidden="true">/</kbd>
-      </label>
+      <div className="lat-herr">
+        <label className="lat-busca">
+          <svg className="lat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.3-4.3" /></svg>
+          <input type="search" name="busqueda" placeholder={tr('Buscar', 'Search')} value={busca} spellCheck={false} autoComplete="off"
+            title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')}
+            aria-label={tr('Buscar título', 'Search titles')}
+            onChange={e => { setBusca(e.target.value); if (!enMaraton && e.target.value) setVista('inicio') }} />
+          <kbd aria-hidden="true">/</kbd>
+        </label>
+        <button type="button" className="lat-icono" aria-haspopup="dialog" aria-expanded={filtrosModal} onClick={() => setFiltrosModal(true)}
+          aria-label={filtrosActivos ? tr(`Filtros, ${filtrosActivos} puestos`, `Filters, ${filtrosActivos} on`) : tr('Filtros', 'Filters')} title={tr('Filtros', 'Filters')}>
+          {ICO_LAT.filtros}{filtrosActivos > 0 && <span className="lat-icono-cuenta" aria-hidden="true">{filtrosActivos}</span>}
+        </button>
+        <button type="button" className="lat-icono" aria-haspopup="dialog" aria-expanded={masModal} onClick={() => setMasModal(true)}
+          aria-label={tr('Plan de sesión, horario, modo cine y más', 'Session plan, schedule, cinema mode and more')} title={tr('Plan, horario y más', 'Plan, schedule and more')}>
+          {ICO_LAT.mas}
+        </button>
+      </div>
       <nav className="lat-nav" aria-label={tr('Secciones', 'Sections')}>
         <p className="lat-grupo-t">{tr('Maratón', 'Marathon')}</p>
         {DESTINOS[0].vistas.map(filaLat)}
@@ -9087,14 +9098,28 @@ export default function App() {
         {DESTINOS[1].vistas.map(filaLat)}
         <p className="lat-grupo-t">{tr('Explorar', 'Explore')}</p>
         {DESTINOS[2].vistas.map(filaLat)}
-        <p className="lat-grupo-t">{tr('Herramientas', 'Tools')}</p>
-        <button type="button" className="lat-fila" aria-haspopup="dialog" aria-expanded={filtrosModal} onClick={() => setFiltrosModal(true)}>
-          {ICO_LAT.filtros}<span>{tr('Filtros', 'Filters')}</span>{filtrosActivos > 0 && <span className="lat-cuenta">{filtrosActivos}</span>}
-        </button>
-        <button type="button" className="lat-fila" aria-haspopup="dialog" aria-expanded={masModal} onClick={() => setMasModal(true)}>
-          {ICO_LAT.mas}<span>{tr('Plan, horario y más', 'Plan, schedule and more')}</span>
-        </button>
       </nav>
+      {(() => {
+        // lo último que marcaste (las marcas guardan la fecha; las antiguas, un 1)
+        const ult = Object.entries(vistas).filter(([, t]) => t > 1e12).sort((a, b) => b[1] - a[1]).slice(0, 3)
+          .map(([id, t]) => ({ d: buscaItem(id), t })).filter(x => x.d)
+        if (!ult.length) return null
+        const rel = new Intl.RelativeTimeFormat(LOC(), { numeric: 'auto' })
+        const cuando = t => { const dd = Math.round((t - Date.now()) / 864e5); return Math.abs(dd) < 1 ? rel.format(Math.round((t - Date.now()) / 36e5), 'hour') : rel.format(dd, 'day') }
+        return (
+          <section className="lat-recientes" aria-label={tr('Visto hace poco', 'Recently watched')}>
+            <p className="lat-grupo-t">{tr('Visto hace poco', 'Recently watched')}</p>
+            {ult.map(({ d, t }) => (
+              <button type="button" key={d.item.id} className="lat-reciente" onClick={() => setDetalle(d)}>
+                {POSTERS[d.item.id]
+                  ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />
+                  : <span className="lat-reciente-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }} />}
+                <span className="lat-reciente-texto"><b>{d.item.t}</b><small>{cuando(t)}</small></span>
+              </button>
+            ))}
+          </section>
+        )
+      })()}
       <div className="lat-pie">
         <button type="button" className="lat-tarjeta" aria-haspopup="dialog" aria-expanded={panelLat} onClick={() => setPanelLat(v => !v)}>
           {proxEstreno && objetivo && (
@@ -9105,7 +9130,18 @@ export default function App() {
           <span className="lat-panel">{panelLat ? tr('Cerrar panel', 'Close panel') : tr('Mapa, estrenos y cuenta atrás', 'Map, premieres and countdown')}</span>
         </button>
         {botonSync}
-        <button type="button" className="lat-fila" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{ICO_LAT.ajustes}<span>{tr('Ajustes', 'Settings')}</span></button>
+        {/* la cuenta: con la nube encendida, entrar (Google o correo) guarda el
+            progreso en ella; sin nube, dice con claridad dónde vive lo tuyo */}
+        <button type="button" className="lat-cuenta" onClick={() => setAjustes(true)}>
+          {cuenta && perfilCuenta && POSTERS[perfilCuenta.avatar]
+            ? <img className="lat-avatar" src={POSTERS[perfilCuenta.avatar]} alt="" />
+            : <span className="lat-avatar lat-avatar-vacio" aria-hidden="true">{cuenta && perfilCuenta ? perfilCuenta.nombre.slice(0, 1).toUpperCase() : ICO_LAT.cuenta}</span>}
+          <span className="lat-cuenta-texto">
+            <b>{cuenta ? (perfilCuenta ? '@' + perfilCuenta.nombre : tr('Tu cuenta', 'Your account')) : NUBE ? tr('Iniciar sesión', 'Sign in') : tr('Tu progreso', 'Your progress')}</b>
+            <small>{cuenta ? tr('Guardado en tu cuenta', 'Saved to your account') : NUBE ? tr('Guarda tu progreso en la nube', 'Save your progress to the cloud') : tr('Solo en este navegador', 'Only in this browser')}</small>
+          </span>
+          {ICO_LAT.ajustes}
+        </button>
       </div>
     </aside>
   )
