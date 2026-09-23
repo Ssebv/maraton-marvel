@@ -20,7 +20,7 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     await navega('')
     await cdp.hasta(`!!document.querySelector('.inicio-nf .nf-cartel-t')`, 5000)
     const t0 = await cdp.eval(`document.querySelector('.nf-cartel-t').textContent`)
-    const sub = await cdp.eval(`(document.querySelector('.subvista[aria-current="page"]') || {}).textContent`)
+    const sub = await cdp.eval(`(document.querySelector('.subvista[aria-current="page"], .lat-fila[aria-current="page"]') || {}).textContent`)
     filas.push([sub === 'Inicio' && !!t0, `${donde}: sin hash abre Inicio (${sub}) con la cartelera de «${t0}»`])
     const cont = await cdp.eval(`(() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'Continuar viendo')
       if (!f) return null; const t = f.querySelector('.nf-tile'); return { t: t.querySelector('.nf-tile-t').textContent, w: parseFloat(t.querySelector('.nf-prog i').style.width) } })()`)

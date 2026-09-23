@@ -4,7 +4,8 @@
 import { abre, espera, informe } from './lib.mjs'
 
 let malas = 0
-for (const ancho of [1280, 1920]) {
+// la barra de arriba vive entre 721 y 1099 px; desde 1100, la lateral (abajo)
+for (const ancho of [1024]) {
   const { cdp, navega, cierra, errores } = await abre({ movil: false, ancho, alto: 900 })
   const filas = []
   try {
@@ -44,6 +45,49 @@ for (const ancho of [1280, 1920]) {
     filas.push([errores.length === 0, `errores en consola: ${errores.length} ${errores.slice(0, 3).join(' | ')}`])
   } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
   malas += informe(`barra de escritorio · ${ancho}`, filas)
+}
+// Barra lateral al estilo Norte (23 sep 2026), desde 1100 px
+for (const ancho of [1280, 1920]) {
+  const { cdp, navega, cierra, errores } = await abre({ movil: false, ancho, alto: 900 })
+  const filas = []
+  try {
+    await navega('#crono')
+    await espera(1500)
+    const l = await cdp.eval(`(() => { const a = document.querySelector('.lateral'), r = a && a.getBoundingClientRect()
+      return { lateral: !!r && r.width > 200 && r.left === 0, filas: a ? a.querySelectorAll('.lat-fila').length : 0,
+        activa: (document.querySelector('.lat-fila[aria-current="page"]') || {}).textContent,
+        viejas: ['.barra-app', '.toolbar', '.subvistas', '.hero-maraton'].filter(s => document.querySelector(s)),
+        titulo: (document.querySelector('.pagina-t') || {}).textContent, main: Math.round(document.querySelector('main').getBoundingClientRect().left),
+        ancho: document.documentElement.scrollWidth, vp: innerWidth } })()`)
+    filas.push([l.lateral && l.filas >= 12 && l.activa === 'Cronológico' && !l.viejas.length, `lateral con ${l.filas} filas, activa «${l.activa}», sin barra de arriba ni herramientas (${JSON.stringify(l.viejas)})`])
+    filas.push([l.titulo === 'Cronológico' && l.main >= 248 && l.ancho <= l.vp, `título «${l.titulo}», contenido desde x=${l.main}, sin scroll horizontal (${l.ancho}/${l.vp})`])
+    // «/» enfoca la búsqueda de la lateral
+    await cdp.eval(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }))`)
+    await espera(150)
+    filas.push([await cdp.eval(`!!document.activeElement.closest('.lat-busca')`), '«/» enfoca la búsqueda de la barra lateral'])
+    await cdp.eval(`document.activeElement.blur()`)
+    // una fila lleva a su vista
+    await cdp.eval(`[...document.querySelectorAll('.lat-fila')].find(a => a.textContent === 'Galería').click()`)
+    await cdp.hasta(`location.hash === '#galeria'`, 3000).catch(() => null)
+    await espera(700)
+    filas.push([await cdp.eval(`location.hash === '#galeria' && (document.querySelector('.lat-fila[aria-current="page"]') || {}).textContent === 'Galería'`), 'la fila «Galería» lleva a su vista y queda activa'])
+    // Filtros abre su hoja; la tarjeta de abajo abre el panel
+    await cdp.eval(`[...document.querySelectorAll('.lat-fila')].find(a => /^Filtros/.test(a.textContent)).click()`)
+    const hoja = await cdp.hasta(`!!document.querySelector('.overlay:not(.saliendo) .filtro-fila')`, 3000).then(() => true, () => false)
+    filas.push([hoja, 'Filtros abre su hoja'])
+    await cdp.eval(`document.querySelector('.overlay .cerrar').click()`)
+    await cdp.hasta(`!document.querySelector('.overlay')`, 3000).catch(() => null)
+    await cdp.eval(`document.querySelector('.lat-tarjeta').click()`)
+    await espera(600)
+    filas.push([await cdp.eval(`(() => { const p = document.querySelector('.panel-superior'); return !!p && !p.hidden })()`), 'la tarjeta de la cuenta atrás abre el panel completo'])
+    // tecla 2 → Perfil, con Estadísticas activa en la lateral
+    await cdp.eval(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }))`)
+    await cdp.hasta(`location.hash === '#stats'`, 4000).catch(() => null)
+    await espera(700)
+    filas.push([await cdp.eval(`(document.querySelector('.lat-fila[aria-current="page"]') || {}).textContent === 'Estadísticas'`), 'la tecla 2 lleva a Perfil › Estadísticas'])
+    filas.push([errores.length === 0, `errores en consola: ${errores.length} ${errores.slice(0, 3).join(' | ')}`])
+  } catch (e) { filas.push([false, 'la sonda se cayó: ' + e.message]) } finally { await cierra() }
+  malas += informe(`barra lateral · ${ancho}`, filas)
 }
 {
   const { cdp, navega, cierra, errores } = await abre({})

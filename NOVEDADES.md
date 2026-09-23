@@ -11,6 +11,7 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 ## Septiembre de 2026
 
 ### Semana del 22
+- **Barra lateral en el computador, como en Norte:** las secciones, las vistas, la búsqueda, los filtros y la cuenta atrás viven a la izquierda, y cada página empieza con su título y el contenido, sin cabecera de por medio. En pantallas más estrechas y en el teléfono sigue todo como antes.
 - **Avisos en el iPhone, por tu calendario:** «Estrenos en mi calendario» (en Ajustes › Avisos y en el panel de Doomsday) suscribe tu calendario a los estrenos y episodios nuevos; se actualiza solo y avisa ese día a las 10:00. El horario que pasas al calendario ahora avisa 15 minutos antes de cada sesión.
 - **Guía para instalarla en el iPhone:** si la abres en Safari sin instalar, una tarjeta te muestra los tres pasos. Instalada, además, la app pide al iPhone que no borre tus datos.
 - **En el teléfono, mantén el dedo sobre una carátula** de Inicio: sale la misma tarjeta de vista previa que en el computador (fotogramas en movimiento, nota, marcar y «Más información»). Toca fuera para cerrarla.

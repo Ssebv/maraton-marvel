@@ -205,7 +205,10 @@ let malas = 0
   malas += informe('detalles · modo cine', filas)
 }
 
-for (const ancho of [1280, 1600]) {
+// Desde el 23 sep 2026, a partir de 1100 px manda la barra lateral y la cabecera
+// del maratón es el título de la página (lo comprueba la sonda barra); las
+// cifras de la portada solo existen por debajo
+for (const ancho of [1024]) {
   const { cdp, navega, cierra, errores } = await abre({ movil: false, ancho, alto: 900, siembra })
   const filas = []
   try {
@@ -215,8 +218,7 @@ for (const ancho of [1280, 1600]) {
     await espera(300)
     const m = await cdp.eval(`(() => { const s = document.querySelector('.stats').getBoundingClientRect(), t = document.querySelector('.hero h1').getBoundingClientRect(), w = document.querySelector('.hero').getBoundingClientRect()
       return { stats: Math.round(s.width), hero: Math.round(w.width), junto: s.top < t.bottom } })()`)
-    if (ancho === 1280) filas.push([!m.junto && Math.abs(m.stats - m.hero) <= 2, `1280: cifras bajo el titular a lo ancho (${m.stats} de ${m.hero} px)`])
-    else filas.push([m.junto && m.stats <= 880, `1600: cifras junto al titular (${m.junto}), ${m.stats} px`])
+    filas.push([!m.junto && Math.abs(m.stats - m.hero) <= 2, `${ancho}: cifras bajo el titular a lo ancho (${m.stats} de ${m.hero} px)`])
     // dos columnas salvo con una saga plegada, que va a una a propósito
     const l = await cdp.eval(`({ cols: getComputedStyle(document.querySelector('main.crono')).gridTemplateColumns, plegada: !!document.querySelector('main.crono .saga.plegada') })`)
     const dos = /^[\d.]+px [\d.]+px$/.test(l.cols)

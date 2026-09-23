@@ -1465,6 +1465,27 @@ function fmtDur(d) {
 
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
 const VISTAS_VALIDAS = ['inicio', 'crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo', ...(NUBE ? ['comunidades'] : [])]
+// Iconos de la barra lateral de escritorio (23 sep 2026): trazo de 1,8 como
+// los de la barra de pestañas del móvil, uno por vista y por herramienta
+const ICO_LAT = (() => {
+  const i = d => <svg className="lat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
+  return {
+    inicio: i(<><path d="M4 11 12 4l8 7" /><path d="M6 10v10h12V10" /><path d="M10 20v-5h4v5" /></>),
+    crono: i(<><path d="M9 6h11M9 12h11M9 18h11" /><path d="M4 6h.01M4 12h.01M4 18h.01" /></>),
+    estreno: i(<><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></>),
+    comics: i(<><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z" /><path d="M13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13z" /></>),
+    animacion: i(<><rect x="3" y="6" width="18" height="12" rx="2" /><path d="m10 9.5 4.5 2.5-4.5 2.5z" /></>),
+    galeria: i(<><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></>),
+    tiempo: i(<><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></>),
+    stats: i(<><path d="M5 20V11M12 20V5M19 20v-7" /></>),
+    listas: i(<><path d="M7 4h10v16l-5-3.5L7 20z" /></>),
+    comunidades: i(<><circle cx="9" cy="9" r="3" /><path d="M3.5 19a5.5 5.5 0 0 1 11 0" /><circle cx="17" cy="10" r="2.5" /><path d="M15.5 14.5a4.5 4.5 0 0 1 5 4.5" /></>),
+    multiverso: i(<><circle cx="12" cy="12" r="4" /><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-20 12 12)" /></>),
+    filtros: i(<><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></>),
+    mas: i(<><circle cx="6" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="18" cy="12" r="1.2" /></>),
+    ajustes: i(<><circle cx="12" cy="12" r="3" /><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" /></>),
+  }
+})()
 const PESTANAS = [
   { id: 'inicio', label: 'Inicio', en: 'Home' },
   { id: 'crono', label: 'Cronológico', en: 'Chronological' },
@@ -7273,6 +7294,19 @@ export default function App() {
   // dentro de .toolbar, cualquier transform de la barra al retirarse la
   // convertía en su contenedor y el dock se iba con ella (11 sep 2026).
   const [esMovil, setEsMovil] = useState(() => !!(window.matchMedia && window.matchMedia('(max-width:720px)').matches))
+  // Barra lateral de escritorio al estilo Norte (23 sep 2026, Sebastián: «hay
+  // algo que no me gusta del home… una barra lateral similar a Norte»): desde
+  // 1100 px las secciones, vistas y herramientas viven a la izquierda y el
+  // contenido empieza arriba. Por debajo, la barra de arriba de siempre.
+  const [conLateral, setConLateral] = useState(() => !!(window.matchMedia && window.matchMedia('(min-width:1100px)').matches))
+  useEffect(() => {
+    if (!window.matchMedia) return undefined
+    const mq = window.matchMedia('(min-width:1100px)')
+    const on = e => setConLateral(e.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  useEffect(() => { document.documentElement.classList.toggle('con-lateral', conLateral) }, [conLateral])
   useEffect(() => {
     if (!window.matchMedia) return
     const mq = window.matchMedia('(max-width:720px)')
@@ -7472,7 +7506,11 @@ export default function App() {
       // estás, sube al principio). Fuera de campos y de capas.
       if (/^[1-3]$/.test(e.key) && !enCampo && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey
           && !document.querySelector('.overlay, .lector, .cine')) {
+        // con la barra lateral (desde 1100 px) no hay pestañas: la fila de la
+        // vista en la que dejaste esa sección
+        const d = DESTINOS[Number(e.key) - 1]
         const pestana = document.querySelectorAll('nav.tabs .tab')[Number(e.key) - 1]
+          || (d && document.querySelector(`.lateral .lat-fila[href="#${ultimaVista[d.id] || d.vistas[0]}"]`))
         if (pestana) { e.preventDefault(); pestana.click() }
         return
       }
@@ -8913,15 +8951,82 @@ export default function App() {
       {tr('Sin conexión', 'Offline')}
     </button>
   )
+  const irAVista = (v, e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+    e.preventDefault()
+    if (v === vista) {
+      if (vista === 'multiverso' && tierra) cierraTierra()
+      else if (vista === 'listas' && listaActiva) cierraLista()
+      else subeArriba()
+      return
+    }
+    const orden = DESTINOS.flatMap(d => d.vistas)
+    conTransicion(orden.indexOf(v) > orden.indexOf(vista) ? 'adelante' : 'atras', () => setVista(v))
+  }
+  const filaLat = v => {
+    const p = PESTANAS.find(x => x.id === v)
+    const insignia = v === 'stats' && !enStats && nuevosLogros.length > 0
+    return (
+      <a key={v} className="lat-fila" href={'#' + v} aria-current={vista === v ? 'page' : undefined} onClick={e => irAVista(v, e)}>
+        {ICO_LAT[v]}<span>{p ? tr(p.label, p.en || p.label) : v}</span>
+        {insignia && <><span className="lat-insignia" aria-hidden="true" /><span className="solo-lector">{tr(', logro nuevo', ', new achievement')}</span></>}
+      </a>
+    )
+  }
+  const lateral = conLateral && (
+    <aside className="lateral" aria-label={tr('Navegación', 'Navigation')}>
+      <a className="lat-marca" href={'#' + (ultimaVista.maraton || 'inicio')} onClick={e => irAVista(ultimaVista.maraton || 'inicio', e)}>
+        {tr(<>Maratón <span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span></>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}
+      </a>
+      <label className="lat-busca">
+        <svg className="lat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.3-4.3" /></svg>
+        <input type="search" name="busqueda" placeholder={tr('Buscar', 'Search')} value={busca} spellCheck={false} autoComplete="off"
+          title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')}
+          aria-label={tr('Buscar título', 'Search titles')}
+          onChange={e => { setBusca(e.target.value); if (!enMaraton && e.target.value) setVista('inicio') }} />
+        <kbd aria-hidden="true">/</kbd>
+      </label>
+      <nav className="lat-nav" aria-label={tr('Secciones', 'Sections')}>
+        <p className="lat-grupo-t">{tr('Maratón', 'Marathon')}</p>
+        {DESTINOS[0].vistas.map(filaLat)}
+        <p className="lat-grupo-t">{tr('Tú', 'You')}</p>
+        {DESTINOS[1].vistas.map(filaLat)}
+        <p className="lat-grupo-t">{tr('Explorar', 'Explore')}</p>
+        {DESTINOS[2].vistas.map(filaLat)}
+        <p className="lat-grupo-t">{tr('Herramientas', 'Tools')}</p>
+        <button type="button" className="lat-fila" aria-haspopup="dialog" aria-expanded={filtrosModal} onClick={() => setFiltrosModal(true)}>
+          {ICO_LAT.filtros}<span>{tr('Filtros', 'Filters')}</span>{filtrosActivos > 0 && <span className="lat-cuenta">{filtrosActivos}</span>}
+        </button>
+        <button type="button" className="lat-fila" aria-haspopup="dialog" aria-expanded={masModal} onClick={() => setMasModal(true)}>
+          {ICO_LAT.mas}<span>{tr('Plan, horario y más', 'Plan, schedule and more')}</span>
+        </button>
+      </nav>
+      <div className="lat-pie">
+        <button type="button" className="lat-tarjeta" aria-expanded={panelAbierto} onClick={() => { if (!enMaraton) setVista(ultimaVista.maraton || 'inicio'); if (!panelAbierto) alternaPanel(); else if (enMaraton) alternaPanel() }}>
+          {proxEstreno && objetivo && (
+            <span className="lat-cuenta-atras"><b>{proxEstreno.t.replace(/^(Vengadores|Avengers): /, '')}</b> {tr('en', 'in')} <b className="pr-dias"><Cifra n={objetivo.dias} /> {tr('días', 'days')}</b></span>
+          )}
+          <span className="barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
+          <span className="lat-prog"><b><Cifra n={stats.totV} /></b> / {stats.totN} · {pct} %<span className="lat-prog-h">{tr('quedan', 'left')} {Math.round(stats.mins / 60)} h</span></span>
+          <span className="lat-panel">{panelAbierto && enMaraton ? tr('Ocultar panel', 'Hide panel') : tr('Ver panel completo', 'Open full panel')}</span>
+        </button>
+        {botonSync}
+        <button type="button" className="lat-fila" aria-pressed={ajustes} onClick={() => setAjustes(true)}>{ICO_LAT.ajustes}<span>{tr('Ajustes', 'Settings')}</span></button>
+      </div>
+    </aside>
+  )
+  // título de la página en el contenido cuando manda la barra lateral
+  const pestanaActual = PESTANAS.find(x => x.id === vista)
   return (
     <div className="wrap">
       <a className="saltar" href="#contenido">{tr('Saltar al contenido', 'Skip to content')}</a>
+      {lateral}
       {/* Escritorio (16 sep 2026): las secciones viven en una barra propia,
           fija arriba y separada de los filtros, como en una app. Antes
           compartían bloque con filtros y herramientas, y fuera del maratón
           ese bloque era solo pestañas + Ajustes. En el móvil siguen en la
           barra de abajo. */}
-      {!esMovil && (
+      {!esMovil && !conLateral && (
         <header className={'barra-app' + (enMaraton ? ' en-maraton' : '')}>
           <a className="barra-app-marca" href={'#' + (ultimaVista.maraton || 'inicio')}
             onClick={e => irADestino(DESTINOS[0], ultimaVista.maraton || 'inicio', e)}>
@@ -8958,7 +9063,22 @@ export default function App() {
           <span className="fh-velo" />
         </div>
       )}
-      {enMaraton ? (
+      {enMaraton && conLateral ? (
+        <header className="pagina-cab">
+          <h1 className="pagina-t">{pestanaActual ? tr(pestanaActual.label, pestanaActual.en || pestanaActual.label) : ''}</h1>
+          <p className="pagina-sub">
+            {vista === 'inicio'
+              ? tr(`Llevas ${stats.totV} de ${stats.totN} títulos · te quedan ${Math.round(stats.mins / 60)} h`, `${stats.totV} of ${stats.totN} titles watched · ${Math.round(stats.mins / 60)} h left`)
+              : tr('Todo Marvel y X-Men en el orden de la historia', 'All of Marvel and X-Men in story order')}
+          </p>
+          {filtrosActivos > 0 && (
+            <p className="filtros-movil pagina-filtros" role="status">
+              <span>{filtros.express && filtrosActivos === 1 ? tr('Ruta express activa', 'Express route on') : tr(`${filtrosActivos} filtro${filtrosActivos === 1 ? '' : 's'} activo${filtrosActivos === 1 ? '' : 's'}`, `${filtrosActivos} filter${filtrosActivos === 1 ? '' : 's'} on`)}</span>
+              <button className="filtros-quitar" onClick={() => setFiltros(sinFiltros())}>{tr('Quitar', 'Clear')}</button>
+            </p>
+          )}
+        </header>
+      ) : enMaraton ? (
       <section className={vista === 'inicio' ? 'hero hero-maraton en-inicio' : 'hero hero-maraton'}>
         <div className="hero-titulo">
           <p className="hero-eyebrow">{tr('Guía de maratón · cronología completa', 'Marathon guide · the full chronology')}</p>
@@ -9067,7 +9187,7 @@ export default function App() {
       <AvisoNuevo onProbar={stats.siguiente ? () => { const d = buscaItem(stats.siguiente.id); if (d) setDetalle(d) } : null} />
       <Novedades eps={eps} />
       {enMaraton && (<>
-      {!panelAbierto && (
+      {!panelAbierto && !conLateral && (
         <button className="panel-resumen" aria-expanded="false" onClick={alternaPanel}>
           <span className="pr-datos">
             {proxEstreno && objetivo
@@ -9117,6 +9237,7 @@ export default function App() {
       )}
       </>)}
 
+      {!conLateral && (
       <header className={'toolbar' + (enMaraton ? '' : ' fuera-maraton')}>
         {/* pegada arriba en móvil, cubre la zona segura del notch con el mismo cristal (CSS) */}
         <span className="toolbar-tope" aria-hidden="true" />
@@ -9145,10 +9266,11 @@ export default function App() {
           )}
         </div>
       </header>
+      )}
 
       {(() => {
         const d = DESTINOS.find(x => x.id === destinoDe(vista))
-        if (!d || d.vistas.length < 2) return null
+        if (conLateral || !d || d.vistas.length < 2) return null
         return (
           <nav className="subvistas" ref={subGrupo} aria-label={tr(`Cómo ver ${d.label}`, `How to view ${d.en || d.label}`)}>
             <span className="indicador" ref={subIndicador} aria-hidden="true" />

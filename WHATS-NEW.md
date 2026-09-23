@@ -11,6 +11,7 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 ## September 2026
 
 ### Week of the 22nd
+- **Sidebar on computers, like Norte:** sections, views, search, filters and the countdown live on the left, and every page starts with its title and the content, no header in the way. On narrower screens and phones everything stays as before.
 - **iPhone alerts, through your calendar:** "Premieres in my calendar" (in Settings › Alerts and the Doomsday panel) subscribes your calendar to premieres and new episodes; it updates itself and alerts you at 10:00 that day. The schedule you add to your calendar now alerts you 15 minutes before each session.
 - **iPhone install guide:** if you open it in Safari without installing, a card shows you the three steps. Once installed, the app also asks the iPhone not to delete your data.
 - **On phones, press and hold a poster** on Home: the same preview card as on computers pops up (moving stills, rating, mark-watched and "More info"). Tap outside to close it.

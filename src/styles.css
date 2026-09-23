@@ -4133,3 +4133,80 @@ div.nf-abrir{cursor:default}
 }
 @media (prefers-reduced-motion: reduce){ .guia-instalar, .guia-instalar.sale{animation:none} }
 @media (min-width:721px){ .guia-instalar{bottom: var(--e-6)} .guia-flecha{display:none} }
+
+/* ── Barra lateral de escritorio, al estilo Norte (23 sep 2026) ──
+   Desde 1100 px: secciones, vistas y herramientas a la izquierda, fijas; el
+   contenido empieza arriba con el título de la página. La fila activa lleva
+   el tinte rojo y una barrita de 3 px con halo en el borde, como en Norte. */
+:root{--lat-w:248px}
+html.con-lateral body{padding-left:var(--lat-w)}
+html.con-lateral .wrap{max-width:1240px; padding-inline: var(--e-7)}
+html.con-lateral .cd-ajustes{display:none}
+.lateral{
+  position:fixed; z-index:30; left:0; top:0; bottom:0; width:var(--lat-w);
+  display:flex; flex-direction:column; gap: var(--e-4); padding: var(--e-6) var(--e-4) var(--e-5);
+  background:color-mix(in srgb, var(--panel) 82%, transparent);
+  border-right:1px solid var(--filo);
+  -webkit-backdrop-filter:blur(20px) saturate(1.3); backdrop-filter:blur(20px) saturate(1.3);
+  overflow-y:auto; overscroll-behavior:contain; scrollbar-width:none;
+}
+.lateral::-webkit-scrollbar{display:none}
+.lat-marca{
+  display:block; padding: 0 var(--e-3); text-decoration:none; color:var(--ink);
+  font-family:"Archivo Black","Archivo",sans-serif; font-size:17px; line-height:1.1; letter-spacing:-.005em; text-transform:uppercase;
+}
+.lat-marca .rojo{color:var(--red)}
+.lat-busca{
+  position:relative; display:flex; align-items:center; gap: var(--e-2);
+  min-height:38px; padding: 0 var(--e-3); border-radius:var(--r-m);
+  background:var(--panel2); border:1px solid transparent; color:var(--ink3);
+}
+.lat-busca:focus-within{border-color:var(--red); box-shadow:0 0 0 4px var(--red-soft); background:var(--panel)}
+.lat-busca input{flex:1; min-width:0; border:none; background:none; outline:none; font:inherit; font-size: var(--t-m); color:var(--ink)}
+.lat-busca input::-webkit-search-cancel-button{display:none}
+.lat-busca kbd{font:600 11px/1 var(--f-texto); padding:3px 6px; border-radius:var(--r-s); border:1px solid var(--filo); color:var(--ink3)}
+.lat-nav{display:flex; flex-direction:column; gap:2px}
+.lat-grupo-t{margin: var(--e-4) 0 var(--e-1); padding: 0 var(--e-3); font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
+.lat-grupo-t:first-child{margin-top:0}
+.lat-fila{
+  position:relative; display:flex; align-items:center; gap: var(--e-3); width:100%;
+  min-height:36px; padding: 0 var(--e-3); border-radius:var(--r-m); border:none; background:none; cursor:pointer;
+  font:inherit; font-size: var(--t-m); font-weight:500; color:var(--ink2); text-align:left; text-decoration:none;
+  transition:transform var(--muelle-toque);
+}
+.lat-fila:hover{background:color-mix(in srgb, var(--ink) 6%, transparent); color:var(--ink)}
+.lat-fila:active{transform:scale(.98)}
+.lat-ico{width:18px; height:18px; flex:none}
+.lat-fila[aria-current="page"]{background:var(--red-soft); color:var(--ink); font-weight:600}
+.lat-fila[aria-current="page"] .lat-ico{color:var(--red)}
+.lat-fila[aria-current="page"]::before{
+  content:""; position:absolute; left:-16px; top:8px; bottom:8px; width:3px; border-radius:0 var(--r-s) var(--r-s) 0;
+  background:var(--red); box-shadow:0 0 10px 1px color-mix(in srgb, var(--red) 55%, transparent);
+}
+.lat-cuenta{margin-left:auto; min-width:20px; padding:0 6px; border-radius:var(--r-pill); background:var(--red); color:var(--sobre-acento); font-size: var(--t-xs); font-weight:700; text-align:center; line-height:20px}
+.lat-insignia{margin-left:auto; width:8px; height:8px; border-radius:var(--r-pill); background:var(--red)}
+.lat-pie{margin-top:auto; display:flex; flex-direction:column; gap: var(--e-2); padding-top: var(--e-4)}
+.lat-tarjeta{
+  display:flex; flex-direction:column; gap: var(--e-2); width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--ink);
+  padding: var(--e-4); border-radius:var(--r-l);
+  background:var(--sup-lustre), var(--panel2); border:1px solid var(--filo); box-shadow:var(--sup-brillo);
+  transition:transform var(--muelle-toque);
+}
+.lat-tarjeta:hover{border-color:color-mix(in srgb, var(--ink) 18%, transparent)}
+.lat-tarjeta:active{transform:scale(.98)}
+.lat-tarjeta .barra{margin:0}
+.lat-cuenta-atras{font-size: var(--t-s); color:var(--ink2); line-height:1.35}
+.lat-cuenta-atras b{color:var(--ink); font-weight:700}
+.lat-cuenta-atras .pr-dias{color:var(--doom)}
+.lat-prog{display:flex; align-items:baseline; gap: var(--e-2); font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+.lat-prog b{color:var(--ink)}
+.lat-prog-h{margin-left:auto; color:var(--ink3)}
+.lat-panel{font-size: var(--t-xs); font-weight:600; color:var(--red)}
+/* el título de la página, como el PageHeader de Norte */
+.pagina-cab{padding: var(--e-8) 0 var(--e-5)}
+.pagina-t{margin:0; font-family:var(--f-titulo); font-size:34px; font-weight:800; letter-spacing:-.025em; line-height:1.1; text-transform:none}
+.pagina-sub{margin: var(--e-2) 0 0; font-size: var(--t-b); color:var(--ink2)}
+.pagina-filtros{margin-top: var(--e-3)}
+@media (prefers-reduced-motion: reduce){ .lat-fila, .lat-tarjeta{transition:none} }
+/* con la barra lateral, Perfil y Multiverso titulan como las páginas del maratón */
+html.con-lateral .cd-titulo{font-family:var(--f-titulo); font-weight:800; font-size:34px; letter-spacing:-.025em; line-height:1.1; text-transform:none}

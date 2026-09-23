@@ -23,7 +23,8 @@ for (const [nombre, opciones] of [['móvil 390', { movil: true }], ['escritorio 
       await espera(700)
       const m = await cdp.eval(`(() => {
         const main = document.querySelector('main')
-        const dock = document.querySelector('nav.tabs')
+        // pestañas (móvil y escritorio estrecho) o la barra lateral (desde 1100 px)
+        const dock = document.querySelector('nav.tabs') || document.querySelector('.lateral')
         const r = dock && dock.getBoundingClientRect()
         return {
           ancho: document.documentElement.scrollWidth, vp: innerWidth,
