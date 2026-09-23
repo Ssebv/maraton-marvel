@@ -4430,3 +4430,27 @@ html.con-lateral .cd-ajustes{display:none}
 .cal-semana-dia.con-resena::after{bottom:auto; top:6px; left:auto; right:6px; transform:none; width:7px; height:7px; box-shadow:0 0 0 2px rgba(8,9,14,.6)}
 .cal-semana-dia.con::before{inset:-4px}
 @media (max-width:640px){ .cal-semana{gap: var(--e-1)} .cal-semana-letra{font-size: var(--t-xs)} }
+
+/* ── Inicio: eras agrupadas por universo (23 sep 2026) ── */
+.nf-grupo{display:flex; flex-direction:column; gap: var(--e-6); padding-top: var(--e-4); border-top:1px solid var(--filo)}
+.nf-grupo-cab{display:flex; align-items:baseline; flex-wrap:wrap; gap: var(--e-2) var(--e-4)}
+.nf-grupo-t{margin:0; font-family:var(--f-titulo); font-size: var(--t-xl); font-weight:800; letter-spacing:-.02em; text-transform:none}
+.nf-grupo-t::before{content:""; display:inline-block; width:10px; height:10px; margin-right: var(--e-3); border-radius:var(--r-pill); background:var(--uc); box-shadow:0 0 12px color-mix(in srgb, var(--uc) 70%, transparent); vertical-align:.12em}
+.nf-grupo-sub{font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
+.nf-grupo-barra{flex:0 0 160px; height:5px; border-radius:var(--r-pill); background:color-mix(in srgb, var(--ink) 10%, transparent); overflow:hidden; align-self:center}
+.nf-grupo-barra i{display:block; height:100%; border-radius:var(--r-pill); background:var(--uc)}
+.nf-hechas{display:flex; flex-wrap:wrap; align-items:center; gap: var(--e-2); margin:0}
+.nf-hechas-t{font-size: var(--t-xs); font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink3); margin-right: var(--e-2)}
+.nf-hecha{
+  display:inline-flex; align-items:center; gap: var(--e-2); min-height:34px; padding: 0 var(--e-4) 0 var(--e-3); cursor:pointer;
+  border-radius:var(--r-pill); border:1px solid color-mix(in srgb, var(--done) 40%, var(--filo)); background:color-mix(in srgb, var(--done) 10%, transparent);
+  font:inherit; font-size: var(--t-m); font-weight:600; color:var(--ink); transition:transform var(--muelle-toque);
+}
+.nf-hecha svg{width:14px; height:14px; color:var(--done)}
+.nf-hecha small{font-size: var(--t-xs); color:var(--ink3); font-variant-numeric:tabular-nums}
+.nf-hecha:active{transform:scale(.96)}
+/* con la barra lateral, «Visto hace poco» ya está en ella */
+html.con-lateral .nf-fila-recientes{display:none}
+/* la cartelera lleva el color de su universo en el borde y un halo */
+.nf-cartel.uni-xmen, .nf-cartel.uni-ucm{box-shadow:0 0 0 1px color-mix(in srgb, var(--uc) 45%, transparent), 0 24px 60px -24px color-mix(in srgb, var(--uc) 55%, transparent)}
+.nf-cartel.uni-xmen .nf-eyebrow-punto, .nf-cartel.uni-ucm .nf-eyebrow-punto{background:var(--uc)}

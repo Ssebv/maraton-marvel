@@ -4215,7 +4215,7 @@ function usePreviaNf() {
   return { abierta, api, cerrar }
 }
 
-function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, progreso, atenuar, onMarcar, onVerTodo }) {
+function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, progreso, atenuar, onMarcar, onVerTodo, clase = '' }) {
   const previa = useContext(PreviaCtx)
   const carril = useRef(null)
   if (!items.length) return null
@@ -4224,7 +4224,7 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
     if (c) c.scrollBy({ left: dir * c.clientWidth * .85, behavior: movimientoReducido() ? 'instant' : 'smooth' })
   }
   return (
-    <section className={`nf-fila${ancha ? ' nf-ancha' : ''}${numerada ? ' nf-top' : ''}${atenuar ? ' nf-atenuar' : ''}`} aria-label={titulo}>
+    <section className={`nf-fila${ancha ? ' nf-ancha' : ''}${numerada ? ' nf-top' : ''}${atenuar ? ' nf-atenuar' : ''}${clase ? ' ' + clase : ''}`} aria-label={titulo}>
       <div className="nf-fila-cab">
         <h2 className="nf-fila-t">{titulo}</h2>
         {sub && <span className="nf-fila-sub">{sub}</span>}
@@ -4437,7 +4437,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
 
         {/* el selector de universo va encima, fuera de la sección con key;
             key: al marcar vista, la cartelera nueva entra con su animación */}
-        <section ref={cartelRef} className={verTrailer ? 'nf-cartel con-trailer' : 'nf-cartel'} key={s.id} style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
+        <section ref={cartelRef} className={(verTrailer ? 'nf-cartel con-trailer' : 'nf-cartel') + (uni ? ' uni-' + uni : '')} key={s.id} style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111', '--uc': uni === 'xmen' ? 'var(--gold)' : uni === 'ucm' ? 'var(--red)' : 'transparent' }}>
           {/* La carátula local (mismo servidor, 30 kB, casi siempre en caché) se pinta
               al instante, difuminada, y el fotograma de TMDB se funde encima al
               llegar. Sin ella, en 4G lenta el recuadro más grande de la pantalla
@@ -4529,7 +4529,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
         : <FilaNf titulo={tr('A continuación', 'Up next')} sub={tr('en el orden del maratón', 'in marathon order')} items={pendientes.slice(s ? 1 : 0, 16)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />}
       <FilaNf titulo={tr('Rumbo a Doomsday', 'Toward Doomsday')} sub={tr('la ruta express', 'the express route')} items={pendientes.filter(d => d.item.exp).slice(0, 20)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
       <FilaNf titulo={tr('Top 10 del maratón', 'Marathon top 10')} sub={tr('por nota de IMDb', 'by IMDb rating')} items={top} numerada vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
-      <FilaNf titulo={tr('Visto hace poco', 'Recently watched')} items={recientes} ancha vistas={vistas} onAbrir={onAbrir} />
+      <FilaNf clase="nf-fila-recientes" titulo={tr('Visto hace poco', 'Recently watched')} items={recientes} ancha vistas={vistas} onAbrir={onAbrir} />
       <FilaNf titulo={tr('Tus favoritas', 'Your favorites')} sub={tr('4 y 5 estrellas', '4 and 5 stars')} items={favoritas} vistas={vistas} onAbrir={onAbrir} />
       <ProximamenteNf onAbrir={onAbrir} />
       {/* tus listas, con su propio progreso (el de re-ver con alguien) */}
@@ -4538,12 +4538,46 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
         return <FilaNf key={l.id} titulo={l.nombre} items={its} vistas={l.prog || {}} onAbrir={onAbrir}
           sub={`${tr('Tu lista', 'Your list')} · ${its.filter(d => (l.prog || {})[d.item.id]).length}/${its.length}`} />
       })}
-      {eras.map(({ saga, era, its }) => (
-        <FilaNf key={saga.saga + era.era} titulo={era.era} vistas={vistas} onAbrir={onAbrir} items={its} onMarcar={onToggle}
-          onVerTodo={() => onVerEra(saga.saga, its[0].item.id)}
-          progreso={100 * its.filter(d => vistas[d.item.id]).length / its.length} atenuar
-          sub={`${nombreSaga(saga)} · ${era.rango} · ${its.filter(d => vistas[d.item.id]).length}/${its.length}`} />
-      ))}
+      {/* las eras, agrupadas por universo (el elegido primero); las que ya
+          viste enteras se resumen en una línea en vez de una fila más
+          (23 sep 2026: la portada medía ~9.200 px) */}
+      {[...new Set(eras.map(x => x.saga.saga))]
+        .sort((a, b) => (b === uni) - (a === uni))
+        .map(sgId => {
+          const deSaga = eras.filter(x => x.saga.saga === sgId)
+          const saga = deSaga[0].saga
+          const completa = x => x.its.every(d => vistas[d.item.id])
+          const hechas = deSaga.filter(completa)
+          const quedan = deSaga.filter(x => !completa(x))
+          const v = deSaga.reduce((n, x) => n + x.its.filter(d => vistas[d.item.id]).length, 0)
+          const n = deSaga.reduce((n, x) => n + x.its.length, 0)
+          const color = sgId === 'xmen' ? 'var(--gold)' : sgId === 'ucm' ? 'var(--red)' : sgId === 'animacion' ? 'var(--teal)' : 'var(--violet)'
+          return (
+            <section key={sgId} className="nf-grupo" style={{ '--uc': color }} aria-label={saga.titulo}>
+              <header className="nf-grupo-cab">
+                <h2 className="nf-grupo-t">{saga.titulo}</h2>
+                <span className="nf-grupo-sub">{v} / {n} · {tr('por eras', 'by era')}</span>
+                <span className="nf-grupo-barra" aria-hidden="true"><i style={{ width: `${n ? 100 * v / n : 0}%` }} /></span>
+              </header>
+              {hechas.length > 0 && (
+                <p className="nf-hechas">
+                  <span className="nf-hechas-t">{tr('Completadas', 'Completed')}</span>
+                  {hechas.map(({ era, its }) => (
+                    <button type="button" key={era.era} className="nf-hecha" onClick={() => onVerEra(saga.saga, its[0].item.id)}>
+                      <CheckIcon />{era.era}<small>{its.length}</small>
+                    </button>
+                  ))}
+                </p>
+              )}
+              {quedan.map(({ era, its }) => (
+                <FilaNf key={saga.saga + era.era} titulo={era.era} vistas={vistas} onAbrir={onAbrir} items={its} onMarcar={onToggle}
+                  onVerTodo={() => onVerEra(saga.saga, its[0].item.id)}
+                  progreso={100 * its.filter(d => vistas[d.item.id]).length / its.length} atenuar
+                  sub={`${era.rango} · ${its.filter(d => vistas[d.item.id]).length}/${its.length}`} />
+              ))}
+            </section>
+          )
+        })}
       <NfPrevia abierta={previaNf.abierta} onEntra={previaNf.api && previaNf.api.entra} onSale={previaNf.api && previaNf.api.suelta}
         onCerrar={previaNf.cerrar} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
     </main>
