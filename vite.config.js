@@ -22,13 +22,18 @@ const versionJson = {
   },
 }
 
+// la foto de la cartelera del primer título, para precargarla desde el <head>
+// en la primera visita (index.html, %LCP_INICIAL%)
+const lcpInicial = (readFileSync('src/fondos.js', 'utf8').match(/"first-class":\s*"(\/[\w-]+\.jpg)"/) || [])[1] || ''
+const lcpHtml = { name: 'lcp-inicial', transformIndexHtml: h => h.replace('%LCP_INICIAL%', lcpInicial) }
+
 // los banners de estreno que tienen .webp al compilar (scripts/webp.mjs):
 // la app solo ofrece el WebP de los que existen
 const fondosWebp = readdirSync('public/fondo').filter(f => f.endsWith('.webp'))
 
 export default defineConfig({
   define: { __BUILD__: JSON.stringify(sello), __FONDOS_WEBP__: JSON.stringify(fondosWebp) },
-  plugins: [react(), viteSingleFile(), versionJson],
+  plugins: [react(), viteSingleFile(), versionJson, lcpHtml],
   // Preact en lugar de React (21 sep 2026): el código sigue importando de
   // 'react' y 'react-dom' y aquí se redirige a preact/compat. react-dom era el
   // 29 % del HTML; medido A/B alterno en 4G lenta y CPU ×4: usable 2,04 → 1,73 s,

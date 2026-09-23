@@ -3770,7 +3770,10 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 .nf-cartel-fondo .nf-cartel-poster{object-fit:contain; object-position:right center; opacity:.5}
 .nf-cartel-fondo img{position:absolute; inset:0}
 .nf-cartel-previo{filter:blur(18px) saturate(1.2); transform:scale(1.15)}
-.nf-cartel-foto{opacity:0; transition:opacity .35s ease-out}
+/* sin fundido (23 sep 2026): la foto es el LCP, y esperar a onLoad para
+   subir la opacidad lo retrasaba 1,3 s en un móvil lento; mientras llega se ve
+   la carátula difuminada de debajo */
+.nf-cartel-foto{opacity:1}
 .nf-cartel-foto.cargada{opacity:1}
 @media (prefers-reduced-motion: reduce){ .nf-cartel-foto{transition:none} }
 .nf-cartel-fondo::after{

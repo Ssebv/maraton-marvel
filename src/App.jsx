@@ -4048,6 +4048,28 @@ const KEY_GUIA_INICIO = 'maraton-marvel-guia-inicio-v1'
 const KEY_UNIVERSO = 'maraton-marvel-universo-v1'
 // la carátula se funde al llegar en vez de aparecer de golpe sobre el hueco
 const nfCargada = e => e.currentTarget.classList.add('cargada')
+// Carátulas de las filas solo cuando están por verse (23 sep 2026, «que se
+// cargue todo más rápido»): con loading=lazy el navegador bajaba ~8 por fila,
+// también las que el carril tiene escondidas a la derecha (su margen es de
+// 1.250 px o más), y en 4G lenta 20 carátulas —519 kB— competían con la foto
+// de la cartelera. Un IntersectionObserver sí respeta el recorte del carril:
+// se baja lo visible y un par más por cada lado.
+const ioNf = typeof IntersectionObserver !== 'undefined'
+  ? new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return
+      const i = e.target
+      if (i.dataset.src) i.src = i.dataset.src
+      ioNf.unobserve(i)
+    }), { rootMargin: '300px 240px' })
+  : null
+// ref de una <img data-src>: la vigila hasta que se acerca; si ya se cargó y
+// cambia la dirección (idioma: carátulas en inglés), la cambia al momento
+const nfLazy = el => {
+  if (!el) return
+  if (!ioNf) { el.src = el.dataset.src; return }
+  if (el.getAttribute('src')) { if (el.getAttribute('src') !== el.dataset.src) el.src = el.dataset.src; return }
+  ioNf.observe(el)
+}
 // si la foto de TMDB no llega (sin conexión, caída), la carátula local en su
 // lugar en vez de un hueco
 const nfFallo = poster => e => {
@@ -4274,9 +4296,9 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
               {numerada && <span className="nf-num" aria-hidden="true">{i + 1}</span>}
               <span className="nf-img">
                 {foto
-                  ? <img className="nf-f" src={`${TMDB_IMG}w300${foto}`} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} onError={nfFallo(POSTERS[d.item.id])} />
+                  ? <img className="nf-f" ref={nfLazy} data-src={`${TMDB_IMG}w300${foto}`} alt="" decoding="async" fetchpriority="low" onLoad={nfCargada} onError={nfFallo(POSTERS[d.item.id])} />
                   : POSTERS[d.item.id]
-                    ? <img className="nf-f" src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" fetchpriority="low" onLoad={nfCargada} />
+                    ? <img className="nf-f" ref={nfLazy} data-src={POSTERS[d.item.id]} alt="" decoding="async" fetchpriority="low" onLoad={nfCargada} />
                     : <span className="nf-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
                 {visto && !onMarcar && <span className="nf-check" aria-hidden="true"><CheckIcon /></span>}
                 {!ancha && (
@@ -4400,6 +4422,8 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
   // vista previa de la cartelera: el tráiler mudo a los 3,5 s, solo con la
   // cartelera a la vista y la pestaña delante; se quita al abrir el tráiler
   // con sonido o al pasar a otro título (la sección lleva key)
+  // la foto de la cartelera, anotada para que index.html la pida en la próxima visita
+  useEffect(() => { try { if (foto) localStorage.setItem('maraton-marvel-lcp-v1', foto) } catch {} }, [foto])
   const cartelRef = useRef(null)
   const [cartelVisible, setCartelVisible] = useState(true)
   useEffect(() => {
@@ -4412,8 +4436,10 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
   const [previaDe, setPreviaDe] = useState(null)
   useEffect(() => {
     if (!s || previaDe === s.id || !cartelVisible || !hayMovimiento()) return undefined
-    const t = setTimeout(() => { if (!document.hidden) setPreviaDe(s.id) }, 3500)
-    return () => clearTimeout(t)
+    let t = 0
+    const arranca = () => { t = setTimeout(() => { if (!document.hidden) setPreviaDe(s.id) }, 3500) }
+    if (document.readyState === 'complete') arranca(); else window.addEventListener('load', arranca, { once: true })
+    return () => { clearTimeout(t); window.removeEventListener('load', arranca) }
   }, [s && s.id, cartelVisible])
   const fondosS = useFondos(s ? s.id : '', !!s && previaDe === s.id)
   const desfileS = s && previaDe === s.id && cartelVisible && !verTrailer && fondosS && fondosS.length > 0
@@ -4430,9 +4456,13 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
       if (f) { const img = new Image(); img.decoding = 'async'; img.src = `${TMDB_IMG}${ancho}${f}` }
       if (POSTERS[id]) { const p = new Image(); p.decoding = 'async'; p.src = POSTERS[id] }
     })
+    // después de que la página terminó de cargar y 2,5 s más: antes competía
+    // con la foto de la cartelera en la primera visita (LCP)
     const q = window.requestIdleCallback || (fn => setTimeout(fn, 1200))
-    const t = q(pide, { timeout: 4000 })
-    return () => { (window.cancelIdleCallback || clearTimeout)(t) }
+    let t = 0, t2 = 0
+    const tras = () => { t2 = setTimeout(() => { t = q(pide, { timeout: 4000 }) }, 2500) }
+    if (document.readyState === 'complete') tras(); else window.addEventListener('load', tras, { once: true })
+    return () => { window.removeEventListener('load', tras); clearTimeout(t2); (window.cancelIdleCallback || clearTimeout)(t) }
   }, [proxIds])
   const eraS = s && (eras.find(x => x.its.some(d => d.item.id === s.id)) || {}).era?.era
   return (
@@ -4482,14 +4512,14 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
             const luego = (deUni ? deUni.pend : pendientes).filter(d => d.item.id !== s.id).slice(0, 2)
             return (
               <aside className="nf-cartel-lado" aria-hidden="true">
-                {POSTERS[s.id] && <img className="nf-lado-poster" src={POSTERS[s.id]} alt="" decoding="async" />}
+                {POSTERS[s.id] && <img className="nf-lado-poster" ref={nfLazy} data-src={POSTERS[s.id]} alt="" decoding="async" />}
                 {platDe(pais, s) && <span className="nf-lado-plat">{tr('Dónde verla: ', 'Where to watch: ')}<b>{platTexto(pais, platDe(pais, s))}</b></span>}
                 {luego.length > 0 && (
                   <span className="nf-lado-luego">
                     <small>{tr('Después', 'Then')}</small>
                     {luego.map(d => (
                       <span key={d.item.id} className="nf-lado-sig">
-                        {POSTERS[d.item.id] && <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />}
+                        {POSTERS[d.item.id] && <img ref={nfLazy} data-src={POSTERS[d.item.id]} alt="" decoding="async" />}
                         <span>{d.item.t}</span>
                       </span>
                     ))}
@@ -5278,7 +5308,7 @@ function CaraEstreno({ e }) {
   const src = (e.id && POSTERS[e.id]) || e.poster
   const [err, setErr] = useState(false)
   if (!src || err) return <Cover item={{ id: 'estreno-' + e.t.toLowerCase().replace(/[^a-z0-9]+/g, '-'), t: e.t, tipo: /serie/i.test(e.tipo) ? 'serie' : 'peli' }} c={['#C8102E', '#E8A93C']} />
-  return <img className="cover foto" src={src} alt="" loading="lazy" decoding="async" onError={() => setErr(true)} />
+  return <img className="cover foto" ref={nfLazy} data-src={src} alt="" decoding="async" onError={() => setErr(true)} />
 }
 
 // El panel «Tu maratón» junto a la barra lateral (23 sep 2026, Sebastián,
@@ -6947,7 +6977,7 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma, siguien
               } : undefined}
               >
               <span className={d.n ? 'cal-semana-cara' : 'cal-semana-cara vacia'}>
-                {d.cara && POSTERS[d.cara] ? <img src={POSTERS[d.cara]} alt="" loading="lazy" decoding="async" />
+                {d.cara && POSTERS[d.cara] ? <img ref={nfLazy} data-src={POSTERS[d.cara]} alt="" decoding="async" fetchpriority="low" />
                   : d.n ? null
                   : d.hoy && siguiente && POSTERS[siguiente.item.id] ? (
                     // hoy sin nada marcado: lo que te toca, apagado, como invitación
@@ -9494,7 +9524,7 @@ export default function App() {
             }}>
               {/* carátula: «Siguiente» es la acción de la primera pantalla y
                   debe leerse como una tarjeta (en escritorio desde el 21 sep) */}
-              {POSTERS[stats.siguiente.id] && <img className="stat-sig-img" src={POSTERS[stats.siguiente.id]} alt="" loading="lazy" decoding="async" />}
+              {POSTERS[stats.siguiente.id] && <img className="stat-sig-img" ref={nfLazy} data-src={POSTERS[stats.siguiente.id]} alt="" decoding="async" />}
               <span className="stat-sig-texto">
               <span className="stat-label">{tr('Siguiente', 'Up next')}</span>
               <span className="stat-sig">{stats.siguiente.t}</span>
@@ -9579,13 +9609,16 @@ export default function App() {
         </button>
       )}
       {!conLateral && (<>
-      <div className="panel-superior" hidden={!panelAbierto}>
+      {/* plegado no se pinta: con hidden sus carátulas (estrenos) se bajaban igual */}
+      {panelAbierto && (
+      <div className="panel-superior">
         <div className="panel-izq">
         {mapaProgreso}
         <Proximos />
         </div>
         <CuentaAtras meta={objetivo} horario={horario} sesionHoy={sesionHoy} sim={simHorario} onHorario={() => setHorarioModal(true)} />
       </div>
+      )}
       {panelAbierto && (
         <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>{tr('Ocultar panel', 'Hide panel')}</button>
       )}

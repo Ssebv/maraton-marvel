@@ -11,6 +11,7 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 ## September 2026
 
 ### Week of the 22nd
+- **Home loads much faster:** on a phone with slow 4G, the billboard is fully shown in ~2.5 s (was ~6.5 s) and 30% less is downloaded.
 - News now has images: the first one featured full width, the rest with thumbnails.
 - In "Your week", rest days carry a moon, and if you haven't watched anything today, today's tile shows what's up next ("Up today") and opens it.
 - **Marvel news in the sidebar** (on computers), from IGN and SuperHeroHype in English or Espinof and Cinemascomics in Spanish; they refresh every morning. They share a box with "Recently watched".

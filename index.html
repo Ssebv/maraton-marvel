@@ -7,7 +7,14 @@
      otro. Solo se aceptan los dos valores válidos: cualquier otra cosa en el
      navegador se ignora y manda el sistema. -->
 <script>try{var t=localStorage.getItem('maraton-marvel-tema-v1');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t)}}catch(e){}</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- La foto de la cartelera de Inicio es lo más grande de la primera pantalla
+     (LCP) y solo se sabía cuál era al ejecutar la app, ~2 s después en 4G
+     lenta. Aquí se pide ya: la que dejó la última visita (la app la anota) o,
+     sin ella, la del primer título del maratón (la pone la compilación).      Va DESPUÉS del viewport: antes, el navegador aún medía 980 px y elegía
+     la de 1280 en el móvil. -->
+<script>try{if(!location.hash||location.hash==='#inicio'){var f=localStorage.getItem('maraton-marvel-lcp-v1');if(!(f&&/^\/[\w-]+\.jpg$/.test(f))&&!localStorage.getItem('maraton-marvel-v1'))f='%LCP_INICIAL%';if(f&&f.charAt(0)==='/'){var l=document.createElement('link');l.rel='preload';l.as='image';l.fetchPriority='high';l.setAttribute('imagesrcset','https://image.tmdb.org/t/p/w780'+f+' 780w, https://image.tmdb.org/t/p/w1280'+f+' 1280w');l.setAttribute('imagesizes','100vw');document.head.appendChild(l)}}}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">

@@ -11,6 +11,7 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 ## Septiembre de 2026
 
 ### Semana del 22
+- **Inicio carga mucho más rápido:** en un teléfono con 4G lenta, la cartelera se ve completa a los ~2,5 s (antes ~6,5 s) y se descarga un 30 % menos.
 - Las noticias llevan imagen: la primera destacada a lo ancho y las demás con miniatura.
 - En «Tu semana», los días de descanso llevan una luna, y si hoy aún no viste nada, la casilla de hoy te muestra lo que toca («Hoy toca») y lo abre al tocarla.
 - **Noticias de Marvel en la barra lateral** (en el computador), de Espinof y Cinemascomics en español o IGN y SuperHeroHype en inglés; se actualizan solas cada mañana. Comparten caja con «Visto hace poco».
