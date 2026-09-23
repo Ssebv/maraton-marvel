@@ -1,0 +1,58 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//maraton-marvel//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Marvel Marathon · Premieres
+X-WR-CALDESC:Marvel and X-Men premieres and new episodes\, from the Marvel
+  & X-Men Marathon.
+REFRESH-INTERVAL;VALUE=DURATION:P1D
+X-PUBLISHED-TTL:P1D
+BEGIN:VEVENT
+UID:estreno-2026-10-14-VisionQuest@maraton-marvel
+DTSTAMP:20260923T000000Z
+DTSTART;VALUE=DATE:20261014
+DTEND;VALUE=DATE:20261015
+SUMMARY:Premiere: Vision Quest
+DESCRIPTION:Series · Disney+. Vision sets out to recover his memory\; wit
+ h Paul Bettany and James Spader (Ultron).
+URL:https://ssebv.github.io/maraton-marvel/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Premiere: Vision Quest
+TRIGGER:PT10H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:estreno-2026-12-18-doomsday@maraton-marvel
+DTSTAMP:20260923T000000Z
+DTSTART;VALUE=DATE:20261218
+DTEND;VALUE=DATE:20261219
+SUMMARY:Premiere: Avengers: Doomsday
+DESCRIPTION:Film · Theaters. Robert Downey Jr.'s Doctor Doom against Aven
+ gers\, Fantastic Four and X-Men.
+URL:https://ssebv.github.io/maraton-marvel/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Premiere: Avengers: Doomsday
+TRIGGER:PT10H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:estreno-2027-12-17-AvengersSecretWars@maraton-marvel
+DTSTAMP:20260923T000000Z
+DTSTART;VALUE=DATE:20271217
+DTEND;VALUE=DATE:20271218
+SUMMARY:Premiere: Avengers: Secret Wars
+DESCRIPTION:Film · Theaters. The close of the Multiverse Saga.
+URL:https://ssebv.github.io/maraton-marvel/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Premiere: Avengers: Secret Wars
+TRIGGER:PT10H
+END:VALARM
+END:VEVENT
+END:VCALENDAR

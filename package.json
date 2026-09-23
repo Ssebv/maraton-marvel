@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node scripts/verifica.mjs && node scripts/gama.mjs",
-    "build": "node scripts/verifica.mjs && node scripts/gama.mjs && node scripts/muelles.mjs && node scripts/webp.mjs && node scripts/gen-novedades.mjs && vite build",
+    "build": "node scripts/verifica.mjs && node scripts/gama.mjs && node scripts/muelles.mjs && node scripts/webp.mjs && node scripts/gen-novedades.mjs && node scripts/gen-calendario.mjs && vite build",
     "desplegar": "npm run build && rm -rf docs && cp -R dist docs && node scripts/verifica.mjs && node scripts/espejo.mjs",
     "sonda": "node scripts/sondas/todas.mjs",
     "produccion": "node scripts/sondas/produccion.mjs",

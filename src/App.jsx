@@ -1816,6 +1816,7 @@ function CuentaAtras({ meta, horario, sesionHoy, sim, onHorario }) {
           })()}
           <button className="chip-btn aviso-btn" onClick={onHorario}>{horario ? tr('Horario', 'Schedule') : tr('Ponerme un horario', 'Set a schedule')}</button>
           <button className="chip-btn aviso-btn" onClick={() => descargaIcs(objetivo)}>{tr('Al calendario', 'Add to calendar')}</button>
+          <BotonCalendario />
           <AvisosBtn />
         </div>
       )}
@@ -2177,6 +2178,28 @@ const ES_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 const YA_INSTALADA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
   || window.navigator.standalone === true
+// Instalada, se pide al sistema que no borre sus datos (iOS no pregunta: lo
+// concede o no según el uso). Sin instalar no se pide: Safari lo niega y la
+// Biblioteca ya ofrece el botón a mano.
+if (YA_INSTALADA && navigator.storage && navigator.storage.persist) {
+  navigator.storage.persisted().then(p => { if (!p) navigator.storage.persist() }).catch(() => {})
+}
+// Calendario de estrenos al que suscribirse (public/estrenos.ics, generado en
+// la compilación): en el iPhone y el Mac, webcal:// abre «Suscribirse» en el
+// Calendario, que lo relee solo y avisa con su notificación; en Android, el
+// enlace de Google Calendar que añade la misma dirección.
+const ES_ANDROID = /Android/.test(navigator.userAgent)
+function urlCalendario() {
+  const f = IDIOMA_ACTUAL === 'en' ? 'estrenos-en.ics' : 'estrenos.ics'
+  const https = new URL(f, location.origin + location.pathname).href
+  const webcal = https.replace(/^https?:/, 'webcal:')
+  return ES_ANDROID ? `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}` : webcal
+}
+const BotonCalendario = ({ clase = 'chip-btn aviso-btn' }) => (
+  <a className={clase} href={urlCalendario()} target={ES_ANDROID ? '_blank' : undefined} rel={ES_ANDROID ? 'noopener' : undefined}>
+    {tr('Estrenos en mi calendario', 'Premieres in my calendar')}
+  </a>
+)
 // Con el dedo, el placeholder dice qué se puede buscar (el atajo «/» no existe)
 const ES_TACTIL = !!(window.matchMedia && window.matchMedia('(hover: none)').matches)
 
@@ -4647,6 +4670,54 @@ function Duelo({ amigo, vistas, eps, onQuitar }) {
 // visita. Quien ya usaba la app ve UNA vez este aviso, con el camino directo.
 // Al cambiar AVISO_VERSION en una jornada futura, el aviso vuelve a salir.
 const AVISO_VERSION = '2026-09-03'
+// Guía de instalación en el iPhone (23 sep 2026): Safari no tiene botón de
+// instalar ni lo ofrece solo, y sin instalar borra los datos de una web que no
+// se abre en 7 días y no deja recibir avisos. Una tarjeta abajo, desde que se
+// cerró la bienvenida, con los tres pasos; cerrada no vuelve en 30 días.
+const KEY_GUIA_IOS = 'maraton-marvel-guia-ios-v1'
+function GuiaInstalar() {
+  const [ver, setVer] = useState(() => {
+    if (!ES_IOS || YA_INSTALADA) return false
+    try {
+      if (!localStorage.getItem('maraton-marvel-bienvenida-v1')) return false
+      const t = +localStorage.getItem(KEY_GUIA_IOS) || 0
+      return Date.now() - t > 30 * 864e5
+    } catch { return false }
+  })
+  const [sale, setSale] = useState(false)
+  if (!ver) return null
+  // el rótulo de iOS cambia con la región: «Añadir a pantalla de inicio» en España
+  let espana = false
+  try { espana = localStorage.getItem('maraton-marvel-pais-v1') === 'ES' } catch {}
+  const cierra = () => {
+    try { localStorage.setItem(KEY_GUIA_IOS, String(Date.now())) } catch {}
+    setSale(true); setTimeout(() => setVer(false), 240)
+  }
+  const IcoCompartir = (
+    <svg className="guia-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" /><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H16" />
+    </svg>
+  )
+  const IcoMas = (
+    <svg className="guia-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="4" /><path d="M12 8.5v7M8.5 12h7" />
+    </svg>
+  )
+  return (
+    <aside className={sale ? 'guia-instalar sale' : 'guia-instalar'} aria-labelledby="guia-instalar-t">
+      <button className="cerrar" onClick={cierra} aria-label={tr('Cerrar la guía', 'Close the guide')}>✕</button>
+      <b id="guia-instalar-t" className="guia-instalar-t">{tr('Instálala en tu iPhone', 'Install it on your iPhone')}</b>
+      <p className="guia-instalar-sub">{tr('Así Safari no borra tu progreso y la abres desde su icono, a pantalla completa.', 'That way Safari won’t erase your progress, and it opens from its own icon, full screen.')}</p>
+      <ol className="guia-pasos">
+        <li><span className="guia-num">1</span><span>{tr(<>Toca {IcoCompartir} <b>Compartir</b> (en iOS 26, dentro de <b>•••</b>).</>, <>Tap {IcoCompartir} <b>Share</b> (on iOS 26, inside <b>•••</b>).</>)}</span></li>
+        <li><span className="guia-num">2</span><span>{tr(<>Elige {IcoMas} <b>{espana ? 'Añadir a pantalla de inicio' : 'Agregar a inicio'}</b>.</>, <>Choose {IcoMas} <b>Add to Home Screen</b>.</>)}</span></li>
+        <li><span className="guia-num">3</span><span>{tr(<>Ábrela desde su icono <b>Maratón Marvel</b>.</>, <>Open it from its <b>Maratón Marvel</b> icon.</>)}</span></li>
+      </ol>
+      <span className="guia-flecha" aria-hidden="true" />
+    </aside>
+  )
+}
+
 function AvisoNuevo({ onProbar }) {
   const [visible, setVisible] = useState(() => {
     try {
@@ -4882,6 +4953,9 @@ function descargaIcs(e) {
     `DTEND;VALUE=DATE:${fin}`,
     `SUMMARY:${icsEsc(tr('Estreno: ', 'Premiere: ') + e.t)}`,
     `DESCRIPTION:${icsEsc((e.tipo ? e.tipo + '. ' : '') + (e.n || ''))}`,
+    // el Calendario avisa ese día a las 10:00 (en el iPhone es el único aviso
+    // que puede llegar sin servidor de push)
+    'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(tr('Estreno: ', 'Premiere: ') + e.t)}`, 'TRIGGER:PT10H', 'END:VALARM',
   ])
 }
 // El horario entero cabe en UN evento semanal: los días elegidos como BYDAY y
@@ -4898,6 +4972,8 @@ function descargaIcsHorario(h, sim) {
     `RRULE:FREQ=WEEKLY;BYDAY=${h.dias.map(d => BYDAY[d]).join(',')};UNTIL=${fmt(sim.fin)}T235959`,
     `SUMMARY:${icsEsc(tr('Sesión de maratón Marvel', 'Marvel marathon session'))}`,
     `DESCRIPTION:${icsEsc(tr(`${fmtDur(h.min)} siguiendo el orden del maratón. La app dice qué toca cada día.`, `${fmtDur(h.min)} following the marathon order. The app says what’s up each day.`))}`,
+    // aviso 15 minutos antes de cada sesión
+    'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(tr('Tu sesión de maratón empieza en 15 minutos', 'Your marathon session starts in 15 minutes'))}`, 'TRIGGER:-PT15M', 'END:VALARM',
   ])
 }
 
@@ -8987,6 +9063,7 @@ export default function App() {
           sub={destinoDe(vista) === 'mio' ? tr(`${stats.totV} de ${stats.totN} títulos del maratón · ${pct} %`, `${stats.totV} of ${stats.totN} marathon titles · ${pct}%`) : null} />
       )}
 
+      <GuiaInstalar />
       <AvisoNuevo onProbar={stats.siguiente ? () => { const d = buscaItem(stats.siguiente.id); if (d) setDetalle(d) } : null} />
       <Novedades eps={eps} />
       {enMaraton && (<>
@@ -10217,6 +10294,16 @@ export default function App() {
                   try { localStorage.setItem(KEY, JSON.stringify(copia.v)); localStorage.setItem(KEY_EPS, JSON.stringify(copia.e)) } catch {}
                 }, 10000)
               }} />
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo">{tr('Avisos', 'Alerts')}</h3>
+                  <p className="ajuste-pista">{ES_IOS
+                    ? tr('En el iPhone una web no puede avisarte sola: tu Calendario sí. Suscríbete a los estrenos y episodios nuevos (se actualiza solo y avisa ese día a las 10:00). Tu horario, desde «Horario», también va al calendario con aviso 15 minutos antes de cada sesión.', 'On iPhone a website can’t alert you on its own, but your Calendar can. Subscribe to premieres and new episodes (it updates itself and alerts you at 10:00 that day). Your schedule, from “Schedule”, also goes to the calendar with an alert 15 minutes before each session.')
+                    : tr('Suscríbete a los estrenos y episodios nuevos en tu calendario: se actualiza solo y avisa ese día a las 10:00.', 'Subscribe to premieres and new episodes in your calendar: it updates itself and alerts you at 10:00 that day.')}</p>
+                </div>
+                <div className="ajuste-ops"><BotonCalendario clase="chip-btn" /></div>
+              </div>
 
               <Biblioteca archivos={archivos} onQuitar={async id => { try { await borraArchivo(id) } catch {} recargaBiblioteca(); setLecturas(l => { if (!(id in l)) return l; const c = { ...l }; delete c[id]; return c }) }} />
               {!YA_INSTALADA && (ES_IOS || instalable) && (

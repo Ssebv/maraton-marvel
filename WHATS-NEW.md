@@ -11,6 +11,8 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 ## September 2026
 
 ### Week of the 22nd
+- **iPhone alerts, through your calendar:** "Premieres in my calendar" (in Settings › Alerts and the Doomsday panel) subscribes your calendar to premieres and new episodes; it updates itself and alerts you at 10:00 that day. The schedule you add to your calendar now alerts you 15 minutes before each session.
+- **iPhone install guide:** if you open it in Safari without installing, a card shows you the three steps. Once installed, the app also asks the iPhone not to delete your data.
 - **On phones, press and hold a poster** on Home: the same preview card as on computers pops up (moving stills, rating, mark-watched and "More info"). Tap outside to close it.
 - In the Multiverse, each group of Earths sits on its own card.
 - **Motion previews:** after a few seconds, the Home billboard cycles through stills from the title with a slow zoom, like a silent trailer. On computers, resting the mouse on a poster opens a bigger card with moving stills, the rating, mark-watched and "More info".

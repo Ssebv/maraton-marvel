@@ -4102,3 +4102,34 @@ div.nf-abrir{cursor:default}
 .nf-previa-velo{position:fixed; inset:0; z-index:34; background:rgba(8,10,14,.55); animation:fadeIn var(--dur-media) var(--curva) both}
 .nf-previa.en-toque{z-index:36}
 @media (prefers-reduced-motion: reduce){ .nf-previa, .nf-previa-velo{animation:none} }
+
+/* ── Guía de instalación en el iPhone (23 sep 2026) ──
+   Tarjeta fija abajo, sobre la barra de pestañas, con una muesca que apunta
+   a la barra de Safari, donde está el botón Compartir */
+.guia-instalar{
+  position:fixed; z-index:30; left:12px; right:12px; margin-inline:auto; max-width:440px;
+  bottom:calc(var(--dock-alto) + var(--dock-abajo) + 14px);
+  padding: var(--e-5) var(--e-5) var(--e-4);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
+  box-shadow:var(--sup-brillo), 0 18px 44px rgba(0,0,0,.45);
+  animation:guiaEntra var(--muelle-hoja) both;
+}
+.guia-instalar.sale{animation:fueraHoja var(--dur-media) var(--curva) both}
+@keyframes guiaEntra{from{opacity:0; transform:translateY(24px)}}
+.guia-instalar .cerrar{position:absolute; top: var(--e-3); right: var(--e-3)}
+.guia-instalar-t{display:block; font-family:var(--f-titulo); font-size: var(--t-l); font-weight:700; padding-right:40px}
+.guia-instalar-sub{margin: var(--e-1) 0 var(--e-4); font-size: var(--t-s); color:var(--ink2); line-height:1.45}
+.guia-pasos{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap: var(--e-3)}
+.guia-pasos li{display:flex; align-items:center; gap: var(--e-3); font-size: var(--t-m); line-height:1.4}
+.guia-num{
+  flex:none; width:24px; height:24px; display:grid; place-items:center; border-radius:var(--r-pill);
+  font-size: var(--t-xs); font-weight:700; color:#fff;
+  background:linear-gradient(135deg, color-mix(in srgb, var(--sello) 80%, #fff), var(--sello) 45%, var(--calido));
+}
+.guia-ico{width:18px; height:18px; vertical-align:-3px; color:var(--blue)}
+.guia-flecha{
+  position:absolute; left:50%; bottom:-7px; width:14px; height:14px; margin-left:-7px; transform:rotate(45deg);
+  background:var(--panel); border-right:1px solid var(--filo); border-bottom:1px solid var(--filo);
+}
+@media (prefers-reduced-motion: reduce){ .guia-instalar, .guia-instalar.sale{animation:none} }
+@media (min-width:721px){ .guia-instalar{bottom: var(--e-6)} .guia-flecha{display:none} }

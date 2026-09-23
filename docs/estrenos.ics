@@ -1,0 +1,58 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//maraton-marvel//ES
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Maratón Marvel · Estrenos
+X-WR-CALDESC:Estrenos y episodios nuevos de Marvel y X-Men\, de la Marató
+ n Marvel & X-Men.
+REFRESH-INTERVAL;VALUE=DURATION:P1D
+X-PUBLISHED-TTL:P1D
+BEGIN:VEVENT
+UID:estreno-2026-10-14-VisionQuest@maraton-marvel
+DTSTAMP:20260923T000000Z
+DTSTART;VALUE=DATE:20261014
+DTEND;VALUE=DATE:20261015
+SUMMARY:Estreno: Vision Quest
+DESCRIPTION:Serie · Disney+. Visión busca recuperar su memoria\; con Pau
+ l Bettany y James Spader (Ultrón).
+URL:https://ssebv.github.io/maraton-marvel/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Estreno: Vision Quest
+TRIGGER:PT10H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:estreno-2026-12-18-doomsday@maraton-marvel
+DTSTAMP:20260923T000000Z
+DTSTART;VALUE=DATE:20261218
+DTEND;VALUE=DATE:20261219
+SUMMARY:Estreno: Vengadores: Doomsday
+DESCRIPTION:Película · Cine. El Doctor Doom de Robert Downey Jr. contra 
+ Vengadores\, 4 Fantásticos y X-Men.
+URL:https://ssebv.github.io/maraton-marvel/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Estreno: Vengadores: Doomsday
+TRIGGER:PT10H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:estreno-2027-12-17-AvengersSecretWars@maraton-marvel
+DTSTAMP:20260923T000000Z
+DTSTART;VALUE=DATE:20271217
+DTEND;VALUE=DATE:20271218
+SUMMARY:Estreno: Avengers: Secret Wars
+DESCRIPTION:Película · Cine. El cierre de la Saga del Multiverso.
+URL:https://ssebv.github.io/maraton-marvel/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Estreno: Avengers: Secret Wars
+TRIGGER:PT10H
+END:VALARM
+END:VEVENT
+END:VCALENDAR

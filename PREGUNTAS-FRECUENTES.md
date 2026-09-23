@@ -29,6 +29,9 @@ No: se abre en el navegador, en [ssebv.github.io/maraton-marvel](https://ssebv.g
 ### ¿Funciona sin internet?
 Sí, una vez que la has abierto con conexión. Puedes marcar lo que ves y revisar tu maratón sin señal. Los tráileres y lo que se consulta en el momento (por ejemplo, en qué plataforma está un título hoy) sí necesitan conexión.
 
+### ¿Me avisa de los estrenos?
+Sí, por tu calendario. En Ajustes › Avisos toca **Estrenos en mi calendario**: tu teléfono se suscribe a los estrenos y episodios nuevos, se actualiza solo y te avisa ese día a las 10:00. Y si te armas un horario (Más › Horario), al pasarlo al calendario te avisa 15 minutos antes de cada sesión. En el iPhone es la forma que funciona: una web no puede mandar avisos sola.
+
 ### ¿Está en inglés?
 Sí. En Ajustes puedes cambiar entre español e inglés. Al principio usa el idioma de tu teléfono.
 

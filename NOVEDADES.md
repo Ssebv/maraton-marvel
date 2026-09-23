@@ -11,6 +11,8 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 ## Septiembre de 2026
 
 ### Semana del 22
+- **Avisos en el iPhone, por tu calendario:** «Estrenos en mi calendario» (en Ajustes › Avisos y en el panel de Doomsday) suscribe tu calendario a los estrenos y episodios nuevos; se actualiza solo y avisa ese día a las 10:00. El horario que pasas al calendario ahora avisa 15 minutos antes de cada sesión.
+- **Guía para instalarla en el iPhone:** si la abres en Safari sin instalar, una tarjeta te muestra los tres pasos. Instalada, además, la app pide al iPhone que no borre tus datos.
 - **En el teléfono, mantén el dedo sobre una carátula** de Inicio: sale la misma tarjeta de vista previa que en el computador (fotogramas en movimiento, nota, marcar y «Más información»). Toca fuera para cerrarla.
 - En el Multiverso, cada grupo de Tierras va en su tarjeta.
 - **Vistas previas en movimiento:** a los pocos segundos, la cartelera de Inicio pasa por varios fotogramas del título con un zoom lento, como un tráiler sin sonido. En el computador, al dejar el ratón sobre una carátula sale una tarjeta más grande con sus fotogramas en movimiento, la nota, marcar y «Más información».

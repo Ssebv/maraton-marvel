@@ -29,6 +29,9 @@ No: it opens in your browser at [ssebv.github.io/maraton-marvel](https://ssebv.g
 ### Does it work offline?
 Yes, once you've opened it with a connection. You can check off what you watch and browse your marathon with no signal. Trailers and live lookups (such as which service has a title today) need a connection.
 
+### Will it remind me about premieres?
+Yes, through your calendar. In Settings › Alerts, tap **Premieres in my calendar**: your phone subscribes to premieres and new episodes, it updates itself and alerts you at 10:00 that day. And if you set a schedule (More › Schedule), adding it to your calendar alerts you 15 minutes before each session. On iPhone this is the way that works: a website can't send alerts on its own.
+
 ### Is it in English?
 Yes. It follows your phone's language, and you can switch between English and Spanish in Settings.
 
