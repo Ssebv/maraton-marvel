@@ -81,8 +81,16 @@ for (const ancho of [1280, 1920]) {
     const enPagina = await cdp.eval(`!!document.querySelector('.panel-superior, .panel-resumen')`)
     await cdp.eval(`document.querySelector('.lat-tarjeta').click()`)
     await espera(600)
-    const pv = await cdp.eval(`({ p: !!document.querySelector('.panel-lat .mapa') && !!document.querySelector('.panel-lat .cuenta'), capa: (history.state || {}).capa || 0 })`)
-    filas.push([!enPagina && pv.p && pv.capa === 1, `panel solo en vertical: en la página ${enPagina}, la tarjeta lo abre con mapa y cuenta atrás (capa ${pv.capa})`])
+    // sin desplazamiento (Sebastián: «no me gusta que tenga scroll»): cuenta atrás, cuatro sagas y los estrenos
+    const pv = await cdp.eval(`(() => { const p = document.querySelector('.panel-lat'); return { p: !!p.querySelector('.pm-estreno .pm-reloj'), sagas: p.querySelectorAll('.pm-saga').length,
+      prox: p.querySelectorAll('.pm-proximo').length, scroll: p.scrollHeight - p.clientHeight, capa: (history.state || {}).capa || 0 } })()`)
+    filas.push([!enPagina && pv.p && pv.sagas === 4 && pv.prox >= 1 && pv.scroll <= 0 && pv.capa === 1, `panel solo en vertical y sin desplazar: ${JSON.stringify({ enPagina, ...pv })}`])
+    // una saga lleva a su lista y cierra el panel
+    await cdp.eval(`[...document.querySelectorAll('.pm-saga')].find(b => /Cómics/.test(b.textContent)).click()`)
+    await espera(700)
+    filas.push([await cdp.eval(`location.hash === '#comics' && !document.querySelector('.panel-lat')`), 'tocar «Cómics» en el panel lleva a Cómics y lo cierra'])
+    await cdp.eval(`document.querySelector('.lat-tarjeta').click()`)
+    await espera(600)
     await cdp.eval(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`)
     await espera(500)
     filas.push([await cdp.eval(`!document.querySelector('.panel-lat')`), 'Esc cierra el panel vertical'])

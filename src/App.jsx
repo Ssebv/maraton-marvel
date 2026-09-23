@@ -5161,6 +5161,87 @@ function CaraEstreno({ e }) {
   return <img className="cover foto" src={src} alt="" loading="lazy" decoding="async" onError={() => setErr(true)} />
 }
 
+// El panel «Tu maratón» junto a la barra lateral (23 sep 2026, Sebastián,
+// con captura: «mejora los paneles, no me gusta que tenga scroll y se ve todo
+// muy pequeño, quiero que sea intuitivo»). Sin desplazamiento a 900 px de
+// alto: Doomsday en grande con su foto y la cuenta atrás, una frase con cómo
+// vas y dos acciones; el progreso en cuatro barras (antes, 150 puntitos de
+// 9 px) que llevan a su lista; y los estrenos en tarjetas de dos en dos.
+function PanelMaraton({ meta, sagas, onIr, onHorario, onAbrir }) {
+  const [ahora, setAhora] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setAhora(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const obj = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > ahora)
+  let cuenta = null
+  if (obj) {
+    const diff = new Date(obj.fecha + 'T00:00:00') - ahora
+    cuenta = {
+      dias: Math.floor(diff / 86400000),
+      hh: String(Math.floor(diff / 3600000) % 24).padStart(2, '0'),
+      mm: String(Math.floor(diff / 60000) % 60).padStart(2, '0'),
+      ss: String(Math.floor(diff / 1000) % 60).padStart(2, '0'),
+    }
+  }
+  const resto = ESTRENOS.filter(e => !obj || e.t !== obj.t).slice(0, 4)
+  const estado = !meta ? null
+    : meta.restante <= 0 ? { cls: 'ok', t: tr('Ruta express completada: llegas de sobra', 'Express route done: you’ll make it easily') }
+    : meta.ritmo === 0 ? { cls: 'neutro', t: tr(`Te faltan ${fmtDur(meta.restante)} de la ruta express: ${meta.necesario} min al día y llegas`, `${fmtDur(meta.restante)} of the express route left: ${meta.necesario} min a day and you’ll make it`) }
+    : meta.alDia ? { cls: 'ok', t: tr(`Vas al día: ${meta.ritmo} min diarios y te bastan ${meta.necesario}`, `On track: ${meta.ritmo} min a day and ${meta.necesario} is enough`) }
+    : { cls: 'tarde', t: tr(`Acelera: vas a ${meta.ritmo} min diarios y necesitas ${meta.necesario}`, `Speed up: you’re at ${meta.ritmo} min a day and need ${meta.necesario}`) }
+  return (
+    <>
+      {obj && cuenta && (
+        <section className="pm-estreno" style={obj.img ? { '--pm-foto': `url(${obj.img.replace(/\.jpg$/, FONDOS_WEBP.includes(obj.img.replace(/^.*\//, '').replace(/\.jpg$/, '.webp')) ? '.webp' : '.jpg')})` } : undefined}>
+          <span className="pm-etiqueta">{tr('Próximo gran estreno', 'Next big premiere')}</span>
+          <h3 className="pm-titulo">{obj.t}</h3>
+          <span className="pm-fecha">{fmtFecha(obj.fecha)} · {obj.tipo}</span>
+          <div className="pm-reloj" role="timer" aria-label={tr(`Faltan ${cuenta.dias} días`, `${cuenta.dias} days to go`)}>
+            {[[cuenta.dias, tr('días', 'days')], [cuenta.hh, tr('horas', 'hours')], [cuenta.mm, 'min'], [cuenta.ss, tr('seg', 'sec')]].map(([n, r]) => (
+              <span className="pm-bloque" key={r}><b><Cifra n={n} /></b><small>{r}</small></span>
+            ))}
+          </div>
+        </section>
+      )}
+      {estado && <p className={`pm-estado ${estado.cls}`}>{estado.t}</p>}
+      <div className="pm-acciones">
+        <button type="button" className="accion-principal" onClick={onHorario}>{tr('Ponerme un horario', 'Set a schedule')}</button>
+        <BotonCalendario clase="chip-btn pm-cal" />
+      </div>
+
+      <h3 className="pm-seccion">{tr('Tu progreso', 'Your progress')}</h3>
+      <div className="pm-sagas">
+        {sagas.map(g => (
+          <button type="button" key={g.saga} className="pm-saga" style={{ '--sc': g.color }} onClick={() => onIr(g)}>
+            <span className="pm-saga-nombre">{g.nombre}</span>
+            <span className="pm-saga-barra" aria-hidden="true"><i style={{ width: `${g.n ? 100 * g.v / g.n : 0}%` }} /></span>
+            <span className="pm-saga-cuenta"><b>{g.v}</b> / {g.n}</span>
+          </button>
+        ))}
+      </div>
+
+      <h3 className="pm-seccion">{tr('Próximos estrenos', 'Coming up')}</h3>
+      <div className="pm-proximos">
+        {resto.map(e => {
+          const d = e.id && buscaItem(e.id)
+          return (
+            <div className="pm-proximo" key={e.t}>
+              <span className="pm-proximo-cara" aria-hidden="true"><CaraEstreno e={e} /></span>
+              <span className="pm-proximo-texto">
+                <span className="pm-proximo-fecha">{fmtFecha(e.fecha) || e.aprox}</span>
+                {d ? <button type="button" className="pm-proximo-t" onClick={() => onAbrir(d)}>{e.t}</button> : <b className="pm-proximo-t">{e.t}</b>}
+                <span className="pm-proximo-tipo">{e.tipo}</span>
+                {e.fecha && <button type="button" className="proximo-cal" onClick={() => descargaIcs(e)}>{tr('Al calendario', 'Add to calendar')}</button>}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
 function Proximos() {
   const primero = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
   // En móvil el carril avanza solo, una tarjeta cada pocos segundos, como un
@@ -9057,13 +9138,24 @@ export default function App() {
       <aside className="panel-lat" role="dialog" aria-modal="false" aria-label={tr('Mapa, estrenos y cuenta atrás', 'Map, premieres and countdown')}>
         <div className="panel-lat-cab">
           <b>{tr('Tu maratón', 'Your marathon')}</b>
+          <span className="panel-lat-sub">{tr(`${stats.totV} de ${stats.totN} títulos · ${pct} % · te quedan ${Math.round(stats.mins / 60)} h`, `${stats.totV} of ${stats.totN} titles · ${pct}% · ${Math.round(stats.mins / 60)} h left`)}</span>
           <button className="cerrar" onClick={() => setPanelLat(false)} aria-label={tr('Cerrar panel', 'Close panel')}>✕</button>
         </div>
-        <CuentaAtras meta={objetivo} horario={horario} sesionHoy={sesionHoy} sim={simHorario} onHorario={() => { setPanelLat(false); setHorarioModal(true) }} />
-        <p className="lat-grupo-t">{tr('Tu progreso', 'Your progress')}</p>
-        {mapaProgreso}
-        <p className="lat-grupo-t">{tr('Próximos estrenos', 'Coming up')}</p>
-        <Proximos />
+        <PanelMaraton meta={objetivo}
+          sagas={DATA.map(sg => {
+            const its = sg.eras.flatMap(e => e.items)
+            return { saga: sg.saga, v: its.filter(it => vistas[it.id]).length, n: its.length,
+              nombre: sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? tr('UCM', 'MCU') : sg.saga === 'animacion' ? tr('Animación', 'Animation') : tr('Cómics', 'Comics'),
+              color: sg.saga === 'xmen' ? 'var(--gold)' : sg.saga === 'ucm' ? 'var(--red)' : sg.saga === 'animacion' ? 'var(--teal)' : 'var(--violet)' }
+          })}
+          onIr={g => {
+            setPanelLat(false)
+            const v = g.saga === 'comics' ? 'comics' : g.saga === 'animacion' ? 'animacion' : 'crono'
+            conTransicion('adelante', () => setVista(v))
+            if (v === 'crono') setTimeout(() => document.getElementById('saga-' + g.saga)?.scrollIntoView({ behavior: 'instant', block: 'start' }), 260)
+          }}
+          onHorario={() => { setPanelLat(false); setHorarioModal(true) }}
+          onAbrir={d => { setPanelLat(false); setDetalle(d) }} />
       </aside>
     </>,
     document.body

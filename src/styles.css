@@ -4217,18 +4217,70 @@ html.con-lateral .cd-titulo{font-family:var(--f-titulo); font-weight:800; font-s
    la barra; un velo sobre el contenido lo cierra al tocar fuera. */
 .panel-lat-velo{position:fixed; z-index:28; top:0; bottom:0; right:0; left:var(--lat-w); background:rgba(6,8,12,.42); animation:fadeIn var(--dur-media) var(--curva) both}
 .panel-lat{
-  position:fixed; z-index:29; top:0; bottom:0; left:var(--lat-w); width:min(420px, calc(100vw - var(--lat-w) - 40px));
-  display:flex; flex-direction:column; gap: var(--e-3); padding: var(--e-6) var(--e-5) var(--e-7);
+  position:fixed; z-index:29; top:0; bottom:0; left:var(--lat-w); width:min(640px, calc(100vw - var(--lat-w) - 40px));
+  display:flex; flex-direction:column; gap: var(--e-4); padding: var(--e-6) var(--e-7) var(--e-6);
   overflow-y:auto; overscroll-behavior:contain;
   background:var(--sup-lustre), var(--panel); border-right:1px solid var(--filo);
   box-shadow:24px 0 60px rgba(0,0,0,.45);
   animation:panelLatEntra var(--muelle-hoja) both;
 }
 @keyframes panelLatEntra{from{transform:translateX(-24px); opacity:0}}
-.panel-lat-cab{display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--e-2)}
-.panel-lat-cab b{font-family:var(--f-titulo); font-size: var(--t-xl); font-weight:800; letter-spacing:-.02em}
+.panel-lat-cab{display:grid; grid-template-columns:1fr auto; align-items:start; column-gap: var(--e-4)}
+.panel-lat-cab .cerrar{grid-row:1 / 3; grid-column:2}
+.panel-lat-sub{grid-column:1; font-size: var(--t-b); color:var(--ink2); margin-top: var(--e-1)}
+.panel-lat-cab b{font-family:var(--f-titulo); font-size:28px; font-weight:800; letter-spacing:-.02em; line-height:1.1}
 .panel-lat .lat-grupo-t{margin-top: var(--e-4)}
 /* aside + clase doble: gana a la regla de cuatro estrenos a dos columnas (:has) */
 aside.panel-lat .proximos.proximos{grid-template-columns:1fr}
 .panel-lat .cuenta{margin:0}
 @media (prefers-reduced-motion: reduce){ .panel-lat, .panel-lat-velo{animation:none} }
+
+/* Contenido del panel «Tu maratón»: grande, sin desplazar a 900 px de alto */
+.pm-estreno{
+  position:relative; overflow:hidden; isolation:isolate; color:#fff;
+  padding: var(--e-5) var(--e-6) var(--e-5); border-radius:var(--r-xl);
+  background:
+    linear-gradient(90deg, rgba(8,9,14,.92) 0%, rgba(8,9,14,.62) 55%, rgba(8,9,14,.35) 100%),
+    var(--pm-foto, linear-gradient(135deg, #2a1a22, #0e1422)) center 30% / cover;
+  border:1px solid var(--filo); box-shadow:var(--sup-brillo), var(--sup-sombra);
+}
+.pm-etiqueta{font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#8ee29a}
+.pm-titulo{margin: var(--e-1) 0 0; color:#fff; opacity:1; font-family:"Archivo Black","Archivo",sans-serif; font-weight:400; font-size:28px; line-height:1.05; text-transform:uppercase; letter-spacing:-.005em}
+.pm-fecha{display:block; margin-top: var(--e-1); font-size: var(--t-m); color:rgba(255,255,255,.78)}
+.pm-reloj{display:flex; gap: var(--e-5); margin-top: var(--e-4)}
+.pm-bloque{display:flex; flex-direction:column; align-items:flex-start}
+.pm-bloque b{font-family:var(--f-titulo); font-size:40px; font-weight:800; line-height:1; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.pm-bloque small{margin-top: var(--e-1); font-size: var(--t-xs); font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.7)}
+.pm-estado{margin:0; padding: var(--e-3) var(--e-4); border-radius:var(--r-l); font-size: var(--t-b); font-weight:600; line-height:1.4}
+.pm-estado.ok{background:color-mix(in srgb, var(--done) 16%, transparent); color:color-mix(in srgb, var(--done) 70%, var(--ink))}
+.pm-estado.tarde{background:var(--peligro-soft); color:color-mix(in srgb, var(--peligro) 70%, var(--ink))}
+.pm-estado.neutro{background:var(--panel2); color:var(--ink2)}
+.pm-acciones{display:flex; gap: var(--e-3); flex-wrap:wrap}
+.pm-acciones .accion-principal, .pm-acciones .pm-cal{min-height:44px; display:inline-flex; align-items:center; font-size: var(--t-b)}
+.pm-acciones .pm-cal{padding: 0 var(--e-5); text-decoration:none; color:var(--ink)}
+.pm-seccion{margin: var(--e-3) 0 0; font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
+.pm-sagas{display:grid; grid-template-columns:1fr 1fr; gap: var(--e-3)}
+.pm-saga{
+  display:grid; grid-template-columns:1fr auto; align-items:center; gap: var(--e-2) var(--e-3); text-align:left; cursor:pointer;
+  padding: var(--e-3) var(--e-4); border-radius:var(--r-l); font:inherit; color:var(--ink);
+  background:var(--sup-lustre), var(--panel2); border:1px solid var(--filo); transition:transform var(--muelle-toque);
+}
+.pm-saga:hover{border-color:color-mix(in srgb, var(--sc) 45%, var(--filo))}
+.pm-saga:active{transform:scale(.98)}
+.pm-saga-nombre{font-size: var(--t-b); font-weight:700}
+.pm-saga-cuenta{grid-row:1; grid-column:2; font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
+.pm-saga-cuenta b{color:var(--ink)}
+.pm-saga-barra{grid-column:1 / 3; height:6px; border-radius:var(--r-pill); background:color-mix(in srgb, var(--ink) 10%, transparent); overflow:hidden}
+.pm-saga-barra i{display:block; height:100%; border-radius:var(--r-pill); background:var(--sc)}
+.pm-proximos{display:grid; grid-template-columns:1fr 1fr; gap: var(--e-3)}
+.pm-proximo{display:flex; gap: var(--e-3); padding: var(--e-3); border-radius:var(--r-l); background:var(--panel2); border:1px solid var(--filo); min-width:0}
+.pm-proximo-cara{flex:none; width:44px; height:66px; border-radius:var(--r-s); overflow:hidden}
+.pm-proximo-cara > *{width:100%; height:100%; object-fit:cover; display:block}
+.pm-proximo-texto{display:flex; flex-direction:column; gap:2px; min-width:0}
+.pm-proximo-fecha{font-size: var(--t-xs); font-weight:700; color:var(--red)}
+.pm-proximo-t{padding:0; border:none; background:none; font:inherit; font-size: var(--t-m); font-weight:700; color:var(--ink); text-align:left; line-height:1.25;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden}
+button.pm-proximo-t{cursor:pointer}
+button.pm-proximo-t:hover{text-decoration:underline}
+.pm-proximo-tipo{font-size: var(--t-xs); color:var(--ink3)}
+.pm-proximo .proximo-cal{align-self:flex-start; margin-top:auto}
