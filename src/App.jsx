@@ -9260,7 +9260,14 @@ export default function App() {
           <p className="pagina-sub">
             {vista === 'inicio'
               ? tr(`Llevas ${stats.totV} de ${stats.totN} títulos · te quedan ${Math.round(stats.mins / 60)} h`, `${stats.totV} of ${stats.totN} titles watched · ${Math.round(stats.mins / 60)} h left`)
-              : tr('Todo Marvel y X-Men en el orden de la historia', 'All of Marvel and X-Men in story order')}
+              : ({
+                crono: tr('Todo Marvel y X-Men en el orden en que ocurre la historia', 'All of Marvel and X-Men in the order the story happens'),
+                estreno: tr('Películas y series por el año en que salieron', 'Movies and series by the year they came out'),
+                comics: tr('Las historias que inspiraron el cine · léelas en el orden recomendado', 'The stories that inspired the movies · read them in the suggested order'),
+                animacion: tr('Las series animadas de Marvel que están en Disney+', 'Marvel’s animated series on Disney+'),
+                galeria: tr('Todas las carátulas de un vistazo · lo visto lleva su marca', 'Every poster at a glance · watched ones carry a check'),
+                tiempo: tr('Cada título en el año en que ocurre, del siglo XIX al multiverso', 'Each title in the year it takes place, from the 19th century to the multiverse'),
+              }[vista] || tr('Todo Marvel y X-Men en el orden de la historia', 'All of Marvel and X-Men in story order'))}
           </p>
           {filtrosActivos > 0 && (
             <p className="filtros-movil pagina-filtros" role="status">

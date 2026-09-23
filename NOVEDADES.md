@@ -11,6 +11,7 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 ## Septiembre de 2026
 
 ### Semana del 22
+- En el computador, las vistas usan todo el ancho: «Por estreno» reparte los años en columnas, los cómics van de tres en tres, la ficha se ve más grande y cada vista dice de qué va bajo su título.
 - **Barra lateral renovada:** más ancha y traslúcida, con «Visto hace poco» (tus últimos títulos) y tu cuenta abajo; Filtros y «Plan, horario y más» van junto a la búsqueda. El panel «Tu maratón» se ve grande y sin desplazar.
 - **Barra lateral en el computador, como en Norte:** las secciones, las vistas, la búsqueda, los filtros y la cuenta atrás viven a la izquierda, y cada página empieza con su título y el contenido, sin cabecera de por medio. En pantallas más estrechas y en el teléfono sigue todo como antes.
 - **Avisos en el iPhone, por tu calendario:** «Estrenos en mi calendario» (en Ajustes › Avisos y en el panel de Doomsday) suscribe tu calendario a los estrenos y episodios nuevos; se actualiza solo y avisa ese día a las 10:00. El horario que pasas al calendario ahora avisa 15 minutos antes de cada sesión.

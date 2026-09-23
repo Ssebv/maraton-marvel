@@ -4348,3 +4348,21 @@ html.con-lateral .cd-ajustes{display:none}
 }
 @media (max-height:880px){ .lat-recientes{display:none} }
 @media (prefers-reduced-motion: reduce){ .lat-fila, .lat-tarjeta, .lat-icono, .lat-reciente, .lat-cuenta{transition:none} }
+
+/* Vistas de lista con la barra lateral (23 sep 2026): usan el ancho entero */
+@media (min-width:1100px){
+  /* Por estreno: casi todos los años tienen uno o dos títulos; en una
+     columna quedaba media pantalla vacía. Los años fluyen en columnas. */
+  html.con-lateral main.estreno{columns:2 560px; column-gap: var(--e-7)}
+  html.con-lateral main.estreno .anio{break-inside:avoid; margin-top:0; padding-top: var(--e-6)}
+  html.con-lateral main.estreno .grid{display:flex; flex-direction:column; gap: var(--e-4)}
+  html.con-lateral main.estreno > .saga-desc{column-span:all}
+  /* Cómics: tres columnas cuando caben */
+  html.con-lateral main.comics .era .grid{grid-template-columns:repeat(auto-fill, minmax(460px, 1fr))}
+  /* la ficha, más grande en pantallas anchas */
+  html.con-lateral .modal{max-width:min(1120px, calc(100vw - var(--lat-w) - 120px))}
+  /* y las flechas de pasar de título, fuera de la ficha más ancha (se pisaban con «Marcar como vista») */
+  html.con-lateral .nav-ficha.izq{left:calc(50% - min(560px, (100vw - var(--lat-w) - 120px) / 2) - 56px)}
+  html.con-lateral .nav-ficha.der{right:calc(50% - min(560px, (100vw - var(--lat-w) - 120px) / 2) - 56px)}
+}
+@media (min-width:1700px){ html.con-lateral main.estreno{columns:3 480px} }
