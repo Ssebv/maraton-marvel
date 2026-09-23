@@ -37,8 +37,8 @@ Es gratis, no tiene anuncios y no hace falta crear cuenta.
 ## Verlo con amigos
 
 - **Comparte tu perfil** con un enlace y que vean cuánto llevas.
-- **Modo duelo**: compara tu avance con el de otra persona, incluso en vivo.
-- **Club de maratón**: ranking, medallas y comentarios en cada título.
+- **Modo duelo**: pega el enlace del perfil de un amigo y compara quién va más adelante.
+- **Club de maratón**: entra con el código que te pase un amigo y compitan en un ranking, con medallas y comentarios en cada título.
 - **Próximamente, comunidades**: grupos propios, foros por película y episodio (sin spoilers para quien no lo ha visto), retos y seguir a otras personas.
 
 ## Instálala en tu teléfono
@@ -49,6 +49,8 @@ Funciona como una app normal, con ícono y sin conexión:
 - **Android (Chrome):** menú ⋮ → *Instalar app*.
 
 Tu progreso se guarda en tu teléfono. Desde Ajustes puedes sacar una copia o pasarlo a otro dispositivo.
+
+¿Dudas? Mira las [**preguntas frecuentes**](PREGUNTAS-FRECUENTES.md): cómo no perder tu progreso, por qué va este orden, cuál es lo mínimo para llegar a Doomsday y más.
 
 ## Súmate
 
