@@ -30,7 +30,7 @@ No: it opens in your browser at [ssebv.github.io/maraton-marvel](https://ssebv.g
 Yes, once you've opened it with a connection. You can check off what you watch and browse your marathon with no signal. Trailers and live lookups (such as which service has a title today) need a connection.
 
 ### Is it in English?
-Yes. It follows your phone's language, and you can switch between English and Spanish in Settings. Posters are still the Spanish-language editions for now.
+Yes. It follows your phone's language, and you can switch between English and Spanish in Settings.
 
 ---
 

@@ -18,6 +18,7 @@ Where each text lives:
 | Synopses, notes, guides, eras, when a title takes place, the multiverse | [`src/en-textos.js`](src/en-textos.js) | `"Spanish": "English",`: change only the text **after** the colon |
 | Movie and series titles | [`src/titulos-en.js`](src/titulos-en.js) | Generated from TMDB (en-US); only titles that differ from the Spanish one |
 | Episode titles | [`src/episodios-en.js`](src/episodios-en.js) | Generated from TMDB (en-US) |
+| Posters | [`src/posters-en.js`](src/posters-en.js) | Generated from TMDB: the best-rated English poster (`npm run posters-en`) |
 
 A few rules:
 

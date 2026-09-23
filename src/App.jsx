@@ -2,6 +2,7 @@ import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'r
 import { createPortal, flushSync } from 'react-dom'
 import { DATA, ESTRENOS, JOYA_MIN, KEY, MULTIVERSO } from './data.js'
 import { POSTERS } from './posters.js'
+import { POSTERS_EN } from './posters-en.js'
 import { PEOPLE } from './people.js'
 import { EPISODES } from './episodes.js'
 import { TMDB, TMDB_KEY, DESPLAZA_TEMPORADA } from './tmdb.js'
@@ -2703,9 +2704,13 @@ const leeIdiomaGuardado = () => {
   } catch {}
   return 'es'
 }
+// Las carátulas siguen al idioma como los títulos: POSTERS se usa en decenas de
+// sitios, así que se cambia su contenido y no cada uso (23 sep 2026)
+const POSTERS_ES = { ...POSTERS }
 function aplicaTitulos(pais, idioma = IDIOMA_ACTUAL) {
   IDIOMA_ACTUAL = idioma
   const en = idioma === 'en'
+  Object.assign(POSTERS, en ? POSTERS_EN : POSTERS_ES)
   const latino = !en && pais !== 'ES'
   const pasa = en
     ? s => (EN_TEXTOS[s] !== undefined ? EN_TEXTOS[s] : s)

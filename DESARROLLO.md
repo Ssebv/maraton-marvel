@@ -168,6 +168,7 @@ npm run desplegar   # verifica → compila → copia a docs/ → vuelve a verifi
 npm run sonda       # Chrome sin cabeza contra dist/: humo, cupo, HIG, detalles, barra, fluidez, navegación, sistema, arranque y memoria
 npm run produccion  # tras el push: espera a que Pages sirva el md5 de docs/
 npm run build && node scripts/sondas/ingles.mjs  # recorre la app en inglés y lista lo que aún parece español
+npm run posters-en  # baja de TMDB el póster en inglés de cada título que falte (public/posters-en/, src/posters-en.js); npm test avisa de los que faltan
 npm run capturas    # rehace las capturas del README (capturas/es y capturas/en) contra dist/; luego a JPG con sips
 npm run comunidad:rls       # reglas de la base de la comunidad en un PostgreSQL local (67 comprobaciones)
 npm run comunidad:catalogo  # regenera supabase/catalogo.sql cuando entra un título

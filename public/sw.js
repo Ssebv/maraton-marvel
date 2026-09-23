@@ -4,7 +4,7 @@
 // La versión va en el nombre: al subirla, el activate borra las cachés viejas.
 // Sin esto una carátula sustituida se quedaba con la vieja para siempre en quien
 // ya la tuviera guardada.
-const CACHE = 'maraton-marvel-v4'
+const CACHE = 'maraton-marvel-v5'
 // Cachés propias que NUNCA se barren al subir de versión: el espejo del
 // horario que escribe la app y las marcas de avisos ya enseñados. Barrerlas
 // mataba los recordatorios en cada despliegue y repetía a mitad de día las
@@ -45,7 +45,7 @@ self.addEventListener('fetch', e => {
     return
   }
   const esEstatico =
-    (url.origin === location.origin && (url.pathname.includes('/posters/') || url.pathname.includes('/people/') ||
+    (url.origin === location.origin && (url.pathname.includes('/posters/') || url.pathname.includes('/posters-en/') || url.pathname.includes('/people/') ||
       url.pathname.includes('/mini/') || url.pathname.includes('/fondo/') || url.pathname.includes('/fonts/') || url.pathname.endsWith('/social.jpg') ||
       // la textura de los planetas del Multiverso: sin ella, sin conexión eran bolas lisas (21 sep 2026)
       url.pathname.endsWith('/tierra.jpg'))) ||

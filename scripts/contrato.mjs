@@ -15,7 +15,7 @@ export const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
 export async function cargaFuentes() {
   const tmp = mkdtempSync(join(tmpdir(), 'maraton-'))
   const mod = {}
-  const ficheros = ['data', 'episodes', 'posters', 'people', 'tmdb', 'orden']
+  const ficheros = ['data', 'episodes', 'posters', 'posters-en', 'people', 'tmdb', 'orden']
   for (const f of ficheros) {
     const org = join(raiz, 'src', f + '.js')
     if (existsSync(org)) copyFileSync(org, join(tmp, f + '.mjs'))

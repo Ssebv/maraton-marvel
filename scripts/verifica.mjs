@@ -101,6 +101,13 @@ for (const [id, ruta] of Object.entries(POSTERS)) {
   if (!vistos.has(id)) mal(`POSTERS tiene «${id}», que no existe en data.js`)
   if (!existsSync(join(pub, ruta))) mal(`falta el archivo ${ruta} (carátula de ${id})`)
 }
+// carátulas en inglés (23 sep 2026): solo de títulos con carátula, y el archivo existe
+for (const [id, ruta] of Object.entries(fuentes.POSTERS_EN || {})) {
+  if (!POSTERS[id]) mal(`POSTERS_EN tiene «${id}», que no tiene carátula en español`)
+  if (!existsSync(join(pub, ruta))) mal(`falta el archivo ${ruta} (carátula en inglés de ${id})`)
+}
+{ const sinEn = items.filter(i => POSTERS[i.id] && TMDB[i.id] && !(fuentes.POSTERS_EN || {})[i.id])
+  if (sinEn.length) ojo(`sin carátula en inglés: ${sinEn.map(i => i.id).join(', ')} — node scripts/posters-en.mjs`) }
 for (const [n, ruta] of Object.entries(PEOPLE)) if (!existsSync(join(pub, ruta))) mal(`falta el archivo ${ruta} (foto de ${n})`)
 // las carátulas de los próximos estrenos las referencia ESTRENOS, no POSTERS
 const usados = new Set([...Object.values(POSTERS), ...Object.values(PEOPLE), ...ESTRENOS.map(e => e.poster).filter(Boolean)].map(r => r.split('/').pop()))

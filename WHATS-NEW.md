@@ -15,7 +15,7 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 - **Home works offline:** images are saved, and the next title is already loaded when you mark one watched.
 - **A tidier toolbar:** now it's just three buttons (Search, Filters and More), and each option explains what it does.
 - **Multiverse revamp:** better-looking planets, each with its own features, and the links between Earths explained.
-- **Better English:** Earth names and when each title takes place now show in English.
+- **Better English:** posters are now the English-language ones, and Earth names and when each title takes place show in English too.
 
 ### Week of the 15th
 - **Your month:** a monthly recap in Profile with hours, titles and active days.

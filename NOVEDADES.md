@@ -15,7 +15,7 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 - **Inicio funciona sin conexión:** las imágenes quedan guardadas y lo siguiente ya está cargado cuando marcas un título.
 - **Barra más ordenada:** ahora son solo tres botones (Buscar, Filtros y Más) y cada opción explica qué hace.
 - **Multiverso renovado:** planetas más vistosos, cada uno con sus rasgos, y las conexiones entre Tierras explicadas.
-- **Mejor en inglés:** los nombres de las Tierras y las fechas de cada título ya salen en inglés.
+- **Mejor en inglés:** las carátulas son las de la edición en inglés, y los nombres de las Tierras y las fechas de cada título también salen en inglés.
 
 ### Semana del 15
 - **Tu mes:** un resumen mensual en Perfil con horas, títulos y días activos.

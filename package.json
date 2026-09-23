@@ -23,7 +23,8 @@
     "muelles": "node scripts/muelles.mjs",
     "espejo": "node scripts/espejo.mjs",
     "fondos": "node scripts/fondos.mjs",
-    "capturas": "node scripts/capturas.mjs"
+    "capturas": "node scripts/capturas.mjs",
+    "posters-en": "node scripts/posters-en.mjs"
   },
   "keywords": [],
   "author": "",
