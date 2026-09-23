@@ -2211,6 +2211,18 @@ if (typeof window !== 'undefined' && window.matchMedia && matchMedia('(hover: ho
 // rueda hasta el suyo, empezando por la derecha. La columna se identifica por
 // su posición contando desde la derecha, así que 19 → 20 mueve las dos y
 // 99 → 100 añade una. El número de verdad va aparte para el lector de pantalla.
+// Selector segmentado de Norte (23 sep 2026): las opciones de Ajustes en una
+// cápsula con una píldora que viaja a la elegida (useIndicador).
+function Seg({ clave, className = '', children, ...resto }) {
+  const [grupo, indicador] = useIndicador(String(clave))
+  return (
+    <div ref={grupo} className={`${className} seg`} {...resto}>
+      <span ref={indicador} className="indicador" aria-hidden="true" />
+      {children}
+    </div>
+  )
+}
+
 function Cifra({ n }) {
   const t = String(n)
   return (
@@ -8660,7 +8672,7 @@ export default function App() {
         </div>
       )}
       {enMaraton ? (
-      <section className={vista === 'inicio' ? 'hero en-inicio' : 'hero'}>
+      <section className={vista === 'inicio' ? 'hero hero-maraton en-inicio' : 'hero hero-maraton'}>
         <div className="hero-titulo">
           <p className="hero-eyebrow">{tr('Guía de maratón · cronología completa', 'Marathon guide · the full chronology')}</p>
           <h1>{tr(<>Maratón <span className="rojo">Marvel</span> &amp; X-Men</>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}</h1>
@@ -8754,8 +8766,9 @@ export default function App() {
             <button className="filtros-quitar" onClick={() => setFiltros(sinFiltros())}>{tr('Quitar', 'Clear')}</button>
           </p>
         )}
-        {/* en Inicio va bajo la cartelera: aquí la empujaba fuera de la primera pantalla del móvil */}
-        {vista !== 'inicio' && <CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />}
+        {/* «Tu calendario» vive en Inicio, bajo la cartelera (y entero en
+            Perfil): en las listas repetía lo mismo y empujaba el contenido
+            ~95 px en el móvil (23 sep 2026) */}
       </section>
       ) : (
         <CabeceraDestino esMovil={esMovil} onAjustes={() => setAjustes(true)}
@@ -9871,10 +9884,10 @@ export default function App() {
                   <h3 className="ajuste-titulo" id="aj-idioma">{tr('Idioma', 'Language')}</h3>
                   <p className="ajuste-pista">{tr('La interfaz, los títulos y los textos. En español, el país decide además el matiz («Lobezno» o «Wolverine»).', 'Interface, titles and texts. In Spanish, your country also picks the regional flavor ("Lobezno" vs "Wolverine").')}</p>
                 </div>
-                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-idioma">
+                <Seg clave={idioma} className="ajuste-ops" role="radiogroup" aria-labelledby="aj-idioma">
                   <button className="chip-btn" role="radio" aria-checked={idioma === 'es'} onClick={() => ponIdioma('es')}>Español</button>
                   <button className="chip-btn" role="radio" aria-checked={idioma === 'en'} onClick={() => ponIdioma('en')}>English</button>
-                </div>
+                </Seg>
               </div>
 
               <div className="ajuste">
@@ -9896,10 +9909,10 @@ export default function App() {
                   <h3 className="ajuste-titulo" id="aj-densidad">{tr('Densidad', 'Density')}</h3>
                   <p className="ajuste-pista">{tr('El modo compacto esconde carátulas y sinopsis: cabe el triple de títulos en pantalla.', 'Compact mode hides covers and synopses: three times as many titles fit on screen.')}</p>
                 </div>
-                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-densidad">
+                <Seg clave={compacto} className="ajuste-ops" role="radiogroup" aria-labelledby="aj-densidad">
                   <button className="chip-btn" role="radio" aria-checked={!compacto} onClick={() => { if (compacto) alternaCompacto() }}>{tr('Completa', 'Full')}</button>
                   <button className="chip-btn" role="radio" aria-checked={compacto} onClick={() => { if (!compacto) alternaCompacto() }}>{tr('Compacta', 'Compact')}</button>
-                </div>
+                </Seg>
               </div>
 
               <div className="ajuste">
@@ -9907,10 +9920,10 @@ export default function App() {
                   <h3 className="ajuste-titulo" id="aj-spoilers">{tr('Spoilers', 'Spoilers')}</h3>
                   <p className="ajuste-pista">{tr('Sin spoilers esconde la sinopsis, las escenas post-créditos y los títulos de episodio de lo que aún no has visto. En cada ficha puedes mostrarlos a mano.', 'No spoilers hides the synopsis, post-credit scenes and episode titles of what you haven’t watched yet. Each title lets you show them by hand.')}</p>
                 </div>
-                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-spoilers">
+                <Seg clave={sinSpoilers} className="ajuste-ops" role="radiogroup" aria-labelledby="aj-spoilers">
                   <button className="chip-btn" role="radio" aria-checked={!sinSpoilers} onClick={() => ponSinSpoilers(false)}>{tr('Todo visible', 'Show everything')}</button>
                   <button className="chip-btn" role="radio" aria-checked={sinSpoilers} onClick={() => ponSinSpoilers(true)}>{tr('Sin spoilers', 'No spoilers')}</button>
-                </div>
+                </Seg>
               </div>
 
               <div className="ajuste">
@@ -9918,11 +9931,11 @@ export default function App() {
                   <h3 className="ajuste-titulo" id="aj-orden">{tr('Orden', 'Order')}</h3>
                   <p className="ajuste-pista">{tr('Dentro de cada era. El cronológico es el orden del maratón; los otros dos reordenan por nota.', 'Within each era. Chronological is the marathon order; the other two sort by rating.')}</p>
                 </div>
-                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-orden">
+                <Seg clave={orden} className="ajuste-ops" role="radiogroup" aria-labelledby="aj-orden">
                   {[['crono', tr('Cronológico', 'Chronological')], ['imdb', tr('Nota IMDb', 'IMDb rating')], ['nota', tr('Tu nota', 'Your rating')]].map(([id, nombre]) => (
                     <button key={id} className="chip-btn" role="radio" aria-checked={orden === id} onClick={() => setOrden(id)}>{nombre}</button>
                   ))}
-                </div>
+                </Seg>
               </div>
 
               <div className="ajuste">
@@ -9930,11 +9943,11 @@ export default function App() {
                   <h3 className="ajuste-titulo" id="aj-fondo">{tr('Fondo del encabezado', 'Header background')}</h3>
                   <p className="ajuste-pista">{tr('El banner usa el fotograma del próximo estreno, así que se renueva solo. El muro son tus carátulas.', 'The banner uses the next premiere’s still, so it refreshes itself. The wall is your covers.')}</p>
                 </div>
-                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-fondo">
+                <Seg clave={fondo} className="ajuste-ops" role="radiogroup" aria-labelledby="aj-fondo">
                   {FONDOS.map(f => (
                     <button key={f.id} className="chip-btn" role="radio" aria-checked={fondo === f.id} onClick={() => ponFondo(f.id)}>{tr(f.nombre, f.en || f.nombre)}</button>
                   ))}
-                </div>
+                </Seg>
               </div>
 
               <div className="ajuste">
@@ -9942,11 +9955,11 @@ export default function App() {
                   <h3 className="ajuste-titulo" id="aj-tema">{tr('Tema', 'Theme')}</h3>
                   <p className="ajuste-pista">{tr('Pergamino y tinta, o azul noche. Por defecto sigue al sistema y cambia con él; la pantalla de arranque de la app instalada siempre sigue al sistema.', 'Parchment and ink, or midnight blue. By default it follows your system and switches with it; the installed app’s launch screen always follows the system.')}</p>
                 </div>
-                <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-tema">
+                <Seg clave={tema} className="ajuste-ops" role="radiogroup" aria-labelledby="aj-tema">
                   {TEMAS.map(t => (
                     <button key={t.id} className="chip-btn" role="radio" aria-checked={tema === t.id} onClick={() => setTema(t.id)}>{tr(t.nombre, t.en || t.nombre)}</button>
                   ))}
-                </div>
+                </Seg>
               </div>
 
               <div className="ajuste">
@@ -10530,7 +10543,7 @@ function Datos({ onReset }) {
           <h3 className="ajuste-titulo" id="aj-sonido">{tr('Sonido', 'Sound')}</h3>
           <p className="ajuste-pista">{tr('Un toque breve al marcar un título como visto.', 'A short pop when you mark a title as watched.')}</p>
         </div>
-        <div className="ajuste-ops" role="radiogroup" aria-labelledby="aj-sonido">
+        <Seg clave={sonido} className="ajuste-ops" role="radiogroup" aria-labelledby="aj-sonido">
           {[[true, tr('Sí', 'Yes')], [false, 'No']].map(([v, t]) => (
             <button key={t} className="chip-btn" role="radio" aria-checked={sonido === v} onClick={() => {
               if (sonido === v) return
@@ -10539,7 +10552,7 @@ function Datos({ onReset }) {
               if (v) suenaPop.ctx = null
             }}>{t}</button>
           ))}
-        </div>
+        </Seg>
       </div>
 
       <div className="ajuste">

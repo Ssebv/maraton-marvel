@@ -102,7 +102,7 @@ export function useIndicador(clave) {
       i.style.transform = `translate(${d.x}px, ${d.y}px)`
     }
     const coloca = animar => {
-      const act = g.querySelector('[aria-current="page"], [aria-pressed="true"]')
+      const act = g.querySelector('[aria-current="page"], [aria-pressed="true"], [aria-checked="true"]')
       const previo = ultimo.current && ultimo.current.el === i ? ultimo.current.d : null
       if (!act || !act.offsetWidth) { i.style.opacity = '0'; ultimo.current = { el: i, d: null }; return }
       const d = { x: act.offsetLeft, y: act.offsetTop, w: act.offsetWidth, h: act.offsetHeight }

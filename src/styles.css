@@ -1478,6 +1478,17 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 }
 .ajuste-pista{margin:0; font-size: var(--t-s); color:var(--ink2); line-height:1.45; text-wrap:pretty}
 .ajuste-ops{display:flex; flex-wrap:wrap; gap: var(--e-3)}
+/* Selector segmentado de Norte (23 sep 2026): cápsula en --panel2 y la opción
+   elegida en una píldora que viaja (el .indicador; sin JS, la propia opción) */
+.seg{display:inline-flex; flex-wrap:nowrap; gap:2px; padding:3px; max-width:100%; width:max-content; align-self:flex-start;
+  background:var(--panel2); border-radius:var(--r-l); overflow-x:auto; scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg .chip-btn{border:none; background:transparent; border-radius:var(--r-m); min-height:38px; padding:0 var(--e-4);
+  font-weight:600; color:var(--ink2); white-space:nowrap; position:relative; z-index:1}
+.seg .chip-btn:hover{color:var(--ink)}
+.seg .chip-btn[aria-checked="true"]{background:var(--panel); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.seg .indicador{border-radius:var(--r-m); background:var(--panel); box-shadow:0 1px 3px rgba(0,0,0,.25)}
+@media (forced-colors: none){ .seg.con-indicador .chip-btn[aria-checked="true"]{background:transparent; box-shadow:none} }
 
 /* ── Valoración personal y modo compacto ── */
 .mi-nota{color:var(--gold-texto); font-weight:600}
@@ -3912,10 +3923,13 @@ div.nf-abrir{cursor:default}
 /* Inicio en el móvil (22 sep): el titular de dos líneas y la etiqueta roja
    empujaban la cartelera ~150 px. Aquí va en una línea y la etiqueta de la
    cartelera hace de «guía» (en las demás vistas del maratón, igual que antes) */
+/* 23 sep 2026: igual en todas las vistas del maratón, no solo en Inicio: en
+   Cronológico, Cómics o la Línea temporal la cabecera medía ~390 px antes del
+   primer título */
 @media (max-width:640px){
-  .hero.en-inicio{padding-top: var(--e-4)}
-  .hero.en-inicio .hero-eyebrow{display:none}
-  .hero.en-inicio h1{font-size:clamp(18px, 5.4vw, 24px); line-height:1.1; white-space:nowrap; text-wrap:nowrap}
+  .hero-maraton{padding-top: var(--e-4)}
+  .hero-maraton .hero-eyebrow{display:none}
+  .hero-maraton h1{font-size:clamp(18px, 5.4vw, 24px); line-height:1.1; white-space:nowrap; text-wrap:nowrap}
 }
 
 /* marca rápida (22 sep): un círculo en la esquina de la carátula marca o
