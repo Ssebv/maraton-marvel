@@ -4,7 +4,7 @@
 // de ningún sitio) y la ficha del cómic lo abre a pantalla completa.
 // Los CBR (RAR) se abren con node-unrar-js, que NO va en el bundle: son 250 kB
 // (public/rar/unrar.js + unrar.wasm) que se cargan la primera vez que alguien
-// elige un CBR. Ver README, «Lector de cómics».
+// elige un CBR. Ver DESARROLLO.md, «Lector de cómics».
 import { inflateSync } from 'fflate'
 
 const DB = 'maraton-marvel-lector'
