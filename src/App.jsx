@@ -2140,7 +2140,8 @@ function TuMes({ vistas, eps, notas, idioma, onAbrir }) {
 
 // La imagen del mes, con la misma tinta nocturna que la del progreso.
 async function compartirMes(m) {
-  try { await document.fonts.ready } catch {}
+  // Archivo ya no la usa ninguna página: se pide aquí, o el lienzo caería a otra letra
+  try { await Promise.all(["400 34px Archivo", "700 24px Archivo", "400 34px \"Archivo Black\""].map(f => document.fonts.load(f))); await document.fonts.ready } catch {}
   const W = 1080, H = 1350
   const cv = document.createElement('canvas')
   cv.width = W; cv.height = H
@@ -4422,6 +4423,14 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
   // vista previa de la cartelera: el tráiler mudo a los 3,5 s, solo con la
   // cartelera a la vista y la pestaña delante; se quita al abrir el tráiler
   // con sonido o al pasar a otro título (la sección lleva key)
+  const [resto, setResto] = useState(false)
+  useEffect(() => {
+    let t = 0
+    const f = requestAnimationFrame(() => { t = setTimeout(() => setResto(true), 0) })
+    return () => { cancelAnimationFrame(f); clearTimeout(t) }
+  }, [])
+  // marca de rendimiento: la cartelera montada (la leen las sondas, en Chrome y Safari)
+  useEffect(() => { try { if (!performance.getEntriesByName('inicio-usable').length) performance.mark('inicio-usable') } catch {} }, [])
   // la foto de la cartelera, anotada para que index.html la pida en la próxima visita
   useEffect(() => { try { if (foto) localStorage.setItem('maraton-marvel-lcp-v1', foto) } catch {} }, [foto])
   const cartelRef = useRef(null)
@@ -4600,6 +4609,10 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
               items={x.pend.filter(d => !s || d.item.id !== s.id).slice(0, 16)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
           ))
         : <FilaNf titulo={tr('A continuación', 'Up next')} sub={tr('en el orden del maratón', 'in marathon order')} items={pendientes.slice(s ? 1 : 0, 16)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />}
+      {/* el resto de filas, un fotograma después (23 sep 2026, iOS): montar
+          las ~20 filas de golpe alargaba la primera tarea del hilo y el iPhone
+          tardaba más en responder al primer toque */}
+      {resto && (<>
       <FilaNf titulo={tr('Rumbo a Doomsday', 'Toward Doomsday')} sub={tr('la ruta express', 'the express route')} items={pendientes.filter(d => d.item.exp).slice(0, 20)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
       <FilaNf titulo={tr('Top 10 del maratón', 'Marathon top 10')} sub={tr('por nota de IMDb', 'by IMDb rating')} items={top} numerada vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
       <FilaNf clase="nf-fila-recientes" titulo={tr('Visto hace poco', 'Recently watched')} items={recientes} ancha vistas={vistas} onAbrir={onAbrir} />
@@ -4651,6 +4664,7 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
             </section>
           )
         })}
+      </>)}
       <NfPrevia abierta={previaNf.abierta} onEntra={previaNf.api && previaNf.api.entra} onSale={previaNf.api && previaNf.api.suelta}
         onCerrar={previaNf.cerrar} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
     </main>
@@ -7188,7 +7202,8 @@ function Logros({ ctx, nuevos }) {
 // tokens) y scripts/gama.mjs comprueba que sigan siendo los mismos.
 const OSCURO = { bg: '#0A0C14', panel2: '#1C2133', ink: '#F2EFE6', ink2: '#A39F92', ink3: '#8D8A7E', red: '#F84A54', gold: '#E8A93C', violet: '#A98BE0', doom: '#64B05C' }
 async function compartirImagen(est, comicsVistos, comicsTot) {
-  try { await document.fonts.ready } catch {}
+  // Archivo ya no la usa ninguna página: se pide aquí, o el lienzo caería a otra letra
+  try { await Promise.all(["400 34px Archivo", "700 24px Archivo", "400 34px \"Archivo Black\""].map(f => document.fonts.load(f))); await document.fonts.ready } catch {}
   const W = 1080, H = 1350
   const cv = document.createElement('canvas')
   cv.width = W; cv.height = H

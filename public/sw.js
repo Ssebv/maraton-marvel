@@ -31,17 +31,25 @@ self.addEventListener('activate', e => e.waitUntil((async () => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url)
   if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request)
-        .then(r => {
-          const copia = r.clone()
-          // waitUntil: sin él el navegador puede matar el evento antes de que
-          // termine de guardar, y el respaldo sin conexión se queda a medias
-          e.waitUntil(caches.open(CACHE).then(c => c.put('shell', copia)))
-          return r
-        })
-        .catch(() => caches.match('shell'))
-    )
+    // La red primero, pero con paciencia limitada (23 sep 2026, iOS): la app
+    // instalada que se abre con poca señal esperaba a la red entera antes de
+    // pintar nada. Si hay copia y la red no contesta en 2,5 s, sale la copia;
+    // la red sigue y la deja al día para la próxima (y el aviso de versión
+    // nueva de la app ofrece recargar si cambió). Sin copia, como siempre.
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE)
+      const guardada = await cache.match('shell')
+      const red = fetch(e.request).then(r => {
+        // waitUntil: sin él el navegador puede matar el evento antes de que
+        // termine de guardar, y el respaldo sin conexión se queda a medias
+        if (r.ok) e.waitUntil(cache.put('shell', r.clone()))
+        return r
+      })
+      if (!guardada) return red.catch(() => caches.match('shell'))
+      e.waitUntil(red.catch(() => {}))
+      const paciencia = new Promise(ok => setTimeout(() => ok(guardada), 2500))
+      return Promise.race([red.catch(() => guardada), paciencia])
+    })())
     return
   }
   const esEstatico =

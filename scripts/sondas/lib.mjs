@@ -26,7 +26,7 @@ const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'applic
 
 export const espera = ms => new Promise(r => setTimeout(r, ms))
 
-function servidor({ puerto = 0, proxy = null } = {}) {
+export function servidor({ puerto = 0, proxy = null } = {}) {
   if (!existsSync(join(DIST, 'index.html'))) throw new Error('dist/ no está construido: npm run build')
   const srv = createServer((req, res) => {
     // proxy: rutas como /auth/v1 y /rest/v1 a otro servidor (el Supabase local)

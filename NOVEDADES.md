@@ -11,6 +11,7 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 ## Septiembre de 2026
 
 ### Semana del 22
+- **Más rápida en el iPhone:** Inicio queda listo antes (en Safari, de ~290 a ~160 ms desde que llega la página), se descarga una letra que ya no se usaba menos, y la app instalada abre al momento aunque haya poca señal.
 - **Inicio carga mucho más rápido:** en un teléfono con 4G lenta, la cartelera se ve completa a los ~2,5 s (antes ~6,5 s) y se descarga un 30 % menos.
 - Las noticias llevan imagen: la primera destacada a lo ancho y las demás con miniatura.
 - En «Tu semana», los días de descanso llevan una luna, y si hoy aún no viste nada, la casilla de hoy te muestra lo que toca («Hoy toca») y lo abre al tocarla.
