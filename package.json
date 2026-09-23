@@ -22,7 +22,8 @@
     "webp": "node scripts/webp.mjs",
     "muelles": "node scripts/muelles.mjs",
     "espejo": "node scripts/espejo.mjs",
-    "fondos": "node scripts/fondos.mjs"
+    "fondos": "node scripts/fondos.mjs",
+    "capturas": "node scripts/capturas.mjs"
   },
   "keywords": [],
   "author": "",

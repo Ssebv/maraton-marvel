@@ -6,7 +6,7 @@
 
 Es gratis, no tiene anuncios y no hace falta crear cuenta.
 
-![Inicio: lo que viene, la cuenta atrás a Doomsday y lo siguiente de tu maratón](capturas/inicio.jpg)
+![Inicio: tu avance, los días que faltan para Doomsday y lo siguiente de tu maratón](capturas/es/escritorio-inicio.jpg)
 
 ---
 
@@ -16,7 +16,7 @@ Es gratis, no tiene anuncios y no hace falta crear cuenta.
 
 📺 **Marcar episodio por episodio.** Más de 1.600 episodios, con su foto y una sinopsis que se queda borrosa hasta que la pides, para no comerte ningún spoiler.
 
-![Filas de títulos: lo siguiente en orden, la ruta hacia Doomsday y el top 10](capturas/filas.jpg)
+![Filas de títulos: lo siguiente en orden, la ruta hacia Doomsday y el top 10](capturas/es/escritorio-filas.jpg)
 
 🗓️ **Armar tu plan.** Dile cuántas horas tienes y qué días ves, y la app te arma el horario, te dice qué toca hoy y si llegas al estreno. Lo puedes pasar a tu calendario.
 
@@ -26,13 +26,21 @@ Es gratis, no tiene anuncios y no hace falta crear cuenta.
 
 🌌 **Explorar el multiverso.** Las distintas Tierras de Marvel en un sistema solar, un mapa de conexiones y tarjetas para recorrer.
 
-![Multiverso: cada Tierra es un planeta y se entra tocándolo](capturas/multiverso.jpg)
+![Multiverso: cada Tierra es un planeta y se entra tocándolo](capturas/es/escritorio-multiverso.jpg)
 
 🏆 **Ver tu avance.** Logros, rachas, tu calendario de lo que has visto y un resumen de tu mes.
 
 🙈 **Modo sin spoilers.** Esconde sinopsis, escenas post-créditos y títulos de episodio de lo que aún no has visto.
 
 🌎 **En español o en inglés**, con modo claro y oscuro.
+
+**En el teléfono:**
+
+<p align="center">
+  <img src="capturas/es/movil-inicio.jpg" width="30%" alt="En el teléfono: lo siguiente de tu maratón">
+  <img src="capturas/es/movil-ficha.jpg" width="30%" alt="Ficha de un título: dónde verla, escenas post-créditos y reparto">
+  <img src="capturas/es/movil-perfil.jpg" width="30%" alt="Perfil: horas, títulos y episodios vistos, y tu mes">
+</p>
 
 ## Verlo con amigos
 
