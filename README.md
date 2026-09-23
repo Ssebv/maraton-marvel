@@ -52,7 +52,7 @@ Tu progreso se guarda en tu teléfono. Desde Ajustes puedes sacar una copia o pa
 
 ## Súmate
 
-Esta app mejora con la gente que la usa. Si tienes algo que decir, [abre un aviso aquí](https://github.com/Ssebv/maraton-marvel/issues/new) (necesitas una cuenta gratis de GitHub):
+Esta app mejora con la gente que la usa. Si tienes algo que decir, [abre un aviso aquí](https://github.com/Ssebv/maraton-marvel/issues/new/choose) (necesitas una cuenta gratis de GitHub):
 
 - 🧭 **¿El orden te parece raro?** Dinos qué título moverías y por qué.
 - 🐞 **¿Algo no funciona?** Cuéntanos qué pasó y desde qué teléfono o navegador.

@@ -1,0 +1,37 @@
+name: 🐞 Algo no funciona
+description: Un botón que no responde, algo que se ve mal, un dato equivocado…
+title: "[Error] "
+labels: [bug]
+body:
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: ¿Qué pasó?
+      description: Cuéntalo como se lo contarías a un amigo. Si puedes, adjunta una captura (arrástrala aquí).
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: ¿Qué estabas haciendo justo antes?
+      placeholder: "Ej.: abrí la ficha de Loki, toqué «Episodios» y…"
+  - type: dropdown
+    id: dispositivo
+    attributes:
+      label: ¿Desde dónde la usas?
+      options:
+        - iPhone o iPad
+        - Teléfono Android
+        - Computador
+        - Tele o tablet
+        - Otro
+    validations:
+      required: true
+  - type: dropdown
+    id: instalada
+    attributes:
+      label: ¿La tienes instalada como app o la abres en el navegador?
+      options:
+        - Instalada (ícono en la pantalla de inicio)
+        - En el navegador
+        - No sé

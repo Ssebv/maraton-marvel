@@ -1,0 +1,17 @@
+name: 💡 Tengo una idea
+description: Una vista, un reto, un filtro, algo que te gustaría tener.
+title: "[Idea] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: ¿Qué te gustaría?
+      placeholder: "Ej.: poder ver la maratón con un amigo y que se marque para los dos"
+    validations:
+      required: true
+  - type: textarea
+    id: para-que
+    attributes:
+      label: ¿Para qué te serviría?
+      description: Saber qué problema resuelve ayuda a hacerlo bien.

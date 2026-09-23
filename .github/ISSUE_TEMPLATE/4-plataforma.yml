@@ -1,0 +1,48 @@
+name: 📺 Plataforma mal en mi país
+description: La app dice que algo está en una plataforma y no está (o al revés).
+title: "[Plataforma] "
+labels: [plataforma]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Los datos de plataformas vienen de JustWatch y cambian seguido. Con tu aviso lo revisamos a mano.
+  - type: input
+    id: titulo
+    attributes:
+      label: ¿Qué título?
+    validations:
+      required: true
+  - type: dropdown
+    id: pais
+    attributes:
+      label: ¿En qué país estás?
+      options:
+        - España
+        - Argentina
+        - Bolivia
+        - Chile
+        - Colombia
+        - Costa Rica
+        - Ecuador
+        - El Salvador
+        - Estados Unidos
+        - Guatemala
+        - Honduras
+        - México
+        - Nicaragua
+        - Panamá
+        - Paraguay
+        - Perú
+        - República Dominicana
+        - Uruguay
+        - Venezuela
+    validations:
+      required: true
+  - type: textarea
+    id: que-dice
+    attributes:
+      label: ¿Qué dice la app y qué es lo correcto?
+      placeholder: "Ej.: dice Disney+, pero hoy solo está para arrendar en Apple TV"
+    validations:
+      required: true
