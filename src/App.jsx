@@ -9071,7 +9071,11 @@ export default function App() {
   const lateral = conLateral && (
     <aside className="lateral" aria-label={tr('Navegación', 'Navigation')}>
       <a className="lat-marca" href={'#' + (ultimaVista.maraton || 'inicio')} onClick={e => irAVista(ultimaVista.maraton || 'inicio', e)}>
-        {tr(<>Maratón <span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span></>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}
+        <img className="lat-logo" src="icon-192.png" alt="" width="40" height="40" />
+        <span className="lat-marca-texto">
+          <b>{tr('Maratón', 'Marathon')}</b>
+          <small><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span></small>
+        </span>
       </a>
       <div className="lat-herr">
         <label className="lat-busca">
@@ -9094,9 +9098,8 @@ export default function App() {
       <nav className="lat-nav" aria-label={tr('Secciones', 'Sections')}>
         <p className="lat-grupo-t">{tr('Maratón', 'Marathon')}</p>
         {DESTINOS[0].vistas.map(filaLat)}
-        <p className="lat-grupo-t">{tr('Tú', 'You')}</p>
+        <p className="lat-grupo-t">{tr('Tú y el multiverso', 'You and the multiverse')}</p>
         {DESTINOS[1].vistas.map(filaLat)}
-        <p className="lat-grupo-t">{tr('Explorar', 'Explore')}</p>
         {DESTINOS[2].vistas.map(filaLat)}
       </nav>
       {(() => {
@@ -9109,21 +9112,27 @@ export default function App() {
         return (
           <section className="lat-recientes" aria-label={tr('Visto hace poco', 'Recently watched')}>
             <p className="lat-grupo-t">{tr('Visto hace poco', 'Recently watched')}</p>
-            {ult.map(({ d, t }) => (
-              <button type="button" key={d.item.id} className="lat-reciente" onClick={() => setDetalle(d)}>
-                {POSTERS[d.item.id]
-                  ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />
-                  : <span className="lat-reciente-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }} />}
-                <span className="lat-reciente-texto"><b>{d.item.t}</b><small>{cuando(t)}</small></span>
-              </button>
-            ))}
+            <div className="lat-tira">
+              {ult.map(({ d, t }) => (
+                <button type="button" key={d.item.id} className="lat-reciente" onClick={() => setDetalle(d)} title={d.item.t}
+                  aria-label={`${d.item.t}, ${cuando(t)}`}>
+                  {POSTERS[d.item.id]
+                    ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />
+                    : <span className="lat-reciente-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
+                  <small aria-hidden="true">{cuando(t)}</small>
+                </button>
+              ))}
+            </div>
           </section>
         )
       })()}
       <div className="lat-pie">
         <button type="button" className="lat-tarjeta" aria-haspopup="dialog" aria-expanded={panelLat} onClick={() => setPanelLat(v => !v)}>
           {proxEstreno && objetivo && (
-            <span className="lat-cuenta-atras"><b>{proxEstreno.t.replace(/^(Vengadores|Avengers): /, '')}</b> {tr('en', 'in')} <b className="pr-dias"><Cifra n={objetivo.dias} /> {tr('días', 'days')}</b></span>
+            <span className="lat-cuenta-atras">
+              <span className="lat-dias"><b><Cifra n={objetivo.dias} /></b><small>{tr('días', 'days')}</small></span>
+              <span className="lat-dias-t">{tr('para', 'to')} <b>{proxEstreno.t.replace(/^(Vengadores|Avengers): /, '')}</b></span>
+            </span>
           )}
           <span className="barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
           <span className="lat-prog"><b><Cifra n={stats.totV} /></b> / {stats.totN} · {pct} %<span className="lat-prog-h">{tr('quedan', 'left')} {Math.round(stats.mins / 60)} h</span></span>
