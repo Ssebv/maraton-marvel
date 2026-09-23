@@ -59,6 +59,29 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | 20 · Barra ordenada (22 sep) | La barra mezclaba 6 filtros, 4 acciones y el buscador en un carril que había que deslizar: ahora Buscar, Filtros (con cuántos hay puestos) y Más caben sin deslizar en el móvil. Los filtros pasan a una hoja con su nombre y qué hace cada uno; Plan de sesión, Horario, Modo cine y Sorpréndeme, a la hoja «Más» | ✅ |
 | 21 · Revisión de la barra (22 sep) | code-review medium: 5 hallazgos, los 5 atendidos. Alto: las hojas nuevas no llamaban a `useVolverCierra` (atrás sacaba de la vista con la hoja abierta). De paso, una carrera vieja de `conciliaAtras`: cerrar una capa y abrir otra antes de que llegara el popstate dejaba la nueva sin su paso atrás; ahora el consumo se aplaza 120 ms y se cancela si vuelve a haber capas. Medio: «Quitar todos» se desmontaba bajo el foco (ahora queda deshabilitado). Bajos: `aria-haspopup="dialog"` en vez de `aria-pressed`, condicional vacío y separador muertos, y la sonda preguntaba por la hoja que salía | ✅ |
 
+## Fase 9 — Jornada del 23 sep 2026: documentación, estilo Norte, escritorio, Inicio e iOS
+
+32 commits. Todo en producción y con las sondas en verde.
+
+| Bloque | Qué entra | Estado |
+|---|---|---|
+| Documentación para usuarios | README para quien usa la app (lo técnico pasa a DESARROLLO.md, sin «hecho con Claude Code») con capturas en español y del teléfono (`npm run capturas`); README.en, PREGUNTAS-FRECUENTES / FAQ, NOVEDADES / WHATS-NEW, TRANSLATING; cinco formularios de aviso bilingües; Discusiones abiertas con plantillas y bienvenida | ✅ |
+| Inglés | Nombres de Tierras, cuándo ocurre cada título y autores en inglés; `npm test` avisa de textos sin traducir; sonda `ingles`; carátulas en inglés de TMDB (`npm run posters-en`) | ✅ |
+| Estilo Norte | La forma de la app de ahorro (Norte) con los colores de Marvel: letra del sistema, superficies con filo y brillo, píldoras, dock con halo, odómetro en las cifras, foco que sigue al ratón, selectores segmentados, logros en burbuja | ✅ |
+| Vistas previas | Desfile de fotogramas de TMDB en la cartelera y tarjeta que crece sobre una carátula (ratón) o al mantener el dedo; el tráiler mudo de YouTube se descartó (pinta sus controles) | ✅ |
+| iOS (avisos) | Sin servidor de push: «Estrenos en mi calendario» (webcal a `estrenos.ics`, generado al compilar, con aviso a las 10:00), avisos en los .ics sueltos, guía de instalación en Safari, persistencia pedida al instalar | ✅ |
+| Escritorio: barra lateral | Desde 1100 px, lateral traslúcida de 304 px (marca, búsqueda, Filtros y Más, vistas, Noticias / Visto hace poco, cuenta atrás, cuenta) que se aprieta sola para no desplazarse; el contenido a todo el ancho; el panel de mapa, estrenos y cuenta atrás solo como panel vertical («Tu maratón», sin desplazar); vistas que usan el ancho | ✅ |
+| Inicio | Selector X-Men / UCM encima de la cartelera y filas «Sigue en…»; eras agrupadas por universo con las completas en una línea; cartelera con el color de su universo y, a la derecha, carátula, dónde verla y lo que sigue; «Tu semana» con carátulas, racha, descanso y «Hoy toca» | ✅ |
+| Noticias | `scripts/noticias.mjs` (RSS de Espinof, Cinemascomics, IGN, SuperHeroHype; Google Noticias no, por sus condiciones), imágenes servidas desde la app, tarea diaria `.github/workflows/noticias.yml` que hace commit en main | ✅ |
+| Rendimiento | LCP de Inicio 6,5 → 2,3–2,7 s (precarga desde index.html, sin fundido, `nfLazy` en vez de loading=lazy); 1.191 → 800 kB; filas de Inicio en dos tiempos, sin precargar Archivo, navegación del service worker con 2,5 s de paciencia; sonda `safari` (WebKit) | ✅ |
+
+### Pendiente (siguientes jornadas)
+
+- **Login y datos en la nube**: el código de la cuenta (Google o enlace por correo) y las comunidades está hecho y apagado (`src/nube.js`). Falta que Sebastián entre a Supabase (`! npx supabase login`) para crear el proyecto gratis (São Paulo), aplicar las migraciones y encenderlo; Google pide un paso suyo en su consola (supabase/LEEME.md). Con eso, también push de verdad en iOS.
+- **A mano en GitHub**: fijar la bienvenida de Discusiones y subir `docs/social.jpg` en Settings › Social preview.
+- Tarjetas de cómics más compactas (texto corto junto a una carátula alta).
+- Probar en un iPhone real: suscripción al calendario, vibración al mantener una carátula y la apertura sin señal.
+
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 
 **Estado:** fases 1 y 2 hechas y probadas contra un Supabase local (`npm run comunidad:sonda`: reglas 69/69 y cuenta de punta a punta). La cuenta está en la app, apagada: se enciende pegando Project URL + anon key en `src/nube.js` tras crear el proyecto (supabase/LEEME.md). Perfil público `#u/…`, seguir, buscar por @ y «Sigues a…» también hechos (fase 2 completa). Fase 3 en marcha: comunidades (crear, descubrir, unirse, invitar con #i/, ranking 7/30 días) hechas. Retos con fecha y muro con aplausos también hechos: fase 3 completa. Fase 4 hecha: foros por título y por comunidad, hilos con velo según tu progreso, spoilers en línea, menciones, votos, respuestas anidadas, reportes, avisos y moderación. Siguiente: fase 5 (cola de reportes para moderar dentro de la app, bloquear desde el perfil, editar en 24 h).
