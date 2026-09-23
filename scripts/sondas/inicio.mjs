@@ -56,7 +56,15 @@ for (const [movil, ancho] of [[true, 390], [false, 1280]]) {
     const t1 = await cdp.eval(`document.querySelector('.nf-cartel-t').textContent`)
     const marcada = await cdp.eval(`Object.keys(JSON.parse(localStorage.getItem('maraton-marvel-v1'))).length`)
     filas.push([t1 !== t0 && marcada === 3, `${donde}: «Marcar vista» marca «${t0}» y la cartelera pasa a «${t1}» (${marcada} marcas)`])
-    await cdp.eval(`[...document.querySelectorAll('.nf-fila')].find(x => x.querySelector('.nf-fila-t').textContent === 'A continuación').querySelector('.nf-tile .nf-abrir').click()`)
+    // los dos universos (23 sep 2026): un selector con el siguiente de X-Men y
+    // del UCM, que cambia la cartelera, y una fila «Sigue en…» por universo
+    const uni = await cdp.eval(`({ n: document.querySelectorAll('.nf-uni').length, filas: [...document.querySelectorAll('.nf-fila-t')].map(x => x.textContent).filter(t => /^Sigue en/.test(t)) })`)
+    const antesU = await cdp.eval(`document.querySelector('.nf-cartel-t').textContent`)
+    await cdp.eval(`document.querySelector('.nf-uni[aria-selected="false"]').click()`)
+    await espera(700)
+    const despuesU = await cdp.eval(`({ t: document.querySelector('.nf-cartel-t').textContent, e: document.querySelector('.nf-eyebrow').textContent })`)
+    filas.push([uni.n === 2 && uni.filas.length === 2 && despuesU.t !== antesU && /Siguiente en (X-Men|el UCM)/.test(despuesU.e), `${donde}: selector X-Men/UCM cambia la cartelera («${antesU}» → «${despuesU.t}»), filas ${JSON.stringify(uni.filas)}`])
+    await cdp.eval(`[...document.querySelectorAll('.nf-fila')].find(x => /^Sigue en/.test(x.querySelector('.nf-fila-t').textContent)).querySelector('.nf-tile .nf-abrir').click()`)
     const ficha = await cdp.hasta(`!!document.querySelector('.overlay')`, 3000).then(() => true, () => false)
     filas.push([ficha, `${donde}: tocar una carátula abre su ficha`])
     // buscar en Inicio (code-review del 22 sep): la cartelera es el primer

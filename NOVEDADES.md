@@ -11,6 +11,8 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 ## Septiembre de 2026
 
 ### Semana del 22
+- **Inicio entiende los dos universos:** arriba de la cartelera eliges entre la saga X-Men y el UCM, cada uno con lo siguiente que te toca y su barra; y hay una fila «Sigue en X-Men» y otra «Sigue en el UCM».
+- **«Tu semana»:** los últimos siete días con la carátula de lo que viste cada día, la fecha, tu racha de días seguidos y «Ver el mes».
 - En el computador, las vistas usan todo el ancho: «Por estreno» reparte los años en columnas, los cómics van de tres en tres, la ficha se ve más grande y cada vista dice de qué va bajo su título.
 - **Barra lateral renovada:** más ancha y traslúcida, con «Visto hace poco» (tus últimos títulos) y tu cuenta abajo; Filtros y «Plan, horario y más» van junto a la búsqueda. El panel «Tu maratón» se ve grande y sin desplazar.
 - **Barra lateral en el computador, como en Norte:** las secciones, las vistas, la búsqueda, los filtros y la cuenta atrás viven a la izquierda, y cada página empieza con su título y el contenido, sin cabecera de por medio. En pantallas más estrechas y en el teléfono sigue todo como antes.

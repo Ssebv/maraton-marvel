@@ -11,6 +11,8 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 ## September 2026
 
 ### Week of the 22nd
+- **Home understands both universes:** above the billboard you pick between the X-Men saga and the MCU, each with what's next and its progress bar; plus a "Up next in X-Men" row and a "Up next in the MCU" row.
+- **"Your week":** the last seven days with the poster of what you watched each day, the date, your streak and "See the month".
 - On computers, views use the full width: "By release" spreads the years across columns, comics go three across, title pages are bigger, and every view says what it's about under its title.
 - **Refreshed sidebar:** wider and translucent, with "Recently watched" (your latest titles) and your account at the bottom; Filters and "Plan, schedule and more" sit next to search. The "Your marathon" panel is big and fits without scrolling.
 - **Sidebar on computers, like Norte:** sections, views, search, filters and the countdown live on the left, and every page starts with its title and the content, no header in the way. On narrower screens and phones everything stays as before.

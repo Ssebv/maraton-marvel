@@ -4025,6 +4025,7 @@ function MapaMultiverso({ onAbrir }) {
 // de la cronología. Tocar un título abre su ficha (ver, tráiler, marcar).
 const nfClave = d => d.item.id
 const KEY_GUIA_INICIO = 'maraton-marvel-guia-inicio-v1'
+const KEY_UNIVERSO = 'maraton-marvel-universo-v1'
 // la carátula se funde al llegar en vez de aparecer de golpe sobre el hueco
 const nfCargada = e => e.currentTarget.classList.add('cargada')
 // si la foto de TMDB no llega (sin conexión, caída), la carátula local en su
@@ -4323,7 +4324,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   DATA.forEach(saga => {
     const esComic = saga.saga === 'comics'
     saga.eras.forEach(era => {
-      const its = era.items.filter(it => pasaFiltro(it, esComic)).map(item => ({ item, c: era.c, esComic }))
+      const its = era.items.filter(it => pasaFiltro(it, esComic)).map(item => ({ item, c: era.c, esComic, saga: saga.saga }))
       if (its.length) eras.push({ saga, era, its })
       if (saga.saga !== 'comics' && saga.saga !== 'animacion') todos.push(...its)
     })
@@ -4333,7 +4334,23 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   // stats.siguiente no mira la búsqueda, y buscando «loki» la cartelera
   // seguía con el título de antes, decía «0 / 3» y «A continuación» se
   // comía el primer resultado
-  const s = pendientes.length ? pendientes[0].item : null
+  // Dos universos, dos «siguiente» (23 sep 2026, Sebastián: «ahora solo
+  // aparece Deadpool, pero debe entender los dos universos de X-Men y
+  // Marvel»): la saga X-Men y el UCM se ven a la vez y cada uno lleva su
+  // propio hilo. La cartelera enseña el del universo elegido (por defecto,
+  // el que va antes en el maratón) y el selector de encima dice los dos.
+  const porUni = ['xmen', 'ucm'].map(u => {
+    const deU = todos.filter(d => d.saga === u)
+    const pend = deU.filter(d => !vistas[d.item.id])
+    return { u, total: deU.length, vistos: deU.length - pend.length, pend, sig: pend[0] ? pend[0].item : null }
+  }).filter(x => x.total)
+  const [uniElegido, setUniElegido] = useState(() => { try { return localStorage.getItem(KEY_UNIVERSO) || null } catch { return null } })
+  const uniAuto = pendientes.length ? pendientes[0].saga : null
+  const uniVale = porUni.find(x => x.u === uniElegido && x.sig)
+  const uni = uniVale ? uniElegido : uniAuto
+  const eligeUni = u => { setUniElegido(u); try { localStorage.setItem(KEY_UNIVERSO, u) } catch {} }
+  const deUni = porUni.find(x => x.u === uni)
+  const s = deUni && deUni.sig ? deUni.sig : (pendientes.length ? pendientes[0].item : null)
   const epsDe = d => (EPISODES[d.item.id] || []).length
   const continuar = todos.filter(d => !vistas[d.item.id] && d.item.tipo === 'serie' && epHechosDe(d.item) > 0)
   const siguienteEpDe = d => (EPISODES[d.item.id] || []).find(e => !eps[`${d.item.id}:${e.s}:${e.n}`])
@@ -4348,7 +4365,8 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   const lista = s && s.tipo === 'serie' ? EPISODES[s.id] : null
   const epSig = lista && lista.find(x => !eps[`${s.id}:${x.s}:${x.n}`])
   const hechos = lista ? lista.length - lista.filter(x => !eps[`${s.id}:${x.s}:${x.n}`]).length : 0
-  const puesto = s ? todos.findIndex(d => d.item.id === s.id) + 1 : 0
+  const listaUni = deUni ? todos.filter(d => d.saga === uni) : todos
+  const puesto = s ? listaUni.findIndex(d => d.item.id === s.id) + 1 : 0
   const verRes = s && s.res && !sinSpoilers
   // el tráiler, con lo mismo que la ficha (TMDB, caché de 7 días)
   const [extraS] = useTmdb(s || { id: '' }, IDIOMA_ACTUAL)
@@ -4400,8 +4418,25 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   return (
     <PreviaCtx.Provider value={previaNf.api}>
     <main className="inicio-nf">
-      {s ? (
-        // key: al marcar vista, la cartelera nueva entra con su animación (se nota que avanzaste)
+      {s ? (<>
+        {porUni.length > 1 && !filtrando && (
+          <div className="nf-universos" role="tablist" aria-label={tr('Universo', 'Universe')}>
+            {porUni.map(x => (
+              <button key={x.u} type="button" role="tab" aria-selected={uni === x.u} className={`nf-uni nf-uni-${x.u}`} disabled={!x.sig}
+                onClick={() => eligeUni(x.u)} style={{ '--uc': x.u === 'xmen' ? 'var(--gold)' : 'var(--red)' }}>
+                {x.sig && POSTERS[x.sig.id] && <img className="nf-uni-img" src={POSTERS[x.sig.id]} alt="" loading="lazy" decoding="async" />}
+                <span className="nf-uni-texto">
+                  <span className="nf-uni-nombre"><span className="nf-uni-largo">{x.u === 'xmen' ? tr('Saga X-Men', 'X-Men saga') : tr('Universo Marvel (UCM)', 'Marvel universe (MCU)')}</span><span className="nf-uni-corto">{x.u === 'xmen' ? 'X-Men' : tr('UCM', 'MCU')}</span><small>{x.vistos} / {x.total}</small></span>
+                  <span className="nf-uni-sig">{x.sig ? <>{tr('Sigue: ', 'Next: ')}<b>{x.sig.t}</b></> : tr('¡Completado!', 'Complete!')}</span>
+                  <span className="nf-uni-barra" aria-hidden="true"><i style={{ width: `${x.total ? 100 * x.vistos / x.total : 0}%` }} /></span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* el selector de universo va encima, fuera de la sección con key;
+            key: al marcar vista, la cartelera nueva entra con su animación */}
         <section ref={cartelRef} className={verTrailer ? 'nf-cartel con-trailer' : 'nf-cartel'} key={s.id} style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
           {/* La carátula local (mismo servidor, 30 kB, casi siempre en caché) se pinta
               al instante, difuminada, y el fotograma de TMDB se funde encima al
@@ -4423,7 +4458,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
           <div className="nf-cartel-texto">
             <span className="nf-eyebrow">
               <span className="nf-eyebrow-punto" aria-hidden="true" />
-              {filtrando ? tr('Siguiente con tus filtros', 'Next with your filters') : tr('Siguiente en tu maratón', 'Next in your marathon')} · {puesto} / {todos.length}{eraS ? <span className="nf-eyebrow-era">{eraS}</span> : null}
+              {filtrando ? tr('Siguiente con tus filtros', 'Next with your filters') : uni === 'xmen' ? tr('Siguiente en X-Men', 'Next in X-Men') : uni === 'ucm' ? tr('Siguiente en el UCM', 'Next in the MCU') : tr('Siguiente en tu maratón', 'Next in your marathon')} · {puesto} / {listaUni.length}{eraS ? <span className="nf-eyebrow-era">{eraS}</span> : null}
             </span>
             <h2 className="nf-cartel-t">{s.t}</h2>
             <span className="nf-meta">
@@ -4455,6 +4490,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
             </div>
           </div>
         </section>
+        </>
       ) : (
         <section className="nf-cartel nf-fin">
           <div className="nf-cartel-texto">
@@ -4484,7 +4520,13 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
       <FilaNf titulo={tr('Continuar viendo', 'Continue watching')} items={continuar} ancha vistas={vistas} onAbrir={onAbrir}
         extra={d => { const e = siguienteEpDe(d), n = epsDe(d), q = n - epHechosDe(d.item)
           return { pct: n ? 100 * epHechosDe(d.item) / n : 0, texto: e ? `T${e.s}·E${e.n} · ${q === 1 ? tr('queda 1 episodio', '1 episode left') : tr(`quedan ${q} episodios`, `${q} episodes left`)}` : '' } }} />
-      <FilaNf titulo={tr('A continuación', 'Up next')} sub={tr('en el orden del maratón', 'in marathon order')} items={pendientes.slice(s ? 1 : 0, 16)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
+      {porUni.length > 1 && !filtrando
+        ? porUni.filter(x => x.pend.length).map(x => (
+            <FilaNf key={x.u} titulo={x.u === 'xmen' ? tr('Sigue en X-Men', 'Up next in X-Men') : tr('Sigue en el UCM', 'Up next in the MCU')}
+              sub={`${x.vistos} / ${x.total} · ${tr('en su orden', 'in order')}`} progreso={x.total ? 100 * x.vistos / x.total : 0}
+              items={x.pend.filter(d => !s || d.item.id !== s.id).slice(0, 16)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
+          ))
+        : <FilaNf titulo={tr('A continuación', 'Up next')} sub={tr('en el orden del maratón', 'in marathon order')} items={pendientes.slice(s ? 1 : 0, 16)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />}
       <FilaNf titulo={tr('Rumbo a Doomsday', 'Toward Doomsday')} sub={tr('la ruta express', 'the express route')} items={pendientes.filter(d => d.item.exp).slice(0, 20)} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
       <FilaNf titulo={tr('Top 10 del maratón', 'Marathon top 10')} sub={tr('por nota de IMDb', 'by IMDb rating')} items={top} numerada vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
       <FilaNf titulo={tr('Visto hace poco', 'Recently watched')} items={recientes} ancha vistas={vistas} onAbrir={onAbrir} />
@@ -6757,7 +6799,7 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
     const semana = []
     for (let i = 6; i >= 0; i--) {
       const f = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - i)
-      semana.push({ k: diaClave(f.getTime()), f, n: 0, valorada: false })
+      semana.push({ k: diaClave(f.getTime()), f, n: 0, valorada: false, ids: [] })
     }
     const deSemana = new Map(semana.map(d => [d.k, d]))
     let hay = false, mes = 0, resenas = 0
@@ -6768,17 +6810,27 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
       const valorada = !!(nt && (nt.p || (nt.txt && nt.txt.trim())))
       if (esteMes(ts)) { mes++; if (valorada) resenas++ }
       const d = deSemana.get(diaClave(ts))
-      if (d) { d.n++; if (valorada) d.valorada = true }
+      if (d) { d.n++; d.ids.push([ts, id]); if (valorada) d.valorada = true }
     }
     for (const [clave, ts] of Object.entries(eps)) {
       if (typeof ts !== 'number' || ts < 1e12) continue
       hay = true
       if (esteMes(ts)) mes++
       const d = deSemana.get(diaClave(ts))
-      if (d) d.n++
+      if (d) { d.n++; d.ids.push([ts, clave.split(':')[0]]) }
     }
     const maxSemana = Math.max(1, ...semana.map(d => d.n))
-    return { hay, mes, resenas, semana, maxSemana }
+    // la carátula de cada día: lo último que marcaste ese día
+    semana.forEach(d => { d.ids.sort((a, b) => b[0] - a[0]); d.cara = d.ids.length ? d.ids[0][1] : null })
+    // racha: días seguidos con algo, contando hacia atrás desde hoy (o ayer)
+    const conAlgo = new Set()
+    for (const ts of Object.values(vistas)) if (typeof ts === 'number' && ts > 1e12) conAlgo.add(diaClave(ts))
+    for (const ts of Object.values(eps)) if (typeof ts === 'number' && ts > 1e12) conAlgo.add(diaClave(ts))
+    let racha = 0
+    const f = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())
+    if (!conAlgo.has(diaClave(f.getTime()))) f.setDate(f.getDate() - 1)
+    while (conAlgo.has(diaClave(f.getTime()))) { racha++; f.setDate(f.getDate() - 1) }
+    return { hay, mes, resenas, semana, maxSemana, racha }
   }, [vistas, eps, notas, indice])
   if (!resumen.hay) return null
   return (
@@ -6792,12 +6844,16 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
         try { localStorage.setItem(KEY_CAL_INICIO, v ? '1' : '0') } catch {}
       }}>
       <summary>
-        <span className="cal-inicio-titulo">{tr('Tu calendario', 'Your calendar')}</span>
+        <span className="cal-inicio-cab">
+        <span className="cal-inicio-titulo">{tr('Tu semana', 'Your week')}</span>
+        {resumen.racha > 1 && <span className="cal-racha">{tr(`${resumen.racha} días seguidos`, `${resumen.racha}-day streak`)}</span>}
         <span className="cal-inicio-sub">
           {resumen.mes
             ? tr(`${resumen.mes} marca${resumen.mes === 1 ? '' : 's'} este mes`, `${resumen.mes} check-off${resumen.mes === 1 ? '' : 's'} this month`)
             : tr('nada este mes', 'nothing this month')}
           {resumen.resenas ? tr(` · ${resumen.resenas} valorada${resumen.resenas === 1 ? '' : 's'}`, ` · ${resumen.resenas} rated`) : ''}
+        </span>
+        <span className="cal-inicio-abrir">{abierto ? tr('Ocultar mes', 'Hide month') : tr('Ver el mes', 'See the month')}</span>
         </span>
         {/* la última semana, siempre a la vista: qué días hubo maratón */}
         <span className="cal-semana" aria-hidden="true">
@@ -6812,8 +6868,12 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
                 setAbierto(true)
                 try { localStorage.setItem(KEY_CAL_INICIO, '1') } catch {}
               } : undefined}
-              style={d.n ? { background: `color-mix(in srgb, var(--red) ${20 + 60 * d.n / resumen.maxSemana}%, var(--panel2))` } : undefined}>
-              <span className="cal-semana-letra">{tr(DIA_LETRA[d.f.getDay()], DIA_LETRA_EN[d.f.getDay()])}</span>
+              >
+              <span className="cal-semana-cara">
+                {d.cara && POSTERS[d.cara] ? <img src={POSTERS[d.cara]} alt="" loading="lazy" decoding="async" /> : null}
+                {d.n > 1 && <span className="cal-semana-n">+{d.n - 1}</span>}
+              </span>
+              <span className="cal-semana-letra">{tr(DIA_LETRA[d.f.getDay()], DIA_LETRA_EN[d.f.getDay()])} <b>{d.f.getDate()}</b></span>
             </span>
           ))}
         </span>
