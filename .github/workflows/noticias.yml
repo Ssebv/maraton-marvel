@@ -1,0 +1,30 @@
+# Noticias de Marvel para la barra lateral: cada mañana lee los RSS de medios
+# (scripts/noticias.mjs) y, si cambió algo, sube public/noticias.json y
+# docs/noticias.json (lo que sirve Pages). Gratis en repositorios públicos.
+# Ojo: GitHub apaga las tareas programadas tras 60 días sin commits; esta
+# misma tarea hace commits casi a diario, así que se mantiene sola.
+name: Noticias
+on:
+  schedule:
+    - cron: '23 10 * * *'   # 07:23 en Chile
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  noticias:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/noticias.mjs
+      - name: Subir si cambió
+        run: |
+          git config user.name "maraton-noticias"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/noticias.json docs/noticias.json
+          git diff --cached --quiet && echo "sin cambios" && exit 0
+          git commit -m "Noticias del día"
+          git push

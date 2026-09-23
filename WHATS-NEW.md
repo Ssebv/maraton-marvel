@@ -11,6 +11,9 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 ## September 2026
 
 ### Week of the 22nd
+- **Marvel news in the sidebar** (on computers), from IGN and SuperHeroHype in English or Espinof and Cinemascomics in Spanish; they refresh every morning. They share a box with "Recently watched".
+- The Home billboard shows the poster on the right, where to watch it in your country and what comes next in that universe.
+- In "Your week", days without check-offs say "Rest day" instead of looking like empty boxes.
 - On Home, eras are grouped by universe (your pick first) and finished ones collapse into a single line; the billboard carries its universe's color.
 - **Home understands both universes:** above the billboard you pick between the X-Men saga and the MCU, each with what's next and its progress bar; plus a "Up next in X-Men" row and a "Up next in the MCU" row.
 - **"Your week":** the last seven days with the poster of what you watched each day, the date, your streak and "See the month".

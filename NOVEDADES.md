@@ -11,6 +11,9 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 ## Septiembre de 2026
 
 ### Semana del 22
+- **Noticias de Marvel en la barra lateral** (en el computador), de Espinof y Cinemascomics en español o IGN y SuperHeroHype en inglés; se actualizan solas cada mañana. Comparten caja con «Visto hace poco».
+- La cartelera de Inicio muestra a la derecha la carátula, dónde verla en tu país y lo que viene después en ese universo.
+- En «Tu semana», los días sin marcas dicen «Descanso» en vez de quedar como casillas vacías.
 - En Inicio, las eras van agrupadas por universo (el que elegiste primero) y las que ya terminaste se resumen en una línea; la cartelera lleva el color de su universo.
 - **Inicio entiende los dos universos:** arriba de la cartelera eliges entre la saga X-Men y el UCM, cada uno con lo siguiente que te toca y su barra; y hay una fila «Sigue en X-Men» y otra «Sigue en el UCM».
 - **«Tu semana»:** los últimos siete días con la carátula de lo que viste cada día, la fecha, tu racha de días seguidos y «Ver el mes».

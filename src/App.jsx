@@ -2256,6 +2256,26 @@ if (typeof window !== 'undefined' && window.matchMedia && matchMedia('(hover: ho
 // rueda hasta el suyo, empezando por la derecha. La columna se identifica por
 // su posición contando desde la derecha, así que 19 → 20 mueve las dos y
 // 99 → 100 añade una. El número de verdad va aparte para el lector de pantalla.
+// Noticias de Marvel en la barra lateral (23 sep 2026, como las de Norte):
+// public/noticias.json lo rellena cada mañana scripts/noticias.mjs con los
+// RSS de medios; aquí solo titular, medio y hace cuánto, con enlace al medio.
+let noticiasMem = null
+function useNoticias(activo) {
+  const [datos, setDatos] = useState(noticiasMem)
+  useEffect(() => {
+    if (!activo || noticiasMem) return undefined
+    let vivo = true
+    fetch('noticias.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(j => {
+      if (!esObj(j)) return
+      const limpia = l => (Array.isArray(l) ? l : []).filter(n => esObj(n) && typeof n.t === 'string' && typeof n.url === 'string' && /^https:\/\//.test(n.url))
+      noticiasMem = { es: limpia(j.es), en: limpia(j.en) }
+      if (vivo) setDatos(noticiasMem)
+    }).catch(() => {})
+    return () => { vivo = false }
+  }, [activo])
+  return datos
+}
+
 // Selector segmentado de Norte (23 sep 2026): las opciones de Ajustes en una
 // cápsula con una píldora que viaja a la elegida (useIndicador).
 function Seg({ clave, className = '', children, ...resto }) {
@@ -4317,7 +4337,7 @@ function ProximamenteNf({ onAbrir }) {
 // búsqueda, país —que muta item.t sin cambiar su identidad— e idioma)
 const InicioNf = React.memo(InicioNfBase, (a, b) =>
   ['stats', 'vistas', 'eps', 'notas', 'listas', 'sinSpoilers', 'clave'].every(k => a[k] === b[k]))
-function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe, calendario, filtrando, onToggle, onVerEra }) {
+function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, onMarcar, sinSpoilers, epHechosDe, calendario, filtrando, onToggle, onVerEra }) {
   // todo lo que se ve (sin cómics ni bóveda), en el orden del maratón
   const todos = []
   const eras = []
@@ -4455,6 +4475,29 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
                 title={tr(`Tráiler de ${s.t}`, `Trailer for ${s.t}`)} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
             </div>
           )}
+          {/* a la derecha (escritorio): la carátula, dónde verla y lo que viene
+              después en ese universo (23 sep 2026: «a la derecha me gustaría
+              mejorar el banner»; la foto sola quedaba oscura y vacía) */}
+          {!verTrailer && (() => {
+            const luego = (deUni ? deUni.pend : pendientes).filter(d => d.item.id !== s.id).slice(0, 2)
+            return (
+              <aside className="nf-cartel-lado" aria-hidden="true">
+                {POSTERS[s.id] && <img className="nf-lado-poster" src={POSTERS[s.id]} alt="" decoding="async" />}
+                {platDe(pais, s) && <span className="nf-lado-plat">{tr('Dónde verla: ', 'Where to watch: ')}<b>{platTexto(pais, platDe(pais, s))}</b></span>}
+                {luego.length > 0 && (
+                  <span className="nf-lado-luego">
+                    <small>{tr('Después', 'Then')}</small>
+                    {luego.map(d => (
+                      <span key={d.item.id} className="nf-lado-sig">
+                        {POSTERS[d.item.id] && <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />}
+                        <span>{d.item.t}</span>
+                      </span>
+                    ))}
+                  </span>
+                )}
+              </aside>
+            )
+          })()}
           <div className="nf-cartel-texto">
             <span className="nf-eyebrow">
               <span className="nf-eyebrow-punto" aria-hidden="true" />
@@ -6903,8 +6946,9 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
                 try { localStorage.setItem(KEY_CAL_INICIO, '1') } catch {}
               } : undefined}
               >
-              <span className="cal-semana-cara">
-                {d.cara && POSTERS[d.cara] ? <img src={POSTERS[d.cara]} alt="" loading="lazy" decoding="async" /> : null}
+              <span className={d.n ? 'cal-semana-cara' : 'cal-semana-cara vacia'}>
+                {d.cara && POSTERS[d.cara] ? <img src={POSTERS[d.cara]} alt="" loading="lazy" decoding="async" />
+                  : d.n ? null : <span className="cal-semana-descanso">{tr('Descanso', 'Rest day')}</span>}
                 {d.n > 1 && <span className="cal-semana-n">+{d.n - 1}</span>}
               </span>
               <span className="cal-semana-letra">{tr(DIA_LETRA[d.f.getDay()], DIA_LETRA_EN[d.f.getDay()])} <b>{d.f.getDate()}</b></span>
@@ -7496,6 +7540,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', tecla)
   }, [panelLat])
   useEffect(() => { if (!conLateral) setPanelLat(false) }, [conLateral])
+  const noticias = useNoticias(conLateral)
+  const [latCaja, setLatCaja] = useState(() => { try { return localStorage.getItem('maraton-marvel-lat-caja-v1') || 'noticias' } catch { return 'noticias' } })
+  const ponLatCaja = v => { setLatCaja(v); try { localStorage.setItem('maraton-marvel-lat-caja-v1', v) } catch {} }
   useEffect(() => {
     if (!window.matchMedia) return
     const mq = window.matchMedia('(max-width:720px)')
@@ -9200,23 +9247,39 @@ export default function App() {
         // lo último que marcaste (las marcas guardan la fecha; las antiguas, un 1)
         const ult = Object.entries(vistas).filter(([, t]) => t > 1e12).sort((a, b) => b[1] - a[1]).slice(0, 3)
           .map(([id, t]) => ({ d: buscaItem(id), t })).filter(x => x.d)
-        if (!ult.length) return null
-        const rel = new Intl.RelativeTimeFormat(LOC(), { numeric: 'auto' })
-        const cuando = t => { const dd = Math.round((t - Date.now()) / 864e5); return Math.abs(dd) < 1 ? rel.format(Math.round((t - Date.now()) / 36e5), 'hour') : rel.format(dd, 'day') }
+        const notis = noticias ? (idioma === 'en' ? noticias.en : noticias.es).slice(0, 3) : []
+        const caja = latCaja === 'visto' && ult.length ? 'visto' : notis.length ? 'noticias' : ult.length ? 'visto' : null
+        if (!caja) return null
         return (
-          <section className="lat-recientes" aria-label={tr('Visto hace poco', 'Recently watched')}>
-            <p className="lat-grupo-t">{tr('Visto hace poco', 'Recently watched')}</p>
-            <div className="lat-tira">
-              {ult.map(({ d, t }) => (
-                <button type="button" key={d.item.id} className="lat-reciente" onClick={() => setDetalle(d)} title={d.item.t}
-                  aria-label={`${d.item.t}, ${cuando(t)}`}>
-                  {POSTERS[d.item.id]
-                    ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />
-                    : <span className="lat-reciente-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
-                  <small aria-hidden="true">{cuando(t)}</small>
-                </button>
-              ))}
+          <section className="lat-caja" aria-label={caja === 'noticias' ? tr('Noticias', 'News') : tr('Visto hace poco', 'Recently watched')}>
+            <div className="lat-caja-tabs" role="tablist">
+              {notis.length > 0 && <button type="button" role="tab" aria-selected={caja === 'noticias'} onClick={() => ponLatCaja('noticias')}>{tr('Noticias', 'News')}</button>}
+              {ult.length > 0 && <button type="button" role="tab" aria-selected={caja === 'visto'} onClick={() => ponLatCaja('visto')}>{tr('Visto hace poco', 'Recently watched')}</button>}
             </div>
+            {caja === 'noticias' ? (
+              <ul className="lat-noticias">
+                {notis.map(n => (
+                  <li key={n.url}>
+                    <a href={n.url} target="_blank" rel="noopener noreferrer" className="lat-noticia">
+                      <span className="lat-noticia-t">{n.t}</span>
+                      <small>{n.medio}{n.f ? ` · ${haceCuanto(n.f)}` : ''}</small>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="lat-tira">
+                {ult.map(({ d, t }) => (
+                  <button type="button" key={d.item.id} className="lat-reciente" onClick={() => setDetalle(d)} title={d.item.t}
+                    aria-label={`${d.item.t}, ${haceCuanto(t)}`}>
+                    {POSTERS[d.item.id]
+                      ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />
+                      : <span className="lat-reciente-sin" style={{ background: `linear-gradient(160deg, ${d.c[0]}, ${d.c[1]})` }}>{iniciales(d.item.t)}</span>}
+                    <small aria-hidden="true">{haceCuanto(t)}</small>
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
         )
       })()}
@@ -9577,7 +9640,7 @@ export default function App() {
 
       <Estrellas />
       {vista === 'inicio' ? (
-        <InicioNf stats={stats} vistas={vistas} eps={eps} notas={notas} listas={listas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
+        <InicioNf pais={pais} stats={stats} vistas={vistas} eps={eps} notas={notas} listas={listas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
           clave={`${JSON.stringify(filtros)}|${buscaLenta}|${pais}|${idioma}`}
           // «Solo pendientes» no estrecha Inicio (pasaFiltro no lo mira): no cuenta
           filtrando={!!buscaLenta.trim() || Object.entries(filtros).some(([k, v]) => v && k !== 'vistas')}
