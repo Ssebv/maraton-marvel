@@ -32,7 +32,7 @@ for (const idioma of ['es', 'en']) {
       await foto('inicio')
       if (!movil) {
         // desde «A continuación»: «Continuar viendo» con una sola serie deja la fila medio vacía
-        await cdp.eval(`(() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => /A continuación|Up next/.test(x.querySelector('.nf-fila-t').textContent))
+        await cdp.eval(`(() => { const f = [...document.querySelectorAll('.nf-fila')].find(x => /A continuación|Up next|Sigue en/.test(x.querySelector('.nf-fila-t').textContent))
           scrollTo(0, f.getBoundingClientRect().top + scrollY - 160) })()`)
         await foto('filas')
         await navega('#multiverso')
