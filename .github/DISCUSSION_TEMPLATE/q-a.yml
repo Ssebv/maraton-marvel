@@ -1,0 +1,12 @@
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Preguntas sobre la app o sobre la maratón («¿hace falta ver Agents of S.H.I.E.L.D.?»). Cuando alguien te responda bien, márcala como respuesta.
+  - type: textarea
+    id: pregunta
+    attributes:
+      label: Tu pregunta
+    validations:
+      required: true

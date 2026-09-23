@@ -59,6 +59,8 @@ Esta app mejora con la gente que la usa. Si tienes algo que decir, [abre un avis
 - 💡 **¿Se te ocurre una idea?** Una vista, un reto, un filtro… todo sirve.
 - 📺 **¿Una plataforma de tu país está mal?** Avísanos cuál y dónde la viste.
 
+¿Prefieres conversar? En las [**Discusiones**](https://github.com/Ssebv/maraton-marvel/discussions) puedes compartir teorías, preguntar si hace falta ver tal serie, proponer ideas o mostrar en qué va tu maratón.
+
 Y si la app te sirve, **compártela** con quien esté en la misma maratón. Mientras más gente la use, más viva va a estar la comunidad cuando se abran los foros.
 
 Antes de participar, dale una mirada a las [normas de la comunidad](comunidad/normas.md): nada de spoilers fuera de su sitio, respeto siempre y nada de piratería.

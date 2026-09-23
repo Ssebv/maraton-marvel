@@ -1,0 +1,16 @@
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas para la app que quieras conversar con la comunidad antes de pedirlas. Si ya la tienes clara, también puedes [abrir un aviso](https://github.com/Ssebv/maraton-marvel/issues/new/choose).
+  - type: textarea
+    id: idea
+    attributes:
+      label: ¿Qué te gustaría?
+    validations:
+      required: true
+  - type: textarea
+    id: para-que
+    attributes:
+      label: ¿Para qué te serviría?

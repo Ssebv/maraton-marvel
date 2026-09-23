@@ -1,0 +1,32 @@
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Charla, teorías y todo lo que sea Marvel y X-Men. Antes de publicar, recuerda las [normas](https://github.com/Ssebv/maraton-marvel/blob/main/comunidad/normas.md): respeto siempre y nada de piratería.
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: ¿De qué va?
+      options:
+        - Charla
+        - Teoría
+        - Reseña
+        - Noticia
+        - Meme
+    validations:
+      required: true
+  - type: input
+    id: spoilers
+    attributes:
+      label: ¿Tiene spoilers? ¿De qué?
+      description: Si tiene, ponlo también en el título, por ejemplo «[Spoilers de Loki T2] …». Así nadie se come uno sin querer.
+      placeholder: "Ej.: spoilers de Endgame / sin spoilers"
+    validations:
+      required: true
+  - type: textarea
+    id: texto
+    attributes:
+      label: Cuéntanos
+    validations:
+      required: true

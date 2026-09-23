@@ -1,0 +1,13 @@
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Muestra en qué va tu maratón: una captura de tu progreso, tu calendario, tus logros o tu plan para llegar a Doomsday.
+  - type: textarea
+    id: muestra
+    attributes:
+      label: Tu maratón
+      description: Arrastra aquí tus capturas. Si quieres, pega el enlace de tu perfil (Perfil › Compartir perfil).
+    validations:
+      required: true
