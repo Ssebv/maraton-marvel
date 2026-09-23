@@ -2185,7 +2185,7 @@ const ES_TACTIL = !!(window.matchMedia && window.matchMedia('(hover: none)').mat
 // (tarjeta, estadística, panel) una luz roja muy suave sigue al ratón. Una sola
 // escucha para toda la app, a un fotograma por movimiento; solo con ratón.
 // El dibujo es CSS (--foco-luz en styles.css), aquí solo --mx y --my.
-const SUPERFICIES_FOCO = '.card, .stat, .grafica, .mapa, .cuenta, .duelo, .tl-card, .comunidad-tarjeta, .nf-guia, .cal-inicio, .proximo, .mv-sel, .seguir-item'
+const SUPERFICIES_FOCO = '.card, .stat, .grafica, .mapa, .cuenta, .duelo, .tl-card, .comunidad-tarjeta, .nf-guia, .cal-inicio, .proximo, .mv-sel, .seguir-item, .mv-anillo, .logro'
 if (typeof window !== 'undefined' && window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches
   && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
   let ultimo = null, ev = null, cuadro = 0
@@ -4078,18 +4078,20 @@ function NfPrevia({ abierta, onEntra, onSale, onCerrar, vistas, onAbrir, onMarca
   const d = abierta && abierta.d
   const fondos = useFondos(d ? d.item.id : '', !!d)
   if (!abierta) return null
-  const { rect } = abierta
-  const W = Math.max(320, Math.min(420, rect.width * 1.9))
+  const { rect, toque } = abierta
+  const W = toque ? Math.min(380, window.innerWidth - 32) : Math.max(320, Math.min(420, rect.width * 1.9))
   const H = W * 9 / 16 + 132
-  const left = Math.min(Math.max(16, rect.left + rect.width / 2 - W / 2), window.innerWidth - W - 16)
-  const top = Math.min(Math.max(12, rect.top + rect.height / 2 - H / 2), window.innerHeight - H - 12)
+  const left = toque ? (window.innerWidth - W) / 2 : Math.min(Math.max(16, rect.left + rect.width / 2 - W / 2), window.innerWidth - W - 16)
+  const top = toque ? Math.max(12, (window.innerHeight - H) / 2) : Math.min(Math.max(12, rect.top + rect.height / 2 - H / 2), window.innerHeight - H - 12)
   const it = d.item
   const visto = !!vistas[it.id]
   const foto = FOTOGRAMAS[it.id]
   const n = it.tipo === 'serie' ? (EPISODES[it.id] || []).length : 0
   return createPortal(
-    <div className="nf-previa" style={{ left, top, width: W, '--desde': Math.min(1, rect.width / W).toFixed(3) }}
-      onPointerEnter={onEntra} onPointerLeave={onSale}>
+    <>
+    {toque && <div className="nf-previa-velo" onClick={onCerrar} aria-hidden="true" />}
+    <div className={toque ? 'nf-previa en-toque' : 'nf-previa'} style={{ left, top, width: W, '--desde': Math.min(1, rect.width / W).toFixed(3) }}
+      onPointerEnter={toque ? undefined : onEntra} onPointerLeave={toque ? undefined : onSale}>
       <div className="nf-previa-media">
         {foto
           ? <img src={`${TMDB_IMG}w780${foto}`} alt="" decoding="async" />
@@ -4114,7 +4116,8 @@ function NfPrevia({ abierta, onEntra, onSale, onCerrar, vistas, onAbrir, onMarca
           <button type="button" className="nf-previa-mas" onClick={() => { onCerrar(); onAbrir(d) }}>{tr('Más información', 'More info')}</button>
         </span>
       </div>
-    </div>,
+    </div>
+    </>,
     document.body
   )
 }
@@ -4136,15 +4139,33 @@ function usePreviaNf() {
     return () => { window.removeEventListener('scroll', fuera, { capture: true }); window.removeEventListener('keydown', tecla); window.removeEventListener('blur', fuera) }
   }, [!!abierta])
   useEffect(() => () => limpia(), [])
-  const api = useMemo(() => puedePrevia() ? {
+  // en el teléfono (sin ratón) la tarjeta sale al mantener el dedo 450 ms
+  // quieto sobre la carátula, centrada y con un velo que la cierra al tocar
+  // fuera; el toque que la abrió ya no abre la ficha al soltar
+  const dedo = useRef({ x: 0, y: 0, abrio: false })
+  const api = useMemo(() => ({
     pide: (d, el) => {
+      if (!puedePrevia()) return
       limpia()
       if (activa.current && activa.current.d.item.id === d.item.id) return
       t.current.abre = setTimeout(() => { if (el.isConnected) setAbierta({ d, rect: el.getBoundingClientRect() }) }, activa.current ? 250 : 700)
     },
     suelta: () => { clearTimeout(t.current.abre); clearTimeout(t.current.cierra); t.current.cierra = setTimeout(() => setAbierta(null), 180) },
     entra: () => clearTimeout(t.current.cierra),
-  } : null, [])
+    mantiene: (d, el, e) => {
+      limpia()
+      dedo.current = { x: e.clientX, y: e.clientY, abrio: false }
+      t.current.abre = setTimeout(() => {
+        if (!el.isConnected) return
+        dedo.current.abrio = true
+        tic()
+        setAbierta({ d, rect: el.getBoundingClientRect(), toque: true })
+      }, 450)
+    },
+    mueve: e => { if (Math.hypot(e.clientX - dedo.current.x, e.clientY - dedo.current.y) > 10) clearTimeout(t.current.abre) },
+    levanta: () => clearTimeout(t.current.abre),
+    consumeClic: () => { if (dedo.current.abrio) { dedo.current.abrio = false; return true } return false },
+  }), [])
   return { abierta, api, cerrar }
 }
 
@@ -4176,8 +4197,13 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
           return (
             <div key={nfClave(d)} className={`nf-tile${visto ? ' vista' : ''}`}
               onPointerEnter={previa ? e => { if (e.pointerType === 'mouse') previa.pide(d, e.currentTarget) } : undefined}
-              onPointerLeave={previa ? e => { if (e.pointerType === 'mouse') previa.suelta() } : undefined}>
-            <button className="nf-abrir" onClick={() => { if (previa) previa.suelta(); onAbrir(d) }}
+              onPointerLeave={previa ? e => { if (e.pointerType === 'mouse') previa.suelta() } : undefined}
+              onPointerDown={previa ? e => { if (e.pointerType !== 'mouse' && !e.target.closest('.nf-marca')) previa.mantiene(d, e.currentTarget, e) } : undefined}
+              onPointerMove={previa ? e => { if (e.pointerType !== 'mouse') previa.mueve(e) } : undefined}
+              onPointerUp={previa ? () => previa.levanta() : undefined}
+              onPointerCancel={previa ? () => previa.levanta() : undefined}
+              onContextMenu={previa ? e => e.preventDefault() : undefined}>
+            <button className="nf-abrir" onClick={() => { if (previa) { if (previa.consumeClic()) return; previa.suelta() } onAbrir(d) }}
               aria-label={`${numerada ? `${i + 1}. ` : ''}${d.item.t}${visto ? tr(' (vista)', ' (watched)') : ''}${ex && ex.texto ? ` · ${ex.texto}` : ''}`}>
               {numerada && <span className="nf-num" aria-hidden="true">{i + 1}</span>}
               <span className="nf-img">

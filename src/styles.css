@@ -116,7 +116,7 @@
 /* Foco que sigue al puntero (estilo Norte): se define EN la superficie para que
    --mx/--my (los pone App.jsx al mover el ratón) se resuelvan en ella; sin
    ratón encima quedan en −999 px y no se ve nada */
-:where(.card, .stat, .grafica, .mapa, .cuenta, .duelo, .tl-card, .comunidad-tarjeta, .nf-guia, .cal-inicio, .proximo, .mv-sel, .seguir-item){
+:where(.card, .stat, .grafica, .mapa, .cuenta, .duelo, .tl-card, .comunidad-tarjeta, .nf-guia, .cal-inicio, .proximo, .mv-sel, .seguir-item, .mv-anillo, .logro){
   --foco-luz:radial-gradient(420px circle at var(--mx, -999px) var(--my, -999px), color-mix(in srgb, var(--red) 8%, transparent), transparent 45%);
 }
 /* Tintes derivados: se calculan del acento que esté vigente (tema y universo) */
@@ -1383,7 +1383,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
   body{touch-action:manipulation}
   nav.tabs .tab, .subvista, .chip-btn, .checkbox, .card, .cover, .galeria-item, .tl-card,
   .ep, .accion-principal, .ghost, .cerrar, .nav-ficha, .planeta-nav, .mv-card, .pf-item,
-  .persona, .estrella, .saga-guia summary, .stat, .cine-flecha, .lector-barra, .prov-chip{
+  .persona, .estrella, .saga-guia summary, .stat, .cine-flecha, .lector-barra, .prov-chip, .nf-tile{
     -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
   }
   /* 16px o iOS hace zoom a toda la página al enfocar el campo. Excepción
@@ -1566,7 +1566,7 @@ a.accion-principal{text-decoration:none; display:inline-block}
    lo que falta se leen. Lo conseguido lleva la burbuja dorada con su halo. */
 .logro{
   display:flex; flex-direction:column; align-items:center; text-align:center; gap: var(--e-2);
-  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
   padding: var(--e-5) var(--e-4);
 }
@@ -1836,8 +1836,15 @@ main.galeria{margin-top: var(--e-6)}
 .mv-resumen-barra{flex-basis:100%; margin: var(--e-1) 0 0}
 
 /* índice por anillo, bajo el Sistema */
-.mv-indice{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap: var(--e-5) var(--e-6); margin: 0 0 var(--e-6)}
-.mv-anillo{min-width:0}
+.mv-indice{display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap: var(--e-4); align-items:start; margin: 0 0 var(--e-6)}
+.mv-anillo{
+  min-width:0; padding: var(--e-4) var(--e-5) var(--e-2);
+  /* cada grupo de Tierras en su tarjeta (23 sep 2026): en el móvil la lista
+     bajo el sistema era una columna larga de filas sin corte */
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
+}
+.mv-anillo .mv-fila:last-child{border-bottom:none}
 .mv-anillo-t{
   margin: 0 0 var(--e-1); font-size: var(--t-xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink2);
   display:flex; flex-direction:column; gap:2px;
@@ -1845,7 +1852,7 @@ main.galeria{margin-top: var(--e-6)}
 .mv-anillo-t span{font-size: var(--t-s); font-weight:400; letter-spacing:0; text-transform:none}
 .mv-fila{
   display:grid; grid-template-columns:auto 1fr auto; align-items:center; column-gap: var(--e-3); row-gap:6px;
-  width:100%; min-height:44px; padding: var(--e-2) 0; background:none; border:none; border-bottom:1px solid var(--line);
+  width:100%; min-height:44px; padding: var(--e-3) 0; background:none; border:none; border-bottom:1px solid var(--filo);
   color:var(--ink); text-align:left; cursor:pointer; font:inherit;
 }
 .mv-fila-punto{width:10px; height:10px; border-radius:50%; background:var(--tc); grid-row:span 2}
@@ -4091,4 +4098,7 @@ div.nf-abrir{cursor:default}
 }
 .nf-previa-mas:hover{background:color-mix(in srgb, var(--panel2) 80%, var(--ink) 8%)}
 .nf-previa-mas:active{transform:scale(.96)}
-@media (prefers-reduced-motion: reduce){ .nf-previa{animation:none} }
+/* en el teléfono: centrada, con un velo que la cierra al tocar fuera */
+.nf-previa-velo{position:fixed; inset:0; z-index:34; background:rgba(8,10,14,.55); animation:fadeIn var(--dur-media) var(--curva) both}
+.nf-previa.en-toque{z-index:36}
+@media (prefers-reduced-motion: reduce){ .nf-previa, .nf-previa-velo{animation:none} }

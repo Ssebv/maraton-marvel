@@ -11,6 +11,8 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 ## Septiembre de 2026
 
 ### Semana del 22
+- **En el teléfono, mantén el dedo sobre una carátula** de Inicio: sale la misma tarjeta de vista previa que en el computador (fotogramas en movimiento, nota, marcar y «Más información»). Toca fuera para cerrarla.
+- En el Multiverso, cada grupo de Tierras va en su tarjeta.
 - **Vistas previas en movimiento:** a los pocos segundos, la cartelera de Inicio pasa por varios fotogramas del título con un zoom lento, como un tráiler sin sonido. En el computador, al dejar el ratón sobre una carátula sale una tarjeta más grande con sus fotogramas en movimiento, la nota, marcar y «Más información».
 - **Logros renovados:** cada uno en su tarjeta con el icono en una burbuja; los conseguidos en dorado y los que faltan se leen enteros, con su barra de progreso.
 - Los episodios de la ficha entran escalonados al abrirla o cambiar de temporada.
