@@ -1,4 +1,4 @@
-import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import React, { createContext, useContext, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import { DATA, ESTRENOS, JOYA_MIN, KEY, MULTIVERSO } from './data.js'
 import { POSTERS } from './posters.js'
@@ -1203,8 +1203,8 @@ async function tmdbJson(ruta, idi = tmdbIdioma()) {
 //     lee con una regex, sin parsear megas);
 //  2. si una escritura que NO es de caché no cabe, se vacían las cachés y se
 //     reintenta: el progreso manda, las fichas se vuelven a bajar solas.
-const ES_CACHE = /^maraton-marvel-(tmdb|persona)-v[0-9]+:/
-const CACHE_VIVA = { 'maraton-marvel-tmdb-v12:': 7 * 864e5, 'maraton-marvel-persona-v3:': 30 * 864e5 }
+const ES_CACHE = /^maraton-marvel-(tmdb|persona|fondos)-v[0-9]+:/
+const CACHE_VIVA = { 'maraton-marvel-tmdb-v12:': 7 * 864e5, 'maraton-marvel-persona-v3:': 30 * 864e5, 'maraton-marvel-fondos-v1:': 30 * 864e5 }
 function podaCaches(todo = false) {
   let n = 0
   try {
@@ -3993,7 +3993,163 @@ const nfNota = n => String(n)
 // onMarcar: la marca rápida de cada carátula (sin abrir la ficha); no va en
 // las filas de tus listas, que llevan su propio progreso. onVerTodo: la era en
 // la lista cronológica
+// ── Vistas previas en movimiento (23 sep 2026, Sebastián: «animaciones,
+// videos preview, todo») ──
+// Como en las apps de streaming, pero sin reproductor: el de YouTube pinta
+// sus controles y su título encima aunque se le pidan sin controles (probado
+// en un Chrome real), y los tráilers no se pueden alojar. En su lugar, un
+// desfile de fotogramas del título (TMDB, los que no llevan texto) con un
+// zoom lento y fundidos: la cartelera arranca el suyo a los pocos segundos y
+// la tarjeta que crece sobre una carátula, al abrirse. El tráiler con sonido
+// sigue a un toque. Sin «reducir movimiento»; la tarjeta, solo con ratón.
+const puedePrevia = () => typeof window !== 'undefined' && !!window.matchMedia
+  && matchMedia('(hover: hover) and (pointer: fine)').matches
+  && !matchMedia('(prefers-reduced-motion: reduce)').matches
+const hayMovimiento = () => typeof window !== 'undefined' && !!window.matchMedia
+  && !matchMedia('(prefers-reduced-motion: reduce)').matches
+  && !(navigator.connection && navigator.connection.saveData)
+const fondosMem = {}
+async function cargaFondos(itemId) {
+  if (fondosMem[itemId]) return fondosMem[itemId]
+  const m = TMDB[itemId]
+  if (!m) return []
+  const clave = 'maraton-marvel-fondos-v1:' + itemId
+  try {
+    const g = JSON.parse(localStorage.getItem(clave))
+    if (g && Date.now() - g.t < 30 * 864e5 && Array.isArray(g.d)) { fondosMem[itemId] = g.d; return g.d }
+  } catch {}
+  const [tid, tipo] = m
+  const r = await tmdbJson(`/${tipo}/${tid}/images?include_image_language=null`)
+  const d = ((r && r.backdrops) || [])
+    .filter(b => b && typeof b.file_path === 'string' && b.aspect_ratio > 1.6)
+    .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0) || (b.vote_count || 0) - (a.vote_count || 0))
+    .slice(0, 6).map(b => b.file_path)
+  fondosMem[itemId] = d
+  try { localStorage.setItem(clave, JSON.stringify({ t: Date.now(), d })) } catch {}
+  return d
+}
+function useFondos(itemId, activo) {
+  const [lista, setLista] = useState(() => fondosMem[itemId] || null)
+  useEffect(() => {
+    if (!activo || !itemId) return undefined
+    let vivo = true
+    setLista(fondosMem[itemId] || null)
+    cargaFondos(itemId).then(d => { if (vivo) setLista(d) }).catch(() => { if (vivo) setLista([]) })
+    return () => { vivo = false }
+  }, [itemId, activo])
+  return activo ? lista : null
+}
+// Fotogramas que se relevan cada 5 s con un zoom lento (Ken Burns), cada uno
+// hacia un lado. El que sale sigue su zoom mientras se funde (misma animación,
+// no se reinicia). Solo se bajan el visible y el siguiente.
+function Desfile({ fotos, ancho = 'w1280', cada = 5000 }) {
+  const [i, setI] = useState(0)
+  const [visto, setVisto] = useState(1)
+  const clave = fotos.join('|')
+  useEffect(() => { setI(0); setVisto(1) }, [clave])
+  useEffect(() => {
+    if (fotos.length < 2) return undefined
+    const t = setInterval(() => {
+      if (document.hidden) return
+      setI(x => { const n = (x + 1) % fotos.length; setVisto(v => Math.max(v, n + 1)); return n })
+    }, cada)
+    return () => clearInterval(t)
+  }, [clave, cada])
+  if (!fotos.length) return null
+  const previo = (i - 1 + fotos.length) % fotos.length
+  return (
+    <div className="desfile" aria-hidden="true">
+      {fotos.slice(0, Math.min(fotos.length, visto + 1)).map((f, k) => (
+        <img key={f} src={`${TMDB_IMG}${ancho}${f}`} alt="" decoding="async"
+          className={k === i ? 'activa' : k === previo && fotos.length > 1 ? 'sale' : undefined}
+          style={{ '--kb': k % 2 ? 1 : -1 }} />
+      ))}
+    </div>
+  )
+}
+
+// La tarjeta que crece al dejar el ratón sobre una carátula. Una sola para
+// todo Inicio (contexto): las filas avisan de qué carátula está debajo y aquí
+// se decide cuándo abrir (700 ms quieto encima), cuándo cerrar (al salir de
+// la carátula y de la tarjeta, al desplazar o con Esc) y dónde ponerla, fija
+// sobre la página para que el carril (overflow) no la recorte.
+const PreviaCtx = createContext(null)
+function NfPrevia({ abierta, onEntra, onSale, onCerrar, vistas, onAbrir, onMarcar }) {
+  const d = abierta && abierta.d
+  const fondos = useFondos(d ? d.item.id : '', !!d)
+  if (!abierta) return null
+  const { rect } = abierta
+  const W = Math.max(320, Math.min(420, rect.width * 1.9))
+  const H = W * 9 / 16 + 132
+  const left = Math.min(Math.max(16, rect.left + rect.width / 2 - W / 2), window.innerWidth - W - 16)
+  const top = Math.min(Math.max(12, rect.top + rect.height / 2 - H / 2), window.innerHeight - H - 12)
+  const it = d.item
+  const visto = !!vistas[it.id]
+  const foto = FOTOGRAMAS[it.id]
+  const n = it.tipo === 'serie' ? (EPISODES[it.id] || []).length : 0
+  return createPortal(
+    <div className="nf-previa" style={{ left, top, width: W, '--desde': Math.min(1, rect.width / W).toFixed(3) }}
+      onPointerEnter={onEntra} onPointerLeave={onSale}>
+      <div className="nf-previa-media">
+        {foto
+          ? <img src={`${TMDB_IMG}w780${foto}`} alt="" decoding="async" />
+          : POSTERS[it.id] ? <img className="nf-previa-poster" src={POSTERS[it.id]} alt="" decoding="async" /> : null}
+        {fondos && fondos.length > 0 && <Desfile ancho="w780" cada={3500} fotos={[...(foto ? [foto] : []), ...fondos.filter(f => f !== foto)].slice(0, 5)} />}
+      </div>
+      <div className="nf-previa-info">
+        <b className="nf-previa-t">{it.t}</b>
+        <span className="nf-previa-meta">
+          {it.s ? <span className="nf-nota">★ {nfNota(it.s)}</span> : null}
+          <span>{it.r}</span>
+          {it.d ? <span>{fmtDur(it.d)}</span> : null}
+          {n ? <span>{n} {tr('episodios', 'episodes')}</span> : null}
+        </span>
+        <span className="nf-previa-botones">
+          {onMarcar && (
+            <button type="button" className={visto ? 'nf-previa-marca hecha' : 'nf-previa-marca'} aria-pressed={visto} onClick={() => onMarcar(it.id)}
+              aria-label={visto ? tr(`Marcar pendiente: ${it.t}`, `Mark unwatched: ${it.t}`) : tr(`Marcar vista: ${it.t}`, `Mark watched: ${it.t}`)}>
+              <CheckIcon />
+            </button>
+          )}
+          <button type="button" className="nf-previa-mas" onClick={() => { onCerrar(); onAbrir(d) }}>{tr('Más información', 'More info')}</button>
+        </span>
+      </div>
+    </div>,
+    document.body
+  )
+}
+function usePreviaNf() {
+  const [abierta, setAbierta] = useState(null)
+  const t = useRef({ abre: 0, cierra: 0 })
+  const activa = useRef(null)
+  activa.current = abierta
+  const limpia = () => { clearTimeout(t.current.abre); clearTimeout(t.current.cierra) }
+  const cerrar = () => { limpia(); setAbierta(null) }
+  useEffect(() => {
+    if (!abierta) return undefined
+    // desplazar la página o un carril la deja fuera de su sitio: se cierra
+    const fuera = () => cerrar()
+    const tecla = e => { if (e.key === 'Escape') cerrar() }
+    window.addEventListener('scroll', fuera, { capture: true, passive: true })
+    window.addEventListener('keydown', tecla)
+    window.addEventListener('blur', fuera)
+    return () => { window.removeEventListener('scroll', fuera, { capture: true }); window.removeEventListener('keydown', tecla); window.removeEventListener('blur', fuera) }
+  }, [!!abierta])
+  useEffect(() => () => limpia(), [])
+  const api = useMemo(() => puedePrevia() ? {
+    pide: (d, el) => {
+      limpia()
+      if (activa.current && activa.current.d.item.id === d.item.id) return
+      t.current.abre = setTimeout(() => { if (el.isConnected) setAbierta({ d, rect: el.getBoundingClientRect() }) }, activa.current ? 250 : 700)
+    },
+    suelta: () => { clearTimeout(t.current.abre); clearTimeout(t.current.cierra); t.current.cierra = setTimeout(() => setAbierta(null), 180) },
+    entra: () => clearTimeout(t.current.cierra),
+  } : null, [])
+  return { abierta, api, cerrar }
+}
+
 function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, progreso, atenuar, onMarcar, onVerTodo }) {
+  const previa = useContext(PreviaCtx)
   const carril = useRef(null)
   if (!items.length) return null
   const mueve = dir => {
@@ -4018,8 +4174,10 @@ function FilaNf({ titulo, sub, items, ancha, numerada, vistas, onAbrir, extra, p
           const foto = ancha && FOTOGRAMAS[d.item.id]
           const ex = extra ? extra(d) : null
           return (
-            <div key={nfClave(d)} className={`nf-tile${visto ? ' vista' : ''}`}>
-            <button className="nf-abrir" onClick={() => onAbrir(d)}
+            <div key={nfClave(d)} className={`nf-tile${visto ? ' vista' : ''}`}
+              onPointerEnter={previa ? e => { if (e.pointerType === 'mouse') previa.pide(d, e.currentTarget) } : undefined}
+              onPointerLeave={previa ? e => { if (e.pointerType === 'mouse') previa.suelta() } : undefined}>
+            <button className="nf-abrir" onClick={() => { if (previa) previa.suelta(); onAbrir(d) }}
               aria-label={`${numerada ? `${i + 1}. ` : ''}${d.item.t}${visto ? tr(' (vista)', ' (watched)') : ''}${ex && ex.texto ? ` · ${ex.texto}` : ''}`}>
               {numerada && <span className="nf-num" aria-hidden="true">{i + 1}</span>}
               <span className="nf-img">
@@ -4130,6 +4288,28 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   const verGuia = !guiaVista && Object.keys(vistas).length <= 2
   const cierraGuia = () => { setGuiaVista(true); try { localStorage.setItem(KEY_GUIA_INICIO, '1') } catch {} }
   const verTrailer = s && trailerDe === s.id && extraS && extraS.trailer
+  // vista previa de la cartelera: el tráiler mudo a los 3,5 s, solo con la
+  // cartelera a la vista y la pestaña delante; se quita al abrir el tráiler
+  // con sonido o al pasar a otro título (la sección lleva key)
+  const cartelRef = useRef(null)
+  const [cartelVisible, setCartelVisible] = useState(true)
+  useEffect(() => {
+    const el = cartelRef.current
+    if (!el || !window.IntersectionObserver) return undefined
+    const io = new IntersectionObserver(([e]) => setCartelVisible(e.intersectionRatio > 0.4), { threshold: [0, 0.4, 1] })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [s && s.id])
+  const [previaDe, setPreviaDe] = useState(null)
+  useEffect(() => {
+    if (!s || previaDe === s.id || !cartelVisible || !hayMovimiento()) return undefined
+    const t = setTimeout(() => { if (!document.hidden) setPreviaDe(s.id) }, 3500)
+    return () => clearTimeout(t)
+  }, [s && s.id, cartelVisible])
+  const fondosS = useFondos(s ? s.id : '', !!s && previaDe === s.id)
+  const desfileS = s && previaDe === s.id && cartelVisible && !verTrailer && fondosS && fondosS.length > 0
+    ? [...(foto ? [foto] : []), ...fondosS.filter(f => f !== foto)].slice(0, 5) : null
+  const previaNf = usePreviaNf()
   // la foto del SIGUIENTE título se baja mientras miras la cartelera actual:
   // al marcar vista ya está (y el service worker la guarda para la próxima)
   const proxIds = pendientes.slice(1, 3).map(d => d.item.id).join('|')
@@ -4147,10 +4327,11 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
   }, [proxIds])
   const eraS = s && (eras.find(x => x.its.some(d => d.item.id === s.id)) || {}).era?.era
   return (
+    <PreviaCtx.Provider value={previaNf.api}>
     <main className="inicio-nf">
       {s ? (
         // key: al marcar vista, la cartelera nueva entra con su animación (se nota que avanzaste)
-        <section className={verTrailer ? 'nf-cartel con-trailer' : 'nf-cartel'} key={s.id} style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
+        <section ref={cartelRef} className={verTrailer ? 'nf-cartel con-trailer' : 'nf-cartel'} key={s.id} style={{ '--c1': dS ? dS.c[0] : '#333', '--c2': dS ? dS.c[1] : '#111' }}>
           {/* La carátula local (mismo servidor, 30 kB, casi siempre en caché) se pinta
               al instante, difuminada, y el fotograma de TMDB se funde encima al
               llegar. Sin ella, en 4G lenta el recuadro más grande de la pantalla
@@ -4160,6 +4341,7 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
             {foto && <img key={foto} className="nf-cartel-foto" src={`${TMDB_IMG}w1280${foto}`} srcSet={`${TMDB_IMG}w780${foto} 780w, ${TMDB_IMG}w1280${foto} 1280w`} sizes="100vw" alt="" decoding="async" fetchpriority="high"
               onLoad={e => e.currentTarget.classList.add('cargada')}
               onError={e => { e.currentTarget.style.display = 'none' }} />}
+            {desfileS && <Desfile fotos={desfileS} ancho={window.innerWidth > 780 ? 'w1280' : 'w780'} />}
           </div>
           {verTrailer && (
             <div className="nf-trailer">
@@ -4249,7 +4431,10 @@ function InicioNfBase({ stats, vistas, eps, notas, listas, pasaFiltro, onAbrir, 
           progreso={100 * its.filter(d => vistas[d.item.id]).length / its.length} atenuar
           sub={`${nombreSaga(saga)} · ${era.rango} · ${its.filter(d => vistas[d.item.id]).length}/${its.length}`} />
       ))}
+      <NfPrevia abierta={previaNf.abierta} onEntra={previaNf.api && previaNf.api.entra} onSale={previaNf.api && previaNf.api.suelta}
+        onCerrar={previaNf.cerrar} vistas={vistas} onAbrir={onAbrir} onMarcar={onToggle} />
     </main>
+    </PreviaCtx.Provider>
   )
 }
 
@@ -6026,14 +6211,14 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                 {[tempActual].map(t => (
                   <div key={t} className={temporadas.length > 1 ? 'temporada-cuerpo' : undefined}>
                     <div className="ep-lista">
-                      {lista.filter(e => e.s === t).map(e => {
+                      {lista.filter(e => e.s === t).map((e, idx) => {
                         const clave = `${item.id}:${e.s}:${e.n}`
                         const hecho = !!eps[clave]
                         const tm = extra && extra.eps[`${e.s}:${e.n}`]
                         const sinopsis = tm && tm.o && ui(pais, tm.o)
                         const abierta = sinAbierta === clave
                         return (
-                          <div key={clave} className={`ep${hecho ? ' hecho' : ''}`}>
+                          <div key={clave} className={`ep${hecho ? ' hecho' : ''}`} style={{ '--i': idx }}>
                             <button className="ep-toggle" aria-pressed={hecho}
                               onClick={() => toggleEp(clave)}
                               title={hecho ? tr('Marcar pendiente', 'Mark pending') : tr('Marcar visto', 'Mark watched')}>

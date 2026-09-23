@@ -1560,15 +1560,30 @@ a.accion-principal{text-decoration:none; display:inline-block}
 .hm-escala span + i{margin-left: var(--e-1)}
 .hm-escala i + span{margin-left: var(--e-1)}
 .logros{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap: var(--e-4)}
+/* Logros al estilo Norte (23 sep 2026): tarjeta de superficie con el icono en
+   una burbuja. Antes lo bloqueado bajaba ENTERO a opacidad .45 y en gris, y
+   su texto no llegaba al contraste; ahora solo se apaga el icono: el nombre y
+   lo que falta se leen. Lo conseguido lleva la burbuja dorada con su halo. */
 .logro{
   display:flex; flex-direction:column; align-items:center; text-align:center; gap: var(--e-2);
-  border:1.5px solid var(--line); border-radius:var(--r-m); padding: var(--e-5) var(--e-4);
-  opacity:.45; filter:grayscale(1); transition:opacity var(--dur-larga), filter var(--dur-larga);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-xl);
+  box-shadow:var(--sup-brillo), var(--sup-sombra);
+  padding: var(--e-5) var(--e-4);
 }
-.logro.ok{opacity:1; filter:none; border-color:color-mix(in srgb, var(--gold) 55%, var(--line))}
-.logro-emoji{font-size: var(--t-xl)}
-.logro-nombre{font-size: var(--t-s); font-weight:700}
-.logro-desc{font-size: var(--t-xs); color:var(--ink2); line-height:1.35}
+.logro.ok{border-color:color-mix(in srgb, var(--gold) 45%, var(--filo))}
+.logro-emoji{
+  display:grid; place-items:center; width:52px; height:52px; border-radius:var(--r-pill);
+  font-size: var(--t-xl); line-height:1; background:var(--panel2);
+  filter:grayscale(1); opacity:.55;
+}
+.logro.ok .logro-emoji{
+  filter:none; opacity:1; background:var(--gold-soft);
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent), 0 6px 18px -6px color-mix(in srgb, var(--gold) 60%, transparent);
+}
+.logro-nombre{font-size: var(--t-s); font-weight:700; color:var(--ink2)}
+.logro.ok .logro-nombre{color:var(--ink)}
+.logro-desc{font-size: var(--t-xs); color:var(--ink3); line-height:1.35}
+.logro.ok .logro-desc{color:var(--ink2)}
 main.galeria{margin-top: var(--e-6)}
 .galeria-saga{margin-top: var(--e-7)}
 .galeria-titulo{margin: 0 0 var(--e-4)}
@@ -2196,6 +2211,10 @@ main.crono, main.comics, main.estreno{animation:none}
 .ghost, .subvista, .siguiente-stat, .filtros-quitar, .proximo-cal, .saga-guia summary, .saga-plegar, .era-plegar, .estrella, .tab,
 .galeria-item, .tl-card, .mv-card, .pf-item, .volver-ficha, .cine-flecha, .prov-chip, .aviso-btn, .persona .avatar{transition:transform var(--muelle-toque)}
 .ep{transition:opacity var(--dur-corta), transform var(--dur-corta)}
+/* los episodios entran escalonados (22 ms cada uno, tope 14) al abrir la
+   ficha o cambiar de temporada, que remonta la lista (23 sep 2026) */
+.ep-lista .ep{animation:entraVista var(--dur-media) var(--curva) both; animation-delay:calc(min(var(--i, 0), 14) * 22ms)}
+@media (prefers-reduced-motion: reduce){ .ep-lista .ep{animation:none} }
 .ghost:active, .subvista:active, .siguiente-stat:active, .filtros-quitar:active, .proximo-cal:active,
 .saga-guia summary:active, .saga-plegar:active, .era-plegar:active, .estrella:active, .tab:active, .cerrar:active, .ep:active,
 .galeria-item:active, .tl-card:active, .mv-card:active, .pf-item:active, .volver-ficha:active,
@@ -3642,7 +3661,7 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 }
 .logro-prog::before, .logro-prog i{grid-column:1; grid-row:1; height:4px; border-radius:var(--r-s)}
 .logro-prog::before{content:""; background:color-mix(in srgb, var(--ink) 12%, transparent)}
-.logro-prog i{display:block; background:var(--gold)}
+.logro-prog i{display:block; background:linear-gradient(90deg, var(--red), var(--gold-vivo))}
 .logro-prog em{font-style:normal}
 
 /* en oscuro el borde --line sobre --gold-soft casi desaparecía (revisión HIG) */
@@ -3664,7 +3683,9 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
 }
 /* y dentro, en Logros, la tarjeta que acabas de ganar */
 .logro{position:relative}
-.logro.nuevo{border-color:var(--red)}
+.logro.nuevo{border-color:var(--red); animation:logroGanado var(--muelle-pop) both}
+.logro.nuevo .logro-emoji{animation:logroGanado var(--muelle-pop) .15s both}
+@keyframes logroGanado{from{transform:scale(.85); opacity:.3}}
 /* sobre el borde de arriba, como una muesca: dentro de la tarjeta (143 px en
    el móvil) tapaba el emoji, medido por CDP */
 .logro-nuevo{
@@ -3672,7 +3693,7 @@ html.capa-abierta .donde{opacity:0; pointer-events:none}
   font-size: var(--t-xs); font-weight:700; letter-spacing:.04em; text-transform:uppercase; line-height:1.6;
   padding:0 var(--e-3); border-radius:var(--r-pill); background:var(--red); color:var(--sobre-acento);
 }
-@media (prefers-reduced-motion: reduce){ .tab-insignia{animation:none} }
+@media (prefers-reduced-motion: reduce){ .tab-insignia, .logro.nuevo, .logro.nuevo .logro-emoji{animation:none} }
 
 /* Subvistas del móvil: el borde se funde por el lado donde queda más carril
    (las clases las pone App según el scroll), para que se vea que sigue */
@@ -4019,3 +4040,55 @@ div.nf-abrir{cursor:default}
   background:var(--red); color:#fff; font-size:11px; font-weight:700; display:inline-grid; place-items:center;
 }
 @media (prefers-reduced-motion: reduce){ .filtro-fila:active{transform:none} }
+
+/* ── Vistas previas en movimiento (23 sep 2026) ──
+   Desfile de fotogramas: el activo entra fundido y hace un zoom lento hacia
+   su lado (--kb); el que sale sigue su zoom mientras se va (la misma
+   animación en .activa y .sale: cambiar de clase no la reinicia). */
+.desfile{position:absolute; inset:0; overflow:hidden}
+.desfile img{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 25%;
+  opacity:0; transition:opacity 1.2s ease; transform:scale(1.04); will-change:transform, opacity;
+}
+.desfile img.activa, .desfile img.sale{animation:kenBurns 9s linear both}
+.desfile img.activa{opacity:1}
+@keyframes kenBurns{
+  from{transform:scale(1.04) translateX(calc(var(--kb, 1) * -1%))}
+  to{transform:scale(1.16) translateX(calc(var(--kb, 1) * 1.5%))}
+}
+@media (prefers-reduced-motion: reduce){ .desfile{display:none} }
+
+/* La tarjeta que crece sobre una carátula: fija sobre la página, sale desde
+   el tamaño de la carátula (--desde) con el muelle de la casa */
+.nf-previa{
+  position:fixed; z-index:35; overflow:hidden;
+  border-radius:var(--r-l); background:var(--panel); color:var(--ink);
+  border:1px solid var(--filo);
+  box-shadow:var(--sup-brillo), 0 24px 60px rgba(0,0,0,.55), 0 4px 12px rgba(0,0,0,.35);
+  transform-origin:center; animation:previaEntra var(--muelle) both;
+}
+@keyframes previaEntra{from{opacity:.4; transform:scale(var(--desde, .6))} to{opacity:1; transform:none}}
+.nf-previa-media{position:relative; aspect-ratio:16/9; background:#000; overflow:hidden}
+.nf-previa-media > img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.nf-previa-media > img.nf-previa-poster{object-fit:contain; background:var(--noche)}
+.nf-previa-info{display:flex; flex-direction:column; gap: var(--e-2); padding: var(--e-4) var(--e-5) var(--e-5)}
+.nf-previa-t{font-family:var(--f-titulo); font-size: var(--t-l); font-weight:700; line-height:1.2; letter-spacing:-.01em;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden}
+.nf-previa-meta{display:flex; flex-wrap:wrap; gap: var(--e-1) var(--e-3); font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+.nf-previa-botones{display:flex; align-items:center; gap: var(--e-3); margin-top: var(--e-2)}
+.nf-previa-marca{
+  width:40px; height:40px; flex:none; display:grid; place-items:center; padding:0; cursor:pointer;
+  border-radius:var(--r-pill); border:2px solid var(--ink3); background:transparent; color:var(--ink);
+  transition:transform var(--muelle-toque);
+}
+.nf-previa-marca svg{width:18px; height:18px}
+.nf-previa-marca.hecha{background:var(--done); border-color:var(--done); color:var(--sobre-acento)}
+.nf-previa-marca:active{transform:scale(.92)}
+.nf-previa-mas{
+  min-height:40px; padding:0 var(--e-5); border-radius:var(--r-pill); cursor:pointer; font:inherit; font-size: var(--t-m); font-weight:600;
+  background:var(--panel2); color:var(--ink); border:1px solid var(--filo);
+  transition:transform var(--muelle-toque);
+}
+.nf-previa-mas:hover{background:color-mix(in srgb, var(--panel2) 80%, var(--ink) 8%)}
+.nf-previa-mas:active{transform:scale(.96)}
+@media (prefers-reduced-motion: reduce){ .nf-previa{animation:none} }

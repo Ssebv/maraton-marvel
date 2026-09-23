@@ -11,6 +11,9 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 ## September 2026
 
 ### Week of the 22nd
+- **Motion previews:** after a few seconds, the Home billboard cycles through stills from the title with a slow zoom, like a silent trailer. On computers, resting the mouse on a poster opens a bigger card with moving stills, the rating, mark-watched and "More info".
+- **Refreshed achievements:** each on its own card with the icon in a bubble; earned ones in gold, and the ones you're missing are fully readable with their progress bar.
+- Episodes on a title page slide in one after another when you open it or switch seasons.
 - **A fresh look:** system font, rounded cards with a soft top highlight, pill buttons that press in when tapped, a bottom bar with a light line and a sliding capsule, and your progress numbers roll like a counter. The Marvel red and the classic title stay.
 - On computers, a soft red light follows your mouse over cards; the Home poster gets a sweep of light when it appears, and the Doomsday countdown rolls every second.
 - On phones, lists (Chronological, Comics, Timeline…) start much higher: the title fits on one line and "Your calendar" stays on Home.
