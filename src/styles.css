@@ -4140,7 +4140,8 @@ div.nf-abrir{cursor:default}
    el tinte rojo y una barrita de 3 px con halo en el borde, como en Norte. */
 :root{--lat-w:248px}
 html.con-lateral body{padding-left:var(--lat-w)}
-html.con-lateral .wrap{max-width:1240px; padding-inline: var(--e-7)}
+/* toda la página a la derecha de la lateral (Sebastián, con captura a 1920: «necesito ocupar toda la página, no solo el medio») */
+html.con-lateral .wrap{max-width:none; padding-inline:clamp(24px, 2.6vw, 56px)}
 html.con-lateral .cd-ajustes{display:none}
 .lateral{
   position:fixed; z-index:30; left:0; top:0; bottom:0; width:var(--lat-w);
