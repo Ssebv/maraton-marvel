@@ -4478,7 +4478,6 @@ html.con-lateral .nf-fila-recientes{display:none}
   border:1px solid var(--filo); box-shadow:none;
 }
 .cal-semana-descanso{font-size: var(--t-xs); font-weight:600; color:var(--ink3); letter-spacing:.02em}
-@media (max-width:640px){ .cal-semana-descanso{font-size:0} .cal-semana-descanso::after{content:"—"; font-size: var(--t-s)} }
 
 /* Lado derecho de la cartelera (escritorio ancho): carátula flotante, dónde
    verla y los dos siguientes de ese universo */
@@ -4511,3 +4510,38 @@ html.con-lateral .nf-fila-recientes{display:none}
 @media (max-height:1040px){ .lat-caja{padding: var(--e-2); gap: var(--e-2)} }
 @media (max-height:960px){ .lat-noticias li:nth-child(n+2){display:none} }
 @media (max-height:880px){ .lat-caja{display:none} }
+
+/* Noticias con imagen: la primera destacada (imagen a lo ancho con el titular
+   encima), las demás con miniatura */
+.lat-noticia{flex-direction:row; align-items:center; gap: var(--e-3)}
+.lat-noticia-img{flex:none; width:64px; height:44px; border-radius:var(--r-s); object-fit:cover; background:var(--panel2); box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.lat-noticia-texto{display:flex; flex-direction:column; gap:2px; min-width:0}
+.lat-noticia.destacada{position:relative; display:block; padding:0; overflow:hidden; border-radius:var(--r-m); aspect-ratio:16/9; max-height:128px; width:100%}
+.lat-noticia.destacada .lat-noticia-img{position:absolute; inset:0; width:100%; height:100%; border-radius:0; box-shadow:none; transition:transform var(--dur-larga) var(--curva)}
+.lat-noticia.destacada:hover .lat-noticia-img{transform:scale(1.05)}
+.lat-noticia.destacada .lat-noticia-texto{position:absolute; left:0; right:0; bottom:0; padding: var(--e-5) var(--e-3) var(--e-2); color:#fff;
+  background:linear-gradient(to top, rgba(8,9,14,.92), rgba(8,9,14,.55) 60%, transparent)}
+.lat-noticia.destacada small{color:rgba(255,255,255,.72)}
+.lat-noticia.destacada:hover{background:none}
+
+/* Descanso: una luna y la palabra, sobre un degradado suave (no una casilla vacía) */
+.cal-semana-cara.vacia{
+  background:radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--violet) 18%, transparent), transparent 70%), color-mix(in srgb, var(--panel2) 55%, transparent);
+  border-style:solid;
+}
+.cal-semana-descanso{display:flex; flex-direction:column; align-items:center; gap: var(--e-2); color:var(--ink3)}
+.cal-semana-descanso svg{width:22px; height:22px; color:color-mix(in srgb, var(--violet) 70%, var(--ink3))}
+/* hoy sin nada: lo que te toca, apagado, con «Hoy toca» */
+.cal-semana-hoy{position:absolute; inset:0}
+.cal-semana-hoy img{width:100%; height:100%; object-fit:cover; opacity:.38; filter:grayscale(.4)}
+.cal-semana-hoy-t{position:absolute; left:0; right:0; bottom:8px; text-align:center; font-size: var(--t-xs); font-weight:700; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.cal-semana-dia.hoy-toca .cal-semana-cara{border:1.5px dashed color-mix(in srgb, var(--red) 70%, transparent); background:var(--noche)}
+.cal-semana-dia.hoy-toca:hover .cal-semana-hoy img{opacity:.6}
+@media (max-width:640px){
+  .cal-semana-descanso{font-size: var(--t-xs)}
+  .cal-semana-descanso span{display:none}
+  .cal-semana-descanso::after{content:none}
+  .cal-semana-descanso svg{width:16px; height:16px}
+  .cal-semana-hoy-t{font-size:9px; bottom:4px}
+}
+@media (max-height:960px){ .lat-noticia.destacada{aspect-ratio:auto; height:84px} }

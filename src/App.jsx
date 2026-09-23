@@ -6863,7 +6863,7 @@ function DondeEstoy({ version, siguiente, onPrepara }) {
 // y qué fechas vi X películas y las reseñas que les puse»). Es el mismo
 // Calendario de Perfil, plegable y recordado; solo sale con marcas con fecha.
 const KEY_CAL_INICIO = 'maraton-marvel-cal-inicio-v1'
-function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
+function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma, siguiente }) {
   // Plegado por defecto (medido: abierto ocupaba 525 px en el móvil y el primer
   // título bajaba a 1.170 px); la cabecera enseña igual la última semana. Abierto
   // solo si el usuario lo abrió a mano alguna vez.
@@ -6876,7 +6876,7 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
     const semana = []
     for (let i = 6; i >= 0; i--) {
       const f = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - i)
-      semana.push({ k: diaClave(f.getTime()), f, n: 0, valorada: false, ids: [] })
+      semana.push({ k: diaClave(f.getTime()), f, n: 0, valorada: false, ids: [], hoy: i === 0 })
     }
     const deSemana = new Map(semana.map(d => [d.k, d]))
     let hay = false, mes = 0, resenas = 0
@@ -6935,11 +6935,11 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
         {/* la última semana, siempre a la vista: qué días hubo maratón */}
         <span className="cal-semana" aria-hidden="true">
           {resumen.semana.map(d => (
-            <span key={d.k} className={`cal-semana-dia${d.n ? ' con' : ''}${d.valorada ? ' con-resena' : ''}`}
+            <span key={d.k} className={`cal-semana-dia${d.n ? ' con' : ''}${d.valorada ? ' con-resena' : ''}${!d.n && d.hoy && siguiente ? ' con hoy-toca' : ''}`}
               // un día con marcas abre el calendario ya en ese día, con su detalle
               // (un toque, en vez de abrir, buscar el día y tocarlo). El teclado y
               // el lector usan la cabecera, que abre el mes entero
-              onClick={d.n ? e => {
+              onClick={!d.n && d.hoy && siguiente ? e => { e.preventDefault(); onAbrir(siguiente) } : d.n ? e => {
                 e.preventDefault()
                 setDiaElegido(d.f.getTime())
                 setAbierto(true)
@@ -6948,7 +6948,19 @@ function CalendarioInicio({ vistas, eps, notas, indice, onAbrir, idioma }) {
               >
               <span className={d.n ? 'cal-semana-cara' : 'cal-semana-cara vacia'}>
                 {d.cara && POSTERS[d.cara] ? <img src={POSTERS[d.cara]} alt="" loading="lazy" decoding="async" />
-                  : d.n ? null : <span className="cal-semana-descanso">{tr('Descanso', 'Rest day')}</span>}
+                  : d.n ? null
+                  : d.hoy && siguiente && POSTERS[siguiente.item.id] ? (
+                    // hoy sin nada marcado: lo que te toca, apagado, como invitación
+                    <span className="cal-semana-hoy">
+                      <img src={POSTERS[siguiente.item.id]} alt="" loading="lazy" decoding="async" />
+                      <span className="cal-semana-hoy-t">{tr('Hoy toca', 'Up today')}</span>
+                    </span>
+                  ) : (
+                    <span className="cal-semana-descanso">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" /></svg>
+                      <span>{d.hoy ? tr('Aún nada', 'Nothing yet') : tr('Descanso', 'Rest day')}</span>
+                    </span>
+                  )}
                 {d.n > 1 && <span className="cal-semana-n">+{d.n - 1}</span>}
               </span>
               <span className="cal-semana-letra">{tr(DIA_LETRA[d.f.getDay()], DIA_LETRA_EN[d.f.getDay()])} <b>{d.f.getDate()}</b></span>
@@ -9258,11 +9270,17 @@ export default function App() {
             </div>
             {caja === 'noticias' ? (
               <ul className="lat-noticias">
-                {notis.map(n => (
+                {notis.map((n, i) => (
                   <li key={n.url}>
-                    <a href={n.url} target="_blank" rel="noopener noreferrer" className="lat-noticia">
-                      <span className="lat-noticia-t">{n.t}</span>
-                      <small>{n.medio}{n.f ? ` · ${haceCuanto(n.f)}` : ''}</small>
+                    <a href={n.url} target="_blank" rel="noopener noreferrer" className={i === 0 && n.img ? 'lat-noticia destacada' : 'lat-noticia'}>
+                      {n.img && typeof n.img === 'string' && /^noticias\/[0-9a-f]{16}\.webp$/.test(n.img) && (
+                        <img className="lat-noticia-img" src={n.img} alt="" loading="lazy" decoding="async"
+                          onError={e => { e.currentTarget.remove() }} />
+                      )}
+                      <span className="lat-noticia-texto">
+                        <span className="lat-noticia-t">{n.t}</span>
+                        <small>{n.medio}{n.f ? ` · ${haceCuanto(n.f)}` : ''}</small>
+                      </span>
                     </a>
                   </li>
                 ))}
@@ -9666,7 +9684,8 @@ export default function App() {
             requestAnimationFrame(busca)
           }}
           epHechosDe={epHechosDe} onAbrir={d => setDetalle(d)} onMarcar={marcaSiguiente}
-          calendario={<CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)} />} />
+          calendario={<CalendarioInicio vistas={vistas} eps={eps} notas={notas} indice={indice} idioma={idioma} onAbrir={d => setDetalle(d)}
+            siguiente={stats.siguiente ? buscaItem(stats.siguiente.id) : null} />} />
       ) : vista === 'tiempo' ? (
         <main className="tiempo">
           <p className="saga-desc mv-intro">

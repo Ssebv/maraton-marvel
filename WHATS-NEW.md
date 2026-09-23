@@ -11,6 +11,8 @@ Missing something? [Ask for it here](https://github.com/Ssebv/maraton-marvel/iss
 ## September 2026
 
 ### Week of the 22nd
+- News now has images: the first one featured full width, the rest with thumbnails.
+- In "Your week", rest days carry a moon, and if you haven't watched anything today, today's tile shows what's up next ("Up today") and opens it.
 - **Marvel news in the sidebar** (on computers), from IGN and SuperHeroHype in English or Espinof and Cinemascomics in Spanish; they refresh every morning. They share a box with "Recently watched".
 - The Home billboard shows the poster on the right, where to watch it in your country and what comes next in that universe.
 - In "Your week", days without check-offs say "Rest day" instead of looking like empty boxes.

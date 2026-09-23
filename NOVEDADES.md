@@ -11,6 +11,8 @@ Lo nuevo de la app, contado para quien la usa. Lo más reciente va arriba.
 ## Septiembre de 2026
 
 ### Semana del 22
+- Las noticias llevan imagen: la primera destacada a lo ancho y las demás con miniatura.
+- En «Tu semana», los días de descanso llevan una luna, y si hoy aún no viste nada, la casilla de hoy te muestra lo que toca («Hoy toca») y lo abre al tocarla.
 - **Noticias de Marvel en la barra lateral** (en el computador), de Espinof y Cinemascomics en español o IGN y SuperHeroHype en inglés; se actualizan solas cada mañana. Comparten caja con «Visto hace poco».
 - La cartelera de Inicio muestra a la derecha la carátula, dónde verla en tu país y lo que viene después en ese universo.
 - En «Tu semana», los días sin marcas dicen «Descanso» en vez de quedar como casillas vacías.

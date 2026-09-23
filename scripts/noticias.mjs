@@ -7,7 +7,10 @@
 // No se copia el texto de la noticia: el enlace lleva a su sitio. Google
 // Noticias queda fuera: sus condiciones solo permiten el uso personal.
 // Lo corre cada mañana .github/workflows/noticias.yml (y se puede a mano).
-import { writeFileSync, readFileSync, existsSync, copyFileSync } from 'node:fs'
+import { writeFileSync, readFileSync, existsSync, copyFileSync, mkdirSync, readdirSync, unlinkSync, cpSync, rmSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -61,9 +64,43 @@ for (const [idioma, fuentes] of Object.entries(FUENTES)) {
     .map(({ t, url, medio, f, img }) => ({ t, url, medio, f, img }))
   console.log(`noticias ${idioma}: ${salida[idioma].length}`)
 }
+// Las imágenes se bajan y se sirven desde la app (public/noticias/, WebP de
+// 320 px): algunos medios bloquean que otra web las pida (Cinemascomics
+// devuelve 403 y el navegador lo corta por ORB), y así además pesan ~15 kB.
+const DIR = join(raiz, 'public', 'noticias')
+mkdirSync(DIR, { recursive: true })
+const hayCwebp = spawnSync('cwebp', ['-version'], { stdio: 'ignore' }).status === 0
+const usadas = new Set()
+for (const idioma of ['es', 'en']) {
+  for (const n of salida[idioma] || []) {
+    if (!n.img) continue
+    const nombre = createHash('sha1').update(n.img).digest('hex').slice(0, 16) + '.webp'
+    const destino = join(DIR, nombre)
+    if (!existsSync(destino)) {
+      if (!hayCwebp) { n.img = null; continue }
+      try {
+        const r = await fetch(n.img, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15', Accept: 'image/*' }, signal: AbortSignal.timeout(20000) })
+        if (!r.ok || !/^image\//.test(r.headers.get('content-type') || '')) throw new Error(r.status)
+        const tmp = join(tmpdir(), 'noticia-' + nombre + '.img')
+        writeFileSync(tmp, Buffer.from(await r.arrayBuffer()))
+        execFileSync('cwebp', ['-quiet', '-q', '70', '-resize', '320', '0', '-metadata', 'none', tmp, '-o', destino])
+        unlinkSync(tmp)
+      } catch { n.img = null; continue }
+    }
+    n.img = 'noticias/' + nombre
+    usadas.add(nombre)
+  }
+}
+// fuera las de días anteriores
+for (const f of readdirSync(DIR)) if (!usadas.has(f)) unlinkSync(join(DIR, f))
+
 // si todo falla, se conserva lo anterior (una noticia vieja es mejor que un hueco)
 const ruta = join(raiz, 'public', 'noticias.json')
 if (!salida.es.length && !salida.en.length && existsSync(ruta)) { console.warn('sin noticias nuevas: se deja el archivo anterior'); process.exit(0) }
 writeFileSync(ruta, JSON.stringify(salida))
 // y en docs/, lo que sirve Pages, sin tener que compilar
-if (existsSync(join(raiz, 'docs'))) copyFileSync(ruta, join(raiz, 'docs', 'noticias.json'))
+if (existsSync(join(raiz, 'docs'))) {
+  copyFileSync(ruta, join(raiz, 'docs', 'noticias.json'))
+  rmSync(join(raiz, 'docs', 'noticias'), { recursive: true, force: true })
+  cpSync(DIR, join(raiz, 'docs', 'noticias'), { recursive: true })
+}

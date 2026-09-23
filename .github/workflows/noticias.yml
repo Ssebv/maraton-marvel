@@ -19,12 +19,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: sudo apt-get install -y -qq webp >/dev/null
       - run: node scripts/noticias.mjs
       - name: Subir si cambió
         run: |
           git config user.name "maraton-noticias"
           git config user.email "actions@users.noreply.github.com"
-          git add public/noticias.json docs/noticias.json
+          git add -A public/noticias.json public/noticias docs/noticias.json docs/noticias
           git diff --cached --quiet && echo "sin cambios" && exit 0
           git commit -m "Noticias del día"
           git push
