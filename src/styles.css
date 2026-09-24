@@ -4835,6 +4835,14 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
     padding:0; margin:0; pointer-events:none;
   }
   main .card .lado .tipo{font-size:10px; padding:2px 6px; box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  /* un grupo de un solo título (muchos años en Por estreno): sin línea, que
+     quedaba como un muñón bajo el nodo, y sin el «#1» */
+  main .grid > .card:only-child::before{display:none}
+  main .grid > .card:only-child .num{display:none}
+  /* Por estreno: el año es la cabecera de cada grupo; bajo el nodo sobraba, y
+     en los datos vuelve el año de la historia, que aquí sí dice algo */
+  main.estreno .card[data-anio]::after{display:none}
+  main.estreno .card[data-anio] .hist-g{display:inline}
   /* modo compacto: la misma línea, con miniatura en vez de carátula y sin
      sinopsis; el nodo se centra en la tarjeta y la etiqueta de tipo sube a la
      esquina (en 40 px no cabe) */

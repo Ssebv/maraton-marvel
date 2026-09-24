@@ -84,6 +84,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
 | Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
 | Panel lateral en el móvil: sale con un botón o arrastrando desde el borde (instalada), sigue al dedo, y atrás o tocar fuera lo cierran | ✅ |
+| Por estreno: sin muñones de línea en los años de un solo título, sin año repetido y con el año de la historia en los datos | ✅ |
 | Auditoría por dispositivos (SE, 17, Pro Max, horizontal, iPad): cabecera compacta en horizontal, «Marcar» ya no pisa el título, segmentados y atajos de 44 px en iPad | ✅ |
 | Modo compacto con la misma línea de tiempo y miniaturas; el idioma del documento sigue al de la app (VoiceOver con la voz correcta) | ✅ |
 | Línea de tiempo con el año bajo cada nodo y «Siguiente» destacado; deslizar entre vistas con la rayita que sigue al dedo y una píldora con el destino | ✅ |
