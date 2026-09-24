@@ -2805,6 +2805,57 @@ function gestoCajon(estado) {
     g = { modo: null, enBorde, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, fijo: false, vel: velocimetro() }
     arma()
   }
+  // La rayita de las pestañas de la sección viaja con el dedo hacia la de
+  // destino (interpolando su caja), como en los paginadores de iOS
+  const indicadorHacia = (g, p) => {
+    const nav = document.querySelector('nav.subvistas'), ind = nav && nav.querySelector('.indicador')
+    const act = nav && nav.querySelector('.subvista[aria-current="page"]'), dst = nav && nav.querySelector(`.subvista[href="#${g.destino}"]`)
+    if (!ind || !act || !dst) return
+    if (!g.ind) {
+      try { ind.getAnimations().forEach(a => a.finish()) } catch {}
+      g.ind = { el: ind, w: ind.style.width, t: ind.style.transform, y: act.offsetTop, h: act.offsetHeight }
+    }
+    const x = act.offsetLeft + (dst.offsetLeft - act.offsetLeft) * p
+    const w = act.offsetWidth + (dst.offsetWidth - act.offsetWidth) * p
+    ind.style.transition = 'none'
+    ind.style.width = w + 'px'
+    ind.style.transform = `translate(${x}px, ${g.ind.y}px)`
+  }
+  const devuelveIndicador = g => {
+    if (!g || !g.ind) return
+    const { el, w, t } = g.ind
+    el.style.transition = 'transform var(--dur-media) var(--curva), width var(--dur-media) var(--curva)'
+    el.style.width = w; el.style.transform = t
+    setTimeout(() => { el.style.transition = '' }, 260)
+  }
+  // la píldora que asoma por el borde con el nombre del destino
+  let pista = null
+  const pistaPagina = (g, p) => {
+    if (!pista) {
+      pista = document.createElement('div')
+      pista.className = 'pagina-pista'
+      pista.setAttribute('aria-hidden', 'true')
+      document.body.appendChild(pista)
+    }
+    if (pista.dataset.destino !== g.destino) {
+      const a = document.querySelector(`nav.subvistas .subvista[href="#${g.destino}"]`)
+      const nombre = a ? a.textContent : g.destino
+      pista.textContent = g.dx < 0 ? `${nombre} ›` : `‹ ${nombre}`
+      pista.dataset.destino = g.destino
+      pista.classList.toggle('derecha', g.dx < 0)
+    }
+    pista.classList.toggle('lista', p >= 1)
+    pista.style.transition = 'none'
+    pista.style.opacity = String(Math.min(1, p * 1.4))
+    pista.style.transform = `translate(${(g.dx < 0 ? 1 : -1) * (1 - p) * 40}px, -50%)`
+  }
+  const quitaPista = va => {
+    if (!pista) return
+    pista.style.transition = 'opacity var(--dur-corta) var(--curva), transform var(--dur-corta) var(--curva)'
+    pista.style.opacity = '0'
+    if (!va) pista.style.transform = `translate(${pista.classList.contains('derecha') ? 40 : -40}px, -50%)`
+    pista.dataset.destino = ''
+  }
   // el nodo que se lleva el dedo al pasar de pestaña: la vista (main)
   const vistaEl = () => document.querySelector('main')
   const onMove = e => {
@@ -2836,12 +2887,19 @@ function gestoCajon(estado) {
       // la vista acompaña al dedo poco (lo justo para sentirlo) y con goma si
       // no hay pestaña hacia ese lado; al soltar entra la de al lado con el
       // mismo desliz que al tocar su pestaña
-      const x = g.destino ? Math.max(-56, Math.min(56, g.dx * 0.28)) : Math.sign(g.dx) * goma(Math.abs(g.dx), 40)
+      // acompaña al dedo casi a la mitad (tope 96 px) y se aclara; sin pestaña
+      // hacia ese lado, goma
+      const x = g.destino ? Math.max(-96, Math.min(96, g.dx * 0.45)) : Math.sign(g.dx) * goma(Math.abs(g.dx), 40)
       g.vel.anota(e.timeStamp, g.dx)
       const fuera = !!g.destino && Math.abs(g.dx) > UMBRAL_PAGINA
       if (fuera !== !!g.cruzado) { g.cruzado = fuera; tic() }
       el.style.transform = `translateX(${x}px)`
-      el.style.opacity = g.destino ? String(1 - Math.min(0.25, Math.abs(g.dx) / 800)) : ''
+      el.style.opacity = g.destino ? String(1 - Math.min(0.3, Math.abs(g.dx) / 600)) : ''
+      if (g.destino) {
+        const p = Math.min(1, Math.abs(g.dx) / (UMBRAL_PAGINA * 1.6))
+        indicadorHacia(g, p)
+        pistaPagina(g, p)
+      }
       return
     }
     const el = cajon()
@@ -2869,11 +2927,15 @@ function gestoCajon(estado) {
       const v = vel.lee(e.timeStamp)
       const va = gg.destino && (Math.abs(gg.dx) > UMBRAL_PAGINA || (Math.abs(v) > 450 && Math.sign(v) === Math.sign(gg.dx)))
       if (!el) return
+      quitaPista(!!va)
       if (va) {
-        // sin transición: la foto de la View Transition sale ya centrada
+        // sin transición: la foto de la View Transition sale ya centrada. El
+        // indicador se queda donde lo dejó el dedo y su propia animación
+        // termina el viaje hasta la pestaña nueva
         el.style.transition = 'none'; el.style.transform = ''; el.style.opacity = ''; el.style.willChange = ''; el.style.animationFillMode = ''
         estado.current.irA(gg.destino, gg.dx < 0 ? 'adelante' : 'atras')
       } else {
+        devuelveIndicador(gg)
         el.style.transition = 'transform var(--dur-media) var(--curva), opacity var(--dur-media) var(--curva)'
         el.style.transform = ''; el.style.opacity = ''
         setTimeout(() => { el.style.transition = ''; el.style.willChange = ''; el.style.animationFillMode = '' }, 260)
@@ -2896,8 +2958,9 @@ function gestoCajon(estado) {
   }
   const onCancel = () => {
     if (!g) return
+    const gg0 = g
     const { modo } = g; g = null; desarma()
-    if (modo === 'pagina') { const el = vistaEl(); if (el) { el.style.transform = ''; el.style.opacity = ''; el.style.transition = ''; el.style.willChange = ''; el.style.animationFillMode = '' } return }
+    if (modo === 'pagina') { quitaPista(false); devuelveIndicador(gg0); const el = vistaEl(); if (el) { el.style.transform = ''; el.style.opacity = ''; el.style.transition = ''; el.style.willChange = ''; el.style.animationFillMode = '' } return }
     suelta(cajon()); if (modo === 'abrir') estado.current.abrir(false)
   }
   window.addEventListener('touchstart', onStart, { capture: true, passive: true })
@@ -5912,7 +5975,7 @@ function Estrellas() {
 // comparación porque solo capturan cosas estables (item, era, setters) o
 // funciones con setState funcional; `pais` viaja como prop porque el país
 // MUTA los textos de `item` sin cambiar su identidad.
-const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, epHechos, miNota, lectura, sinSpoilers }) {
+const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, onAbrir, delay, epHechos, miNota, lectura, sinSpoilers, sig }) {
   // la entrada se decide al montar: nacida quieta (fuera de las 12 primeras o
   // durante una transición de vista) no se anima luego porque otro render le
   // pase un retraso; nacida animada conserva el suyo
@@ -5932,7 +5995,9 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
     if (hechos > 0 && !vista) epProg = `${hechos}/${total} ep`
   }
   return (
-    <article className={`card${vista ? ' vista' : ''}${marcada ? ' marcada' : ''}${entrada.current == null ? ' quieta' : ''}`} id={`card-${item.id}`}
+    <article className={`card${vista ? ' vista' : ''}${marcada ? ' marcada' : ''}${entrada.current == null ? ' quieta' : ''}${sig ? ' siguiente' : ''}`} id={`card-${item.id}`}
+      // el año de la historia, para la línea de tiempo del móvil (bajo el nodo)
+      data-anio={!esComic && /^~?\d{4}$/.test(item.h || '') ? item.h : undefined}
       style={{ animationDelay: entrada.current == null ? undefined : `${entrada.current}ms`, '--glow': c[0] }}>
       <button className="checkbox" aria-pressed={vista} onClick={onToggle} aria-label={tr(`Vista: ${item.t}`, `Seen: ${item.t}`)}
         title={vista ? tr('Vista — pulsa para marcar pendiente', 'Watched — tap to mark as pending') : tr('Pendiente — pulsa para marcar vista', 'Pending — tap to mark as watched')}>
@@ -5946,11 +6011,11 @@ const Card = React.memo(function Card({ item, num, c, esComic, vista, onToggle, 
           {vista && <span className={`sello sello-mini${marcada ? ' estampa' : ''}`} aria-hidden="true">{esComic ? tr('LEÍDO', 'READ') : tr('VISTA', 'SEEN')}</span>}
         </span>
         <span className="info">
-          <span className="fila-titulo"><span className="num">{num}</span><span className="titulo">{sinPartir(item.t)}</span></span>
+          <span className="fila-titulo" data-sig={sig ? tr('Siguiente', 'Up next') : undefined}><span className="num">{num}</span><span className="titulo">{sinPartir(item.t)}</span></span>
           <span className="meta">
             {esComic
               ? <><span className="hist">{item.a}</span> · {item.r}</>
-              : <>{item.h !== '—' && <><span className="hist">{item.h}</span> · </>}{tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
+              : <>{item.h !== '—' && <span className="hist-g"><span className="hist">{item.h}</span> · </span>}{tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
             {epProg && <span className="ep-prog"> · {epProg}</span>}
             {miNota && <span className="mi-nota"> · {tr('Tú', 'You')}: ★{miNota}</span>}
           </span>
@@ -6520,7 +6585,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             {item.s != null && <span className="star">★ {item.s.toFixed(1)} {tr('en IMDb', 'on IMDb')} · </span>}
             {esComic
               ? <>{item.a} · {item.r}</>
-              : <>{item.h !== '—' && <><span className="hist">{item.h}</span> · </>}{tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
+              : <>{item.h !== '—' && <span className="hist-g"><span className="hist">{item.h}</span> · </span>}{tr('estreno', 'released')} {item.r}{item.d ? <> · {fmtDur(item.d)}</> : null}</>}
           </p>
           </div>
           {oculto && (item.res || item.pc != null) && (
@@ -10622,7 +10687,8 @@ export default function App() {
                                 esComic={esComic} vista={!!vistas[item.id]}
                                 onToggle={() => toggle(item.id)}
                                 onAbrir={() => setDetalle({ item, c: era.c, esComic })}
-                                delay={nextDelay()} epHechos={epHechosDe(item)} miNota={notas[item.id] && notas[item.id].p} lectura={esComic ? lecturas[item.id] : null} />
+                                delay={nextDelay()} epHechos={epHechosDe(item)} miNota={notas[item.id] && notas[item.id].p} lectura={esComic ? lecturas[item.id] : null}
+                                sig={!!stats.siguiente && stats.siguiente.id === item.id} />
                             )
                           )}
                         </div>

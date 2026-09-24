@@ -4694,7 +4694,8 @@ html.capa-abierta .cajon-pista{display:none}
    carrusel automático, los planetas y el punto «en vivo». Sin ellas cada
    fotograma de scroll recalculaba estilos. */
 html.desplazando .estrella-capa, html.desplazando .tira-pista, html.desplazando .planeta-textura,
-html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live{animation-play-state:paused}
+html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, html.desplazando .card.siguiente .checkbox::before{animation-play-state:paused}
+@media (prefers-reduced-motion: reduce){ .card.siguiente .checkbox::before{animation:none!important; opacity:0} }
 /* Las filas de Inicio reservaban 300 px sin pintar y miden 251 en el iPhone
    (263 a 430, 295 en tableta): cada fila que aparecía descuadraba la página
    ~49 px, y Safari no lo compensa (no tiene anclaje de scroll). La reserva
@@ -4793,6 +4794,40 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live{a
     font-size: var(--t-m); line-height:1.4;
     display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden;
   }
+  /* el año de la historia bajo el nodo, sobre la línea (con un halo del
+     fondo para que la corte): se lee como una cronología. En los datos ya
+     no se repite */
+  main:not(.compacto) .card[data-anio]::after{
+    content:attr(data-anio); position:absolute; left:0; width:36px; top:48px; z-index:1;
+    text-align:center; font-size:10px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums;
+    color:var(--ink3); background:var(--bg); padding:2px 0; line-height:1.1;
+  }
+  main:not(.compacto) .card.vista[data-anio]::after{color:color-mix(in srgb, var(--done) 70%, var(--ink3))}
+  main:not(.compacto) .card[data-anio] .hist-g{display:none}
+  /* lo que toca ahora: nodo con halo del color de la era que late despacio,
+     tarjeta con filo de ese color y la etiqueta «Siguiente» */
+  main:not(.compacto) .card.siguiente .checkbox{
+    border-color:var(--glow, var(--red)); border-width:2.5px;
+    box-shadow:0 0 0 4px var(--bg), 0 0 0 7px color-mix(in srgb, var(--glow, var(--red)) 30%, transparent);
+  }
+  /* el latido va en una capa aparte con transform y opacity (compositor): con
+     box-shadow animado se repintaba en cada fotograma, también durante el scroll */
+  main:not(.compacto) .card.siguiente .checkbox::before{
+    content:""; position:absolute; inset:-9px; border-radius:50%; pointer-events:none;
+    border:2px solid color-mix(in srgb, var(--glow, var(--red)) 55%, transparent);
+    animation:nodoLate 2.4s ease-out infinite;
+  }
+  main:not(.compacto) .card.siguiente .abrir{border-color:color-mix(in srgb, var(--glow, var(--red)) 55%, var(--filo));
+    box-shadow:var(--sup-brillo), 0 6px 16px -10px color-mix(in srgb, var(--glow, var(--red)) 80%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--glow, var(--red)) 18%, transparent)}
+  /* (la sombra cabe en los 12 px de margen: content-visibility recorta lo que
+     sale de la tarjeta y un brillo mayor quedaba cortado en rectángulo) */
+  main:not(.compacto) .card.siguiente .fila-titulo[data-sig]::before{
+    content:attr(data-sig); display:block; margin-bottom:2px;
+    font-family:var(--f-texto); font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:color-mix(in srgb, var(--glow, var(--red)) 75%, var(--ink));
+  }
+  @keyframes nodoLate{from{transform:scale(.8); opacity:.9} to{transform:scale(1.35); opacity:0}}
   /* «Serie» / «Opcional» / «Especial»: etiqueta al pie de la carátula */
   main:not(.compacto) .card .lado{
     position:absolute; z-index:1; left:calc(36px + var(--e-3) + 4px); top:calc(var(--e-3) + 108px - 24px);
@@ -4800,3 +4835,19 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live{a
   }
   main:not(.compacto) .card .lado .tipo{font-size:10px; padding:2px 6px; box-shadow:0 2px 6px rgba(0,0,0,.4)}
 }
+
+/* ── Deslizar entre vistas: la píldora del destino (24 sep 2026) ──
+   Asoma por el borde del que llega la vista nueva con su nombre («Por estreno
+   ›»), a media pantalla, mientras el dedo arrastra; al pasar el punto en que
+   soltar cambia (el mismo del tic) se tiñe del acento. */
+.pagina-pista{
+  position:fixed; z-index:41; top:50%; left:calc(12px + env(safe-area-inset-left, 0px)); opacity:0; pointer-events:none;
+  padding: var(--e-3) var(--e-5); border-radius:var(--r-pill); white-space:nowrap;
+  font:700 var(--t-m)/1 var(--f-texto); color:var(--ink);
+  background:var(--sup-lustre), color-mix(in srgb, var(--panel) 94%, transparent); border:1px solid var(--filo);
+  box-shadow:var(--sup-brillo), 0 10px 28px -10px rgba(0,0,0,.55);
+}
+.pagina-pista.derecha{left:auto; right:calc(12px + env(safe-area-inset-right, 0px))}
+.pagina-pista.lista{color:var(--sobre-acento); background:var(--red); border-color:var(--red);
+  box-shadow:0 10px 28px -8px color-mix(in srgb, var(--red) 60%, transparent)}
+@media (prefers-reduced-motion: reduce){ .pagina-pista{transition:none !important} }
