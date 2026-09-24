@@ -2590,6 +2590,9 @@ function gestosDeVolver() {
   const umbralDe = (el, modo) => modo === 'x' ? Math.min(140, el.clientWidth * 0.35) : 140
   const onStart = e => {
     if (cerrando || g || e.touches.length !== 1 || !capasAtras.length) return
+    // el panel lateral del móvil lleva su propio gesto (se cierra hacia la
+    // izquierda, no hacia la derecha como una capa que vuelve)
+    if (document.querySelector('.lateral.cajon')) return
     const t = e.touches[0]
     if (t.clientX <= BORDE_ATRAS) {
       const capa = capasAtras[capasAtras.length - 1]
@@ -2716,6 +2719,103 @@ function gestosDeVolver() {
   window.addEventListener('touchcancel', onCancel)
 }
 gestosDeVolver()
+
+// Panel lateral en el móvil (24 sep 2026, Sebastián: «me gustaría el panel
+// lateral en iOS donde pueda sacarlo y moverme por ahí»): la misma lateral del
+// escritorio sale como un cajón desde la izquierda. Se abre con el botón de la
+// barra o, en la app instalada, arrastrando desde el borde izquierdo con nada
+// abierto (en Safari ese borde es el «atrás» del navegador y no se le quita).
+// Sigue al dedo en los dos sentidos; al soltar decide por recorrido (35 %) o
+// latigazo, con un tic al cruzar el umbral, como las hojas. Cerrado, el cajón
+// sale por CSS (transición desde donde lo dejó el dedo).
+function gestoCajon(estado) {
+  let g = null
+  const cajon = () => document.querySelector('.lateral.cajon')
+  const velo = () => document.querySelector('.cajon-velo')
+  const pinta = (el, x) => {
+    const w = el.offsetWidth || 1
+    el.style.transform = `translateX(${Math.min(0, x)}px)`
+    const v = velo()
+    if (v) v.style.opacity = String(Math.max(0, Math.min(1, 1 + x / w)))
+  }
+  const suelta = el => {
+    if (el) { el.style.transition = ''; el.style.transform = '' }
+    const v = velo(); if (v) { v.style.transition = ''; v.style.opacity = '' }
+  }
+  const arma = () => window.addEventListener('touchmove', onMove, { passive: false })
+  const desarma = () => window.removeEventListener('touchmove', onMove)
+  const onStart = e => {
+    const st = estado.current
+    if (g || !st.activo || e.touches.length !== 1) return
+    const t = e.touches[0]
+    const el = cajon()
+    if (el && st.abierto) {
+      if (!e.target.closest || !e.target.closest('.lateral.cajon, .cajon-velo')) return
+      if (e.target.closest('input,textarea,select')) return
+      g = { modo: 'cerrar', x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, fijo: false, vel: velocimetro() }
+      arma()
+      return
+    }
+    // abrir desde el borde: solo instalada, sin capas encima y sin cajón
+    if (st.abierto || !YA_INSTALADA || capasAtras.length || t.clientX > BORDE_ATRAS) return
+    e.stopPropagation()
+    g = { modo: 'abrir', x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, fijo: false, vel: velocimetro() }
+    arma()
+  }
+  const onMove = e => {
+    if (!g) return
+    const t = e.touches[0]
+    g.dx = t.clientX - g.x0; g.dy = t.clientY - g.y0
+    if (!g.fijo) {
+      if (Math.abs(g.dx) < 8 && Math.abs(g.dy) < 8) return
+      const bien = g.modo === 'abrir' ? g.dx > 0 : g.dx < 0
+      if (!bien || Math.abs(g.dx) < Math.abs(g.dy) * 1.2) { g = null; desarma(); return }
+      g.fijo = true
+      if (g.modo === 'abrir') estado.current.abrir(true)
+    }
+    e.preventDefault()
+    const el = cajon()
+    if (!el) return
+    const w = el.offsetWidth || 1
+    el.style.animation = 'none'; el.style.transition = 'none'
+    const v = velo(); if (v) { v.style.animation = 'none'; v.style.transition = 'none' }
+    const x = g.modo === 'abrir' ? g.dx - w : g.dx
+    g.vel.anota(e.timeStamp, x)
+    const fuera = g.modo === 'abrir' ? x > -w * 0.65 : x < -w * 0.35
+    if (fuera !== !!g.cruzado) { g.cruzado = fuera; tic() }
+    g.x = x
+    pinta(el, x)
+  }
+  const onEnd = e => {
+    if (!g) return
+    const { modo, fijo, vel } = g
+    const x = g.x
+    g = null
+    desarma()
+    if (!fijo) return
+    const el = cajon()
+    if (!el || x == null) { if (modo === 'abrir') estado.current.abrir(false); return }
+    const w = el.offsetWidth || 1
+    const v = vel.lee(e.timeStamp)
+    const abierto = v > 500 ? true : v < -500 ? false : x > -w * 0.35
+    // la transición de CSS lo lleva desde donde está a su sitio (abierto) o
+    // fuera (al cerrarse lleva .saliendo)
+    requestAnimationFrame(() => {
+      suelta(el)
+      if (!abierto) estado.current.abrir(false)
+    })
+  }
+  const onCancel = () => { if (!g) return; const { modo } = g; g = null; desarma(); suelta(cajon()); if (modo === 'abrir') estado.current.abrir(false) }
+  window.addEventListener('touchstart', onStart, { capture: true, passive: true })
+  window.addEventListener('touchend', onEnd)
+  window.addEventListener('touchcancel', onCancel)
+  return () => {
+    window.removeEventListener('touchstart', onStart, { capture: true })
+    window.removeEventListener('touchend', onEnd)
+    window.removeEventListener('touchcancel', onCancel)
+    desarma()
+  }
+}
 
 // Lo que aria-modal promete: el foco entra, no se escapa con el tabulador
 // y vuelve a su sitio al cerrar. Escrito una vez para todos los diálogos.
@@ -4481,9 +4581,12 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
         {porUni.length > 1 && !filtrando && (
           <div className="nf-universos" role="tablist" aria-label={tr('Universo', 'Universe')}>
             {porUni.map(x => (
-              <button key={x.u} type="button" role="tab" aria-selected={uni === x.u} className={`nf-uni nf-uni-${x.u}`} disabled={!x.sig}
+              <button key={x.u} type="button" role="tab" aria-selected={uni === x.u} className={`nf-uni nf-uni-${x.u}${x.sig ? '' : ' completo'}`} disabled={!x.sig}
                 onClick={() => eligeUni(x.u)} style={{ '--uc': x.u === 'xmen' ? 'var(--gold)' : 'var(--red)' }}>
                 {x.sig && POSTERS[x.sig.id] && <img className="nf-uni-img" src={POSTERS[x.sig.id]} alt="" loading="lazy" decoding="async" />}
+                {/* completo: una medalla, no una tarjeta apagada (antes opacidad .55,
+                    parecía «sin cargar») */}
+                {!x.sig && <span className="nf-uni-medalla" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m6.5 12.5 3.5 3.5 7.5-8" /></svg></span>}
                 <span className="nf-uni-texto">
                   <span className="nf-uni-nombre"><span className="nf-uni-largo">{x.u === 'xmen' ? tr('Saga X-Men', 'X-Men saga') : tr('Universo Marvel (UCM)', 'Marvel universe (MCU)')}</span><span className="nf-uni-corto">{x.u === 'xmen' ? 'X-Men' : tr('UCM', 'MCU')}</span><small>{x.vistos} / {x.total}</small></span>
                   <span className="nf-uni-sig">{x.sig ? <>{tr('Sigue: ', 'Next: ')}<b>{x.sig.t}</b></> : tr('¡Completado!', 'Complete!')}</span>
@@ -7597,7 +7700,19 @@ export default function App() {
     return () => window.removeEventListener('keydown', tecla)
   }, [panelLat])
   useEffect(() => { if (!conLateral) setPanelLat(false) }, [conLateral])
-  const noticias = useNoticias(conLateral)
+  // sin sitio para la lateral (móvil, iPad en vertical), la misma sale como
+  // cajón desde la izquierda: botón en la barra o arrastrar desde el borde
+  const [cajon, setCajon] = useState(false)
+  const [cajonMontado, cajonClase] = useSaliente(cajon && !conLateral)
+  const cajonRef = useRef(null)
+  const cierraCajon = () => setCajon(false)
+  useVolverCierra(cajon && !conLateral, cierraCajon, () => cajonRef.current)
+  useDialogo(cajonRef, cierraCajon, cajon && !conLateral)
+  useEffect(() => { if (conLateral) setCajon(false) }, [conLateral])
+  const estadoCajon = useRef(null)
+  estadoCajon.current = { activo: !conLateral, abierto: cajon, abrir: setCajon }
+  useEffect(() => gestoCajon(estadoCajon), [])
+  const noticias = useNoticias(conLateral || cajon)
   const [latCaja, setLatCaja] = useState(() => { try { return localStorage.getItem('maraton-marvel-lat-caja-v1') || 'noticias' } catch { return 'noticias' } })
   const ponLatCaja = v => { setLatCaja(v); try { localStorage.setItem('maraton-marvel-lat-caja-v1', v) } catch {} }
   useEffect(() => {
@@ -9256,19 +9371,35 @@ export default function App() {
     const orden = DESTINOS.flatMap(d => d.vistas)
     conTransicion(orden.indexOf(v) > orden.indexOf(vista) ? 'adelante' : 'atras', () => setVista(v))
   }
+  // en el cajón, cada acción lo cierra primero: la vista nueva aparece debajo
+  // mientras sale (sin View Transition, que fotografiaría el cajón a medias)
+  const enCajon = (e, hacer) => {
+    if (conLateral) { hacer(); return }
+    if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button > 0)) return
+    const destino = e && e.currentTarget && e.currentTarget.getAttribute('href')
+    setCajon(false)
+    if (destino && destino.charAt(0) === '#') {
+      e.preventDefault()
+      const v = destino.slice(1)
+      if (v === vista) return
+      setVista(v)
+      window.scrollTo({ top: 0, behavior: 'instant' })
+      return
+    }
+    hacer()
+  }
   const filaLat = v => {
     const p = PESTANAS.find(x => x.id === v)
     const insignia = v === 'stats' && !enStats && nuevosLogros.length > 0
     return (
-      <a key={v} className="lat-fila" href={'#' + v} aria-current={vista === v ? 'page' : undefined} onClick={e => irAVista(v, e)}>
+      <a key={v} className="lat-fila" href={'#' + v} aria-current={vista === v ? 'page' : undefined} onClick={e => enCajon(e, () => irAVista(v, e))}>
         {ICO_LAT[v]}<span>{p ? tr(p.label, p.en || p.label) : v}</span>
         {insignia && <><span className="lat-insignia" aria-hidden="true" /><span className="solo-lector">{tr(', logro nuevo', ', new achievement')}</span></>}
       </a>
     )
   }
-  const lateral = conLateral && (
-    <aside className="lateral" aria-label={tr('Navegación', 'Navigation')}>
-      <a className="lat-marca" href={'#' + (ultimaVista.maraton || 'inicio')} onClick={e => irAVista(ultimaVista.maraton || 'inicio', e)}>
+  const cuerpoLateral = (conLateral || cajonMontado) && (<>
+      <a className="lat-marca" href={'#' + (ultimaVista.maraton || 'inicio')} onClick={e => enCajon(e, () => irAVista(ultimaVista.maraton || 'inicio', e))}>
         <img className="lat-logo" src="icon-192.png" alt="" width="40" height="40" />
         <span className="lat-marca-texto">
           <b>{tr('Maratón', 'Marathon')}</b>
@@ -9333,7 +9464,7 @@ export default function App() {
             ) : (
               <div className="lat-tira">
                 {ult.map(({ d, t }) => (
-                  <button type="button" key={d.item.id} className="lat-reciente" onClick={() => setDetalle(d)} title={d.item.t}
+                  <button type="button" key={d.item.id} className="lat-reciente" onClick={() => { setCajon(false); setDetalle(d) }} title={d.item.t}
                     aria-label={`${d.item.t}, ${haceCuanto(t)}`}>
                     {POSTERS[d.item.id]
                       ? <img src={POSTERS[d.item.id]} alt="" loading="lazy" decoding="async" />
@@ -9347,7 +9478,16 @@ export default function App() {
         )
       })()}
       <div className="lat-pie">
-        <button type="button" className="lat-tarjeta" aria-haspopup="dialog" aria-expanded={panelLat} onClick={() => setPanelLat(v => !v)}>
+        <button type="button" className="lat-tarjeta" aria-haspopup={conLateral ? 'dialog' : undefined} aria-expanded={conLateral ? panelLat : undefined}
+          onClick={() => {
+            if (conLateral) { setPanelLat(v => !v); return }
+            // en el cajón: el panel del maratón vive en la página (Inicio),
+            // se despliega y se lleva a la vista
+            setCajon(false)
+            if (!panelAbierto) alternaPanel()
+            if (!enMaraton) setVista('inicio')
+            window.scrollTo({ top: 0, behavior: 'instant' })
+          }}>
           {proxEstreno && objetivo && (
             <span className="lat-cuenta-atras">
               <span className="lat-dias"><b><Cifra n={objetivo.dias} /></b><small>{tr('días', 'days')}</small></span>
@@ -9356,12 +9496,12 @@ export default function App() {
           )}
           <span className="barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
           <span className="lat-prog"><b><Cifra n={stats.totV} /></b> / {stats.totN} · {pct} %<span className="lat-prog-h">{tr('quedan', 'left')} {Math.round(stats.mins / 60)} h</span></span>
-          <span className="lat-panel">{panelLat ? tr('Cerrar panel', 'Close panel') : tr('Mapa, estrenos y cuenta atrás', 'Map, premieres and countdown')}</span>
+          <span className="lat-panel">{conLateral && panelLat ? tr('Cerrar panel', 'Close panel') : tr('Mapa, estrenos y cuenta atrás', 'Map, premieres and countdown')}</span>
         </button>
         {botonSync}
         {/* la cuenta: con la nube encendida, entrar (Google o correo) guarda el
             progreso en ella; sin nube, dice con claridad dónde vive lo tuyo */}
-        <button type="button" className="lat-cuenta" onClick={() => setAjustes(true)}>
+        <button type="button" className="lat-cuenta" onClick={() => { setCajon(false); setAjustes(true) }}>
           {cuenta && perfilCuenta && POSTERS[perfilCuenta.avatar]
             ? <img className="lat-avatar" src={POSTERS[perfilCuenta.avatar]} alt="" />
             : <span className="lat-avatar lat-avatar-vacio" aria-hidden="true">{cuenta && perfilCuenta ? perfilCuenta.nombre.slice(0, 1).toUpperCase() : ICO_LAT.cuenta}</span>}
@@ -9372,8 +9512,15 @@ export default function App() {
           {ICO_LAT.ajustes}
         </button>
       </div>
-    </aside>
-  )
+  </>)
+  const lateral = conLateral
+    ? <aside className="lateral" aria-label={tr('Navegación', 'Navigation')}>{cuerpoLateral}</aside>
+    : cajonMontado && createPortal(<>
+        <div className={'cajon-velo' + cajonClase} onClick={cierraCajon} aria-hidden="true" />
+        <aside className={'lateral cajon' + cajonClase} ref={cajonRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Navegación', 'Navigation')}>
+          {cuerpoLateral}
+        </aside>
+      </>, document.body)
   const mapaProgreso = (
         <div className="mapa" aria-label={tr('Mapa de progreso', 'Progress map')}>
           {DATA.map(saga => {
@@ -9647,12 +9794,20 @@ export default function App() {
         <div className="controles" role="group" aria-label={tr('Vista y filtros', 'View and filters')}>
           {esMovil && createPortal(navTabs, document.body)}
           <div className="ctrl-grupo">
+          <button type="button" className="chip-btn ctrl-cajon" aria-haspopup="dialog" aria-expanded={cajon}
+            aria-label={tr('Abrir el panel lateral: secciones, noticias y tu cuenta', 'Open the side panel: sections, news and your account')}
+            onClick={() => setCajon(true)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3.5" y="4.5" width="17" height="15" rx="3.5" /><path d="M9.5 4.5v15" /><path d="M5.8 8.5h1.4M5.8 11.5h1.4" />
+            </svg>
+            {nuevosLogros.length > 0 && !enStats && <span className="ctrl-cajon-punto" aria-hidden="true" />}
+          </button>
           {enMaraton && (<>
           <button className="chip-btn ctrl-filtros" aria-haspopup="dialog" aria-expanded={filtrosModal} onClick={() => setFiltrosModal(true)}>
             {tr('Filtros', 'Filters')}{filtrosActivos > 0 && <span className="ctrl-cuenta">{filtrosActivos}</span>}
           </button>
           <button className="chip-btn ctrl-mas" aria-haspopup="dialog" aria-expanded={masModal} onClick={() => setMasModal(true)}>{tr('Más', 'More')}</button>
-          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título, episodio o actor', 'Title, episode or actor') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
+          <input className="busca" type="search" name="busqueda" placeholder={ES_TACTIL ? tr('Título o actor', 'Title or actor') : tr('Buscar… ( / )', 'Search… ( / )')} title={tr('Busca por título, episodio, actor, director o año — atajos: / buscar · j/k pasar de título · v marcar vista', 'Search by title, episode, actor, director or year — shortcuts: / search · j/k move between titles · v mark watched')} value={busca} spellCheck={false}
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
             // en el móvil la tecla dice «Buscar» y al pulsarla se esconde el
             // teclado, que tapaba media pantalla de resultados

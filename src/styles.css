@@ -2553,6 +2553,9 @@ main.crono, main.comics, main.estreno{animation:none}
   /* 216 px: a 168 el texto de ejemplo se cortaba a media palabra («Título, episodio, a»);
      medido con el texto dentro del campo, que reserva el hueco del botón de borrar */
   .controles .busca{order:-2; width:216px}
+  /* 24 sep: con el botón del panel lateral delante, 158 (y el ejemplo «Título
+     o actor») para que Más siga dentro a 390 px */
+  html:not(.con-lateral) .controles .busca{width:158px}
   /* 22 sep: Filtros y Más van con el buscador, antes de Ajustes; el carril
      los dejaba fuera (Más empezaba en x=397 con 390 de ancho) */
   .controles .ctrl-filtros{order:-1}
@@ -4415,6 +4418,15 @@ html.con-lateral .cd-ajustes{display:none}
   box-shadow:var(--sup-brillo), 0 10px 30px -12px color-mix(in srgb, var(--uc) 45%, transparent);
 }
 .nf-uni:disabled{opacity:.55; cursor:default}
+/* universo completo: medalla en su color y el texto de logro, a opacidad plena */
+.nf-uni.completo{opacity:1; background:linear-gradient(135deg, color-mix(in srgb, var(--uc) 16%, transparent), transparent 70%), var(--sup-lustre), var(--panel)}
+.nf-uni.completo .nf-uni-sig{color:color-mix(in srgb, var(--uc) 75%, var(--ink)); font-weight:700}
+.nf-uni-medalla{
+  flex:none; width:40px; height:40px; display:grid; place-items:center; border-radius:var(--r-pill); color:var(--sobre-acento);
+  background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--uc) 60%, #fff), var(--uc) 60%);
+  box-shadow:0 4px 14px -2px color-mix(in srgb, var(--uc) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.nf-uni-medalla svg{width:22px; height:22px}
 .nf-uni-img{flex:none; width:40px; height:60px; border-radius:var(--r-s); object-fit:cover; box-shadow:0 4px 12px rgba(0,0,0,.35)}
 .nf-uni-texto{display:flex; flex-direction:column; gap:3px; min-width:0; flex:1}
 .nf-uni-nombre{display:flex; align-items:baseline; gap: var(--e-2); font-size: var(--t-xs); font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:color-mix(in srgb, var(--uc) 70%, var(--ink))}
@@ -4428,6 +4440,8 @@ html.con-lateral .cd-ajustes{display:none}
   .nf-universos{gap: var(--e-2)}
   .nf-uni{padding: var(--e-2) var(--e-3); gap: var(--e-3)}
   .nf-uni-img{width:30px; height:45px}
+  .nf-uni-medalla{width:32px; height:32px}
+  .nf-uni-medalla svg{width:18px; height:18px}
   .nf-uni-nombre small{display:inline}
   .nf-uni-largo{display:none}
   .nf-uni-corto{display:inline}
@@ -4442,6 +4456,8 @@ html.con-lateral .cd-ajustes{display:none}
 .cal-inicio-abrir{margin-left:auto; font-size: var(--t-s); font-weight:600; color:var(--red)}
 .cal-inicio > summary{align-items:center}
 .cal-inicio > summary::after{display:none}
+/* sin la flecha, sin su hueco: la semana y «Ver el mes» llegan al borde del panel */
+.cal-inicio > summary{padding-right:0}
 .cal-semana{max-width:none; gap: var(--e-3); margin-top: var(--e-4)}
 .cal-semana-dia{height:auto; display:flex; flex-direction:column; align-items:stretch; gap: var(--e-2); background:none; font-size: var(--t-s); box-shadow:none}
 .cal-semana-dia:last-child{box-shadow:none}
@@ -4575,3 +4591,63 @@ html.con-lateral .nf-fila-recientes{display:none}
   .cal-semana-hoy-t{font-size:9px; bottom:4px}
 }
 @media (max-height:960px){ .lat-noticia.destacada{aspect-ratio:auto; height:84px} }
+
+/* ── Panel lateral como cajón (24 sep 2026) ──
+   Sin sitio para la lateral fija (móvil, iPad en vertical) la misma lateral
+   sale desde la izquierda: botón en la barra o, instalada, arrastrar desde el
+   borde. Entra con la curva de las hojas; al cerrarse, .saliendo la lleva
+   fuera con una TRANSICIÓN, que arranca desde donde la dejó el dedo. */
+.ctrl-cajon{position:relative; order:-3; flex:none; width:44px; min-height:44px; padding:0; display:grid; place-items:center; border-radius:var(--r-pill)}
+.ctrl-cajon svg{width:22px; height:22px}
+.ctrl-cajon-punto{position:absolute; top:6px; right:6px; width:9px; height:9px; border-radius:var(--r-pill); background:var(--red); box-shadow:0 0 0 2px var(--panel)}
+html.con-lateral .ctrl-cajon{display:none}
+.cajon-velo{
+  position:fixed; inset:0; z-index:44; background:rgba(6,8,12,.5);
+  animation:fadeIn var(--dur-media) var(--curva) backwards; transition:opacity var(--dur-larga) var(--curva);
+}
+.cajon-velo.saliendo{opacity:0; pointer-events:none}
+.lateral.cajon{
+  z-index:45; width:min(86vw, 340px); max-width:none;
+  padding-top:calc(var(--e-5) + env(safe-area-inset-top, 0px));
+  padding-bottom:calc(var(--e-4) + env(safe-area-inset-bottom, 0px));
+  padding-left:calc(var(--e-4) + env(safe-area-inset-left, 0px));
+  border-radius:0 var(--r-xl) var(--r-xl) 0; outline:none;
+  /* sobre contenido que se mueve el cristal necesita más cuerpo que en escritorio */
+  background:var(--foco-luz), var(--sup-lustre), color-mix(in srgb, var(--panel) 90%, transparent);
+  box-shadow:var(--sup-brillo), 24px 0 60px -12px rgba(0,0,0,.6);
+  animation:cajonEntra var(--dur-larga) var(--curva-hoja) backwards;
+  transition:transform var(--dur-larga) var(--curva-hoja);
+  touch-action:pan-y;
+}
+.lateral.cajon.saliendo{transform:translateX(-105%); pointer-events:none}
+@keyframes cajonEntra{from{transform:translateX(-105%)}}
+/* en el cajón: el buscador, Filtros y Más ya están en la barra de arriba */
+.lateral.cajon .lat-herr{display:none}
+/* y en el móvil manda el dedo: filas de 44 y lo que la lateral fija esconde
+   en pantallas bajas se ve (el cajón se desplaza) */
+.lateral.cajon .lat-fila{min-height:44px}
+.lateral.cajon .lat-caja{display:flex}
+.lateral.cajon .lat-noticias li{display:block}
+.lateral.cajon .lat-marca{margin-bottom: var(--e-2)}
+.lateral.cajon .lat-tira{grid-template-columns:repeat(3, 1fr)}
+.lateral.cajon .lat-caja-tabs button{min-height:36px}
+@media (prefers-reduced-motion: reduce){
+  .lateral.cajon, .cajon-velo{animation:none; transition:none}
+}
+
+/* ── Cabeceras de fila de Inicio en el móvil (24 sep 2026) ──
+   Nombre, años, barra y «Ver todo» compartían renglón: el nombre de la era se
+   partía en dos o tres líneas («La Saga del / Multiverso / se expande») y los
+   años salían cortados («2016–2…»). Ahora el nombre ocupa el ancho y debajo va
+   una línea de datos con la barra y «Ver todo» a la derecha. */
+@media (max-width:640px){
+  .nf-fila-cab{display:grid; grid-template-columns:auto minmax(0, 1fr) auto; column-gap: var(--e-3); row-gap: var(--e-1); align-items:center}
+  .nf-fila-t{grid-column:1 / -1; text-wrap:balance; line-height:1.2}
+  .nf-fila-sub{grid-row:2; grid-column:1}
+  .nf-fila-barra{grid-row:2; grid-column:2; width:min(100%, 72px)}
+  .nf-ver-todo{grid-row:2; grid-column:3; margin-left:0; min-height:32px; position:relative}
+  .nf-ver-todo::after{content:""; position:absolute; inset:-6px -8px}
+  /* sin datos debajo, «Ver todo» sube junto al nombre */
+  .nf-fila-cab:not(:has(.nf-fila-sub, .nf-fila-barra)) .nf-fila-t{grid-column:1 / 3}
+  .nf-fila-cab:not(:has(.nf-fila-sub, .nf-fila-barra)) .nf-ver-todo{grid-row:1}
+}

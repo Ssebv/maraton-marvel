@@ -83,6 +83,8 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Sin zoom al enfocar «Reportar» ni el buscador de la lateral en iPad | ✅ |
 | Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
 | Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
+| Panel lateral en el móvil: sale con un botón o arrastrando desde el borde (instalada), sigue al dedo, y atrás o tocar fuera lo cierran | ✅ |
+| Inicio: cabeceras de fila con el nombre en una línea y los datos debajo, «Tu semana» a todo el ancho, medalla al completar un universo | ✅ |
 
 ### Pendiente (siguientes jornadas)
 
