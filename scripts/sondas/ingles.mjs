@@ -19,7 +19,9 @@ const junta = async (c, d) => { for (const l of await c.eval(`document.body.inne
     await navega(''); await espera(1500); await junta(cdp, 'inicio')
     for (const v of ['crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo']) { await cdp.eval(`location.hash='${v}'`); await espera(900); await junta(cdp, v) }
     await cdp.eval(`location.hash='crono'`); await espera(800)
-    for (const [sel, d] of [['.ctrl-filtros', 'filtros'], ['.ctrl-mas', 'más'], ['.chip-ajustes', 'ajustes']]) {
+    // desde el 23 sep a 1280 px manda la barra lateral: Filtros y Más son sus
+    // iconos y Ajustes, la tarjeta de la cuenta
+    for (const [sel, d] of [['.ctrl-filtros, .lat-herr button:nth-of-type(1)', 'filtros'], ['.ctrl-mas, .lat-herr button:nth-of-type(2)', 'más'], ['.chip-ajustes, .lat-cuenta', 'ajustes']]) {
       await cdp.eval(`document.querySelector('${sel}').click()`); await espera(900)
       await cdp.eval(`document.querySelectorAll('details').forEach(d => d.open = true)`); await espera(300); await junta(cdp, d)
       await cdp.eval(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`); await espera(600)

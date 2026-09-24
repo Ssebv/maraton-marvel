@@ -4745,95 +4745,114 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
    etiqueta sobre la carátula en vez de una fila propia.
    Todo va DENTRO de cada .card (una columna de 36 px): content-visibility
    recorta lo que se sale de la caja, y el hueco entre tarjetas pasa a ser su
-   relleno inferior para que la línea no se corte. Modo compacto aparte. */
+   relleno inferior para que la línea no se corte. El modo compacto usa la
+   misma línea con miniatura de 40 × 60 (ajustes al final del bloque). */
 @media (max-width:640px){
-  main:not(.compacto) .grid{gap:0}
-  main:not(.compacto) .card{
+  main .grid{gap:0}
+  main .card{
     display:grid; grid-template-columns:36px minmax(0, 1fr); align-items:start; gap:0;
     padding: 0 0 var(--e-3); background:none; border:none; box-shadow:none; border-radius:0;
     contain-intrinsic-size:auto 152px;
   }
-  main:not(.compacto) .card:active{transform:none}
+  main .card:active{transform:none}
   /* la línea: un tramo por tarjeta, de arriba abajo; la primera empieza en su
      nodo y la última acaba en él */
-  main:not(.compacto) .card::before{
+  main .card::before{
     content:""; position:absolute; left:17px; top:0; bottom:0; width:2px; border-radius:var(--r-s);
     background:color-mix(in srgb, var(--glow, var(--red)) 38%, var(--filo));
   }
-  main:not(.compacto) .card.vista::before{background:var(--done)}
-  main:not(.compacto) .card:first-child::before{top:28px}
-  main:not(.compacto) .card:last-child::before{bottom:auto; height:28px}
+  main .card.vista::before{background:var(--done)}
+  main .card:first-child::before{top:28px}
+  main .card:last-child::before{bottom:auto; height:28px}
   /* el nodo */
-  main:not(.compacto) .card .checkbox{
+  main .card .checkbox{
     grid-column:1; grid-row:1; justify-self:center; align-self:start; margin-top:15px; z-index:1;
     width:26px; height:26px; background:var(--bg); border-color:color-mix(in srgb, var(--glow, var(--red)) 60%, var(--line));
     box-shadow:0 0 0 4px var(--bg);
   }
-  main:not(.compacto) .card.vista .checkbox{background:var(--done); border-color:var(--done); box-shadow:0 0 0 4px var(--bg)}
-  main:not(.compacto) .card .checkbox-label{display:none}
+  main .card.vista .checkbox{background:var(--done); border-color:var(--done); box-shadow:0 0 0 4px var(--bg)}
+  main .card .checkbox-label{display:none}
   /* la tarjeta es la superficie de .abrir */
-  main:not(.compacto) .card .abrir{
+  main .card .abrir{
     grid-column:2; grid-row:1; gap: var(--e-4); padding: var(--e-3);
     background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
     box-shadow:var(--sup-brillo), var(--sup-sombra);
     transition:transform var(--muelle-toque);
   }
-  main:not(.compacto) .card .abrir:active{transform:scale(.985)}
-  main:not(.compacto) .card .cover-wrap{align-self:flex-start}
-  main:not(.compacto) .card .cover{width:72px; height:108px; border-radius:var(--r-s)}
-  main:not(.compacto) .card .rating-badge{top:4px; left:4px; padding:1px 5px}
-  main:not(.compacto) .card .sello-mini{font-size:9px; padding:1px 5px}
-  main:not(.compacto) .card .info{gap: var(--e-1); padding-top:2px}
+  main .card .abrir:active{transform:scale(.985)}
+  main .card .cover-wrap{align-self:flex-start}
+  main .card .cover{width:72px; height:108px; border-radius:var(--r-s)}
+  main .card .rating-badge{top:4px; left:4px; padding:1px 5px}
+  main .card .sello-mini{font-size:9px; padding:1px 5px}
+  main .card .info{gap: var(--e-1); padding-top:2px}
   /* el número en línea con el título: como columna aparte, la segunda línea
      del título quedaba sangrada bajo él */
-  main:not(.compacto) .card .fila-titulo{display:block; margin:0; line-height:1.15}
-  main:not(.compacto) .card .num{margin-right: var(--e-2)}
-  main:not(.compacto) .card .titulo{font-size: var(--t-b); line-height:1.15}
-  main:not(.compacto) .card .meta{font-size: var(--t-s)}
-  main:not(.compacto) .card .res{
+  main .card .fila-titulo{display:block; margin:0; line-height:1.15}
+  main .card .num{margin-right: var(--e-2)}
+  main .card .titulo{font-size: var(--t-b); line-height:1.15}
+  main .card .meta{font-size: var(--t-s)}
+  main .card .res{
     font-size: var(--t-m); line-height:1.4;
     display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden;
   }
   /* el año de la historia bajo el nodo, sobre la línea (con un halo del
      fondo para que la corte): se lee como una cronología. En los datos ya
      no se repite */
-  main:not(.compacto) .card[data-anio]::after{
+  main .card[data-anio]::after{
     content:attr(data-anio); position:absolute; left:0; width:36px; top:48px; z-index:1;
     text-align:center; font-size:10px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums;
     color:var(--ink3); background:var(--bg); padding:2px 0; line-height:1.1;
   }
-  main:not(.compacto) .card.vista[data-anio]::after{color:color-mix(in srgb, var(--done) 70%, var(--ink3))}
-  main:not(.compacto) .card[data-anio] .hist-g{display:none}
+  main .card.vista[data-anio]::after{color:color-mix(in srgb, var(--done) 70%, var(--ink3))}
+  main .card[data-anio] .hist-g{display:none}
   /* lo que toca ahora: nodo con halo del color de la era que late despacio,
      tarjeta con filo de ese color y la etiqueta «Siguiente» */
-  main:not(.compacto) .card.siguiente .checkbox{
+  main .card.siguiente .checkbox{
     border-color:var(--glow, var(--red)); border-width:2.5px;
     box-shadow:0 0 0 4px var(--bg), 0 0 0 7px color-mix(in srgb, var(--glow, var(--red)) 30%, transparent);
   }
   /* el latido va en una capa aparte con transform y opacity (compositor): con
      box-shadow animado se repintaba en cada fotograma, también durante el scroll */
-  main:not(.compacto) .card.siguiente .checkbox::before{
+  main .card.siguiente .checkbox::before{
     content:""; position:absolute; inset:-9px; border-radius:50%; pointer-events:none;
     border:2px solid color-mix(in srgb, var(--glow, var(--red)) 55%, transparent);
     animation:nodoLate 2.4s ease-out infinite;
   }
-  main:not(.compacto) .card.siguiente .abrir{border-color:color-mix(in srgb, var(--glow, var(--red)) 55%, var(--filo));
+  main .card.siguiente .abrir{border-color:color-mix(in srgb, var(--glow, var(--red)) 55%, var(--filo));
     box-shadow:var(--sup-brillo), 0 6px 16px -10px color-mix(in srgb, var(--glow, var(--red)) 80%, transparent),
       inset 0 0 0 1px color-mix(in srgb, var(--glow, var(--red)) 18%, transparent)}
   /* (la sombra cabe en los 12 px de margen: content-visibility recorta lo que
      sale de la tarjeta y un brillo mayor quedaba cortado en rectángulo) */
-  main:not(.compacto) .card.siguiente .fila-titulo[data-sig]::before{
+  main .card.siguiente .fila-titulo[data-sig]::before{
     content:attr(data-sig); display:block; margin-bottom:2px;
     font-family:var(--f-texto); font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase;
     color:color-mix(in srgb, var(--glow, var(--red)) 75%, var(--ink));
   }
   @keyframes nodoLate{from{transform:scale(.8); opacity:.9} to{transform:scale(1.35); opacity:0}}
   /* «Serie» / «Opcional» / «Especial»: etiqueta al pie de la carátula */
-  main:not(.compacto) .card .lado{
+  main .card .lado{
     position:absolute; z-index:1; left:calc(36px + var(--e-3) + 4px); top:calc(var(--e-3) + 108px - 24px);
     padding:0; margin:0; pointer-events:none;
   }
-  main:not(.compacto) .card .lado .tipo{font-size:10px; padding:2px 6px; box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  main .card .lado .tipo{font-size:10px; padding:2px 6px; box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  /* modo compacto: la misma línea, con miniatura en vez de carátula y sin
+     sinopsis; el nodo se centra en la tarjeta y la etiqueta de tipo sube a la
+     esquina (en 40 px no cabe) */
+  /* las reglas de base del compacto (main.compacto .card/.grid/.res) pesan
+     más que las de la línea: se neutralizan aquí */
+  main.compacto .grid{gap:0}
+  main.compacto .card{contain-intrinsic-size:auto 88px; padding: 0 0 var(--e-3); border-radius:0}
+  main.compacto .card .res, main.compacto .card .credits{display:none}
+  main.compacto .card .abrir{padding: var(--e-2) var(--e-3); align-items:center}
+  main.compacto .card .cover-wrap{display:block; align-self:center}
+  main.compacto .card .cover{width:40px; height:60px; border-radius:var(--r-s)}
+  main.compacto .card .rating-badge, main.compacto .card .sello-mini{display:none}
+  main.compacto .card .checkbox{margin-top:25px}
+  main.compacto .card:first-child::before{top:38px}
+  main.compacto .card:last-child::before{height:38px}
+  main.compacto .card[data-anio]::after{top:56px}
+  main.compacto .card .lado{left:auto; right:calc(var(--e-3) + 1px); top:calc(var(--e-2) + 1px)}
+  main.compacto .card:has(.lado .chips) .info{padding-right:68px}
 }
 
 /* ── Deslizar entre vistas: la píldora del destino (24 sep 2026) ──

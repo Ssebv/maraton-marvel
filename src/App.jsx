@@ -3089,6 +3089,10 @@ const POSTERS_ES = { ...POSTERS }
 function aplicaTitulos(pais, idioma = IDIOMA_ACTUAL) {
   IDIOMA_ACTUAL = idioma
   const en = idioma === 'en'
+  // el idioma del documento sigue al de la app (24 sep 2026): con <html
+  // lang="es"> fijo, VoiceOver leía la app en inglés con voz española. Fuera
+  // de España, español latinoamericano (es-419): la voz y el silabeo latinos
+  if (typeof document !== 'undefined') document.documentElement.lang = en ? 'en' : pais === 'ES' ? 'es-ES' : 'es-419'
   Object.assign(POSTERS, en ? POSTERS_EN : POSTERS_ES)
   const latino = !en && pais !== 'ES'
   const pasa = en
