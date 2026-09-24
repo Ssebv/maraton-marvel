@@ -4651,3 +4651,51 @@ html.con-lateral .ctrl-cajon{display:none}
   .nf-fila-cab:not(:has(.nf-fila-sub, .nf-fila-barra)) .nf-fila-t{grid-column:1 / 3}
   .nf-fila-cab:not(:has(.nf-fila-sub, .nf-fila-barra)) .nf-ver-todo{grid-row:1}
 }
+
+/* ── Pestaña del cajón (24 sep 2026) ──
+   El botón del carril solo lo entiende quien ya sabe que hay panel: esta
+   pestaña pegada al borde izquierdo dice «aquí sale algo» (como el asa de una
+   hoja) y se toca o, instalada, se arrastra. 20 px a la vista, 44 de zona
+   táctil. Se retira con cualquier capa abierta, como el dock. */
+.cajon-asa{
+  position:fixed; z-index:40; left:0; top:44%; transform:translateY(-50%);
+  width:calc(20px + env(safe-area-inset-left, 0px)); height:64px; padding:0 0 0 env(safe-area-inset-left, 0px);
+  display:grid; place-items:center; cursor:pointer; color:var(--ink2);
+  border:1px solid var(--filo); border-left:none; border-radius:0 var(--r-l) var(--r-l) 0;
+  background:var(--sup-lustre), color-mix(in srgb, var(--panel) 82%, transparent);
+  -webkit-backdrop-filter:blur(16px) saturate(1.4); backdrop-filter:blur(16px) saturate(1.4);
+  box-shadow:var(--sup-brillo), 4px 6px 18px -6px rgba(0,0,0,.5);
+  transition:transform var(--muelle-toque), opacity var(--dur-media) var(--curva);
+}
+.cajon-asa::after{content:""; position:absolute; inset:-6px -24px -6px 0}
+.cajon-asa svg{width:14px; height:14px}
+.cajon-asa:active{transform:translateY(-50%) scale(.94)}
+html.capa-abierta .cajon-asa, html.con-lateral .cajon-asa{opacity:0; pointer-events:none}
+/* con la pista: la pestaña se asoma un par de veces hacia fuera */
+.cajon-asa.con-pista{color:var(--red); animation:asaAsoma 1.6s var(--curva) .2s 3}
+@keyframes asaAsoma{0%, 60%, 100%{transform:translateY(-50%)} 30%{transform:translateY(-50%) translateX(6px)}}
+.cajon-pista{
+  position:fixed; z-index:40; top:44%; transform:translateY(-50%);
+  left:calc(34px + env(safe-area-inset-left, 0px)); width:min(250px, calc(100vw - 60px));
+  display:flex; flex-direction:column; gap: var(--e-2); padding: var(--e-4);
+  border-radius:var(--r-l); border:1px solid var(--filo);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); box-shadow:var(--sup-brillo), var(--sup-sombra);
+  animation:pistaEntra var(--dur-larga) var(--curva-hoja) backwards;
+}
+/* la flecha apunta a la pestaña */
+.cajon-pista::before{
+  content:""; position:absolute; left:-7px; top:50%; width:12px; height:12px; transform:translateY(-50%) rotate(45deg);
+  background:var(--panel); border-left:1px solid var(--filo); border-bottom:1px solid var(--filo);
+}
+.cajon-pista b{font-size: var(--t-b); color:var(--ink)}
+.cajon-pista span{font-size: var(--t-m); line-height:1.4; color:var(--ink2)}
+.cajon-pista-ok{
+  align-self:flex-start; margin-top: var(--e-1); min-height:36px; padding: 0 var(--e-4); cursor:pointer;
+  border:none; border-radius:var(--r-pill); background:var(--red); color:var(--sobre-acento); font:inherit; font-size: var(--t-s); font-weight:700;
+  position:relative;
+}
+.cajon-pista-ok::after{content:""; position:absolute; inset:-4px}
+html.capa-abierta .cajon-pista{display:none}
+@keyframes pistaEntra{from{opacity:0; transform:translateY(-50%) translateX(-10px)}}
+@media (prefers-reduced-motion: reduce){ .cajon-asa, .cajon-asa.con-pista, .cajon-pista{animation:none; transition:none} }
+@media print{ .cajon-asa, .cajon-pista{display:none} }

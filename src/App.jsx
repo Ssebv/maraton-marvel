@@ -2757,7 +2757,9 @@ function gestoCajon(estado) {
       return
     }
     // abrir desde el borde: solo instalada, sin capas encima y sin cajón
-    if (st.abierto || !YA_INSTALADA || capasAtras.length || t.clientX > BORDE_ATRAS) return
+    // (o desde la pestaña del borde, que es un poco más ancha que la franja)
+    const enAsa = e.target.closest && e.target.closest('.cajon-asa')
+    if (st.abierto || !YA_INSTALADA || capasAtras.length || (t.clientX > BORDE_ATRAS && !enAsa)) return
     e.stopPropagation()
     g = { modo: 'abrir', x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, fijo: false, vel: velocimetro() }
     arma()
@@ -4963,6 +4965,7 @@ const AVISO_VERSION = '2026-09-03'
 // se abre en 7 días y no deja recibir avisos. Una tarjeta abajo, desde que se
 // cerró la bienvenida, con los tres pasos; cerrada no vuelve en 30 días.
 const KEY_GUIA_IOS = 'maraton-marvel-guia-ios-v1'
+const KEY_PISTA_CAJON = 'maraton-marvel-pista-cajon-v1'
 function GuiaInstalar() {
   const [ver, setVer] = useState(() => {
     if (!ES_IOS || YA_INSTALADA) return false
@@ -7713,6 +7716,22 @@ export default function App() {
   estadoCajon.current = { activo: !conLateral, abierto: cajon, abrir: setCajon }
   useEffect(() => gestoCajon(estadoCajon), [])
   const noticias = useNoticias(conLateral || cajon)
+  // Que se sepa que existe (24 sep 2026, «el usuario no verá que se puede
+  // desplegar»): una pestaña fija en el borde izquierdo que se toca o se
+  // arrastra, y la primera vez una pista junto a ella que se va al abrir el
+  // panel o con «Entendido» y no vuelve. Sale tras la bienvenida.
+  const [pistaCajon, setPistaCajon] = useState(false)
+  useEffect(() => {
+    if (conLateral) return undefined
+    try { if (localStorage.getItem(KEY_PISTA_CAJON) || !localStorage.getItem('maraton-marvel-bienvenida-v1')) return undefined } catch { return undefined }
+    // de a un aviso: si está la guía de instalación, espera a que se cierre
+    let t = 0
+    const intenta = () => { if (document.querySelector('.guia-instalar')) t = setTimeout(intenta, 1500); else setPistaCajon(true) }
+    t = setTimeout(intenta, 1400)
+    return () => clearTimeout(t)
+  }, [conLateral])
+  const olvidaPistaCajon = () => { setPistaCajon(false); try { localStorage.setItem(KEY_PISTA_CAJON, '1') } catch {} }
+  useEffect(() => { if (cajon && pistaCajon) olvidaPistaCajon() }, [cajon])
   const [latCaja, setLatCaja] = useState(() => { try { return localStorage.getItem('maraton-marvel-lat-caja-v1') || 'noticias' } catch { return 'noticias' } })
   const ponLatCaja = v => { setLatCaja(v); try { localStorage.setItem('maraton-marvel-lat-caja-v1', v) } catch {} }
   useEffect(() => {
@@ -9515,7 +9534,22 @@ export default function App() {
   </>)
   const lateral = conLateral
     ? <aside className="lateral" aria-label={tr('Navegación', 'Navigation')}>{cuerpoLateral}</aside>
-    : cajonMontado && createPortal(<>
+    : !cajonMontado ? createPortal(<>
+        <button type="button" className={'cajon-asa' + (pistaCajon ? ' con-pista' : '')} onClick={() => setCajon(true)}
+          aria-label={tr('Abrir el panel lateral: secciones, noticias y tu cuenta', 'Open the side panel: sections, news and your account')}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+        </button>
+        {pistaCajon && (
+          <div className="cajon-pista" role="status">
+            <b>{tr('Tu panel', 'Your panel')}</b>
+            <span>{YA_INSTALADA
+              ? tr('Desliza desde el borde o toca la pestaña: secciones, noticias y la cuenta atrás.', 'Swipe from the edge or tap the tab: sections, news and the countdown.')
+              : tr('Toca la pestaña del borde: secciones, noticias y la cuenta atrás.', 'Tap the tab on the edge: sections, news and the countdown.')}</span>
+            <button type="button" className="cajon-pista-ok" onClick={olvidaPistaCajon}>{tr('Entendido', 'Got it')}</button>
+          </div>
+        )}
+      </>, document.body)
+    : createPortal(<>
         <div className={'cajon-velo' + cajonClase} onClick={cierraCajon} aria-hidden="true" />
         <aside className={'lateral cajon' + cajonClase} ref={cajonRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Navegación', 'Navigation')}>
           {cuerpoLateral}
