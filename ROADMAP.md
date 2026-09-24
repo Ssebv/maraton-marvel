@@ -84,6 +84,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
 | Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
 | Panel lateral en el móvil: sale con un botón o arrastrando desde el borde (instalada), sigue al dedo, y atrás o tocar fuera lo cierran | ✅ |
+| Que no se note el cambio de página: la vista nueva entra con sus carátulas ya pintadas (medido en Safari: 0 huecos); Línea temporal más ligera | ✅ |
 | Deslizar entre vistas como un paginador: sin vuelta al centro, sin fundido, cabecera quieta y solo el contenido se mueve | ✅ |
 | Por estreno como una sola línea de tiempo continua, con cada año como estación (verde si está visto entero) | ✅ |
 | Por estreno: sin muñones de línea en los años de un solo título, sin año repetido y con el año de la historia en los datos | ✅ |

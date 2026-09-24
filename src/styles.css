@@ -2612,7 +2612,11 @@ main.crono, main.comics, main.estreno{animation:none}
      tarde, cuando ya casi ha salido; vuelve con la regla de arriba, rápida. */
   html.barra-oculta nav.tabs{transition:transform var(--dur-barra) ease, opacity var(--dur-larga) linear var(--dur-corta)}
   html.barra-pegada.barra-oculta .toolbar{transition:transform var(--dur-barra) ease}
-  html:has(.controles .busca:focus) nav.tabs{transform:translateY(calc(100% + 24px)); opacity:0}
+  /* con el buscador enfocado el dock se retira; la clase la pone App al enfocar
+     (24 sep 2026: era html:has(.controles .busca:focus), que el navegador
+     reevaluaba en CADA cambio del DOM: abrir una ficha costaba ~300 ms de
+     recálculo de estilo con CPU ×4) */
+  html.busca-enfocada nav.tabs{transform:translateY(calc(100% + 24px)); opacity:0}
 
   /* La barra ocupaba 399 px (5 filas de chips) al crecer el número de filtros.
      En móvil pasa a ser un carril de una sola fila que se desliza. */
@@ -4972,3 +4976,12 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
   main.estreno .anio:not(:last-of-type) .card:last-child::before{bottom:0; height:auto}
   main.estreno .grid > .card:only-child .num{display:none}
 }
+
+/* ── Línea temporal: filas fuera de pantalla sin maquetar (24 sep 2026) ──
+   La primera visita costaba 317 ms con CPU ×4 (maquetación 187, estilo 160):
+   se maquetaban y pintaban las 111 tarjetas de golpe. Cada fila salta el
+   trabajo mientras no se ve; la reserva sale de cuántas tarjetas tiene (~86 px
+   cada una): apiladas bajo 700 px (--nt, el total), en paralelo por encima
+   (--nm, el lado con más). */
+.tl-fila{content-visibility:auto; contain-intrinsic-size:auto calc(var(--nm, 1) * 86px)}
+@media (max-width:700px){ .tl-fila{contain-intrinsic-size:auto calc(var(--nt, 1) * 86px)} }

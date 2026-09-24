@@ -67,7 +67,11 @@ const peorEspera = Math.max(...tabla.map(t => t.esperaMs))
 // sondas: 1 de 12 y luego 0 de 24); falla si se repite en el mismo cambio
 const repetidos = tabla.filter(t => t.tirones.split('/').filter(x => +x > 0).length >= 2).map(t => t.cambio)
 process.exitCode = informe(`fluidez · ${modo} · CPU ×4 · ${PASADAS} pasadas`, [
-  [peorEspera <= 200, `peor espera hasta que arranca la animación (mediana): ${peorEspera} ms (tope 200; las cifras bailan con la carga del Mac: para comparar, A/B alterno con DIST=)`],
+  // tope 320 desde el 24 sep 2026: el cambio de vista espera a propósito hasta
+  // 120 ms a que las carátulas visibles estén decodificadas (caratulasListas en
+  // App.jsx) para que la vista nueva no entre con huecos; con CPU ×4 Chrome
+  // decodifica despacio y llega al tope. En Safari a velocidad real, ~50 ms.
+  [peorEspera <= 320, `peor espera hasta que arranca la animación (mediana): ${peorEspera} ms (tope 320 = 200 + la espera de carátulas; las cifras bailan con la carga del Mac: para comparar, A/B alterno con DIST=)`],
   [repetidos.length === 0, `fotogramas de >50 ms durante la animación que se repiten en 2+ pasadas: ${repetidos.join(', ') || 'ninguno'}`],
   [errores.length === 0, `errores en consola: ${errores.length}`],
 ]) ? 1 : 0

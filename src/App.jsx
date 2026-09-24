@@ -32,6 +32,28 @@ const KEY_PLEGADAS = 'maraton-marvel-plegadas-v1'
 // Mientras dura el render de la transición las tarjetas no se escalonan:
 // una animación por cambio, no dos.
 let enTransicion = false
+// Las carátulas que se van a ver, descargadas y decodificadas antes de la foto
+// de la vista nueva (24 sep 2026, Sebastián: «al cambiar recarga muchas cosas,
+// que no se note el cambio de página»). Medido en Safari: al tomar la foto
+// faltaban 4 de 4 carátulas visibles en Cómics y Animación y 1 de 4 al volver
+// a una vista ya vista; la vista entraba con huecos y las carátulas saltaban
+// después, como una recarga. Mientras se espera se sigue viendo la vista vieja
+// quieta; con tope, para que una imagen que no llega no congele el cambio.
+function caratulasListas(tope = 120) {
+  const alto = window.innerHeight
+  const imgs = [...document.querySelectorAll('main img, .overlay img')].filter(i => {
+    const r = i.getBoundingClientRect()
+    return r.width > 0 && r.bottom > -40 && r.top < alto + 40
+  })
+  if (!imgs.length) return null
+  imgs.forEach(i => {
+    // las diferidas (nfLazy) y las lazy aún no se han pedido: se piden ya
+    if (!i.getAttribute('src') && i.dataset.src) i.src = i.dataset.src
+    if (i.loading === 'lazy') i.loading = 'eager'
+  })
+  const listas = Promise.all(imgs.map(i => (i.decode ? i.decode().catch(() => {}) : null)))
+  return Promise.race([listas, new Promise(r => setTimeout(r, tope))])
+}
 function conTransicion(dir, fn) {
   if (typeof document === 'undefined' || !document.startViewTransition || movimientoReducido()) { fn(); return }
   const raiz = document.documentElement
@@ -39,6 +61,7 @@ function conTransicion(dir, fn) {
   const t = document.startViewTransition(() => {
     enTransicion = true
     try { flushSync(fn) } finally { enTransicion = false }
+    return caratulasListas()
   })
   // si se salta (otra transición encima, pestaña oculta), `ready` se rechaza:
   // sin recogerlo salía «AbortError: Transition was skipped» en consola
@@ -9915,7 +9938,9 @@ export default function App() {
             autoComplete="off" onChange={e => setBusca(e.target.value)} aria-label={tr('Buscar título', 'Search titles')}
             // en el móvil la tecla dice «Buscar» y al pulsarla se esconde el
             // teclado, que tapaba media pantalla de resultados
-            enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter' && ES_TACTIL) e.currentTarget.blur() }} />
+            enterKeyHint="search" onKeyDown={e => { if (e.key === 'Enter' && ES_TACTIL) e.currentTarget.blur() }}
+            onFocus={() => document.documentElement.classList.add('busca-enfocada')}
+            onBlur={() => document.documentElement.classList.remove('busca-enfocada')} />
           </>)}
           {esMovil && botonAjustes}
           {esMovil && botonSync}
@@ -10023,10 +10048,13 @@ export default function App() {
                   const salto = previo !== null && año - previo > 1 ? año - previo : 0
                   previo = año
                   const grupo = años.get(año)
+                  // cuántas tarjetas tiene la fila: la reserva de content-visibility
+                  // (apiladas en el móvil, en paralelo en pantalla ancha; ver styles.css)
+                  const nx = grupo.filter(g => g.saga === 'xmen').length, nu = grupo.length - nx
                   return (
                     <div key={año}>
                       {salto > 0 && <div className="tl-salto">⋯ {tr(`${salto} años después`, `${salto} years later`)} ⋯</div>}
-                      <section className="tl-fila">
+                      <section className="tl-fila" style={{ '--nt': grupo.length, '--nm': Math.max(nx, nu, 1) }}>
                         <div className="tl-lado izq">
                           {grupo.filter(g => g.saga === 'xmen').map(g => (
                             <MiniTl key={g.item.id} item={g.item} c={g.c}
