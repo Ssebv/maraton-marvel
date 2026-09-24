@@ -387,7 +387,7 @@ h1 .rojo{color:var(--red)}
   transition:transform var(--dur-corta);
 }
 .dot::after{content:""; position:absolute; inset:-2px}
-.dot:hover{transform:scale(1.4); border-color:var(--ink2)}
+@media (hover:hover){ .dot:hover{transform:scale(1.4); border-color:var(--ink2)} }
 .dot.on{background:var(--dc); border-color:var(--dc)}
 .mapa-count{flex:none; font-size: var(--t-xs); color:var(--ink2); font-variant-numeric:tabular-nums}
 
@@ -443,7 +443,7 @@ h1 .rojo{color:var(--red)}
 }
 /* 18,6 px de texto + 13 por lado = 44,6: medido, no supuesto */
 .proximo-cal::after{content:""; position:absolute; inset:-13px -8px}
-.proximo-cal:hover{text-decoration:underline}
+@media (hover:hover){ .proximo-cal:hover{text-decoration:underline} }
 @media (max-width:640px){
   .cuenta{justify-content:center; text-align:center}
   .cuenta-info{align-items:center}
@@ -475,7 +475,7 @@ h1 .rojo{color:var(--red)}
   display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap;
   font-size: var(--t-m); text-align:left;
 }
-.panel-resumen:hover{color:var(--ink)}
+@media (hover:hover){ .panel-resumen:hover{color:var(--ink)} }
 .pr-datos{flex:1; min-width:0}
 .pr-datos b{color:var(--ink); font-weight:700}
 .pr-datos b.pr-dias{color:var(--doom); font-variant-numeric:tabular-nums}
@@ -484,7 +484,7 @@ h1 .rojo{color:var(--red)}
   flex:none; font-size: var(--t-s); font-weight:600; letter-spacing:0;
   color:var(--ink3); border:1px solid var(--line); border-radius:var(--r-pill); padding: var(--e-1) var(--e-4);
 }
-.panel-resumen:hover .pr-abrir{border-color:var(--ink3); color:var(--ink)}
+@media (hover:hover){ .panel-resumen:hover .pr-abrir{border-color:var(--ink3); color:var(--ink)} }
 @media (max-width:640px){
   /* en móvil la barra debe caber en una línea: el ritmo ya está dentro del panel */
   .pr-extra{display:none}
@@ -505,7 +505,7 @@ h1 .rojo{color:var(--red)}
 }
 .panel-plegar{position:relative}
 .panel-plegar::after{content:""; position:absolute; inset:-10px 0}
-.panel-plegar:hover{border-color:var(--ink2); color:var(--ink2)}
+@media (hover:hover){ .panel-plegar:hover{border-color:var(--ink2); color:var(--ink2)} }
 
 /* ── Cabecera de la ficha: el fotograma del propio título ── */
 .modal-fondo{
@@ -549,7 +549,7 @@ h1 .rojo{color:var(--red)}
   border-radius:var(--r-pill); padding: var(--e-2) var(--e-5); cursor:pointer;
   font:inherit; font-size: var(--t-s); font-weight:600; color:var(--ink2);
 }
-.volver-ficha:hover{color:var(--ink); border-color:var(--ink2)}
+@media (hover:hover){ .volver-ficha:hover{color:var(--ink); border-color:var(--ink2)} }
 .pf-cabecera{display:flex; align-items:center; gap: var(--e-5)}
 /* .avatar se define más abajo en la hoja: hace falta ganarle en especificidad */
 .pf-cabecera .avatar.avatar-grande{width:104px; height:104px; border-width:3px}
@@ -582,7 +582,7 @@ h1 .rojo{color:var(--red)}
   display:flex; flex-direction:column; gap: var(--e-2); text-align:left;
   transition:transform var(--dur-corta) var(--curva);
 }
-.pf-item:hover{transform:translateY(-3px)}
+@media (hover:hover){ .pf-item:hover{transform:translateY(-3px)} }
 .pf-item .cover{width:100%; height:auto; aspect-ratio:2/3}
 .pf-item-t{font-size: var(--t-s); font-weight:600; line-height:1.25}
 .pf-item-h{font-size: var(--t-xs); color:var(--ink3); font-variant-numeric:tabular-nums}
@@ -624,7 +624,7 @@ h1 .rojo{color:var(--red)}
 /* Apagado = neutro, no el degradado rojo lavado: «Crear lista» sin nombre
    salía como una pastilla roja sucia y parecía un fallo, no un estado. */
 .accion-principal:disabled{background:var(--panel2); color:var(--ink3); cursor:not-allowed; opacity:1; filter:none; box-shadow:none}
-.accion-principal:disabled:hover{filter:none}
+@media (hover:hover){ .accion-principal:disabled:hover{filter:none} }
 
 /* ── Barra de herramientas fija ── */
 /* ── Barra de la app en escritorio (16 sep 2026) ──
@@ -674,7 +674,7 @@ h1 .rojo{color:var(--red)}
   color:var(--ink); text-decoration:none; padding: var(--e-3) 0;
 }
 .barra-app-marca .rojo{color:var(--red)}
-.barra-app-marca:hover{color:var(--ink2)}
+@media (hover:hover){ .barra-app-marca:hover{color:var(--ink2)} }
 .barra-app nav.tabs{justify-self:center}
 .barra-app-fin{justify-self:end; display:flex; align-items:center; gap: var(--e-3)}
 /* la barra de herramientas pega bajo la de la app; fuera del maratón no
@@ -741,7 +741,7 @@ a.tab{text-decoration:none}
    zoom 100 %: el zoom de página del navegador infla la medida. */
 .chip-btn{position:relative}
 .chip-btn::after{content:""; position:absolute; inset:-3px 0}
-.chip-btn:hover{border-color:var(--ink2); color:var(--ink)}
+@media (hover:hover){ .chip-btn:hover{border-color:var(--ink2); color:var(--ink)} }
 .chip-btn:active{transform:scale(.96)}
 .chip-btn[aria-pressed="true"], .chip-btn[aria-checked="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
 /* Foco de teclado sobre el chip marcado: el anillo azul contra la tinta no se veía */
@@ -749,7 +749,7 @@ a.tab{text-decoration:none}
 .chip-btn.destacado[aria-pressed="true"]{background:var(--red); border-color:var(--red); color:var(--sobre-acento)}
 .atajos{margin-left: auto; display:flex; gap: var(--e-5); font-size: var(--t-m); font-weight:600}
 .atajos a{color:var(--ink2); text-decoration:none; padding: var(--e-3) var(--e-1); display:inline-block}
-.atajos a:hover{color:var(--ink)}
+@media (hover:hover){ .atajos a:hover{color:var(--ink)} }
 
 /* Cómo mirar el destino actual. Es un cambio de vista dentro de la misma
    sección, no un cambio de sitio: enlaces de texto, sin caja ni pastilla. */
@@ -762,7 +762,7 @@ a.tab{text-decoration:none}
   padding: var(--e-2) 0; border-bottom:2px solid transparent; position:relative;
 }
 .subvista::after{content:""; position:absolute; inset:-11px -4px}
-.subvista:hover{color:var(--ink2)}
+@media (hover:hover){ .subvista:hover{color:var(--ink2)} }
 .subvista[aria-current="page"]{color:var(--ink); border-bottom-color:var(--red)}
 @media (max-width:720px){
   /* en móvil se desliza, pero con seis entradas cortas y sin caja el
@@ -806,7 +806,7 @@ a.tab{text-decoration:none}
   position:relative;
 }
 .filtros-quitar::after{content:""; position:absolute; inset:-11px}
-.filtros-quitar:hover{color:var(--ink); border-color:var(--ink2)}
+@media (hover:hover){ .filtros-quitar:hover{color:var(--ink); border-color:var(--ink2)} }
 
 /* ── Sagas y eras ── */
 .saga{margin-top: var(--e-9); scroll-margin-top:80px}
@@ -832,7 +832,7 @@ h2{
   position:relative;
 }
 .saga-plegar::after, .era-plegar::after{content:""; position:absolute; inset:-10px 0}
-.saga-plegar:hover, .era-plegar:hover{border-color:var(--ink2); color:var(--ink2)}
+@media (hover:hover){ .saga-plegar:hover, .era-plegar:hover{border-color:var(--ink2); color:var(--ink2)} }
 /* Era plegada: cabecera y carrusel. Varias seguidas se apilan más juntas. */
 .era.plegada .era-head{margin-bottom: var(--e-3)}
 .era.plegada + .era, .era.plegada{margin-top: var(--e-5)}
@@ -854,7 +854,8 @@ h2{
   mask-image:linear-gradient(90deg, transparent, #000 var(--e-5), #000 calc(100% - var(--e-5)), transparent);
 }
 .tira-pista{display:flex; width:max-content; animation:tiraMarcha calc(var(--n, 10) * 2.2s) linear infinite}
-.tira:hover .tira-pista, .tira:focus-within .tira-pista, .tira.parada .tira-pista, .tira[data-fuera="1"] .tira-pista{animation-play-state:paused}
+.tira:focus-within .tira-pista, .tira.parada .tira-pista, .tira[data-fuera="1"] .tira-pista{animation-play-state:paused}
+@media (hover:hover){ .tira:hover .tira-pista{animation-play-state:paused} }
 .tira-lote{display:flex; gap: var(--e-3); padding-right: var(--e-3)}
 /* el icono de la pestaña a la que llegas da un pequeño rebote: una cosa, 240 ms */
 @keyframes pestanaPop{from{transform:scale(.8)} to{transform:none}}
@@ -863,7 +864,7 @@ h2{
   flex:none; background:none; border:none; padding:0; margin:0; cursor:pointer;
   border-radius:var(--r-s); transition:transform var(--muelle-toque);
 }
-.tira-item:hover{transform:translateY(-3px)}
+@media (hover:hover){ .tira-item:hover{transform:translateY(-3px)} }
 .tira-item .cover{width:52px; height:78px; border-radius:var(--r-s); box-shadow:0 2px 6px rgba(0,0,0,.35)}
 .tira-item .rating-badge, .tira-item .lc-year, .tira-item .lc-tipo{display:none}
 .tira-desc{
@@ -903,7 +904,7 @@ h2{
   font-weight:600; color:var(--gold-texto);
 }
 .saga-guia summary::after{content:""; position:absolute; inset:-8px 0}
-.saga-guia summary:hover{text-decoration:underline}
+@media (hover:hover){ .saga-guia summary:hover{text-decoration:underline} }
 .saga-guia[open] summary{color:var(--ink)}
 .saga-guia p{margin: var(--e-3) 0 0; line-height:1.55; text-wrap:pretty}
 .saga-guia p b{color:var(--ink)}
@@ -962,9 +963,11 @@ h3{
 /* Un solo gesto: la tarjeta se levanta y proyecta su sombra sólida. El
    cambio de borde saltaba sin transición (no puede llevarla: congela el
    tema) y el giro de la carátula era un cuarto movimiento simultáneo. */
-.card:hover{
-  transform:translateY(-3px);
-  box-shadow:var(--sup-brillo), var(--sup-sombra-up);
+@media (hover:hover){
+  .card:hover{
+    transform:translateY(-3px);
+    box-shadow:var(--sup-brillo), var(--sup-sombra-up);
+  }
 }
 .card:active{transform:translateY(-1px) scale(.997)}
 /* El check verde, el sello y la carátula apagada ya dicen "vista": la
@@ -1006,7 +1009,7 @@ h3{
              box-shadow var(--dur-media) var(--curva-rebote);
 }
 .checkbox svg{width:14px; height:14px; opacity:0; transform:scale(.4); transition:opacity var(--dur-media), transform var(--muelle-pop)}
-.checkbox:hover{border-color:var(--done); box-shadow:0 0 0 4px color-mix(in srgb, var(--done) 15%, transparent)}
+@media (hover:hover){ .checkbox:hover{border-color:var(--done); box-shadow:0 0 0 4px color-mix(in srgb, var(--done) 15%, transparent)} }
 /* área táctil de 44 px: el círculo visible mide 26 y el mínimo táctil es 44 */
 .checkbox::after{content:""; position:absolute; inset:-9px; border-radius:50%}
 .card.vista .checkbox{
@@ -1109,7 +1112,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
    Los 44 se completan en táctil, creciendo de verdad y separando las filas. */
 .ghost{position:relative}
 .ghost::after{content:""; position:absolute; inset:-4px 0}
-.ghost:hover{color:var(--ink); border-color:var(--ink3); background:var(--panel2)}
+@media (hover:hover){ .ghost:hover{color:var(--ink); border-color:var(--ink3); background:var(--panel2)} }
 .ghost:active{transform:scale(.96)}
 
 /* ── Ficha de detalle ── */
@@ -1135,7 +1138,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 @keyframes fueraHoja{to{opacity:0; transform:translateY(8px) scale(.98)}}
 .modal{
   position:relative; background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo);
-  border-radius:var(--r-xl); max-width:900px; width:100%; max-height:88vh;
+  border-radius:var(--r-xl); max-width:900px; width:100%; max-height:88vh; max-height:88dvh;
   overflow-y:auto; overflow-x:clip;
   overscroll-behavior:contain;
   --pad: var(--e-7);
@@ -1152,7 +1155,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 }
 /* 34 px visibles, 44 táctiles: el mínimo de la HIG sin engordar el aspa */
 .cerrar::after{content:""; position:absolute; inset:-5px; border-radius:50%}
-.cerrar:hover{color:var(--ink); border-color:var(--ink2)}
+@media (hover:hover){ .cerrar:hover{color:var(--ink); border-color:var(--ink2)} }
 .modal-cover{
   flex:none; align-self:flex-start;
   display:flex; flex-direction:column; gap: var(--e-4);
@@ -1209,7 +1212,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
   background:var(--panel2); border:2px solid var(--line);
   transition:transform var(--dur-media);
 }
-.persona:hover .avatar{transform:scale(1.08); border-color:var(--blue)}
+@media (hover:hover){ .persona:hover .avatar{transform:scale(1.08); border-color:var(--blue)} }
 .avatar-ini{
   display:grid; place-items:center; font-size: var(--t-l); font-weight:700; color:var(--ink2);
 }
@@ -1233,7 +1236,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 @media (hover:hover) and (prefers-reduced-motion:no-preference){
   .accion-principal:hover::after{transform:translateX(120%); transition:transform .7s var(--curva)}
 }
-.accion-principal:hover{filter:brightness(1.06)}
+@media (hover:hover){ .accion-principal:hover{filter:brightness(1.06)} }
 .accion-principal:active{transform:scale(.96)}
 .accion-principal.hecha{background:var(--done); color:var(--sobre-acento); box-shadow:0 8px 22px color-mix(in srgb, var(--done) 26%, transparent)}
 @media (max-width:640px){
@@ -1312,7 +1315,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
   background:var(--panel2); border:1px solid transparent; border-radius:var(--r-m);
   padding: var(--e-3) var(--e-3); cursor:pointer; color:inherit; transition:opacity var(--dur-corta);
 }
-.ep:hover{border-color:var(--ink2)}
+@media (hover:hover){ .ep:hover{border-color:var(--ink2)} }
 .ep.hecho{opacity:.65}
 .ep.hecho .ep-titulo{text-decoration:line-through; color:var(--ink2)}
 .ep-thumb{
@@ -1322,7 +1325,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 .ep-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 25%}
 .ep-velo{position:absolute; inset:0; background:rgba(8,9,14,.45); transition:background var(--dur-media)}
 .ep-img.real ~ .ep-velo{background:linear-gradient(180deg, transparent 40%, rgba(8,9,14,.55))}
-.ep:hover .ep-velo{background:rgba(8,9,14,.25)}
+@media (hover:hover){ .ep:hover .ep-velo{background:rgba(8,9,14,.25)} }
 .ep-velo.hecho{background:color-mix(in srgb, var(--done) 55%, rgba(8,9,14,.5))}
 .ep-thumb svg, .ep-num{position:relative; z-index:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
 .ep-thumb::after{
@@ -1368,7 +1371,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
   border-radius:var(--r-pill); padding: var(--e-2) var(--e-7) var(--e-2) var(--e-4);
   font-size: var(--t-m); font-weight:500; font-family:inherit; cursor:pointer;
 }
-.selector:hover{border-color:var(--ink2)}
+@media (hover:hover){ .selector:hover{border-color:var(--ink2)} }
 .selector:focus{border-color:var(--blue); outline:none}
 .selector:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
 /* Con el dedo, los controles crecen de verdad; en escritorio se quedan como
@@ -1485,7 +1488,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
 .seg::-webkit-scrollbar{display:none}
 .seg .chip-btn{border:none; background:transparent; border-radius:var(--r-m); min-height:38px; padding:0 var(--e-4);
   font-weight:600; color:var(--ink2); white-space:nowrap; position:relative; z-index:1}
-.seg .chip-btn:hover{color:var(--ink)}
+@media (hover:hover){ .seg .chip-btn:hover{color:var(--ink)} }
 .seg .chip-btn[aria-checked="true"]{background:var(--panel); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .seg .indicador{border-radius:var(--r-m); background:var(--panel); box-shadow:0 1px 3px rgba(0,0,0,.25)}
 @media (forced-colors: none){ .seg.con-indicador .chip-btn[aria-checked="true"]{background:transparent; box-shadow:none} }
@@ -1505,11 +1508,11 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
   font-size: var(--t-l); line-height:1; color:var(--ink3);
   transition:transform var(--dur-corta);
 }
-.estrella:hover{transform:scale(1.2)}
+@media (hover:hover){ .estrella:hover{transform:scale(1.2)} }
 .estrella.on{color:var(--gold)}
 .nota-input{flex:1; min-width:180px; border-radius:var(--r-m)}
 .siguiente-stat{cursor:pointer; text-align:left; font:inherit; color:inherit}
-.siguiente-stat:hover{border-color:var(--red)}
+@media (hover:hover){ .siguiente-stat:hover{border-color:var(--red)} }
 .card.destello, .tl-card.destello, .galeria-item.destello{
   border-color:var(--red);
   box-shadow:5px 6px 0 color-mix(in srgb, var(--red) 40%, transparent);
@@ -1595,7 +1598,7 @@ main.galeria{margin-top: var(--e-6)}
   position:relative; background:none; border:none; padding: 0; cursor:pointer;
   transition:transform var(--dur-media) var(--curva);
 }
-.galeria-item:hover{transform:translateY(-3px) scale(1.03)}
+@media (hover:hover){ .galeria-item:hover{transform:translateY(-3px) scale(1.03)} }
 .galeria-item .cover{width:100%; height:auto; aspect-ratio:2/3}
 .galeria-item.vista .cover{filter:grayscale(.75) brightness(.8)}
 /* arriba a la derecha y más pequeña: abajo tapaba el título impreso de casi
@@ -1710,7 +1713,7 @@ main.galeria{margin-top: var(--e-6)}
 .orbita.inversa .contra{animation-direction:reverse}
 @keyframes girarOrbita{from{transform:rotate(0)} to{transform:rotate(360deg)}}
 @keyframes contraOrbita{from{transform:rotate(0)} to{transform:rotate(-360deg)}}
-.sistema:hover .giro, .sistema:hover .contra{animation-play-state:paused}
+@media (hover:hover){ .sistema:hover .giro, .sistema:hover .contra{animation-play-state:paused} }
 /* el botón es el planeta y nada más: así queda centrado en su órbita. El
    nombre cuelga debajo, fuera de la caja */
 .planeta-nav, .sol{
@@ -1931,10 +1934,12 @@ main.multiverso{margin-top: var(--e-6)}
 .mv-nombre{margin: 0; font-size: var(--t-l); font-weight:700; text-transform:none; letter-spacing:0}
 .mv-desc{margin: 0; font-size: var(--t-m); color:var(--ink2); line-height:1.5}
 .mv-card{cursor:pointer; transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media)}
-.mv-card:hover{
-  transform:translate(-2px, -3px);
-  border-color:color-mix(in srgb, var(--tc, var(--violet)) 55%, var(--line));
-  box-shadow:5px 6px 0 color-mix(in srgb, var(--tc, var(--violet)) 40%, transparent);
+@media (hover:hover){
+  .mv-card:hover{
+    transform:translate(-2px, -3px);
+    border-color:color-mix(in srgb, var(--tc, var(--violet)) 55%, var(--line));
+    box-shadow:5px 6px 0 color-mix(in srgb, var(--tc, var(--violet)) 40%, transparent);
+  }
 }
 .mv-card .mv-num{color:color-mix(in srgb, var(--tc, var(--violet)) var(--era-tinta), var(--ink)); background:color-mix(in srgb, var(--tc, var(--violet)) 15%, transparent)}
 .mv-estado{
@@ -1945,7 +1950,7 @@ main.multiverso{margin-top: var(--e-6)}
   margin-top: auto; padding-top: var(--e-3); font-size: var(--t-s); font-weight:700;
   color:color-mix(in srgb, var(--tc, var(--violet)) var(--era-tinta), var(--ink)); transition:transform var(--dur-media) var(--curva);
 }
-.mv-card:hover .mv-entrar{transform:translateX(3px)}
+@media (hover:hover){ .mv-card:hover .mv-entrar{transform:translateX(3px)} }
 
 /* Vista de una Tierra. Entra con el desliz de las pestañas (useCarpeta, una
    View Transition); sin ellas, el fundido corto. El «portal» de 650 ms
@@ -2025,7 +2030,7 @@ main.multiverso{margin-top: var(--e-6)}
   font-weight:600; letter-spacing:0;
 }
 .plan-controles{display:flex; gap: var(--e-3); flex-wrap:wrap}
-.plan-lista{display:flex; flex-direction:column; gap: var(--e-3); max-height:46vh; overflow:auto}
+.plan-lista{display:flex; flex-direction:column; gap: var(--e-3); max-height:46vh; max-height:46dvh; overflow:auto}
 .plan-fila{width:100%}
 .plan-cover{flex:none}
 .plan-cover .cover{width:38px; height:57px; border-radius:var(--r-s)}
@@ -2088,10 +2093,12 @@ main.tiempo{margin-top: var(--e-6)}
   transition:transform var(--dur-media) var(--curva), box-shadow var(--dur-media), opacity var(--dur-media);
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
-.tl-card:hover{
-  transform:translate(-1px, -2px);
-  border-color:color-mix(in srgb, var(--glow, var(--red)) 55%, var(--line));
-  box-shadow:4px 4px 0 color-mix(in srgb, var(--glow, var(--red)) 35%, transparent);
+@media (hover:hover){
+  .tl-card:hover{
+    transform:translate(-1px, -2px);
+    border-color:color-mix(in srgb, var(--glow, var(--red)) 55%, var(--line));
+    box-shadow:4px 4px 0 color-mix(in srgb, var(--glow, var(--red)) 35%, transparent);
+  }
 }
 /* Vista como en la Galería: carátula apagada y check. Antes toda la tarjeta
    al 55 % y el título tachado: con medio maratón visto, media línea temporal
@@ -2132,7 +2139,7 @@ main.tiempo{margin-top: var(--e-6)}
   font-size: var(--t-xl); line-height:1; cursor:pointer;
   transition:transform var(--dur-corta);
 }
-.cine-flecha:hover:not(:disabled){border-color:var(--ink2); transform:scale(1.08)}
+@media (hover:hover){ .cine-flecha:hover:not(:disabled){border-color:var(--ink2); transform:scale(1.08)} }
 .cine-flecha:disabled{opacity:.25; cursor:default}
 .cine-panel{
   display:flex; align-items:center; gap: var(--e-7); min-width:0;
@@ -2190,10 +2197,10 @@ footer{margin-top: var(--e-9); border-top:1px solid var(--line); padding-top: va
 .nota-pie{font-size: var(--t-m); color:var(--ink2); max-width:58ch; margin: 0}
 /* sin esto el enlace de sugerencias salía con el azul por defecto del navegador */
 .nota-pie:not(.nota-creditos) a{color:var(--blue); font-weight:600; text-decoration-thickness:1px; text-underline-offset:3px}
-.nota-pie:not(.nota-creditos) a:hover{color:var(--ink)}
+@media (hover:hover){ .nota-pie:not(.nota-creditos) a:hover{color:var(--ink)} }
 .nota-creditos{flex-basis:100%; font-size: var(--t-s); color:var(--ink3); max-width:78ch; margin-top: var(--e-3)}
 .nota-creditos a{color:var(--ink2); text-underline-offset:2px}
-.nota-creditos a:hover{color:var(--ink)}
+@media (hover:hover){ .nota-creditos a:hover{color:var(--ink)} }
 .reset{margin-left: auto; display:flex; gap: var(--e-3); flex-wrap:wrap; justify-content:flex-end}
 .chip-btn.peligro{color:var(--peligro); border-color:var(--peligro)}
 .pie-ajustes{margin-left:auto}
@@ -2328,22 +2335,34 @@ main.crono, main.comics, main.estreno{animation:none}
      `:root:not([data-theme="light"]) .cielo`, con más especificidad.) */
   /* el hover deja de mover nada; los que se colocan con transform
      conservan el suyo o se descoloca la vista entera */
-  .card:hover, .card:active, .mv-card:hover, .tl-card:hover, .galeria-item:hover,
-  .pf-item:hover, .persona:hover .avatar, .dot:hover, .estrella:hover,
-  .planeta-nav.sobre, .cine-flecha:hover:not(:disabled), .chip-btn:active,
+  .card:active, .planeta-nav.sobre, .chip-btn:active,
   .checkbox:active, .accion-principal:active,
   .galeria-item:active, .tl-card:active, .mv-card:active, .pf-item:active, .volver-ficha:active,
   .cine-flecha:active, .prov-chip:active, .aviso-btn:active, .persona:active .avatar{
     transform:none !important;
   }
+  @media (hover:hover){
+    .card:hover, .mv-card:hover, .tl-card:hover, .galeria-item:hover,
+    .pf-item:hover, .persona:hover .avatar, .dot:hover, .estrella:hover,
+    .cine-flecha:hover:not(:disabled){
+      transform:none !important;
+    }
+  }
   .version-nueva:active{transform:translateX(-50%) !important}
   .nav-ficha:active{transform:translateY(-50%) !important}
-  .nodo:hover, .sol.sobre{transform:translate(-50%, -50%) !important}
+  .sol.sobre{transform:translate(-50%, -50%) !important}
+  @media (hover:hover){ .nodo:hover{transform:translate(-50%, -50%) !important} }
 }
 
 /* En táctil, tocar dispara :hover y el elemento se queda levantado o
    encogido hasta que tocas otra cosa. El movimiento de hover es solo
-   para puntero fino: en el móvil, que es donde vive la PWA, estorba. */
+   para puntero fino: en el móvil, que es donde vive la PWA, estorba.
+   Desde el 24 sep 2026 TODO :hover va dentro de @media (hover:hover): en
+   iOS también se pegaban los de color y borde (un chip o una casilla con
+   el anillo verde tras tocarla, y «Sin spoilers» apagado parecía encendido
+   porque su :hover era el mismo estilo que .on). Este bloque queda para
+   los híbridos que dicen hover pero tocan con el dedo. Un :hover nuevo va
+   dentro de (hover:hover). */
 @media (hover: none), (pointer: coarse){
   .card:hover, .mv-card:hover, .tl-card:hover, .galeria-item:hover,
   .pf-item:hover, .persona:hover .avatar, .dot:hover, .estrella:hover,
@@ -2820,7 +2839,7 @@ main.crono, main.comics, main.estreno{animation:none}
   display:block; flex:none;
 }
 a.prov-chip{text-decoration:none; padding-left: var(--e-4); cursor:pointer}
-a.prov-chip:hover{border-color:var(--ink3)}
+@media (hover:hover){ a.prov-chip:hover{border-color:var(--ink3)} }
 .prov-gratis{font-size: var(--t-xs); font-weight:700; color:var(--teal); background:var(--teal-soft); padding:1px var(--e-2); border-radius:var(--r-s)}
 .prov-nota{margin:0; font-size: var(--t-s); color:var(--ink3)}
 @media (hover: none), (pointer: coarse){ a.prov-chip{min-height:44px} }
@@ -2843,7 +2862,8 @@ a.prov-chip:hover{border-color:var(--ink3)}
 }
 .ep-sin-btn{position:relative}
 .ep-sin-btn::after{content:""; position:absolute; inset:-8px; border-radius:50%}
-.ep-sin-btn.on, .ep-sin-btn:hover{color:var(--ink); border-color:var(--ink2)}
+.ep-sin-btn.on{color:var(--ink); border-color:var(--ink2)}
+@media (hover:hover){ .ep-sin-btn:hover{color:var(--ink); border-color:var(--ink2)} }
 .ep-sinopsis{
   flex-basis:100%; margin: var(--e-3) 0 var(--e-1); font-size: var(--t-s); line-height:1.5; color:var(--ink2);
   background:var(--panel); border-radius:var(--r-m); padding: var(--e-3) var(--e-4);
@@ -2892,7 +2912,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
   font-size: var(--t-xs); font-weight:600; color:var(--ink2); text-align:center; line-height:1.15; width:100px; max-width:none;
   text-wrap:balance; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden;
 }
-.nodo:hover{transform:translate(-50%,-50%) scale(1.08)}
+@media (hover:hover){ .nodo:hover{transform:translate(-50%,-50%) scale(1.08)} }
 .nodo.on img, .nodo.on .nodo-ini{outline:2.5px solid var(--red); outline-offset:2px}
 .nodo.on .nodo-t{color:var(--ink)}
 .nodo.off{opacity:.45}
@@ -2909,7 +2929,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
   background:var(--panel2); border:1px solid transparent; border-radius:var(--r-m);
   padding: var(--e-3) var(--e-4); cursor:pointer; color:inherit; font:inherit;
 }
-.mapa-conexion:hover{border-color:var(--ink2)}
+@media (hover:hover){ .mapa-conexion:hover{border-color:var(--ink2)} }
 .mapa-conexion-t{font-weight:700; font-size: var(--t-m)}
 .mapa-conexion-d{font-size: var(--t-s); color:var(--ink2)}
 .mapa-ayuda{margin: 0; font-size: var(--t-m); color:var(--ink2); text-align:center}
@@ -2986,7 +3006,7 @@ a.prov-chip:hover{border-color:var(--ink3)}
 .cuenta-priv-rotulo{font-size: var(--t-m); font-weight:600}
 .cuenta-borrar{width:100%}
 .chip-btn.peligro{color:var(--peligro); border-color:color-mix(in srgb, var(--peligro) 45%, var(--line))}
-.chip-btn.peligro:hover{color:var(--peligro); border-color:var(--peligro)}
+@media (hover:hover){ .chip-btn.peligro:hover{color:var(--peligro); border-color:var(--peligro)} }
 /* crear el perfil */
 .crea-perfil .modal-info{gap: var(--e-3)}
 /* ── Comunidades (fase 3) ── */
@@ -3051,7 +3071,7 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .muro-cartel{width:36px; height:54px; border-radius:var(--r-s); object-fit:cover; background:var(--panel)}
 .muro-texto{display:flex; flex-direction:column; gap: var(--e-1); min-width:0; font-size: var(--t-m); line-height:1.35}
 .muro-quien{background:none; border:none; padding:0; font:inherit; font-weight:700; color:var(--ink); cursor:pointer}
-.muro-quien:hover{text-decoration:underline}
+@media (hover:hover){ .muro-quien:hover{text-decoration:underline} }
 .muro-estrellas{color:var(--gold-texto)}
 .muro-cuando{font-size: var(--t-xs); color:var(--ink3)}
 .muro-aplaudir{white-space:nowrap}
@@ -3090,7 +3110,7 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .mencion{display:inline; padding:0; border:none; background:none; font:inherit; font-weight:600; color:var(--blue); cursor:pointer}
 .hilo-acciones, .respuesta-acciones{display:flex; flex-wrap:wrap; align-items:center; gap: var(--e-2) var(--e-4)}
 .hilo-accion{min-height:36px; padding: var(--e-2) 0; border:none; background:none; font:inherit; font-size: var(--t-s); font-weight:600; color:var(--ink2); cursor:pointer}
-.hilo-accion:hover{color:var(--ink)}
+@media (hover:hover){ .hilo-accion:hover{color:var(--ink)} }
 .voto{font-variant-numeric:tabular-nums}
 .voto.hecho{color:var(--red)}
 .chip-btn.voto.hecho{border-color:var(--red)}
@@ -3102,6 +3122,8 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
 .respuesta-cab{display:flex; align-items:baseline; gap: var(--e-3); flex-wrap:wrap}
 .reportar{display:inline-flex; align-items:center; gap: var(--e-2)}
 .reportar .selector{min-height:36px; font-size: var(--t-s)}
+/* a 12 px iOS hace zoom al abrirlo (ver .selector en táctil) */
+@media (hover: none), (pointer: coarse){ .reportar .selector{font-size:16px} }
 .aviso-fila{width:100%; display:flex; flex-direction:column; gap: var(--e-1); padding: var(--e-3) var(--e-4); text-align:left; border:1px solid var(--filo); border-radius:var(--r-l);
   background:var(--foco-luz), var(--sup-lustre), var(--panel); color:var(--ink); font:inherit; font-size: var(--t-m); cursor:pointer;
   box-shadow:var(--sup-brillo), var(--sup-sombra);
@@ -3265,7 +3287,7 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
   background:color-mix(in srgb, var(--panel) 85%, transparent);
   color:var(--ink2); font-size: var(--t-xl); line-height:1; cursor:pointer;
 }
-.nav-ficha:hover{color:var(--ink); border-color:var(--ink2)}
+@media (hover:hover){ .nav-ficha:hover{color:var(--ink); border-color:var(--ink2)} }
 .nav-ficha.izq{left:calc(50% - min(450px, 50vw - 20px) - 52px)}
 .nav-ficha.der{right:calc(50% - min(450px, 50vw - 20px) - 52px)}
 @media (max-width:1040px){
@@ -3347,7 +3369,7 @@ textarea.comunidad-descripcion{border-radius:var(--r-m); resize:vertical; min-he
   color:inherit; font:inherit; text-align:left; cursor:pointer;
   box-shadow:var(--sup-brillo), var(--sup-sombra);
 }
-.seguir-item:hover{border-color:var(--ink3)}
+@media (hover:hover){ .seguir-item:hover{border-color:var(--ink3)} }
 .seguir-item:active{transform:scale(.98)}
 .seguir-cara{flex:none; width:56px}
 .seguir-cara .cover, .seguir-cara img{width:56px; height:84px; border-radius:var(--r-s); object-fit:cover; display:block}
@@ -3880,7 +3902,10 @@ div.nf-abrir{cursor:default}
   .nf-cartel-fondo::after{background:linear-gradient(to top, rgba(8,9,14,.96) 0%, rgba(8,9,14,.75) 42%, rgba(8,9,14,0) 75%)}
   .nf-btn{flex:1; justify-content:center; padding: 0 var(--e-4)}
 }
-@media (prefers-reduced-motion: reduce){ .nf-tile:hover, .nf-tile:active, .nf-btn:active{transform:none} }
+@media (prefers-reduced-motion: reduce){
+  .nf-tile:active, .nf-btn:active{transform:none}
+  @media (hover:hover){ .nf-tile:hover{transform:none} }
+}
 
 /* ── Inicio: movimiento y detalles (22 sep 2026) ──
    Solo transform y opacity; con «reducir movimiento», nada se mueve. */
@@ -4100,7 +4125,7 @@ div.nf-abrir{cursor:default}
   background:var(--panel2); color:var(--ink); border:1px solid var(--filo);
   transition:transform var(--muelle-toque);
 }
-.nf-previa-mas:hover{background:color-mix(in srgb, var(--panel2) 80%, var(--ink) 8%)}
+@media (hover:hover){ .nf-previa-mas:hover{background:color-mix(in srgb, var(--panel2) 80%, var(--ink) 8%)} }
 .nf-previa-mas:active{transform:scale(.96)}
 /* en el teléfono: centrada, con un velo que la cierra al tocar fuera */
 .nf-previa-velo{position:fixed; inset:0; z-index:34; background:rgba(8,10,14,.55); animation:fadeIn var(--dur-media) var(--curva) both}
@@ -4200,7 +4225,7 @@ aside.panel-lat .proximos.proximos{grid-template-columns:1fr}
   padding: var(--e-3) var(--e-4); border-radius:var(--r-l); font:inherit; color:var(--ink);
   background:var(--sup-lustre), var(--panel2); border:1px solid var(--filo); transition:transform var(--muelle-toque);
 }
-.pm-saga:hover{border-color:color-mix(in srgb, var(--sc) 45%, var(--filo))}
+@media (hover:hover){ .pm-saga:hover{border-color:color-mix(in srgb, var(--sc) 45%, var(--filo))} }
 .pm-saga:active{transform:scale(.98)}
 .pm-saga-nombre{font-size: var(--t-b); font-weight:700}
 .pm-saga-cuenta{grid-row:1; grid-column:2; font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
@@ -4216,7 +4241,7 @@ aside.panel-lat .proximos.proximos{grid-template-columns:1fr}
 .pm-proximo-t{padding:0; border:none; background:none; font:inherit; font-size: var(--t-m); font-weight:700; color:var(--ink); text-align:left; line-height:1.25;
   display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden}
 button.pm-proximo-t{cursor:pointer}
-button.pm-proximo-t:hover{text-decoration:underline}
+@media (hover:hover){ button.pm-proximo-t:hover{text-decoration:underline} }
 .pm-proximo-tipo{font-size: var(--t-xs); color:var(--ink3)}
 .pm-proximo .proximo-cal{align-self:flex-start; margin-top:auto}
 
@@ -4258,6 +4283,8 @@ html.con-lateral .cd-ajustes{display:none}
 }
 .lat-busca:focus-within{border-color:var(--red); box-shadow:0 0 0 4px var(--red-soft); background:var(--panel)}
 .lat-busca input{flex:1; min-width:0; border:none; background:none; outline:none; font:inherit; font-size: var(--t-b); color:var(--ink)}
+/* la lateral la ve también el iPad en horizontal: a 15 px, zoom al enfocar */
+@media (hover: none), (pointer: coarse){ .lat-busca input{font-size:16px} }
 .lat-busca input::-webkit-search-cancel-button{display:none}
 .lat-busca kbd{font:600 11px/1 var(--f-texto); padding:3px 6px; border-radius:var(--r-s); border:1px solid var(--filo); color:var(--ink3)}
 .lat-icono{
@@ -4265,7 +4292,7 @@ html.con-lateral .cd-ajustes{display:none}
   border-radius:var(--r-m); border:1px solid var(--filo); background:color-mix(in srgb, var(--panel2) 80%, transparent); color:var(--ink2);
   transition:transform var(--muelle-toque);
 }
-.lat-icono:hover{color:var(--ink); border-color:color-mix(in srgb, var(--ink) 20%, transparent)}
+@media (hover:hover){ .lat-icono:hover{color:var(--ink); border-color:color-mix(in srgb, var(--ink) 20%, transparent)} }
 .lat-icono:active{transform:scale(.94)}
 .lat-icono .lat-ico{width:20px; height:20px}
 .lat-icono-cuenta{position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 5px; border-radius:var(--r-pill);
@@ -4280,7 +4307,7 @@ html.con-lateral .cd-ajustes{display:none}
   font:inherit; font-size: var(--t-b); font-weight:500; color:var(--ink2); text-align:left; text-decoration:none;
   transition:transform var(--muelle-toque);
 }
-.lat-fila:hover{background:color-mix(in srgb, var(--ink) 7%, transparent); color:var(--ink)}
+@media (hover:hover){ .lat-fila:hover{background:color-mix(in srgb, var(--ink) 7%, transparent); color:var(--ink)} }
 .lat-fila:active{transform:scale(.98)}
 .lat-ico{width:20px; height:20px; flex:none}
 .lat-fila[aria-current="page"]{background:var(--red-soft); color:var(--ink); font-weight:650}
@@ -4303,7 +4330,7 @@ html.con-lateral .cd-ajustes{display:none}
   color:#fff; font-weight:800; font-size: var(--t-l);
 }
 .lat-reciente small{font-size: var(--t-xs); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.lat-reciente:hover img{outline:2px solid color-mix(in srgb, var(--red) 70%, transparent); outline-offset:2px}
+@media (hover:hover){ .lat-reciente:hover img{outline:2px solid color-mix(in srgb, var(--red) 70%, transparent); outline-offset:2px} }
 .lat-reciente:active{transform:scale(.97)}
 /* pie: la cuenta atrás en grande y la cuenta */
 .lat-pie{margin-top:auto; display:flex; flex-direction:column; gap: var(--e-2)}
@@ -4314,7 +4341,7 @@ html.con-lateral .cd-ajustes{display:none}
   border:1px solid color-mix(in srgb, var(--doom) 30%, var(--filo)); box-shadow:var(--sup-brillo);
   transition:transform var(--muelle-toque);
 }
-.lat-tarjeta:hover{border-color:color-mix(in srgb, var(--doom) 55%, var(--filo))}
+@media (hover:hover){ .lat-tarjeta:hover{border-color:color-mix(in srgb, var(--doom) 55%, var(--filo))} }
 .lat-tarjeta:active{transform:scale(.98)}
 .lat-cuenta-atras{display:flex; align-items:center; gap: var(--e-3)}
 .lat-dias{display:flex; flex-direction:column; align-items:center; line-height:1}
@@ -4332,7 +4359,7 @@ html.con-lateral .cd-ajustes{display:none}
   border:1px solid var(--filo); border-radius:var(--r-l); background:color-mix(in srgb, var(--panel2) 70%, transparent);
   font:inherit; color:var(--ink); transition:transform var(--muelle-toque);
 }
-.lat-cuenta:hover{border-color:color-mix(in srgb, var(--ink) 18%, transparent)}
+@media (hover:hover){ .lat-cuenta:hover{border-color:color-mix(in srgb, var(--ink) 18%, transparent)} }
 .lat-cuenta:active{transform:scale(.98)}
 .lat-cuenta > .lat-ico{margin-left:auto; color:var(--ink3)}
 .lat-avatar{flex:none; width:40px; height:40px; border-radius:var(--r-pill); object-fit:cover; object-position:center 20%}
@@ -4380,7 +4407,7 @@ html.con-lateral .cd-ajustes{display:none}
   background:var(--sup-lustre), color-mix(in srgb, var(--panel) 80%, transparent); border:1px solid var(--filo);
   box-shadow:var(--sup-brillo); transition:transform var(--muelle-toque); overflow:hidden;
 }
-.nf-uni:hover{border-color:color-mix(in srgb, var(--uc) 40%, var(--filo))}
+@media (hover:hover){ .nf-uni:hover{border-color:color-mix(in srgb, var(--uc) 40%, var(--filo))} }
 .nf-uni:active{transform:scale(.985)}
 .nf-uni[aria-selected="true"]{
   background:linear-gradient(120deg, color-mix(in srgb, var(--uc) 16%, transparent), transparent 70%), var(--panel);
@@ -4466,7 +4493,7 @@ html.con-lateral .nf-fila-recientes{display:none}
 .lat-caja-tabs button[aria-selected="true"]{background:var(--panel); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .lat-noticias{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap: var(--e-1)}
 .lat-noticia{display:flex; flex-direction:column; gap:2px; padding: var(--e-2); border-radius:var(--r-m); text-decoration:none; color:var(--ink)}
-.lat-noticia:hover{background:color-mix(in srgb, var(--ink) 7%, transparent)}
+@media (hover:hover){ .lat-noticia:hover{background:color-mix(in srgb, var(--ink) 7%, transparent)} }
 .lat-noticia-t{font-size: var(--t-m); font-weight:600; line-height:1.3; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden}
 .lat-noticia small{font-size: var(--t-xs); color:var(--ink3)}
 .lat-caja .lat-tira{padding:0}
@@ -4497,7 +4524,7 @@ html.con-lateral .nf-fila-recientes{display:none}
     box-shadow:0 0 0 1px rgba(255,255,255,.14), 0 24px 50px rgba(0,0,0,.6), 0 0 40px -8px color-mix(in srgb, var(--uc, #fff) 60%, transparent);
     transform:perspective(900px) rotateY(-8deg); transition:transform var(--dur-larga) var(--curva);
   }
-  .nf-cartel:hover .nf-lado-poster{transform:perspective(900px) rotateY(0deg) scale(1.02)}
+  @media (hover:hover){ .nf-cartel:hover .nf-lado-poster{transform:perspective(900px) rotateY(0deg) scale(1.02)} }
   .nf-lado-plat{padding:4px 12px; border-radius:var(--r-pill); font-size: var(--t-s); background:rgba(8,9,14,.55); box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
     -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
   .nf-lado-luego{display:flex; flex-direction:column; gap: var(--e-2); width:100%; padding: var(--e-3); border-radius:var(--r-l);
@@ -4521,11 +4548,11 @@ html.con-lateral .nf-fila-recientes{display:none}
 .lat-noticia-texto{display:flex; flex-direction:column; gap:2px; min-width:0}
 .lat-noticia.destacada{position:relative; display:block; padding:0; overflow:hidden; border-radius:var(--r-m); aspect-ratio:16/9; max-height:128px; width:100%}
 .lat-noticia.destacada .lat-noticia-img{position:absolute; inset:0; width:100%; height:100%; border-radius:0; box-shadow:none; transition:transform var(--dur-larga) var(--curva)}
-.lat-noticia.destacada:hover .lat-noticia-img{transform:scale(1.05)}
+@media (hover:hover){ .lat-noticia.destacada:hover .lat-noticia-img{transform:scale(1.05)} }
 .lat-noticia.destacada .lat-noticia-texto{position:absolute; left:0; right:0; bottom:0; padding: var(--e-5) var(--e-3) var(--e-2); color:#fff;
   background:linear-gradient(to top, rgba(8,9,14,.92), rgba(8,9,14,.55) 60%, transparent)}
 .lat-noticia.destacada small{color:rgba(255,255,255,.72)}
-.lat-noticia.destacada:hover{background:none}
+@media (hover:hover){ .lat-noticia.destacada:hover{background:none} }
 
 /* Descanso: una luna y la palabra, sobre un degradado suave (no una casilla vacía) */
 .cal-semana-cara.vacia{
@@ -4539,7 +4566,7 @@ html.con-lateral .nf-fila-recientes{display:none}
 .cal-semana-hoy img{width:100%; height:100%; object-fit:cover; opacity:.38; filter:grayscale(.4)}
 .cal-semana-hoy-t{position:absolute; left:0; right:0; bottom:8px; text-align:center; font-size: var(--t-xs); font-weight:700; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.8)}
 .cal-semana-dia.hoy-toca .cal-semana-cara{border:1.5px dashed color-mix(in srgb, var(--red) 70%, transparent); background:var(--noche)}
-.cal-semana-dia.hoy-toca:hover .cal-semana-hoy img{opacity:.6}
+@media (hover:hover){ .cal-semana-dia.hoy-toca:hover .cal-semana-hoy img{opacity:.6} }
 @media (max-width:640px){
   .cal-semana-descanso{font-size: var(--t-xs)}
   .cal-semana-descanso span{display:none}

@@ -75,6 +75,15 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Noticias | `scripts/noticias.mjs` (RSS de Espinof, Cinemascomics, IGN, SuperHeroHype; Google Noticias no, por sus condiciones), imágenes servidas desde la app, tarea diaria `.github/workflows/noticias.yml` que hace commit en main | ✅ |
 | Rendimiento | LCP de Inicio 6,5 → 2,3–2,7 s (precarga desde index.html, sin fundido, `nfLazy` en vez de loading=lazy); 1.191 → 800 kB; filas de Inicio en dos tiempos, sin precargar Archivo, navegación del service worker con 2,5 s de paciencia; sonda `safari` (WebKit) | ✅ |
 
+### 24 sep 2026 — Auditoría iOS
+
+| Qué | Estado |
+|---|---|
+| Ningún hover se queda pegado tras tocar (63 reglas dentro de `(hover:hover)`; «Sin spoilers» apagado ya no parece encendido) | ✅ |
+| Sin zoom al enfocar «Reportar» ni el buscador de la lateral en iPad | ✅ |
+| Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
+| Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
+
 ### Pendiente (siguientes jornadas)
 
 - **Login y datos en la nube**: el código de la cuenta (Google o enlace por correo) y las comunidades está hecho y apagado (`src/nube.js`). Falta que Sebastián entre a Supabase (`! npx supabase login`) para crear el proyecto gratis (São Paulo), aplicar las migraciones y encenderlo; Google pide un paso suyo en su consola (supabase/LEEME.md). Con eso, también push de verdad en iOS.
