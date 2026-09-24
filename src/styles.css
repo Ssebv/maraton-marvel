@@ -2262,6 +2262,37 @@ main.crono, main.comics, main.estreno{animation:none}
   html[data-vt="atras"]::view-transition-old(root){animation-name:vtSaleDer}
   html[data-vt="atras"]::view-transition-new(root){animation-name:vtEntraIzq}
 }
+/* Deslizar entre vistas con el dedo (24 sep 2026, «siento que recarga
+   todo»): el cambio era un fundido (la vieja se apagaba en 160 ms y la nueva
+   aparecía en 240; a mitad, las dos medio transparentes: un parpadeo que se
+   leía como recargar) y se deslizaba la página entera, cabecera y cielo
+   incluidos, aunque son iguales en las dos vistas. Con el gesto, un
+   paginador como el de iOS: la vieja sigue hacia fuera desde donde la dejó
+   el dedo y la nueva entra pegada a ella, las dos opacas; la cabecera y el
+   cielo se quedan quietos (nombre propio, pintados vivos). Tocar una pestaña
+   conserva el desliz corto de arriba. */
+@supports (view-transition-name: none){
+  .hero-maraton{view-transition-name:hero}
+  .cielo{view-transition-name:cielo}
+  ::view-transition-old(cielo){display:none}
+  ::view-transition-new(cielo){animation:none}
+  /* la pestaña del cajón es fija: no viaja con la página */
+  .cajon-asa{view-transition-name:asa}
+  ::view-transition-old(asa){display:none}
+  ::view-transition-new(asa){animation:none}
+  html[data-vt^="desliza"]::view-transition-image-pair(root){isolation:auto}
+  html[data-vt^="desliza"]::view-transition-old(root), html[data-vt^="desliza"]::view-transition-new(root){
+    mix-blend-mode:normal; animation-duration:var(--dur-larga); animation-timing-function:var(--curva-hoja); animation-fill-mode:both;
+  }
+  html[data-vt="desliza-adelante"]::view-transition-old(root){animation-name:vtPagSaleIzq}
+  html[data-vt="desliza-adelante"]::view-transition-new(root){animation-name:vtPagEntraDer}
+  html[data-vt="desliza-atras"]::view-transition-old(root){animation-name:vtPagSaleDer}
+  html[data-vt="desliza-atras"]::view-transition-new(root){animation-name:vtPagEntraIzq}
+}
+@keyframes vtPagSaleIzq{to{transform:translateX(-100%)}}
+@keyframes vtPagEntraDer{from{transform:translateX(100%)}}
+@keyframes vtPagSaleDer{to{transform:translateX(100%)}}
+@keyframes vtPagEntraIzq{from{transform:translateX(-100%)}}
 @keyframes vtSaleIzq{to{opacity:0; transform:translateX(-24px)}}
 @keyframes vtEntraDer{from{opacity:0; transform:translateX(24px)}}
 @keyframes vtSaleDer{to{opacity:0; transform:translateX(24px)}}

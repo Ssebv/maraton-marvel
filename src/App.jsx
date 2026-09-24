@@ -2929,11 +2929,17 @@ function gestoCajon(estado) {
       if (!el) return
       quitaPista(!!va)
       if (va) {
-        // sin transición: la foto de la View Transition sale ya centrada. El
-        // indicador se queda donde lo dejó el dedo y su propia animación
-        // termina el viaje hasta la pestaña nueva
-        el.style.transition = 'none'; el.style.transform = ''; el.style.opacity = ''; el.style.willChange = ''; el.style.animationFillMode = ''
-        estado.current.irA(gg.destino, gg.dx < 0 ? 'adelante' : 'atras')
+        // La vista NO vuelve al centro antes de cambiar (24 sep 2026, «siento
+        // que recarga todo»): antes se recolocaba de golpe y luego salía, un
+        // tirón atrás y otro adelante. La foto de salida de la View Transition
+        // se toma donde la dejó el dedo, así que sigue su camino hacia fuera; el
+        // desplazamiento se limpia DENTRO de la transición, con la vista nueva
+        // (Preact reutiliza el mismo <main> y el estilo en línea se quedaría).
+        // El indicador se queda donde lo dejó el dedo y su animación termina.
+        el.style.transition = 'none'
+        estado.current.irA(gg.destino, gg.dx < 0 ? 'desliza-adelante' : 'desliza-atras', () => {
+          el.style.transform = ''; el.style.opacity = ''; el.style.willChange = ''; el.style.animationFillMode = ''; el.style.transition = ''
+        })
       } else {
         devuelveIndicador(gg)
         el.style.transition = 'transform var(--dur-media) var(--curva), opacity var(--dur-media) var(--curva)'
@@ -7824,7 +7830,7 @@ export default function App() {
   estadoCajon.current = { activo: !conLateral, abierto: cajon, abrir: setCajon,
     anterior: iHermana > 0 ? hermanas[iHermana - 1] : null,
     siguiente: iHermana >= 0 && iHermana < hermanas.length - 1 ? hermanas[iHermana + 1] : null,
-    irA: (v, dir) => conTransicion(dir, () => setVista(v)) }
+    irA: (v, dir, limpia) => conTransicion(dir, () => { if (limpia) limpia(); setVista(v) }) }
   useEffect(() => gestoCajon(estadoCajon), [])
   const noticias = useNoticias(conLateral || cajon)
   // Que se sepa que existe (24 sep 2026, «el usuario no verá que se puede
