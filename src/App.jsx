@@ -2625,6 +2625,20 @@ gestosDeVolver()
 // Sigue al dedo en los dos sentidos; al soltar decide por recorrido (35 %) o
 // latigazo, con un tic al cruzar el umbral, como las hojas. Cerrado, el cajón
 // sale por CSS (transición desde donde lo dejó el dedo).
+const BORDE_CAJON = 36
+const UMBRAL_PAGINA = 72
+// dónde un deslizar horizontal NO es pasar de pestaña
+const SIN_GESTO_PAGINA = 'input,textarea,select,[contenteditable],.lateral,.cajon-velo,.sistema,.mapa-mv-wrap,.overlay,[data-sin-gesto]'
+// ¿algo entre el dedo y la página se desplaza en horizontal?
+function desplazaEnX(n) {
+  for (; n && n !== document.body; n = n.parentElement) {
+    if (n.scrollWidth > n.clientWidth + 2) {
+      const ox = getComputedStyle(n).overflowX
+      if (ox === 'auto' || ox === 'scroll') return true
+    }
+  }
+  return false
+}
 function gestoCajon(estado) {
   let g = null
   const cajon = () => document.querySelector('.lateral.cajon')
@@ -2653,32 +2667,66 @@ function gestoCajon(estado) {
       arma()
       return
     }
-    // abrir desde el borde: solo instalada, sin capas encima y sin cajón
-    // (o desde la pestaña del borde, que es un poco más ancha que la franja)
+    // Cerrado (24 sep 2026, «que no tenga que colocar el dedo tan cerca» y
+    // «scroll a la derecha para cambiar de Cronológico a Por estreno»): el
+    // gesto horizontal se decide en el primer movimiento. Hacia la derecha en
+    // la primera pestaña, o desde la franja del borde (instalada, 36 px), abre
+    // el panel; si no, pasa a la pestaña de al lado. No se arma sobre lo que ya
+    // se desplaza en horizontal (carriles de carátulas, pestañas, mapas) ni en
+    // campos de texto, ni con una capa o carpeta abierta.
+    if (st.abierto || capasAtras.length) return
     const enAsa = e.target.closest && e.target.closest('.cajon-asa')
-    if (st.abierto || !YA_INSTALADA || capasAtras.length || (t.clientX > BORDE_ATRAS && !enAsa)) return
-    e.stopPropagation()
-    g = { modo: 'abrir', x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, fijo: false, vel: velocimetro() }
+    const enBorde = enAsa || (YA_INSTALADA && t.clientX <= BORDE_CAJON)
+    if (!enBorde && (!e.target.closest || e.target.closest(SIN_GESTO_PAGINA) || desplazaEnX(e.target))) return
+    if (enBorde) e.stopPropagation()
+    g = { modo: null, enBorde, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, fijo: false, vel: velocimetro() }
     arma()
   }
+  // el nodo que se lleva el dedo al pasar de pestaña: la vista (main)
+  const vistaEl = () => document.querySelector('main')
   const onMove = e => {
     if (!g) return
     const t = e.touches[0]
     g.dx = t.clientX - g.x0; g.dy = t.clientY - g.y0
     if (!g.fijo) {
-      if (Math.abs(g.dx) < 8 && Math.abs(g.dy) < 8) return
-      const bien = g.modo === 'abrir' ? g.dx > 0 : g.dx < 0
-      if (!bien || Math.abs(g.dx) < Math.abs(g.dy) * 1.2) { g = null; desarma(); return }
+      if (Math.abs(g.dx) < 10 && Math.abs(g.dy) < 10) return
+      // más estricto que el de volver: aquí se compite con el scroll vertical
+      if (Math.abs(g.dx) < Math.abs(g.dy) * (g.modo === 'cerrar' || g.enBorde ? 1.2 : 1.6)) { g = null; desarma(); return }
+      if (g.modo === 'cerrar') { if (g.dx >= 0) { g = null; desarma(); return } }
+      else {
+        const st = estado.current
+        if (g.dx > 0 && (g.enBorde || !st.anterior)) { g.modo = 'abrir'; st.abrir(true) }
+        else if (!g.enBorde) {
+          g.modo = 'pagina'; g.destino = g.dx < 0 ? st.siguiente : st.anterior
+          const el = vistaEl()
+          if (!el) { g = null; desarma(); return }
+          try { el.getAnimations().forEach(an => an.finish()) } catch {}
+          el.style.animationFillMode = 'none'; el.style.transition = 'none'; el.style.willChange = 'transform'
+        } else { g = null; desarma(); return }
+      }
       g.fijo = true
-      if (g.modo === 'abrir') estado.current.abrir(true)
     }
     e.preventDefault()
+    if (g.modo === 'pagina') {
+      const el = vistaEl()
+      if (!el) return
+      // la vista acompaña al dedo poco (lo justo para sentirlo) y con goma si
+      // no hay pestaña hacia ese lado; al soltar entra la de al lado con el
+      // mismo desliz que al tocar su pestaña
+      const x = g.destino ? Math.max(-56, Math.min(56, g.dx * 0.28)) : Math.sign(g.dx) * goma(Math.abs(g.dx), 40)
+      g.vel.anota(e.timeStamp, g.dx)
+      const fuera = !!g.destino && Math.abs(g.dx) > UMBRAL_PAGINA
+      if (fuera !== !!g.cruzado) { g.cruzado = fuera; tic() }
+      el.style.transform = `translateX(${x}px)`
+      el.style.opacity = g.destino ? String(1 - Math.min(0.25, Math.abs(g.dx) / 800)) : ''
+      return
+    }
     const el = cajon()
     if (!el) return
     const w = el.offsetWidth || 1
     el.style.animation = 'none'; el.style.transition = 'none'
     const v = velo(); if (v) { v.style.animation = 'none'; v.style.transition = 'none' }
-    const x = g.modo === 'abrir' ? g.dx - w : g.dx
+    const x = g.modo === 'abrir' ? Math.min(0, g.dx - w) : g.dx
     g.vel.anota(e.timeStamp, x)
     const fuera = g.modo === 'abrir' ? x > -w * 0.65 : x < -w * 0.35
     if (fuera !== !!g.cruzado) { g.cruzado = fuera; tic() }
@@ -2689,14 +2737,33 @@ function gestoCajon(estado) {
     if (!g) return
     const { modo, fijo, vel } = g
     const x = g.x
+    const gg = g
     g = null
     desarma()
     if (!fijo) return
+    if (modo === 'pagina') {
+      const el = vistaEl()
+      const v = vel.lee(e.timeStamp)
+      const va = gg.destino && (Math.abs(gg.dx) > UMBRAL_PAGINA || (Math.abs(v) > 450 && Math.sign(v) === Math.sign(gg.dx)))
+      if (!el) return
+      if (va) {
+        // sin transición: la foto de la View Transition sale ya centrada
+        el.style.transition = 'none'; el.style.transform = ''; el.style.opacity = ''; el.style.willChange = ''; el.style.animationFillMode = ''
+        estado.current.irA(gg.destino, gg.dx < 0 ? 'adelante' : 'atras')
+      } else {
+        el.style.transition = 'transform var(--dur-media) var(--curva), opacity var(--dur-media) var(--curva)'
+        el.style.transform = ''; el.style.opacity = ''
+        setTimeout(() => { el.style.transition = ''; el.style.willChange = ''; el.style.animationFillMode = '' }, 260)
+      }
+      return
+    }
     const el = cajon()
     if (!el || x == null) { if (modo === 'abrir') estado.current.abrir(false); return }
     const w = el.offsetWidth || 1
     const v = vel.lee(e.timeStamp)
-    const abierto = v > 500 ? true : v < -500 ? false : x > -w * 0.35
+    // el mismo punto que marca el tic: abrir basta con sacarlo un 35 %,
+    // cerrar con meterlo un 35 %
+    const abierto = v > 500 ? true : v < -500 ? false : x > -w * (modo === 'abrir' ? 0.65 : 0.35)
     // la transición de CSS lo lleva desde donde está a su sitio (abierto) o
     // fuera (al cerrarse lleva .saliendo)
     requestAnimationFrame(() => {
@@ -2704,7 +2771,12 @@ function gestoCajon(estado) {
       if (!abierto) estado.current.abrir(false)
     })
   }
-  const onCancel = () => { if (!g) return; const { modo } = g; g = null; desarma(); suelta(cajon()); if (modo === 'abrir') estado.current.abrir(false) }
+  const onCancel = () => {
+    if (!g) return
+    const { modo } = g; g = null; desarma()
+    if (modo === 'pagina') { const el = vistaEl(); if (el) { el.style.transform = ''; el.style.opacity = ''; el.style.transition = ''; el.style.willChange = ''; el.style.animationFillMode = '' } return }
+    suelta(cajon()); if (modo === 'abrir') estado.current.abrir(false)
+  }
   window.addEventListener('touchstart', onStart, { capture: true, passive: true })
   window.addEventListener('touchend', onEnd)
   window.addEventListener('touchcancel', onCancel)
@@ -7569,7 +7641,14 @@ export default function App() {
   useDialogo(cajonRef, cierraCajon, cajon && !conLateral)
   useEffect(() => { if (conLateral) setCajon(false) }, [conLateral])
   const estadoCajon = useRef(null)
-  estadoCajon.current = { activo: !conLateral, abierto: cajon, abrir: setCajon }
+  // las pestañas de la sección en la que estás (Inicio, Cronológico, Por
+  // estreno…): deslizar pasa a la de al lado
+  const hermanas = (DESTINOS.find(d => d.vistas.includes(vista)) || { vistas: [] }).vistas
+  const iHermana = hermanas.indexOf(vista)
+  estadoCajon.current = { activo: !conLateral, abierto: cajon, abrir: setCajon,
+    anterior: iHermana > 0 ? hermanas[iHermana - 1] : null,
+    siguiente: iHermana >= 0 && iHermana < hermanas.length - 1 ? hermanas[iHermana + 1] : null,
+    irA: (v, dir) => conTransicion(dir, () => setVista(v)) }
   useEffect(() => gestoCajon(estadoCajon), [])
   const noticias = useNoticias(conLateral || cajon)
   // Que se sepa que existe (24 sep 2026, «el usuario no verá que se puede
@@ -9414,9 +9493,7 @@ export default function App() {
         {pistaCajon && (
           <div className="cajon-pista" role="status">
             <b>{tr('Tu panel', 'Your panel')}</b>
-            <span>{YA_INSTALADA
-              ? tr('Desliza desde el borde o toca la pestaña: secciones, noticias y la cuenta atrás.', 'Swipe from the edge or tap the tab: sections, news and the countdown.')
-              : tr('Toca la pestaña del borde: secciones, noticias y la cuenta atrás.', 'Tap the tab on the edge: sections, news and the countdown.')}</span>
+            <span>{tr('Desliza a la derecha en Inicio o toca la pestaña: secciones, noticias y la cuenta atrás. Desliza a los lados para cambiar de vista.', 'Swipe right on Home or tap the tab: sections, news and the countdown. Swipe sideways to switch views.')}</span>
             <button type="button" className="cajon-pista-ok" onClick={olvidaPistaCajon}>{tr('Entendido', 'Got it')}</button>
           </div>
         )}
