@@ -84,6 +84,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
 | Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
 | Panel lateral en el móvil: sale con un botón o arrastrando desde el borde (instalada), sigue al dedo, y atrás o tocar fuera lo cierran | ✅ |
+| Scroll más fluido: cartelera fija (no cambia sola), animaciones decorativas en pausa al desplazar, filas con su altura real (sin saltos en Safari) | ✅ |
 | Deslizar: a la derecha en Inicio abre el panel desde cualquier punto; a los lados cambia de vista (Cronológico, Por estreno…) | ✅ |
 | Sin panel en la página: el mapa, los estrenos y la cuenta atrás se abren dentro del panel lateral («Tu maratón») | ✅ |
 | Que se vea el panel: pestaña fija en el borde izquierdo y una pista la primera vez | ✅ |

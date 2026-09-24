@@ -2617,6 +2617,21 @@ function gestosDeVolver() {
 }
 gestosDeVolver()
 
+// Mientras se desplaza la página, <html> lleva .desplazando y las animaciones
+// decorativas que no paran (cielo que titila, carrusel que avanza solo,
+// planetas) se pausan: medido el 24 sep 2026 en Inicio con CPU ×4, ~780
+// recálculos de estilo en un scroll de ida y vuelta, ~500 por esas animaciones.
+// Se quita 160 ms después del último evento; dos recálculos (al empezar y al
+// parar) en vez de uno por fotograma.
+if (typeof window !== 'undefined') {
+  let t = 0, puesto = false
+  window.addEventListener('scroll', () => {
+    if (!puesto) { puesto = true; document.documentElement.classList.add('desplazando') }
+    clearTimeout(t)
+    t = setTimeout(() => { puesto = false; document.documentElement.classList.remove('desplazando') }, 160)
+  }, { passive: true })
+}
+
 // Panel lateral en el móvil (24 sep 2026, Sebastián: «me gustaría el panel
 // lateral en iOS donde pueda sacarlo y moverme por ahí»): la misma lateral del
 // escritorio sale como un cajón desde la izquierda. Se abre con el botón de la
@@ -4165,9 +4180,6 @@ const nfNota = n => String(n)
 const puedePrevia = () => typeof window !== 'undefined' && !!window.matchMedia
   && matchMedia('(hover: hover) and (pointer: fine)').matches
   && !matchMedia('(prefers-reduced-motion: reduce)').matches
-const hayMovimiento = () => typeof window !== 'undefined' && !!window.matchMedia
-  && !matchMedia('(prefers-reduced-motion: reduce)').matches
-  && !(navigator.connection && navigator.connection.saveData)
 const fondosMem = {}
 async function cargaFondos(itemId) {
   if (fondosMem[itemId]) return fondosMem[itemId]
@@ -4504,26 +4516,14 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
   useEffect(() => { try { if (!performance.getEntriesByName('inicio-usable').length) performance.mark('inicio-usable') } catch {} }, [])
   // la foto de la cartelera, anotada para que index.html la pida en la próxima visita
   useEffect(() => { try { if (foto) localStorage.setItem('maraton-marvel-lcp-v1', foto) } catch {} }, [foto])
+  // La cartelera es una foto fija del título que toca (24 sep 2026, Sebastián:
+  // «que no cambie la next película sola, solo cuando cambio»). Antes, a los
+  // 3,5 s arrancaba un desfile de fotogramas que se relevaba cada 5 s con zoom
+  // lento y se reiniciaba cada vez que la cartelera salía y volvía a la vista
+  // con el scroll (un IntersectionObserver que además repintaba Inicio
+  // entero). Cambia al marcar vista, al elegir universo o con los filtros.
+  // El desfile sigue en la tarjeta que crece sobre una carátula (ratón).
   const cartelRef = useRef(null)
-  const [cartelVisible, setCartelVisible] = useState(true)
-  useEffect(() => {
-    const el = cartelRef.current
-    if (!el || !window.IntersectionObserver) return undefined
-    const io = new IntersectionObserver(([e]) => setCartelVisible(e.intersectionRatio > 0.4), { threshold: [0, 0.4, 1] })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [s && s.id])
-  const [previaDe, setPreviaDe] = useState(null)
-  useEffect(() => {
-    if (!s || previaDe === s.id || !cartelVisible || !hayMovimiento()) return undefined
-    let t = 0
-    const arranca = () => { t = setTimeout(() => { if (!document.hidden) setPreviaDe(s.id) }, 3500) }
-    if (document.readyState === 'complete') arranca(); else window.addEventListener('load', arranca, { once: true })
-    return () => { clearTimeout(t); window.removeEventListener('load', arranca) }
-  }, [s && s.id, cartelVisible])
-  const fondosS = useFondos(s ? s.id : '', !!s && previaDe === s.id)
-  const desfileS = s && previaDe === s.id && cartelVisible && !verTrailer && fondosS && fondosS.length > 0
-    ? [...(foto ? [foto] : []), ...fondosS.filter(f => f !== foto)].slice(0, 5) : null
   const previaNf = usePreviaNf()
   // la foto del SIGUIENTE título se baja mientras miras la cartelera actual:
   // al marcar vista ya está (y el service worker la guarda para la próxima)
@@ -4580,7 +4580,6 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
             {foto && <img key={foto} className="nf-cartel-foto" src={`${TMDB_IMG}w1280${foto}`} srcSet={`${TMDB_IMG}w780${foto} 780w, ${TMDB_IMG}w1280${foto} 1280w`} sizes="100vw" alt="" decoding="async" fetchpriority="high"
               onLoad={e => e.currentTarget.classList.add('cargada')}
               onError={e => { e.currentTarget.style.display = 'none' }} />}
-            {desfileS && <Desfile fotos={desfileS} ancho={window.innerWidth > 780 ? 'w1280' : 'w780'} />}
           </div>
           {verTrailer && (
             <div className="nf-trailer">
@@ -8532,19 +8531,19 @@ export default function App() {
   const [posiciones] = useState(() => ({ current: leePosicion(vista) }))
   const vistaRef = useRef(vista); vistaRef.current = vista
   useEffect(() => {
-    let ultimo = 0, cola = 0
+    let cola = 0
     const guarda = (final = false) => {
-      const v = vistaRef.current, ahora = Date.now()
+      const v = vistaRef.current
       const p = posiciones.current[v] || (posiciones.current[v] = {})
       p.y = window.scrollY
-      // acelerado mientras se desplaza y, además, una muestra de cola al parar:
-      // sin ella el último tramo (el que cuenta) se quedaba sin ancla. La de
-      // cola no se rearma (se rearmaba a sí misma y giraba cada 150 ms para
-      // siempre) y es la única que escribe en el almacenamiento
+      // la muestra de cola, al parar, es la que busca el ancla y escribe en el
+      // almacenamiento; no se rearma (se rearmaba a sí misma y giraba cada
+      // 150 ms para siempre)
       clearTimeout(cola)
-      if (!final) cola = setTimeout(() => { ultimo = 0; guarda(true) }, 150)
-      if (final || ahora - ultimo > 200) {
-        ultimo = ahora
+      if (!final) cola = setTimeout(() => guarda(true), 150)
+      // la muestra por elemento (elementFromPoint obliga al navegador a
+      // resolver la página) solo al parar: durante el scroll, un número
+      if (final) {
         // solo tarjetas con id: el ancestro con id más cercano de una cabecera
         // de era es la saga entera, y eso devolvía a su principio. Se muestrea
         // justo bajo la barra pegajosa (mide 60 px en el móvil pero 150 en

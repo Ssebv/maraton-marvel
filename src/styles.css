@@ -3906,8 +3906,13 @@ div.nf-abrir{cursor:default}
        por arriba para que al desplazarse nunca asome el hueco */
     .nf-cartel-fondo{inset:-12% 0 0 0; animation:nfParallax linear both; animation-timeline:view(); animation-range:exit 0% exit 100%}
     @keyframes nfParallax{to{transform:translateY(12%)}}
-    /* las filas suben al entrar en pantalla (las que ya se ven, quietas) */
-    .nf-fila{animation:nfSube linear both; animation-timeline:view(); animation-range:entry 0% entry 35%}
+    /* las filas suben al entrar en pantalla (las que ya se ven, quietas).
+       Solo con ratón desde el 24 sep 2026: en el dedo cada fila animada
+       recalculaba estilos en cada fotograma de scroll (−20 a −40 % de tiempo
+       de estilo sin ella, CPU ×4) y el scroll se sentía «de goma» */
+    @media (hover:hover) and (pointer:fine){
+      .nf-fila{animation:nfSube linear both; animation-timeline:view(); animation-range:entry 0% entry 35%}
+    }
   }
 }
 @supports (animation-timeline: scroll()){
@@ -4682,3 +4687,21 @@ html.capa-abierta .cajon-pista{display:none}
 @media (prefers-reduced-motion: reduce){ .cajon-maraton{animation:none} }
 /* en el cajón la tarjeta empuja una página: flecha como en las listas de iOS */
 .lateral.cajon .lat-panel::after{content:" ›"}
+
+/* ── Scroll fluido (24 sep 2026) ──
+   Con .desplazando (la pone el scroll y se va 160 ms después de parar) las
+   animaciones decorativas infinitas se congelan donde están: el cielo, el
+   carrusel automático, los planetas y el punto «en vivo». Sin ellas cada
+   fotograma de scroll recalculaba estilos. */
+html.desplazando .estrella-capa, html.desplazando .tira-pista, html.desplazando .planeta-textura,
+html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live{animation-play-state:paused}
+/* Las filas de Inicio reservaban 300 px sin pintar y miden 251 en el iPhone
+   (263 a 430, 295 en tableta): cada fila que aparecía descuadraba la página
+   ~49 px, y Safari no lo compensa (no tiene anclaje de scroll). La reserva
+   sale del ancho de la carátula: 2:3 + cabecera (2 renglones en el móvil). */
+.nf-fila{contain-intrinsic-size:auto calc(clamp(150px, 14vw, 186px) * 1.5 + 70px)}
+@media (max-width:640px){ .nf-fila{contain-intrinsic-size:auto calc(clamp(112px, 28vw, 158px) * 1.5 + 83px)} }
+/* y lo mismo en Cronológico (tarjeta compacta de 173–205 px en el móvil) y en
+   Galería (159 en el móvil, ~175 en pantallas grandes) */
+@media (max-width:640px){ .card{contain-intrinsic-size:auto 190px} .galeria-item{contain-intrinsic-size:auto 160px} }
+@media (min-width:641px){ .galeria-item{contain-intrinsic-size:auto 175px} }
