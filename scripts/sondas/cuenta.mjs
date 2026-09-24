@@ -101,7 +101,10 @@ try {
     prueba(pr2[0].vistas['first-class'] && pr2[0].vistas.logan && local2['first-class'] && local2.logan,
       `se funden los dos: nube ${Object.keys(pr2[0].vistas).join(', ')} · navegador ${Object.keys(local2).join(', ')}`)
 
-    // marcar aquí y que llegue a la nube
+    // marcar aquí y que llegue a la nube (en Cronológico: desde el 22 sep la
+    // app abre en Inicio, que no tiene tarjetas .card)
+    await s.cdp.eval(`location.hash = 'crono'`)
+    await s.cdp.hasta(`!!document.querySelector('.card')`, 8000)
     await s.cdp.eval(`window.scrollTo({ top: 0, behavior: 'instant' })`)
     await espera(300)
     const marcado = await s.cdp.eval(`(() => { const c = [...document.querySelectorAll('.card')].find(c => !c.classList.contains('vista')); c.querySelector('.checkbox').click(); return c.id.replace(/^card-/, '') })()`)

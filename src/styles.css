@@ -4705,3 +4705,31 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live{a
    Galería (159 en el móvil, ~175 en pantallas grandes) */
 @media (max-width:640px){ .card{contain-intrinsic-size:auto 190px} .galeria-item{contain-intrinsic-size:auto 160px} }
 @media (min-width:641px){ .galeria-item{contain-intrinsic-size:auto 175px} }
+
+/* ── Portada del foro (24 sep 2026) ── */
+.foro-portada{display:flex; flex-direction:column; gap: var(--e-4); max-width:860px}
+.foro-cab{display:flex; align-items:flex-end; gap: var(--e-4); flex-wrap:wrap}
+.foro-cab-texto{flex:1 1 280px; min-width:0}
+.foro-t{margin:0; font-family:var(--f-titulo); font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1.05}
+.foro-sub{margin:0; font-size: var(--t-m); line-height:1.45; color:var(--ink2); max-width:56ch}
+.foro-nuevo{flex:none; min-height:44px}
+.foro-escribe{display:flex; flex-direction:column; gap: var(--e-3); padding: var(--e-4); border-radius:var(--r-xl);
+  background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); box-shadow:var(--sup-brillo), var(--sup-sombra)}
+.foro-orden{align-self:flex-start}
+.foro-filtros{display:flex; gap: var(--e-2); overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none;
+  margin-inline:calc(-1 * var(--e-6)); padding: var(--e-1) var(--e-6)}
+.foro-filtros::-webkit-scrollbar{display:none}
+.foro-filtros .chip-btn{flex:none}
+.foro-sep{flex:none; width:1px; margin: var(--e-2) var(--e-1); background:var(--filo)}
+/* la tarjeta de hilo con la carátula de su título, como la miniatura de Reddit */
+.hilo-fila.con-cara{display:grid; grid-template-columns:44px minmax(0, 1fr); column-gap: var(--e-4); row-gap: var(--e-1); align-items:start}
+.hilo-fila.con-cara > :not(.hilo-cara){grid-column:2}
+.hilo-cara{grid-row:1 / span 3; width:44px; height:66px; border-radius:var(--r-s); object-fit:cover; box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.foro-vacio{display:flex; flex-direction:column; gap: var(--e-1); padding: var(--e-7) var(--e-5); text-align:center; border-radius:var(--r-xl);
+  border:1px dashed var(--filo); background:color-mix(in srgb, var(--panel) 60%, transparent)}
+.foro-vacio b{font-size: var(--t-l)}
+.foro-vacio span{font-size: var(--t-m); color:var(--ink2)}
+.foro-mas{align-self:center; min-height:44px; padding: 0 var(--e-6)}
+@media (max-width:640px){ .foro-t{font-size: var(--t-xl)} .foro-nuevo{width:100%; justify-content:center} }
+/* los votos y respuestas no se parten («▲ / 50») */
+.hilo-fila-cuenta{white-space:nowrap}

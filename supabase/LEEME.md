@@ -1,5 +1,12 @@
 # Comunidades del Maratón: poner en marcha la base (gratis)
 
+> **Lo más rápido (24 sep 2026):** inicia sesión una vez con `npx supabase login`
+> y ejecuta `npm run nube:encender`. El script crea el proyecto (São Paulo, plan
+> gratuito), aplica las migraciones y el catálogo, sube la configuración de
+> acceso de producción y pega las claves en `src/nube.js`; después,
+> `npm run desplegar`. `npm run nube:encender -- --prueba` solo comprueba.
+> Lo de abajo es el camino a mano, y el apartado 3 (Google) sigue siendo a mano.
+
 Todo esto usa **solo planes gratuitos**, sin tarjeta: Supabase (plan Free),
 Google Cloud (pantalla de consentimiento y cliente OAuth, sin coste) y GitHub
 Actions (gratis en repositorios públicos). Tiempo: unos 15–20 minutos.
@@ -27,6 +34,7 @@ PostgreSQL temporal que imita a Supabase y comprueba 67 reglas.
    Luego, en otra consulta, `supabase/migrations/20260916180000_retos_y_muro.sql` → **Run**
    después `supabase/migrations/20260916200000_privacidad_ranking.sql` → **Run**
    y `supabase/migrations/20260921120000_perfil_bloqueado.sql` → **Run**
+   y `supabase/migrations/20260924120000_foro_portada.sql` → **Run** (portada del foro)
    (las migraciones van en orden de nombre; cada una nueva se aplica igual).
 3. Nueva consulta con el contenido de `supabase/catalogo.sql` → **Run**
    (los 143 títulos con sus minutos; se repite cuando entre un título nuevo:

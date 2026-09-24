@@ -84,6 +84,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
 | Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
 | Panel lateral en el móvil: sale con un botón o arrastrando desde el borde (instalada), sigue al dedo, y atrás o tocar fuera lo cierran | ✅ |
+| Foro tipo Reddit preparado (oculto hasta encender la nube): sección «Comunidad» con portada En alza / Nuevos / Top semana, filtros y publicar eligiendo título; `npm run nube:encender` lo enciende todo tras `npx supabase login` | ✅ |
 | Scroll más fluido: cartelera fija (no cambia sola), animaciones decorativas en pausa al desplazar, filas con su altura real (sin saltos en Safari) | ✅ |
 | Deslizar: a la derecha en Inicio abre el panel desde cualquier punto; a los lados cambia de vista (Cronológico, Por estreno…) | ✅ |
 | Sin panel en la página: el mapa, los estrenos y la cuenta atrás se abren dentro del panel lateral («Tu maratón») | ✅ |
@@ -92,7 +93,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 
 ### Pendiente (siguientes jornadas)
 
-- **Login y datos en la nube**: el código de la cuenta (Google o enlace por correo) y las comunidades está hecho y apagado (`src/nube.js`). Falta que Sebastián entre a Supabase (`! npx supabase login`) para crear el proyecto gratis (São Paulo), aplicar las migraciones y encenderlo; Google pide un paso suyo en su consola (supabase/LEEME.md). Con eso, también push de verdad en iOS.
+- **Login y datos en la nube** (desde el 24 sep: `npx supabase login` + `npm run nube:encender`): el código de la cuenta (Google o enlace por correo) y las comunidades está hecho y apagado (`src/nube.js`). Falta que Sebastián entre a Supabase (`! npx supabase login`) para crear el proyecto gratis (São Paulo), aplicar las migraciones y encenderlo; Google pide un paso suyo en su consola (supabase/LEEME.md). Con eso, también push de verdad en iOS.
 - **A mano en GitHub**: fijar la bienvenida de Discusiones y subir `docs/social.jpg` en Settings › Social preview.
 - Tarjetas de cómics más compactas (texto corto junto a una carátula alta).
 - Probar en un iPhone real: suscripción al calendario, vibración al mantener una carátula y la apertura sin señal.

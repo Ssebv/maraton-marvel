@@ -365,7 +365,7 @@ function CuerpoTexto({ texto, onPerfil, className = 'hilo-cuerpo' }) {
   return <p className={className}>{partes}</p>
 }
 
-function HilosLista({ hilos, vistas, eps, onAbrir, conRef = true }) {
+function HilosLista({ hilos, vistas, eps, onAbrir, conRef = true, conCara = false }) {
   return (
     <ul className="hilos-lista">
       {hilos.map(h => {
@@ -373,7 +373,8 @@ function HilosLista({ hilos, vistas, eps, onAbrir, conRef = true }) {
         const et = ETIQUETAS_HILO.find(e => e[0] === h.etiqueta)
         return (
           <li key={h.id}>
-            <button className={`hilo-fila${h.oculto ? ' oculto' : ''}`} onClick={() => onAbrir(h.id)}>
+            <button className={`hilo-fila${h.oculto ? ' oculto' : ''}${conCara && h.titulo_ref && POSTERS[h.titulo_ref] ? ' con-cara' : ''}`} onClick={() => onAbrir(h.id)}>
+              {conCara && h.titulo_ref && POSTERS[h.titulo_ref] && <img className="hilo-cara" src={POSTERS[h.titulo_ref]} alt="" loading="lazy" decoding="async" />}
               <span className="hilo-fila-cab">
                 <span className="tipo opc">{et ? tr(et[1], et[2]) : ''}</span>
                 {h.fijado && <span className="tipo esp">{tr('Fijado', 'Pinned')}</span>}
@@ -383,7 +384,7 @@ function HilosLista({ hilos, vistas, eps, onAbrir, conRef = true }) {
               <span className="hilo-fila-titulo">{h.titulo}</span>
               <span className="hilo-fila-meta">
                 @{h.autor.nombre} · {haceCuanto(h.creado)}{conRef && h.titulo_ref ? ` · ${nombreRef(h)}` : ''}
-                {' · '}▲ {h.votos} · {h.respuestas === 1 ? tr('1 respuesta', '1 reply') : tr(`${h.respuestas} respuestas`, `${h.respuestas} replies`)}
+                {' · '}<span className="hilo-fila-cuenta">▲ {h.votos} · {h.respuestas === 1 ? tr('1 respuesta', '1 reply') : tr(`${h.respuestas} respuestas`, `${h.respuestas} replies`)}</span>
               </span>
             </button>
           </li>
@@ -505,6 +506,101 @@ function NuevoHilo({ foro, episodios, cuenta, token, onCancelar, onCreado }) {
         <button className="chip-btn" type="button" onClick={onCancelar}>{tr('Cancelar', 'Cancel')}</button>
       </span>
     </form>
+  )
+}
+
+// ── Portada del foro (24 sep 2026, «un foro tipo Reddit») ──
+// Todos los hilos abiertos juntos (los de cada título, que antes solo se veían
+// desde su ficha), en alza / nuevos / top de la semana, con filtros por saga y
+// etiqueta. El orden lo calcula la base (rpc/foro_portada) con las mismas
+// reglas por fila que /hilos. Se escribe eligiendo el título: el hilo cae en
+// su foro y hereda el velo de spoilers.
+const ORDENES_FORO = [['alza', 'En alza', 'Hot'], ['nuevos', 'Nuevos', 'New'], ['semana', 'Top semana', 'Top week']]
+const SAGAS_FORO = [['', 'Todo', 'All'], ['xmen', 'X-Men', 'X-Men'], ['ucm', 'UCM', 'MCU'], ['comics', 'Cómics', 'Comics'], ['animacion', 'Animación', 'Animation']]
+function ForoPortada({ cuenta, token, vistas, eps, recarga, onEntrar, onAbrirHilo, onCreado }) {
+  const [orden, setOrden] = useState('alza')
+  const [saga, setSaga] = useState('')
+  const [etiqueta, setEtiqueta] = useState('')
+  const [hilos, setHilos] = useState(null)
+  const [mas, setMas] = useState(false)
+  const [cargandoMas, setCargandoMas] = useState(false)
+  const [escribiendo, setEscribiendo] = useState(false)
+  const [tituloNuevo, setTituloNuevo] = useState('')
+  const [grupo, indicador] = useIndicador(orden)
+  const pide = async desde => {
+    const t = cuenta ? await token() : null
+    const filas = await rest(t, `rpc/foro_portada?select=${CAMPOS_HILO}`, { method: 'POST',
+      body: { orden, saga_in: saga || null, etiqueta_in: etiqueta || null, desde } })
+    return (Array.isArray(filas) ? filas : []).map(saneaHilo).filter(Boolean)
+  }
+  useEffect(() => {
+    let vivo = true
+    setHilos(null)
+    pide(0).then(l => { if (vivo) { setHilos(l); setMas(l.length === 30) } }).catch(() => { if (vivo) { setHilos([]); setMas(false) } })
+    return () => { vivo = false }
+  }, [orden, saga, etiqueta, recarga, cuenta && cuenta.uid])
+  const cargaMas = async () => {
+    setCargandoMas(true)
+    try { const l = await pide(hilos.length); setHilos(h => [...h, ...l.filter(x => !h.some(y => y.id === x.id))]); setMas(l.length === 30) } catch {}
+    setCargandoMas(false)
+  }
+  // para escribir: el título por defecto es lo último que marcaste
+  const abreNuevo = () => {
+    const ult = Object.entries(vistas).filter(([, t]) => t > 1e12).sort((a, b) => b[1] - a[1])[0]
+    setTituloNuevo(t => t || (ult ? ult[0] : DATA[0].eras[0].items[0].id))
+    setEscribiendo(true)
+  }
+  return (
+    <div className="foro-portada">
+      <div className="foro-cab">
+        <div className="foro-cab-texto">
+          <h2 className="solo-lector">{tr('Foro', 'Forum')}</h2>
+          <p className="foro-sub">{tr('Teorías, reseñas y preguntas de todo el maratón. Los spoilers de lo que no has visto salen tapados.', 'Theories, reviews and questions from the whole marathon. Spoilers for what you haven’t watched stay hidden.')}</p>
+        </div>
+        {cuenta
+          ? !escribiendo && <button type="button" className="accion-principal foro-nuevo" onClick={abreNuevo}>{tr('Nuevo hilo', 'New thread')}</button>
+          : <button type="button" className="accion-principal foro-nuevo" onClick={onEntrar}>{tr('Entra para escribir', 'Sign in to post')}</button>}
+      </div>
+      {escribiendo && (
+        <div className="foro-escribe">
+          <label className="crea-edad">
+            <span>{tr('Sobre', 'About')}</span>
+            <select className="selector" value={tituloNuevo} onChange={e => setTituloNuevo(e.target.value)}>
+              {DATA.map(sg => (
+                <optgroup key={sg.saga} label={sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? tr('UCM', 'MCU') : sg.saga === 'animacion' ? tr('Animación', 'Animation') : tr('Cómics', 'Comics')}>
+                  {sg.eras.flatMap(e => e.items).map(it => <option key={it.id} value={it.id}>{it.t}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          <NuevoHilo key={tituloNuevo} foro={{ tipo: 'titulo', id: tituloNuevo }} episodios={EPISODES[tituloNuevo] || null} cuenta={cuenta} token={token}
+            onCancelar={() => setEscribiendo(false)} onCreado={id => { setEscribiendo(false); onCreado(); onAbrirHilo(id) }} />
+        </div>
+      )}
+      <div className="tabs grafica-modos foro-orden" ref={grupo} role="group" aria-label={tr('Orden', 'Order')}>
+        <span className="indicador" ref={indicador} aria-hidden="true" />
+        {ORDENES_FORO.map(([id, es, en]) => (
+          <button type="button" key={id} className="tab" aria-pressed={orden === id} onClick={() => setOrden(id)}>{tr(es, en)}</button>
+        ))}
+      </div>
+      <div className="foro-filtros" role="group" aria-label={tr('Filtrar', 'Filter')}>
+        {SAGAS_FORO.map(([id, es, en]) => (
+          <button type="button" key={'s' + id} className="chip-btn" aria-pressed={saga === id} onClick={() => setSaga(id)}>{tr(es, en)}</button>
+        ))}
+        <span className="foro-sep" aria-hidden="true" />
+        {ETIQUETAS_HILO.map(([id, es, en]) => (
+          <button type="button" key={'e' + id} className="chip-btn" aria-pressed={etiqueta === id} onClick={() => setEtiqueta(e => (e === id ? '' : id))}>{tr(es, en)}</button>
+        ))}
+      </div>
+      {hilos === null ? <p className="ajuste-pista" role="status">{tr('Cargando…', 'Loading…')}</p>
+        : hilos.length === 0 ? (
+          <div className="foro-vacio">
+            <b>{saga || etiqueta ? tr('Nada con estos filtros', 'Nothing with these filters') : tr('El foro está por estrenar', 'The forum is waiting for its premiere')}</b>
+            <span>{saga || etiqueta ? tr('Prueba con otra saga o etiqueta.', 'Try another saga or tag.') : tr('Abre el primer hilo: una teoría, una reseña o una pregunta.', 'Start the first thread: a theory, a review or a question.')}</span>
+          </div>
+        ) : <HilosLista hilos={hilos} vistas={vistas} eps={eps} onAbrir={onAbrirHilo} conCara />}
+      {hilos && mas && <button type="button" className="chip-btn foro-mas" disabled={cargandoMas} onClick={cargaMas}>{cargandoMas ? tr('Cargando…', 'Loading…') : tr('Ver más', 'Show more')}</button>}
+    </div>
   )
 }
 
@@ -1419,8 +1515,11 @@ const DESTINOS = [
   { id: 'maraton', label: 'Maratón', en: 'Marathon', vistas: ['inicio', 'crono', 'estreno', 'comics', 'animacion', 'galeria', 'tiempo'] },
   // Perfil abre en lo tuyo (progreso, racha, logros); las listas, después
   // Comunidades solo existe con la cuenta encendida (src/nube.js)
-  { id: 'mio', label: 'Perfil', en: 'Profile', vistas: NUBE ? ['stats', 'listas', 'comunidades'] : ['stats', 'listas'] },
+  { id: 'mio', label: 'Perfil', en: 'Profile', vistas: ['stats', 'listas'] },
   { id: 'multiverso', label: 'Multiverso', en: 'Multiverse', vistas: ['multiverso'] },
+  // Comunidad (24 sep 2026, «un foro tipo Reddit»): la portada del foro y las
+  // comunidades, que vivían al final de Perfil. Solo con la cuenta encendida.
+  ...(NUBE ? [{ id: 'comunidad', label: 'Comunidad', en: 'Community', vistas: ['foro', 'comunidades'] }] : []),
 ]
 const destinoDe = v => (DESTINOS.find(d => d.vistas.includes(v)) || DESTINOS[0]).id
 // Iconos de la barra de pestañas del móvil (SVG de trazo, como los de los
@@ -1444,6 +1543,13 @@ const ICONOS_DESTINO = {
       <path d="M18.2 6.6c2.6-.9 4.4-.8 4.9.3.9 1.9-3 5.9-8.7 8.9S3.7 20.1 2.8 18.2c-.5-1 .4-2.6 2.3-4.3" />
     </svg>
   ),
+  // dos bocadillos: conversación
+  comunidad: (
+    <svg className="tab-ico" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 5.5h11a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H9l-4 3v-3H4A1.5 1.5 0 0 1 2.5 13V7A1.5 1.5 0 0 1 4 5.5z" />
+      <path d="M16.5 9.5H20a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 20 18.5h-1v2.5l-3.5-2.5H11a1.5 1.5 0 0 1-1.5-1.5v-.5" />
+    </svg>
+  ),
 }
 
 const STOP = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'the', 'of', 'a', 'al', 'un', 'una'])
@@ -1463,7 +1569,7 @@ function fmtDur(d) {
 }
 
 const limpiaNombre = n => n.replace(/ \((voz|creador|creadora|showrunner|creadores)\)$/, '')
-const VISTAS_VALIDAS = ['inicio', 'crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo', ...(NUBE ? ['comunidades'] : [])]
+const VISTAS_VALIDAS = ['inicio', 'crono', 'estreno', 'comics', 'animacion', 'stats', 'galeria', 'multiverso', 'listas', 'tiempo', ...(NUBE ? ['foro', 'comunidades'] : [])]
 // Iconos de la barra lateral de escritorio (23 sep 2026): trazo de 1,8 como
 // los de la barra de pestañas del móvil, uno por vista y por herramienta
 const ICO_LAT = (() => {
@@ -1479,6 +1585,7 @@ const ICO_LAT = (() => {
     stats: i(<><path d="M5 20V11M12 20V5M19 20v-7" /></>),
     listas: i(<><path d="M7 4h10v16l-5-3.5L7 20z" /></>),
     comunidades: i(<><circle cx="9" cy="9" r="3" /><path d="M3.5 19a5.5 5.5 0 0 1 11 0" /><circle cx="17" cy="10" r="2.5" /><path d="M15.5 14.5a4.5 4.5 0 0 1 5 4.5" /></>),
+    foro: i(<><path d="M4 5.5h11a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H9l-4 3v-3H4A1.5 1.5 0 0 1 2.5 13V7A1.5 1.5 0 0 1 4 5.5z" /><path d="M16.5 9.5H20a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 20 18.5h-1v2.5l-3.5-2.5H11a1.5 1.5 0 0 1-1.5-1.5v-.5" /></>),
     multiverso: i(<><circle cx="12" cy="12" r="4" /><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-20 12 12)" /></>),
     filtros: i(<><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></>),
     mas: i(<><circle cx="6" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="18" cy="12" r="1.2" /></>),
@@ -1490,6 +1597,7 @@ const PESTANAS = [
   { id: 'inicio', label: 'Inicio', en: 'Home' },
   { id: 'crono', label: 'Cronológico', en: 'Chronological' },
   { id: 'comunidades', label: 'Comunidades', en: 'Communities' },
+  { id: 'foro', label: 'Foro', en: 'Forum' },
   { id: 'estreno', label: 'Por estreno', en: 'By release' },
   { id: 'comics', label: 'Cómics', en: 'Comics' },
   { id: 'animacion', label: 'Animación', en: 'Animation' },
@@ -9388,6 +9496,8 @@ export default function App() {
         <p className="lat-grupo-t">{tr('Tú y el multiverso', 'You and the multiverse')}</p>
         {DESTINOS[1].vistas.map(filaLat)}
         {DESTINOS[2].vistas.map(filaLat)}
+        {DESTINOS[3] && <p className="lat-grupo-t">{tr('Comunidad', 'Community')}</p>}
+        {DESTINOS[3] && DESTINOS[3].vistas.map(filaLat)}
       </nav>
       {(() => {
         // lo último que marcaste (las marcas guardan la fecha; las antiguas, un 1)
@@ -9689,7 +9799,7 @@ export default function App() {
       </section>
       ) : (
         <CabeceraDestino esMovil={esMovil} onAjustes={() => setAjustes(true)}
-          titulo={destinoDe(vista) === 'mio' ? tr('Perfil', 'Profile') : tr('Multiverso', 'Multiverse')}
+          titulo={destinoDe(vista) === 'mio' ? tr('Perfil', 'Profile') : destinoDe(vista) === 'comunidad' ? tr('Comunidad', 'Community') : tr('Multiverso', 'Multiverse')}
           sub={destinoDe(vista) === 'mio' ? tr(`${stats.totV} de ${stats.totN} títulos del maratón · ${pct} %`, `${stats.totV} of ${stats.totN} marathon titles · ${pct}%`) : null} />
       )}
 
@@ -9877,6 +9987,11 @@ export default function App() {
               </div>
             )
           })()}
+        </main>
+      ) : vista === 'foro' ? (
+        <main className="foro-vista">
+          <ForoPortada cuenta={cuentaLista ? cuenta : null} token={tokenCuenta} vistas={vistas} eps={eps} recarga={recargaComunidades}
+            onEntrar={() => setAjustes(true)} onAbrirHilo={id => setHiloAbierto(id)} onCreado={() => setRecargaComunidades(n => n + 1)} />
         </main>
       ) : vista === 'comunidades' ? (
         <main className="comunidades-vista">
