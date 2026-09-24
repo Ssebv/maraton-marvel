@@ -10714,7 +10714,7 @@ export default function App() {
             if (!visibles.length) return null
             const v = items.filter(it => vistas[it.id]).length
             return (
-              <section className="anio" key={anio}>
+              <section className={'anio' + (v === items.length ? ' completo' : '')} key={anio}>
                 <div className="anio-head">
                   <span className="anio-num">{anio}</span>
                   <span className="linea" />

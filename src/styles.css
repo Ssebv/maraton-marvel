@@ -4776,7 +4776,9 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
   main .card .abrir{
     grid-column:2; grid-row:1; gap: var(--e-4); padding: var(--e-3);
     background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
-    box-shadow:var(--sup-brillo), var(--sup-sombra);
+    /* sombra que cabe en los 12 px de margen: content-visibility recorta lo que
+       sale de la tarjeta y --sup-sombra dejaba un rectángulo visible en claro */
+    box-shadow:var(--sup-brillo), 0 5px 12px -8px rgba(0,0,0,.45);
     transition:transform var(--muelle-toque);
   }
   main .card .abrir:active{transform:scale(.985)}
@@ -4908,3 +4910,34 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
 @media (hover: none), (pointer: coarse){ .grafica-modos .tab, .temporadas .tab{min-height:36px; display:inline-flex; align-items:center; justify-content:center} }
 /* y los atajos «X-Men / UCM» de Cronológico (36 px en iPad y en horizontal) */
 @media (hover: none), (pointer: coarse){ .atajos a{min-height:44px; display:inline-flex; align-items:center} }
+
+/* ── Por estreno en el móvil: una sola línea de tiempo (24 sep 2026) ──
+   Cada año era un bloque con cabecera grande y, con un título por año, la
+   vista se hacía larguísima y la línea salía a trozos. Ahora la línea sigue
+   sin cortes de un año al siguiente y cada año es una estación sobre ella: un
+   punto (verde si el año está visto entero), el año al lado y el recuento a
+   la derecha. Los tramos de las tarjetas conservan el color de su era. */
+@media (max-width:640px){
+  main.estreno .anio{margin-top:0}
+  main.estreno .anio-head{position:relative; margin:0; gap: var(--e-3); padding: var(--e-5) 0 var(--e-3) 36px}
+  main.estreno .anio-head .linea{display:none}
+  main.estreno .anio-num{font-size: var(--t-l); line-height:1.2}
+  main.estreno .anio-count{margin-left:auto}
+  main.estreno .anio-head::before{
+    content:""; position:absolute; left:17px; top:0; bottom:0; width:2px; border-radius:var(--r-s); background:var(--filo);
+  }
+  main.estreno .anio-head::after{
+    content:""; position:absolute; left:11px; top:calc(var(--e-5) + 4px); width:14px; height:14px; border-radius:50%;
+    background:var(--bg); border:3px solid var(--ink3); box-sizing:border-box;
+  }
+  main.estreno .anio.completo .anio-head::after{border-color:var(--done); background:var(--done)}
+  main.estreno .anio.completo .anio-head::before{background:color-mix(in srgb, var(--done) 55%, var(--filo))}
+  /* la primera estación empieza la línea en su punto */
+  main.estreno .anio:first-of-type .anio-head::before{top:calc(var(--e-5) + 11px)}
+  /* dentro de la línea continua, las tarjetas no la cortan: ni el título
+     único ni el primero y el último de cada año (salvo el último de todos) */
+  main.estreno .grid > .card:only-child::before{display:block}
+  main.estreno .anio .card:first-child::before{top:0}
+  main.estreno .anio:not(:last-of-type) .card:last-child::before{bottom:0; height:auto}
+  main.estreno .grid > .card:only-child .num{display:none}
+}
