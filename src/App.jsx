@@ -8661,8 +8661,13 @@ export default function App() {
         const y0 = barra ? barra.getBoundingClientRect().bottom + 8 : 100
         let con = null
         for (const dy of [0, 120, 240]) {
-          const el = document.elementFromPoint(window.innerWidth / 2, y0 + dy)
-          con = el && el.closest && el.closest('.card, .galeria-item, .tl-card')
+          // todas las capas del punto, no solo la de arriba: justo bajo la
+          // barra flota la píldora «Dónde estoy» y tapaba la tarjeta (con la
+          // línea de tiempo del móvil, 24 sep 2026, el siguiente punto caía ya
+          // en otra era y se anclaba una tarjeta de más abajo)
+          const pila = document.elementsFromPoint ? document.elementsFromPoint(window.innerWidth / 2, y0 + dy) : [document.elementFromPoint(window.innerWidth / 2, y0 + dy)]
+          const el = pila.find(n => n && n.closest && n.closest('.card, .galeria-item, .tl-card'))
+          con = el && el.closest('.card, .galeria-item, .tl-card')
           if (con && con.id) break
           con = null
         }

@@ -84,7 +84,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
 | Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
 | Panel lateral en el móvil: sale con un botón o arrastrando desde el borde (instalada), sigue al dedo, y atrás o tocar fuera lo cierran | ✅ |
-| Cronológico en el móvil: la casilla va sobre la carátula y el texto gana 38 px (títulos en una línea) | ✅ |
+| Cronológico en el móvil rediseñado como línea de tiempo: nodo = casilla, tramo visto en verde, tarjetas un 27 % más bajas (también en Cómics y Animación) | ✅ |
 | Foro tipo Reddit preparado (oculto hasta encender la nube): sección «Comunidad» con portada En alza / Nuevos / Top semana, filtros y publicar eligiendo título; `npm run nube:encender` lo enciende todo tras `npx supabase login` | ✅ |
 | Scroll más fluido: cartelera fija (no cambia sola), animaciones decorativas en pausa al desplazar, filas con su altura real (sin saltos en Safari) | ✅ |
 | Deslizar: a la derecha en Inicio abre el panel desde cualquier punto; a los lados cambia de vista (Cronológico, Por estreno…) | ✅ |

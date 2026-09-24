@@ -4734,22 +4734,69 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live{a
 /* los votos y respuestas no se parten («▲ / 50») */
 .hilo-fila-cuenta{white-space:nowrap}
 
-/* ── Tarjeta de Cronológico en el móvil (24 sep 2026) ──
-   La casilla ocupaba una columna propia (26 px + hueco) y el texto se quedaba
-   en ~170 px: títulos en dos o tres líneas y tarjetas altas. Ahora la casilla
-   va sobre la esquina de la carátula, como el círculo de las tarjetas de
-   Inicio (el ★ ya está en la otra esquina), y el texto gana ~40 px. La
-   carátula se alinea arriba para que la casilla tenga sitio fijo. En modo
-   compacto (sin carátula) sigue en su columna. */
+/* ── Cronológico en el móvil: línea de tiempo (24 sep 2026) ──
+   Sebastián: «un rediseño para dispositivos del orden cronológico». La lista
+   ES una línea de tiempo, así que se dibuja: una línea vertical a la izquierda
+   recorre cada era y cada título es un nodo sobre ella (el nodo es la casilla
+   de vista); el tramo de lo visto va en verde, el pendiente en el color de la
+   era. A la derecha, la tarjeta más compacta: carátula de 72, título, datos,
+   sinopsis en dos líneas (la ficha tiene el resto) y «Serie»/«Opcional» como
+   etiqueta sobre la carátula en vez de una fila propia.
+   Todo va DENTRO de cada .card (una columna de 36 px): content-visibility
+   recorta lo que se sale de la caja, y el hueco entre tarjetas pasa a ser su
+   relleno inferior para que la línea no se corte. Modo compacto aparte. */
 @media (max-width:640px){
-  main:not(.compacto) .card .checkbox{
-    position:absolute; z-index:2; top:calc(var(--e-4) + 6px); left:calc(var(--e-4) + 88px - 26px - 6px);
-    background:rgba(8,9,14,.55); border-color:rgba(255,255,255,.85); color:#fff;
-    box-shadow:0 2px 8px rgba(0,0,0,.4);
+  main:not(.compacto) .grid{gap:0}
+  main:not(.compacto) .card{
+    display:grid; grid-template-columns:36px minmax(0, 1fr); align-items:start; gap:0;
+    padding: 0 0 var(--e-3); background:none; border:none; box-shadow:none; border-radius:0;
+    contain-intrinsic-size:auto 152px;
   }
-  main:not(.compacto) .card.vista .checkbox{background:var(--done); border-color:var(--done); color:var(--sobre-acento)}
-  main:not(.compacto) .card .cover-wrap{align-self:flex-start}
-  main:not(.compacto) .card .lado{padding-left:calc(88px + var(--e-4))}
-  /* la etiqueta «Vista» junto a la casilla no cabe sobre la carátula */
+  main:not(.compacto) .card:active{transform:none}
+  /* la línea: un tramo por tarjeta, de arriba abajo; la primera empieza en su
+     nodo y la última acaba en él */
+  main:not(.compacto) .card::before{
+    content:""; position:absolute; left:17px; top:0; bottom:0; width:2px; border-radius:2px;
+    background:color-mix(in srgb, var(--glow, var(--red)) 38%, var(--filo));
+  }
+  main:not(.compacto) .card.vista::before{background:var(--done)}
+  main:not(.compacto) .card:first-child::before{top:28px}
+  main:not(.compacto) .card:last-child::before{bottom:auto; height:28px}
+  /* el nodo */
+  main:not(.compacto) .card .checkbox{
+    grid-column:1; grid-row:1; justify-self:center; align-self:start; margin-top:15px; z-index:1;
+    width:26px; height:26px; background:var(--bg); border-color:color-mix(in srgb, var(--glow, var(--red)) 60%, var(--line));
+    box-shadow:0 0 0 4px var(--bg);
+  }
+  main:not(.compacto) .card.vista .checkbox{background:var(--done); border-color:var(--done); box-shadow:0 0 0 4px var(--bg)}
   main:not(.compacto) .card .checkbox-label{display:none}
+  /* la tarjeta es la superficie de .abrir */
+  main:not(.compacto) .card .abrir{
+    grid-column:2; grid-row:1; gap: var(--e-4); padding: var(--e-3);
+    background:var(--foco-luz), var(--sup-lustre), var(--panel); border:1px solid var(--filo); border-radius:var(--r-l);
+    box-shadow:var(--sup-brillo), var(--sup-sombra);
+    transition:transform var(--muelle-toque);
+  }
+  main:not(.compacto) .card .abrir:active{transform:scale(.985)}
+  main:not(.compacto) .card .cover-wrap{align-self:flex-start}
+  main:not(.compacto) .card .cover{width:72px; height:108px; border-radius:var(--r-s)}
+  main:not(.compacto) .card .rating-badge{top:4px; left:4px; padding:1px 5px}
+  main:not(.compacto) .card .sello-mini{font-size:9px; padding:1px 5px}
+  main:not(.compacto) .card .info{gap: var(--e-1); padding-top:2px}
+  /* el número en línea con el título: como columna aparte, la segunda línea
+     del título quedaba sangrada bajo él */
+  main:not(.compacto) .card .fila-titulo{display:block; margin:0; line-height:1.15}
+  main:not(.compacto) .card .num{margin-right: var(--e-2)}
+  main:not(.compacto) .card .titulo{font-size: var(--t-b); line-height:1.15}
+  main:not(.compacto) .card .meta{font-size: var(--t-s)}
+  main:not(.compacto) .card .res{
+    font-size: var(--t-m); line-height:1.4;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden;
+  }
+  /* «Serie» / «Opcional» / «Especial»: etiqueta al pie de la carátula */
+  main:not(.compacto) .card .lado{
+    position:absolute; z-index:1; left:calc(36px + var(--e-3) + 4px); top:calc(var(--e-3) + 108px - 24px);
+    padding:0; margin:0; pointer-events:none;
+  }
+  main:not(.compacto) .card .lado .tipo{font-size:10px; padding:2px 6px; box-shadow:0 2px 6px rgba(0,0,0,.4)}
 }
