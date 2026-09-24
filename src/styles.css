@@ -4733,3 +4733,23 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live{a
 @media (max-width:640px){ .foro-t{font-size: var(--t-xl)} .foro-nuevo{width:100%; justify-content:center} }
 /* los votos y respuestas no se parten («▲ / 50») */
 .hilo-fila-cuenta{white-space:nowrap}
+
+/* ── Tarjeta de Cronológico en el móvil (24 sep 2026) ──
+   La casilla ocupaba una columna propia (26 px + hueco) y el texto se quedaba
+   en ~170 px: títulos en dos o tres líneas y tarjetas altas. Ahora la casilla
+   va sobre la esquina de la carátula, como el círculo de las tarjetas de
+   Inicio (el ★ ya está en la otra esquina), y el texto gana ~40 px. La
+   carátula se alinea arriba para que la casilla tenga sitio fijo. En modo
+   compacto (sin carátula) sigue en su columna. */
+@media (max-width:640px){
+  main:not(.compacto) .card .checkbox{
+    position:absolute; z-index:2; top:calc(var(--e-4) + 6px); left:calc(var(--e-4) + 88px - 26px - 6px);
+    background:rgba(8,9,14,.55); border-color:rgba(255,255,255,.85); color:#fff;
+    box-shadow:0 2px 8px rgba(0,0,0,.4);
+  }
+  main:not(.compacto) .card.vista .checkbox{background:var(--done); border-color:var(--done); color:var(--sobre-acento)}
+  main:not(.compacto) .card .cover-wrap{align-self:flex-start}
+  main:not(.compacto) .card .lado{padding-left:calc(88px + var(--e-4))}
+  /* la etiqueta «Vista» junto a la casilla no cabe sobre la carátula */
+  main:not(.compacto) .card .checkbox-label{display:none}
+}
