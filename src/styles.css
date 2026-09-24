@@ -355,12 +355,7 @@ h1 .rojo{color:var(--red)}
   border-radius:0 var(--r-s) var(--r-s) 0; transition:width var(--dur-barra) var(--curva);
 }
 
-.panel-superior{display:grid; gap: var(--e-4); margin-top: var(--e-5); align-items:stretch}
-/* el display de autor gana al atributo hidden: hay que apagarlo explícitamente */
-.panel-superior[hidden]{display:none}
-.panel-izq{display:flex; flex-direction:column; gap: var(--e-4); min-width:0}
 @media (min-width:1240px){
-  .panel-superior{grid-template-columns:1fr 380px}
   .cuenta{flex-direction:column; align-items:flex-start; justify-content:center; gap: var(--e-4); padding: var(--e-6) var(--e-6); height:100%}
   .proximo{padding: var(--e-4) var(--e-5)}
   /* Las dos columnas del panel deben cerrar a la misma altura: sin esto el
@@ -463,49 +458,6 @@ h1 .rojo{color:var(--red)}
   .mapa-dots{gap: var(--e-2)}
   .dot{width:10px; height:10px; border-radius:var(--r-s)}
 }
-
-/* ── Panel superior plegado: el estado en una línea ── */
-/* Plegado, esto era una caja de 44px justo encima de otra caja: dos barras
-   seguidas antes del contenido, y con el selector de vistas ya son tres.
-   Sin caja deja de leerse como una barra y vuelve a ser parte del hero. */
-.panel-resumen{
-  width:100%; margin-top: var(--e-5); padding: 0;
-  background:none; border:none; border-radius:0;
-  box-shadow:none; color:var(--ink2); cursor:pointer;
-  display:flex; align-items:center; gap: var(--e-4); flex-wrap:wrap;
-  font-size: var(--t-m); text-align:left;
-}
-@media (hover:hover){ .panel-resumen:hover{color:var(--ink)} }
-.pr-datos{flex:1; min-width:0}
-.pr-datos b{color:var(--ink); font-weight:700}
-.pr-datos b.pr-dias{color:var(--doom); font-variant-numeric:tabular-nums}
-.pr-sesion{color:var(--ink); font-weight:600}
-.pr-abrir{
-  flex:none; font-size: var(--t-s); font-weight:600; letter-spacing:0;
-  color:var(--ink3); border:1px solid var(--line); border-radius:var(--r-pill); padding: var(--e-1) var(--e-4);
-}
-@media (hover:hover){ .panel-resumen:hover .pr-abrir{border-color:var(--ink3); color:var(--ink)} }
-@media (max-width:640px){
-  /* en móvil la barra debe caber en una línea: el ritmo ya está dentro del panel */
-  .pr-extra{display:none}
-  /* pegada a la línea de progreso y alineada con ella (14 sep 2026): era una
-     fila de 44 px sangrada 16 px con aire arriba y abajo; el alto táctil lo
-     completa el ::after en vez de la caja */
-  .panel-resumen{gap: var(--e-3); padding: 0; min-height:28px; margin-top: var(--e-1); font-size: var(--t-s); position:relative}
-  .panel-resumen::after{content:""; position:absolute; inset:-8px 0}
-  /* la sesión de hoy en su propio renglón: en la misma línea partía a media
-     palabra y dejaba la pastilla «Panel completo» flotando */
-  .pr-sesion{display:block}
-  .pr-sesion .pr-sep{display:none}
-}
-.panel-plegar{
-  display:block; margin: var(--e-3) 0 0 auto; padding: var(--e-1) var(--e-4);
-  background:none; border:1px solid var(--line); border-radius:var(--r-pill);
-  color:var(--ink3); font-size: var(--t-s); font-weight:600; cursor:pointer;
-}
-.panel-plegar{position:relative}
-.panel-plegar::after{content:""; position:absolute; inset:-10px 0}
-@media (hover:hover){ .panel-plegar:hover{border-color:var(--ink2); color:var(--ink2)} }
 
 /* ── Cabecera de la ficha: el fotograma del propio título ── */
 .modal-fondo{
@@ -4662,8 +4614,9 @@ html.con-lateral .ctrl-cajon{display:none}
   width:calc(20px + env(safe-area-inset-left, 0px)); height:64px; padding:0 0 0 env(safe-area-inset-left, 0px);
   display:grid; place-items:center; cursor:pointer; color:var(--ink2);
   border:1px solid var(--filo); border-left:none; border-radius:0 var(--r-l) var(--r-l) 0;
-  background:var(--sup-lustre), color-mix(in srgb, var(--panel) 82%, transparent);
-  -webkit-backdrop-filter:blur(16px) saturate(1.4); backdrop-filter:blur(16px) saturate(1.4);
+  /* sin backdrop-filter: fija y encima de todo, se recompondría en cada
+     animación de la página; a 20 px de ancho el cristal no se aprecia */
+  background:var(--sup-lustre), color-mix(in srgb, var(--panel) 94%, transparent);
   box-shadow:var(--sup-brillo), 4px 6px 18px -6px rgba(0,0,0,.5);
   transition:transform var(--muelle-toque), opacity var(--dur-media) var(--curva);
 }
@@ -4699,3 +4652,33 @@ html.capa-abierta .cajon-pista{display:none}
 @keyframes pistaEntra{from{opacity:0; transform:translateY(-50%) translateX(-10px)}}
 @media (prefers-reduced-motion: reduce){ .cajon-asa, .cajon-asa.con-pista, .cajon-pista{animation:none; transition:none} }
 @media print{ .cajon-asa, .cajon-pista{display:none} }
+
+/* ── «Tu maratón» dentro del cajón (24 sep 2026) ──
+   El panel del maratón salió de Inicio: en el móvil es la segunda página del
+   cajón, con «‹ Menú» para volver. Entra desde la derecha, como una pantalla
+   que se empuja en iOS. A 340 px los estrenos van en una columna. */
+.cajon-maraton{display:flex; flex-direction:column; gap: var(--e-4); animation:cajonPagina var(--dur-larga) var(--curva-hoja) backwards}
+@keyframes cajonPagina{from{opacity:0; transform:translateX(24px)}}
+.cajon-maraton-cab{display:flex; flex-direction:column; gap: var(--e-1)}
+.cajon-volver{
+  position:relative; align-self:flex-start; display:inline-flex; align-items:center; gap: var(--e-1);
+  min-height:36px; margin-left:calc(-1 * var(--e-2)); padding: 0 var(--e-3) 0 var(--e-1); cursor:pointer;
+  border:none; border-radius:var(--r-pill); background:none; font:inherit; font-size: var(--t-b); font-weight:600; color:var(--red);
+  transition:transform var(--muelle-toque);
+}
+.cajon-volver::after{content:""; position:absolute; inset:-4px}
+.cajon-volver:active{transform:scale(.96)}
+.cajon-volver svg{width:20px; height:20px}
+.cajon-maraton-t{font-family:var(--f-titulo); font-size: var(--t-xl); font-weight:800; letter-spacing:-.02em; line-height:1.1; color:var(--ink)}
+.cajon-maraton-sub{font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums}
+.cajon-maraton .pm-estreno{border-radius:var(--r-l)}
+.cajon-maraton .pm-titulo{font-size: var(--t-xl)}
+.cajon-maraton .pm-reloj{gap: var(--e-4)}
+.cajon-maraton .pm-bloque b{font-size:32px}
+.cajon-maraton .pm-proximos{grid-template-columns:1fr}
+.cajon-maraton .pm-acciones > *{flex:1 1 auto; justify-content:center}
+/* la sesión de hoy en la tarjeta del cajón (antes lo decía el resumen de la página) */
+.lat-sesion{font-size: var(--t-s); font-weight:600; color:var(--gold-texto)}
+@media (prefers-reduced-motion: reduce){ .cajon-maraton{animation:none} }
+/* en el cajón la tarjeta empuja una página: flecha como en las listas de iOS */
+.lateral.cajon .lat-panel::after{content:" ›"}

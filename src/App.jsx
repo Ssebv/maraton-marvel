@@ -238,7 +238,6 @@ const migraMarcas = v => {
 // de lo que aún no has visto (la ficha deja mostrarlos a mano).
 const KEY_SPOILERS = 'maraton-marvel-spoilers-v1'
 const KEY_LISTAS = 'maraton-marvel-listas-v1'
-const KEY_PANEL = 'maraton-marvel-panel-v1'
 const KEY_FONDO = 'maraton-marvel-fondo-v1'
 const KEY_RESCATE = 'maraton-marvel-rescate-v1'
 // página por la que va cada cómic leído en la app: { id: { p, t } }
@@ -1738,108 +1737,6 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
               </button>
             ))}
           </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function CuentaAtras({ meta, horario, sesionHoy, sim, onHorario }) {
-  const [ahora, setAhora] = useState(() => Date.now())
-  useEffect(() => {
-    const id = setInterval(() => setAhora(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [])
-  const objetivo = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > ahora)
-  let cuenta = null
-  if (objetivo) {
-    const diff = new Date(objetivo.fecha + 'T00:00:00') - ahora
-    const dias = Math.floor(diff / 86400000)
-    const hh = String(Math.floor(diff / 3600000) % 24).padStart(2, '0')
-    const mm = String(Math.floor(diff / 60000) % 60).padStart(2, '0')
-    const ss = String(Math.floor(diff / 1000) % 60).padStart(2, '0')
-    cuenta = { dias, hh, mm, ss }
-  }
-  if (!objetivo || !cuenta) return null
-  return (
-    <div className="cuenta">
-          <div className="cuenta-info">
-            <span className="cuenta-label">{tr('Próximo gran estreno', 'Next big premiere')}</span>
-            <span className="cuenta-titulo">{objetivo.t}</span>
-            <span className="cuenta-fecha">{fmtFecha(objetivo.fecha)} · {objetivo.tipo}</span>
-          </div>
-      <div className="cuenta-reloj" role="timer">
-        <span className="cr-bloque"><b><Cifra n={cuenta.dias} /></b><small>{tr('días', 'days')}</small></span>
-        <span className="cr-sep">:</span>
-        <span className="cr-bloque"><b><Cifra n={cuenta.hh} /></b><small>{tr('horas', 'hours')}</small></span>
-        <span className="cr-sep">:</span>
-        <span className="cr-bloque"><b><Cifra n={cuenta.mm} /></b><small>min</small></span>
-        <span className="cr-sep">:</span>
-        <span className="cr-bloque"><b><Cifra n={cuenta.ss} /></b><small>{tr('seg', 'sec')}</small></span>
-      </div>
-      {meta && (
-        <div className="objetivo">
-          <span className="objetivo-linea">
-            {tr('Ruta express: ', 'Express route: ')}{meta.restante > 0
-              ? <>{tr('quedan ', '')}<b>{fmtDur(meta.restante)}</b>{tr(' · necesitas ', ' left · you need ')}<b>{meta.necesario} {tr('min/día', 'min/day')}</b></>
-              : <b>{tr('¡completada! Llegas de sobra al estreno', 'complete! You’ll make the premiere with room to spare')}</b>}
-          </span>
-          {meta.restante > 0 && (
-            <span className={`objetivo-chip ${meta.ritmo === 0 ? 'neutro' : meta.alDia ? 'ok' : 'tarde'}`}>
-              {meta.ritmo === 0
-                ? tr('Sin ritmo todavía · marca algo y aquí verás si llegas', 'No pace yet · check something off and you’ll see if you make it')
-                : meta.alDia
-                  ? tr(`Vas al día · ${meta.ritmo} min/día en las últimas 2 semanas`, `On track · ${meta.ritmo} min/day over the last 2 weeks`)
-                  : tr(`Acelera · llevas ${meta.ritmo} min/día en las últimas 2 semanas`, `Speed up · you’re at ${meta.ritmo} min/day over the last 2 weeks`)}
-            </span>
-          )}
-          {meta.restante > 0 && meta.ritmo > 0 && (() => {
-            const fin = new Date(Date.now() + Math.ceil(meta.restante / meta.ritmo) * 86400000)
-            const llega = fin <= new Date(objetivo.fecha + 'T00:00:00')
-            return (
-              <span className="proyeccion">
-                {tr('A tu ritmo acabarías la ruta express el ', 'At your pace you’d finish the express route on ')}<b>{fin.toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}</b>
-                {llega ? tr(' — llegas al estreno', ' — you make the premiere') : tr(' — después del estreno, aprieta un poco', ' — after the premiere; push a little')}
-              </span>
-            )
-          })()}
-          {horario && sim && sim.seAcaba && sim.fin && (() => {
-            const llega = sim.fin <= new Date(objetivo.fecha + 'T00:00:00')
-            return (
-              <span className="proyeccion">
-                {tr('Con tu horario terminas el ', 'On your schedule you finish ')}
-                <b>{sim.fin.toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}</b>
-                {llega ? tr(' — llegas al estreno', ' — in time for the premiere') : tr(' — después del estreno: añade días o alarga la sesión', ' — after the premiere: add days or stretch the session')}
-              </span>
-            )
-          })()}
-          {horario && (() => {
-            const hoyD = new Date().getDay()
-            const esHoy = horario.dias.includes(hoyD)
-            let prox = (hoyD + 1) % 7
-            while (!horario.dias.includes(prox)) prox = (prox + 1) % 7
-            // el chip no solo dice cuándo: dice QUÉ toca (el primer título de
-            // la sesión de hoy, y cuántos más caen detrás)
-            const que = sesionHoy && (() => {
-              const t0 = sesionHoy.trozos[0]
-              const resto = sesionHoy.trozos.length - 1
-              const nombre = t0.txt ? `${t0.item.t} (${t0.txt})` : t0.item.t
-              return resto > 0 ? tr(`${nombre} y ${resto} más`, `${nombre} and ${resto} more`) : nombre
-            })()
-            return (
-              <span className="objetivo-chip neutro">
-                {esHoy
-                  ? (que
-                    ? tr(`Hoy a las ${horario.hora}: ${que} · ~${fmtDur(sesionHoy.min)}`, `Today at ${horario.hora}: ${que} · ~${fmtDur(sesionHoy.min)}`)
-                    : tr(`Hoy hay sesión a las ${horario.hora} · ${fmtDur(horario.min)}`, `Session today at ${horario.hora} · ${fmtDur(horario.min)}`))
-                  : tr(`Próxima sesión: ${DIA_LARGO[prox]} a las ${horario.hora}`, `Next session: ${DIA_LARGO_EN[prox]} at ${horario.hora}`)}
-              </span>
-            )
-          })()}
-          <button className="chip-btn aviso-btn" onClick={onHorario}>{horario ? tr('Horario', 'Schedule') : tr('Ponerme un horario', 'Set a schedule')}</button>
-          <button className="chip-btn aviso-btn" onClick={() => descargaIcs(objetivo)}>{tr('Al calendario', 'Add to calendar')}</button>
-          <BotonCalendario />
-          <AvisosBtn />
         </div>
       )}
     </div>
@@ -5512,52 +5409,6 @@ function PanelMaraton({ meta, sagas, onIr, onHorario, onAbrir }) {
   )
 }
 
-function Proximos() {
-  const primero = ESTRENOS.find(e => e.fecha && new Date(e.fecha + 'T00:00:00') > Date.now())
-  // En móvil el carril avanza solo, una tarjeta cada pocos segundos, como un
-  // carrusel; en cuanto lo tocas (dedo, ratón o teclado) se para y no vuelve
-  // hasta pasado un rato. No se mueve con «reducir movimiento», ni cuando el
-  // carril no se desliza (escritorio: rejilla), ni con la pestaña oculta.
-  const ref = useRef(null)
-  useEffect(() => {
-    const el = ref.current
-    if (!el || movimientoReducido()) return
-    // WCAG 2.2.2: lo que se mueve más de 5 s necesita una forma de PARARLO,
-    // no solo de pausarlo un rato. La primera interacción lo para para siempre.
-    let parado = false
-    const para = () => { parado = true; clearInterval(t) }
-    const eventos = ['pointerdown', 'touchstart', 'wheel', 'focusin', 'mouseenter']
-    eventos.forEach(ev => el.addEventListener(ev, para, { passive: true }))
-    const paso = () => {
-      if (document.hidden || parado) return
-      if (el.scrollWidth - el.clientWidth < 8) return
-      const tarjeta = el.querySelector('.proximo')
-      if (!tarjeta) return
-      const ancho = tarjeta.getBoundingClientRect().width + (parseFloat(getComputedStyle(el).columnGap || getComputedStyle(el).gap) || 0)
-      const fin = el.scrollLeft + el.clientWidth >= el.scrollWidth - 8
-      el.scrollTo({ left: fin ? 0 : el.scrollLeft + ancho, behavior: 'smooth' })
-    }
-    const t = setInterval(paso, 4500)
-    return () => { clearInterval(t); eventos.forEach(ev => el.removeEventListener(ev, para)) }
-  }, [])
-  return (
-    <div className="proximos" ref={ref}>
-      {ESTRENOS.filter(e => !primero || e.t !== primero.t).map(e => (
-        <div className="proximo" key={e.t}>
-          <span className="proximo-cara" aria-hidden="true"><CaraEstreno e={e} /></span>
-          <span className="proximo-texto">
-          <span className="proximo-fecha">{fmtFecha(e.fecha) || e.aprox}</span>
-          <span className="proximo-titulo">{sinPartir(e.t)}</span>
-          <span className="proximo-tipo">{e.tipo}</span>
-          <span className="proximo-nota">{e.n}</span>
-          {e.fecha && <button className="proximo-cal" onClick={() => descargaIcs(e)}>{tr('Al calendario', 'Add to calendar')}</button>}
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 // Un planeta: halo, textura que gira recortada por clip-path y volumen. Las
 // Tierras que se confundían llevan un rasgo propio (22 sep 2026, Sebastián:
 // «algo distintivo para poder ver cuál es»): el Vacío un anillo de escombros,
@@ -7709,6 +7560,11 @@ export default function App() {
   const [cajonMontado, cajonClase] = useSaliente(cajon && !conLateral)
   const cajonRef = useRef(null)
   const cierraCajon = () => setCajon(false)
+  // la página del cajón: el menú o «Tu maratón»; al cerrarse vuelve al menú
+  const [cajonVista, setCajonVista] = useState('nav')
+  useEffect(() => { if (!cajonMontado) setCajonVista('nav') }, [cajonMontado])
+  useVolverCierra(cajon && !conLateral && cajonVista === 'maraton', () => setCajonVista('nav'), undefined, true)
+  const abreCajonMaraton = () => { setCajonVista('maraton'); if (cajonRef.current) cajonRef.current.scrollTop = 0 }
   useVolverCierra(cajon && !conLateral, cierraCajon, () => cajonRef.current)
   useDialogo(cajonRef, cierraCajon, cajon && !conLateral)
   useEffect(() => { if (conLateral) setCajon(false) }, [conLateral])
@@ -7741,16 +7597,6 @@ export default function App() {
     mq.addEventListener('change', on)
     return () => mq.removeEventListener('change', on)
   }, [])
-  const [panelAbierto, setPanelAbierto] = useState(() => {
-    try {
-      const guardado = localStorage.getItem(KEY_PANEL)
-      if (guardado !== null) return guardado === '1'
-    } catch {}
-    // plegado de entrada también en escritorio desde Inicio (22 sep 2026): lo
-    // primero es la cartelera con lo siguiente, como en Netflix. Quien lo abre
-    // lo tiene abierto (se guarda)
-    return false
-  })
   const [fondo, setFondo] = useState(() => {
     try { return localStorage.getItem(KEY_FONDO) || 'banner' } catch { return 'banner' }
   })
@@ -7811,11 +7657,6 @@ export default function App() {
     setFondo(id)
     try { localStorage.setItem(KEY_FONDO, id) } catch {}
   }
-  const alternaPanel = () => setPanelAbierto(v => {
-    const n = !v
-    try { localStorage.setItem(KEY_PANEL, n ? '1' : '0') } catch {}
-    return n
-  })
   const [notas, setNotas] = useState(() => leeGuardado(KEY_NOTAS, saneaNotas, {}))
   const ponNota = (id, campo, valor) => {
     // poner estrellas (no quitarlas) se publica en el muro si está activo
@@ -9390,6 +9231,26 @@ export default function App() {
     const orden = DESTINOS.flatMap(d => d.vistas)
     conTransicion(orden.indexOf(v) > orden.indexOf(vista) ? 'adelante' : 'atras', () => setVista(v))
   }
+  // lo que necesita el panel «Tu maratón», esté junto a la lateral fija o
+  // dentro del cajón; `cerrar` quita la capa en la que vive
+  const propsPanelMaraton = cerrar => ({
+    meta: objetivo,
+    sagas: DATA.map(sg => {
+      const its = sg.eras.flatMap(e => e.items)
+      return { saga: sg.saga, v: its.filter(it => vistas[it.id]).length, n: its.length,
+        nombre: sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? tr('UCM', 'MCU') : sg.saga === 'animacion' ? tr('Animación', 'Animation') : tr('Cómics', 'Comics'),
+        color: sg.saga === 'xmen' ? 'var(--gold)' : sg.saga === 'ucm' ? 'var(--red)' : sg.saga === 'animacion' ? 'var(--teal)' : 'var(--violet)' }
+    }),
+    onIr: g => {
+      cerrar()
+      const v = g.saga === 'comics' ? 'comics' : g.saga === 'animacion' ? 'animacion' : 'crono'
+      if (conLateral) conTransicion('adelante', () => setVista(v)); else setVista(v)
+      if (v === 'crono') setTimeout(() => document.getElementById('saga-' + g.saga)?.scrollIntoView({ behavior: 'instant', block: 'start' }), 260)
+      else if (!conLateral) window.scrollTo({ top: 0, behavior: 'instant' })
+    },
+    onHorario: () => { cerrar(); setHorarioModal(true) },
+    onAbrir: d => { cerrar(); setDetalle(d) },
+  })
   // en el cajón, cada acción lo cierra primero: la vista nueva aparece debajo
   // mientras sale (sin View Transition, que fotografiaría el cajón a medias)
   const enCajon = (e, hacer) => {
@@ -9417,7 +9278,7 @@ export default function App() {
       </a>
     )
   }
-  const cuerpoLateral = (conLateral || cajonMontado) && (<>
+  const cuerpoNav = (conLateral || cajonMontado) && (<>
       <a className="lat-marca" href={'#' + (ultimaVista.maraton || 'inicio')} onClick={e => enCajon(e, () => irAVista(ultimaVista.maraton || 'inicio', e))}>
         <img className="lat-logo" src="icon-192.png" alt="" width="40" height="40" />
         <span className="lat-marca-texto">
@@ -9497,16 +9358,8 @@ export default function App() {
         )
       })()}
       <div className="lat-pie">
-        <button type="button" className="lat-tarjeta" aria-haspopup={conLateral ? 'dialog' : undefined} aria-expanded={conLateral ? panelLat : undefined}
-          onClick={() => {
-            if (conLateral) { setPanelLat(v => !v); return }
-            // en el cajón: el panel del maratón vive en la página (Inicio),
-            // se despliega y se lleva a la vista
-            setCajon(false)
-            if (!panelAbierto) alternaPanel()
-            if (!enMaraton) setVista('inicio')
-            window.scrollTo({ top: 0, behavior: 'instant' })
-          }}>
+        <button type="button" className="lat-tarjeta" aria-haspopup={conLateral ? 'dialog' : undefined} aria-expanded={conLateral ? panelLat : cajonVista === 'maraton'}
+          onClick={() => { if (conLateral) setPanelLat(v => !v); else abreCajonMaraton() }}>
           {proxEstreno && objetivo && (
             <span className="lat-cuenta-atras">
               <span className="lat-dias"><b><Cifra n={objetivo.dias} /></b><small>{tr('días', 'days')}</small></span>
@@ -9515,6 +9368,8 @@ export default function App() {
           )}
           <span className="barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
           <span className="lat-prog"><b><Cifra n={stats.totV} /></b> / {stats.totN} · {pct} %<span className="lat-prog-h">{tr('quedan', 'left')} {Math.round(stats.mins / 60)} h</span></span>
+          {/* lo que decía el resumen de la página: si hoy toca sesión */}
+          {sesionHoy && horario && <span className="lat-sesion">{tr(`Hoy sesión a las ${horario.hora}`, `Session today at ${horario.hora}`)}</span>}
           <span className="lat-panel">{conLateral && panelLat ? tr('Cerrar panel', 'Close panel') : tr('Mapa, estrenos y cuenta atrás', 'Map, premieres and countdown')}</span>
         </button>
         {botonSync}
@@ -9532,6 +9387,23 @@ export default function App() {
         </button>
       </div>
   </>)
+  // «Tu maratón» dentro del cajón: la segunda página del panel, con «‹ Menú»
+  // para volver (atrás también vuelve). El mismo panel que la lateral fija
+  // abre a su lado en el escritorio.
+  const cuerpoMaraton = cajonVista === 'maraton' && !conLateral && (
+    <div className="cajon-maraton" key="maraton">
+      <div className="cajon-maraton-cab">
+        <button type="button" className="cajon-volver" onClick={() => setCajonVista('nav')}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+          {tr('Menú', 'Menu')}
+        </button>
+        <b className="cajon-maraton-t">{tr('Tu maratón', 'Your marathon')}</b>
+        <span className="cajon-maraton-sub">{tr(`${stats.totV} de ${stats.totN} títulos · ${pct} % · te quedan ${Math.round(stats.mins / 60)} h`, `${stats.totV} of ${stats.totN} titles · ${pct}% · ${Math.round(stats.mins / 60)} h left`)}</span>
+      </div>
+      <PanelMaraton {...propsPanelMaraton(() => setCajon(false))} />
+    </div>
+  )
+  const cuerpoLateral = cuerpoMaraton || cuerpoNav
   const lateral = conLateral
     ? <aside className="lateral" aria-label={tr('Navegación', 'Navigation')}>{cuerpoLateral}</aside>
     : !cajonMontado ? createPortal(<>
@@ -9555,29 +9427,6 @@ export default function App() {
           {cuerpoLateral}
         </aside>
       </>, document.body)
-  const mapaProgreso = (
-        <div className="mapa" aria-label={tr('Mapa de progreso', 'Progress map')}>
-          {DATA.map(saga => {
-            const items = saga.eras.flatMap(era => era.items.map(item => ({ item, c: era.c })))
-            const v = items.filter(({ item }) => vistas[item.id]).length
-            return (
-              <div className="mapa-fila" key={saga.saga}>
-                <span className="mapa-label">
-                  {saga.saga === 'xmen' ? 'X-Men' : saga.saga === 'ucm' ? tr('UCM', 'MCU') : saga.saga === 'animacion' ? 'Anim.' : tr('Cómics', 'Comics')}
-                </span>
-                <div className="mapa-dots">
-                  {items.map(({ item, c }) => (
-                    <button key={item.id} className={`dot${vistas[item.id] ? ' on' : ''}`}
-                      style={{ '--dc': c[0] }} title={item.t}
-                      onClick={() => setDetalle({ item, c, esComic: saga.saga === 'comics' })} />
-                  ))}
-                </div>
-                <span className="mapa-count">{v}/{items.length}</span>
-              </div>
-            )
-          })}
-        </div>
-  )
   const panelVertical = conLateral && panelLat && createPortal(
     <>
       <div className="panel-lat-velo" onClick={() => setPanelLat(false)} aria-hidden="true" />
@@ -9587,21 +9436,7 @@ export default function App() {
           <span className="panel-lat-sub">{tr(`${stats.totV} de ${stats.totN} títulos · ${pct} % · te quedan ${Math.round(stats.mins / 60)} h`, `${stats.totV} of ${stats.totN} titles · ${pct}% · ${Math.round(stats.mins / 60)} h left`)}</span>
           <button className="cerrar" onClick={() => setPanelLat(false)} aria-label={tr('Cerrar panel', 'Close panel')}>✕</button>
         </div>
-        <PanelMaraton meta={objetivo}
-          sagas={DATA.map(sg => {
-            const its = sg.eras.flatMap(e => e.items)
-            return { saga: sg.saga, v: its.filter(it => vistas[it.id]).length, n: its.length,
-              nombre: sg.saga === 'xmen' ? 'X-Men' : sg.saga === 'ucm' ? tr('UCM', 'MCU') : sg.saga === 'animacion' ? tr('Animación', 'Animation') : tr('Cómics', 'Comics'),
-              color: sg.saga === 'xmen' ? 'var(--gold)' : sg.saga === 'ucm' ? 'var(--red)' : sg.saga === 'animacion' ? 'var(--teal)' : 'var(--violet)' }
-          })}
-          onIr={g => {
-            setPanelLat(false)
-            const v = g.saga === 'comics' ? 'comics' : g.saga === 'animacion' ? 'animacion' : 'crono'
-            conTransicion('adelante', () => setVista(v))
-            if (v === 'crono') setTimeout(() => document.getElementById('saga-' + g.saga)?.scrollIntoView({ behavior: 'instant', block: 'start' }), 260)
-          }}
-          onHorario={() => { setPanelLat(false); setHorarioModal(true) }}
-          onAbrir={d => { setPanelLat(false); setDetalle(d) }} />
+        <PanelMaraton {...propsPanelMaraton(() => setPanelLat(false))} />
       </aside>
     </>,
     document.body
@@ -9785,41 +9620,10 @@ export default function App() {
       <GuiaInstalar />
       <AvisoNuevo onProbar={stats.siguiente ? () => { const d = buscaItem(stats.siguiente.id); if (d) setDetalle(d) } : null} />
       <Novedades eps={eps} />
-      {enMaraton && (<>
-      {!panelAbierto && !conLateral && (
-        <button className="panel-resumen" aria-expanded="false" onClick={alternaPanel}>
-          <span className="pr-datos">
-            {proxEstreno && objetivo
-              ? <>
-                  <b>{proxEstreno.t.replace(/^(Vengadores|Avengers): /, '')}</b>{tr(' en ', ' in ')}<b className="pr-dias">{objetivo.dias} {tr('días', 'days')}</b>
-                  {objetivo.restante > 0 && <span className="pr-extra"> · {tr('ruta express: ', 'express route: ')}{objetivo.necesario} {tr('min/día', 'min/day')}</span>}
-                </>
-              : <>{tr('Mapa de progreso, próximos estrenos y cuenta atrás', 'Progress map, upcoming premieres and countdown')}</>}
-            {/* el horario vive dentro del panel, que en móvil arranca plegado:
-                si hoy toca sesión, se dice aquí, que es lo que se ve */}
-            {sesionHoy && horario && (
-              <span className="pr-sesion"><span className="pr-sep">{' · '}</span>{tr(`hoy sesión a las ${horario.hora}`, `session today at ${horario.hora}`)}</span>
-            )}
-          </span>
-          <span className="pr-abrir">{tr('Panel completo', 'Full panel')}</span>
-        </button>
-      )}
-      {!conLateral && (<>
-      {/* plegado no se pinta: con hidden sus carátulas (estrenos) se bajaban igual */}
-      {panelAbierto && (
-      <div className="panel-superior">
-        <div className="panel-izq">
-        {mapaProgreso}
-        <Proximos />
-        </div>
-        <CuentaAtras meta={objetivo} horario={horario} sesionHoy={sesionHoy} sim={simHorario} onHorario={() => setHorarioModal(true)} />
-      </div>
-      )}
-      {panelAbierto && (
-        <button className="panel-plegar" aria-expanded="true" onClick={alternaPanel}>{tr('Ocultar panel', 'Hide panel')}</button>
-      )}
-      </>)}
-      </>)}
+      {/* El resumen «Doomsday en N días · Panel completo» y su panel desplegable
+          (mapa, estrenos, cuenta atrás) ya no van en la página (24 sep 2026,
+          Sebastián: «no quiero que aparezca el panel en el inicio si ya tenemos»
+          el lateral): viven en la lateral fija o, sin sitio, en el cajón. */}
 
       {!conLateral && (
       <header className={'toolbar' + (enMaraton ? '' : ' fuera-maraton')}>
