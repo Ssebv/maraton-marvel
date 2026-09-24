@@ -4756,7 +4756,7 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live{a
   /* la línea: un tramo por tarjeta, de arriba abajo; la primera empieza en su
      nodo y la última acaba en él */
   main:not(.compacto) .card::before{
-    content:""; position:absolute; left:17px; top:0; bottom:0; width:2px; border-radius:2px;
+    content:""; position:absolute; left:17px; top:0; bottom:0; width:2px; border-radius:var(--r-s);
     background:color-mix(in srgb, var(--glow, var(--red)) 38%, var(--filo));
   }
   main:not(.compacto) .card.vista::before{background:var(--done)}
