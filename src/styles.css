@@ -4870,3 +4870,33 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
 .pagina-pista.lista{color:var(--sobre-acento); background:var(--red); border-color:var(--red);
   box-shadow:0 10px 28px -8px color-mix(in srgb, var(--red) 60%, transparent)}
 @media (prefers-reduced-motion: reduce){ .pagina-pista{transition:none !important} }
+
+/* ── iPhone en horizontal (24 sep 2026, auditoría por dispositivos) ──
+   A 844 × 390 la app recibe el diseño ancho y la cabecera (etiqueta, titular,
+   tres cajas de cifras, barra) ocupaba dos pantallas antes del contenido; y
+   la regla de pantallas bajas (.stats .stat) pisaba el relleno que reserva
+   «Siguiente» para su botón, que se montaba sobre el título. Aquí la cabecera
+   se compacta como en el móvil en vertical: sin etiqueta, el progreso en una
+   línea, y «Siguiente» en una fila con carátula, texto y «Marcar» a la
+   derecha. En la ficha, la carátula se achica para que «Marcar como vista»
+   quede a la vista sin desplazar. */
+@media (orientation:landscape) and (max-height:500px){
+  .hero-eyebrow{display:none}
+  .stats-inicio{display:flex; position:relative; margin-top: var(--e-3)}
+  .stats-inicio > .stat:not(.siguiente-stat){display:none}
+  .stats-inicio .siguiente-stat{
+    flex:1; align-items:center;
+    padding: var(--e-3) calc(var(--e-5) + 128px) var(--e-3) var(--e-4);
+  }
+  .stats-inicio .siguiente-marcar{position:absolute; right: var(--e-5); top:50%; margin:-18px 0 0}
+  .progreso-movil{display:flex; flex-direction:column; gap: var(--e-2); margin: var(--e-3) 0 0}
+  .progreso-movil .barra{margin:0; display:block}
+  .progreso-movil .pm-texto{font-size: var(--t-s); color:var(--ink2); font-variant-numeric:tabular-nums}
+  .progreso-movil .pm-texto b{color:var(--ink); font-weight:700}
+  .modal-cover .cover{width:130px; height:195px}
+}
+/* selectores segmentados (Perfil, temporadas de la ficha, foro) en táctil: medían 26–28 px en el
+   iPad, que recibe el diseño ancho; 36 visibles + 4 por lado del ::after = 44 */
+@media (hover: none), (pointer: coarse){ .grafica-modos .tab, .temporadas .tab{min-height:36px; display:inline-flex; align-items:center; justify-content:center} }
+/* y los atajos «X-Men / UCM» de Cronológico (36 px en iPad y en horizontal) */
+@media (hover: none), (pointer: coarse){ .atajos a{min-height:44px; display:inline-flex; align-items:center} }
