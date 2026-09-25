@@ -9970,7 +9970,10 @@ export default function App() {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
                     if (v === vista) { if (v === 'listas' && listaActiva) cierraLista(); else subeArriba(); return }
-                    conTransicion(d.vistas.indexOf(v) > d.vistas.indexOf(vista) ? 'adelante' : 'atras', () => setVista(v))
+                    // las subvistas son páginas una al lado de la otra: tocar su
+                    // pestaña las pasa igual que el dedo (paginador, sin fundido;
+                    // 25 sep 2026, «que no se note el cambio de página»)
+                    conTransicion(d.vistas.indexOf(v) > d.vistas.indexOf(vista) ? 'desliza-adelante' : 'desliza-atras', () => setVista(v))
                   }}>{p ? tr(p.label, p.en || p.label) : v}</a>
               )
             })}

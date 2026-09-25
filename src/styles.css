@@ -2236,8 +2236,12 @@ main.crono, main.comics, main.estreno{animation:none}
      instantánea vieja con la nueva dejaba el indicador duplicado un momento
      (uno quieto que se apaga y otro que viaja). Si las subvistas aparecen o
      desaparecen (solo hay una de las dos imágenes) se funden como siempre. */
-  ::view-transition-old(dock), ::view-transition-old(subvistas):not(:only-child){display:none}
-  ::view-transition-new(dock), ::view-transition-new(subvistas):not(:only-child){animation:none}
+  /* (25 sep 2026) sin «:not(:only-child)»: sobre las fotos de la transición no
+     llegaba a aplicarse y la tira se fundía entre su foto vieja y la nueva,
+     desplazadas (la tira se corre para enseñar la pestaña activa): letras
+     fantasma a medio fundir. La foto vieja, siempre oculta; la nueva, viva */
+  ::view-transition-old(dock), ::view-transition-old(subvistas){display:none}
+  ::view-transition-new(dock), ::view-transition-new(subvistas){animation:none}
   /* La carátula que vuela entre la tarjeta y la ficha (abreConVuelo en
      App.jsx). Solo ella es especial: la raíz se pinta viva (la instantánea
      vieja se oculta), así que la hoja entra y sale con sus animaciones de
