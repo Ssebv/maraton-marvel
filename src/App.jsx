@@ -6353,6 +6353,17 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
 }
 
 function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca, saliendo, sinSpoilers, onForo }) {
+  // La lista de episodios (13–40 filas con miniatura) se monta un fotograma
+  // después de abrir la ficha (26 sep 2026): era la mitad de la maquetación al
+  // abrir (~80 de 170 ms con CPU ×4) y en el móvil queda por debajo de lo que
+  // se ve; así la hoja empieza a subir antes. Al pasar de título, igual.
+  const [epsListos, setEpsListos] = useState(false)
+  useEffect(() => {
+    setEpsListos(false)
+    let t = 0
+    const f = requestAnimationFrame(() => { t = setTimeout(() => setEpsListos(true), 0) })
+    return () => { cancelAnimationFrame(f); clearTimeout(t) }
+  }, [d && d.item && d.item.id])
   const { item, c, esComic } = d
   // Sin spoilers: lo que no has visto se esconde, salvo que lo pidas para ESTA ficha
   const [revela, setRevela] = useState(false)
@@ -6784,7 +6795,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               </span>
             </div>
           )}
-          {item.tipo === 'serie' && EPISODES[item.id] && (() => {
+          {item.tipo === 'serie' && EPISODES[item.id] && !epsListos && <div className="episodios episodios-reserva" aria-hidden="true" />}
+          {item.tipo === 'serie' && EPISODES[item.id] && epsListos && (() => {
             const lista = listaEps
             const hechos = lista.filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length
             // el botón de tanda: marca lo que falte de la temporada, o la
@@ -10485,9 +10497,18 @@ export default function App() {
               .filter(it => pasaFiltro(it, esComic) && !oculto(it, esComic))
               .map(item => ({ item, c: era.c })))
             if (!items.length) return null
+            // el avance de la saga entera, no de lo filtrado (26 sep 2026: era
+            // la única vista de Maratón sin progreso)
+            const todos = saga.eras.flatMap(era => era.items)
+            const hechos = todos.filter(it => vistas[it.id]).length
+            const color = saga.saga === 'xmen' ? 'var(--gold)' : saga.saga === 'ucm' ? 'var(--red)' : saga.saga === 'animacion' ? 'var(--teal)' : 'var(--violet)'
             return (
-              <section key={saga.saga} className="galeria-saga">
-                <h2 className={`galeria-titulo ${saga.saga}`}>{saga.titulo}</h2>
+              <section key={saga.saga} className={'galeria-saga' + (hechos === todos.length ? ' completa' : '')} style={{ '--sc': color }}>
+                <div className="galeria-cab">
+                  <h2 className={`galeria-titulo ${saga.saga}`}>{saga.titulo}</h2>
+                  <span className="galeria-cuenta"><b>{hechos}</b> / {todos.length}</span>
+                  <span className="galeria-barra" aria-hidden="true"><i style={{ width: `${todos.length ? 100 * hechos / todos.length : 0}%` }} /></span>
+                </div>
                 <div className="galeria-grid">
                   {items.map(({ item, c }) => (
                     <button key={item.id} id={`gal-${item.id}`} className={`galeria-item${vistas[item.id] ? ' vista' : ''}`}

@@ -1542,6 +1542,16 @@ a.accion-principal{text-decoration:none; display:inline-block}
 main.galeria{margin-top: var(--e-6)}
 .galeria-saga{margin-top: var(--e-7)}
 .galeria-titulo{margin: 0 0 var(--e-4)}
+/* cabecera de saga con su avance (26 sep 2026): nombre, «13 / 94» y la barra
+   del color de la saga a lo ancho; completa, la cuenta en verde */
+.galeria-cab{display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:baseline; column-gap: var(--e-4); row-gap: var(--e-2); margin-bottom: var(--e-4)}
+.galeria-cab .galeria-titulo{margin:0}
+.galeria-titulo.animacion{color:var(--teal)}
+.galeria-cuenta{font-size: var(--t-m); color:var(--ink2); font-variant-numeric:tabular-nums; white-space:nowrap}
+.galeria-cuenta b{color:var(--ink)}
+.galeria-saga.completa .galeria-cuenta, .galeria-saga.completa .galeria-cuenta b{color:var(--done)}
+.galeria-barra{grid-column:1 / -1; height:6px; border-radius:var(--r-pill); background:color-mix(in srgb, var(--ink) 10%, transparent); overflow:hidden}
+.galeria-barra i{display:block; height:100%; border-radius:var(--r-pill); background:var(--sc); transition:width var(--dur-barra) var(--curva)}
 .galeria-titulo.xmen{color:var(--gold)}
 .galeria-titulo.ucm{color:var(--red)}
 .galeria-titulo.comics{color:var(--violet)}
@@ -5044,3 +5054,18 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
   .tl-salto::before{content:""; position:absolute; left:17px; top:0; bottom:0; width:2px;
     background:repeating-linear-gradient(180deg, var(--filo) 0 4px, transparent 4px 9px)}
 }
+
+/* ── Perfil en el móvil (26 sep 2026) ──
+   El mapa de actividad (20 columnas de 13 px mínimo) medía 336 px en una
+   tarjeta de 277–292 y cortaba justo las semanas recientes, a la derecha:
+   ahora las columnas se reparten el ancho. Los logros medían 134–143 px cada
+   uno (29, en dos columnas): burbuja de 40 y menos relleno. */
+@media (max-width:640px){
+  .heatmap{grid-auto-columns:minmax(0, 1fr); gap:3px; overflow:visible}
+  .hm-celda{min-width:0}
+  .logro{padding: var(--e-3) var(--e-3) var(--e-4); gap: var(--e-1); border-radius:var(--r-l)}
+  .logro-emoji{width:40px; height:40px; font-size: var(--t-l); margin-bottom: var(--e-1)}
+  .logro-desc{line-height:1.3}
+}
+/* hueco de la lista de episodios mientras se monta (un fotograma) */
+.episodios-reserva{min-height:420px; border-top-color:transparent}
