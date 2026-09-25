@@ -77,7 +77,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 
 ### Jornada del 24 al 26 sep 2026 — iOS, navegación, líneas de tiempo, fichas ampliadas y foro preparado
 
-Unos 45 despliegues, todos en producción y con las sondas en verde; dos revisiones de código (10 y 8 fallos arreglados). El detalle técnico de cada bloque está en DESARROLLO.md.
+34 commits, todos en producción y con las sondas en verde; dos revisiones de código (10 y 8 fallos arreglados). El detalle técnico de cada bloque está en DESARROLLO.md.
 
 | Qué | Estado |
 |---|---|
