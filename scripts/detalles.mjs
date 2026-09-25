@@ -61,7 +61,8 @@ for (const f of readdirSync(dir).filter(f => /^pcs.*\.json$/.test(f)).sort()) {
     if (a.length) (es[id] ||= {}).pcs = a
     if (b.length) (en[id] ||= {}).pcs = b
     if (Array.isArray(v.fuentes) && v.fuentes.length) fuentes[id] = [...new Set([...(fuentes[id] || []), ...v.fuentes.filter(u => /^https?:\/\//.test(u))])]
-    if (typeof v.pc_real === 'string' && v.pc_real) pcReal.push(`${id}: ${v.pc_real}`)
+    const actual = DATA.flatMap(sg => sg.eras.flatMap(e => e.items)).find(i => i.id === id)
+    if (typeof v.pc_real === 'string' && v.pc_real && actual && actual.pc !== v.pc_real && !(v.pc_real.startsWith('2 (') && actual.pc === '2 (mitad y final)')) pcReal.push(`${id}: ${v.pc_real} (ahora «${actual.pc ?? '—'}»)`)
   }
 }
 

@@ -1,0 +1,590 @@
+{
+ "moonknight": {
+  "pc_real": "1 a mitad",
+  "pcn": "En el último episodio",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "T1·E6: Jake Lockley",
+    "d": "Sacan a Arthur Harrow del psiquiátrico en silla de ruedas y lo meten en una limusina donde espera Khonshu, que le presenta a «mi amigo Jake Lockley». El conductor es la tercera personalidad de Marc; en español le dice que hoy le toca perder y le dispara.",
+    "conecta": "Revela la tercera identidad de Marc Spector y que Khonshu sigue usándola."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "S1·E6: Jake Lockley",
+    "d": "Arthur Harrow is wheeled out of the psychiatric hospital and put into a limo where Khonshu waits and introduces \"my friend, Jake Lockley.\" The driver is Marc's third personality; speaking Spanish, he tells Harrow it's his turn to lose and shoots him.",
+    "conecta": "Reveals Marc Spector's third identity and that Khonshu still has a use for it."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/Gods_and_Monsters_(Moon_Knight)",
+   "https://www.thewrap.com/moon-knight-episode-6-credits-scene-explained/"
+  ]
+ },
+ "peter-lista": {
+  "pc_real": "0",
+  "pcn": "Corto de 4 min, sin escenas en los créditos",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://marvelwatchlist.com/movies/peter-s-to-do-list/",
+   "https://en.wikipedia.org/wiki/Spider-Man:_Far_From_Home"
+  ]
+ },
+ "sm-raimi1": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://aftercredits.com/2011/11/spider-man-2002/"
+  ]
+ },
+ "sm-raimi2": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://aftercredits.com/2011/11/spider-man-2-2004/"
+  ]
+ },
+ "sm-raimi3": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "http://www.mediastinger.com/spider-man-3-2007-no-extras-during-or-after-the-credits/",
+   "https://aftercredits.com/2011/11/spider-man-3-2007/"
+  ]
+ },
+ "asm1": {
+  "pc_real": "1 a mitad",
+  "pcn": "",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "El hombre en la sombra",
+    "d": "Curt Connors, encerrado en una celda, recibe la visita de un hombre al que no se le ve la cara. Le pregunta si le ha contado al chico la verdad sobre su padre; Connors le responde que deje en paz a Peter Parker.",
+    "conecta": "Apunta al misterio de Richard Parker y a Oscorp, que sigue en El poder de Electro."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "The man in the shadows",
+    "d": "An imprisoned Curt Connors is visited by a man whose face stays hidden. He asks whether Connors told the boy the truth about his father; Connors tells him to leave Peter Parker alone.",
+    "conecta": "Teases the Richard Parker mystery and Oscorp, picked up in The Amazing Spider-Man 2."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/The_Amazing_Spider-Man_(film)",
+   "https://mediastinger.com/the-amazing-spider-man-2012-extra-scene-during-the-credits/"
+  ]
+ },
+ "asm2": {
+  "pc_real": "1 a mitad",
+  "pcn": "Es un avance de X-Men: Días del futuro pasado",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "Mística en Vietnam",
+    "d": "No es de Spider-Man: es una escena de X-Men: Días del futuro pasado. Mística, disfrazada de general, se cuela en un campamento del ejército en Vietnam y libera a los mutantes allí retenidos.",
+    "conecta": "Sirve de anuncio de X-Men: Días del futuro pasado (acuerdo entre Sony y Fox); no conecta con la historia de Spider-Man."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "Mystique in Vietnam",
+    "d": "Not a Spider-Man scene at all: it's a clip from X-Men: Days of Future Past. Mystique, disguised as a general, infiltrates an army camp in Vietnam and frees the mutants held there.",
+    "conecta": "An ad for X-Men: Days of Future Past (a Sony–Fox deal); it doesn't tie into the Spider-Man story."
+   }
+  ],
+  "fuentes": [
+   "https://filmstories.co.uk/features/the-story-behind-the-amazing-spider-man-2s-unusual-x-men-post-credits-scene/",
+   "https://en.wikipedia.org/wiki/The_Amazing_Spider-Man_2"
+  ]
+ },
+ "venom1": {
+  "pc_real": "2 (mitad y final)",
+  "pcn": "La del final es un avance de Un nuevo universo",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "Cletus Kasady",
+    "d": "Eddie va a la cárcel de San Quintín a entrevistar al asesino en serie Cletus Kasady, encerrado solo en una jaula y con camisa de fuerza. Kasady le promete que cuando salga habrá una matanza.",
+    "conecta": "Presenta al villano de Venom: Habrá matanza."
+   },
+   {
+    "cuando": "final",
+    "t": "Otro universo",
+    "d": "Con el rótulo «Mientras tanto, en otro universo…», un fragmento animado de Spider-Man: Un nuevo universo con Miles Morales y Peter B. Parker.",
+    "conecta": "Anuncio de Spider-Man: Un nuevo universo; no sigue la historia de Venom."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "Cletus Kasady",
+    "d": "Eddie visits San Quentin to interview serial killer Cletus Kasady, caged alone in a straitjacket. Kasady promises that when he gets out, there's going to be carnage.",
+    "conecta": "Introduces the villain of Venom: Let There Be Carnage."
+   },
+   {
+    "cuando": "final",
+    "t": "Another universe",
+    "d": "Under a \"Meanwhile, in another universe…\" card, an animated clip from Spider-Man: Into the Spider-Verse featuring Miles Morales and Peter B. Parker.",
+    "conecta": "A promo for Into the Spider-Verse; it doesn't continue Venom's story."
+   }
+  ],
+  "fuentes": [
+   "https://www.gamespot.com/articles/venom-2018-after-credits-scenes-explained-spoilers/1100-6462278/",
+   "https://www.indiewire.com/features/general/venom-post-credits-scenes-explained-spider-verse-1202009299/"
+  ]
+ },
+ "venom2": {
+  "pc_real": "1 a mitad",
+  "pcn": "",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "Salto de universo",
+    "d": "De vacaciones en la playa, Venom intenta enseñar a Eddie lo que sabe su especie de otros universos y, de pronto, ambos aparecen en otra habitación. En la tele, J. Jonah Jameson revela que Spider-Man es Peter Parker; Venom lame la pantalla: «Este tío».",
+    "conecta": "Los lleva al universo del UCM por el hechizo de Doctor Strange, lo que se ve en Spider-Man: No Way Home."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "Universe jump",
+    "d": "On a beach getaway, Venom tries to show Eddie his species' knowledge of other universes, and suddenly they're in a different room. On TV, J. Jonah Jameson unmasks Spider-Man as Peter Parker; Venom licks the screen: \"This guy.\"",
+    "conecta": "Pulls them into the MCU through Doctor Strange's spell, as seen in Spider-Man: No Way Home."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage",
+   "https://www.thewrap.com/venom-2-mid-credits-scene-explained-spider-man-mcu/"
+  ]
+ },
+ "morbius": {
+  "pc_real": "2 a mitad",
+  "pcn": "",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "Toomes aparece",
+    "d": "Por el hechizo de No Way Home, Adrian Toomes aparece de golpe en una celda vacía de otro universo. Como nadie sabe cómo ha llegado ni hay cargos contra él, lo dejan libre.",
+    "conecta": "Trae al Buitre del UCM al universo de Morbius."
+   },
+   {
+    "cuando": "mitad",
+    "t": "Una propuesta",
+    "d": "Toomes, otra vez con su traje de Buitre, se reúne con Morbius. Culpa a Spider-Man de lo que le ha pasado y le propone formar equipo.",
+    "conecta": "Insinúa un grupo de villanos al estilo de los Seis Siniestros, que nunca llegó."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "Toomes appears",
+    "d": "Thanks to the No Way Home spell, Adrian Toomes suddenly appears in an empty cell in another universe. With no record of how he got there or any charges, he's released.",
+    "conecta": "Brings the MCU's Vulture into Morbius's universe."
+   },
+   {
+    "cuando": "mitad",
+    "t": "A proposal",
+    "d": "Toomes, back in his Vulture suit, meets Morbius. He blames Spider-Man for his situation and suggests they team up.",
+    "conecta": "Hints at a Sinister Six–style villain team that never happened."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/Morbius_(film)",
+   "https://nerdist.com/article/morbius-mid-credits-scenes-explained/"
+  ]
+ },
+ "madameweb": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://www.hollywoodreporter.com/movies/movie-features/madame-web-has-no-post-credits-scene-1235824034/"
+  ]
+ },
+ "venom3": {
+  "pc_real": "2 (mitad y final)",
+  "pcn": "",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "El Rey de Negro",
+    "d": "Knull, en su prisión, dice que el campeón de ese mundo ha caído y que va a conquistar el universo: «El Rey de Negro ha despertado». Por primera vez se le ve la cara.",
+    "conecta": "Deja a Knull como amenaza pendiente del universo de Spider-Man de Sony."
+   },
+   {
+    "cuando": "final",
+    "t": "Una cucaracha",
+    "d": "El camarero mexicano, detenido tras la huida de Eddie, sale de las ruinas quemadas del Área 51. Junto a un frasco roto que guardaba una muestra de Venom, sale una cucaracha negra.",
+    "conecta": "Insinúa que Venom podría haber sobrevivido."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "The King in Black",
+    "d": "In his prison, Knull says this world's champion has fallen and he will conquer the universe: \"The King in Black is awake.\" His face is shown for the first time.",
+    "conecta": "Leaves Knull as a dangling threat in Sony's Spider-Man Universe."
+   },
+   {
+    "cuando": "final",
+    "t": "A cockroach",
+    "d": "The Mexican bartender, detained after Eddie left, walks out of the burned ruins of Area 51. Next to a broken vial that held a Venom sample, a black cockroach crawls out.",
+    "conecta": "Hints that Venom may have survived."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/Venom:_The_Last_Dance",
+   "https://time.com/7099007/venom-the-last-dance-post-credit-scenes/"
+  ]
+ },
+ "kraven": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://www.gamesradar.com/entertainment/marvel-movies/kraven-the-hunter-post-credits-scene-explained/",
+   "https://www.slashfilm.com/1735653/kraven-the-hunter-post-credits-scene-guide/"
+  ]
+ },
+ "hawkeye": {
+  "pc_real": "1 a mitad",
+  "pcn": "En el último episodio",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "T1·E6: Rogers: el musical",
+    "d": "El número completo «Save the City» del musical de Broadway que Clint abandona en el primer episodio: una versión cantada y muy loca de la batalla de Nueva York de Los Vengadores.",
+    "conecta": "Solo es un regalo navideño; no prepara nada."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "S1·E6: Rogers: The Musical",
+    "d": "The full \"Save the City\" number from the Broadway show Clint walked out of in episode 1: a sung, goofy take on the Battle of New York from The Avengers.",
+    "conecta": "Just a Christmas treat; it sets nothing up."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/So_This_Is_Christmas%3F",
+   "https://www.slashfilm.com/715150/hawkeye-episode-6-credits-scene-explained-the-most-important-mcu-moment-in-years/"
+  ]
+ },
+ "shehulk": {
+  "pc_real": "5 a mitad",
+  "pcn": "En los episodios 1–4 y 9",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "T1·E1: El secreto del Capi",
+    "d": "En el bar, una Jen borracha llora porque el Capitán América murió virgen, hasta que Bruce le cuenta que Steve lo dejó de ser en una gira de la USO en los años 40.",
+    "conecta": ""
+   },
+   {
+    "cuando": "mitad",
+    "t": "T1·E2: Recados en casa",
+    "d": "Jen pasa la tarde haciendo tareas en casa de sus padres: arregla la tele y carga garrafas de agua para su padre.",
+    "conecta": ""
+   },
+   {
+    "cuando": "mitad",
+    "t": "T1·E3: Baile en la oficina",
+    "d": "Jen y su nueva clienta, Megan Thee Stallion, bailan juntas en el despacho; cuando entra Holliway, Jen dice que daría la vida por ella.",
+    "conecta": ""
+   },
+   {
+    "cuando": "mitad",
+    "t": "T1·E4: Wong y Madisynn",
+    "d": "Wong y Madisynn, ya amigos, pasan el rato en el sofá viendo la tele y hablando de bebidas.",
+    "conecta": ""
+   },
+   {
+    "cuando": "mitad",
+    "t": "T1·E9: Fuga a Kamar-Taj",
+    "d": "Wong se presenta en la celda de Emil Blonsky, la Abominación, y se lo lleva a Kamar-Taj (que, al parecer, tiene wifi).",
+    "conecta": "Deja a Blonsky libre y ligado a Wong."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "S1·E1: Cap's secret",
+    "d": "At the bar, a drunk Jen cries that Captain America died a virgin until Bruce reveals Steve lost his virginity on a USO tour in the '40s.",
+    "conecta": ""
+   },
+   {
+    "cuando": "mitad",
+    "t": "S1·E2: Family chores",
+    "d": "Jen spends time doing chores at her parents' house, fixing the TV and hauling water jugs for her dad.",
+    "conecta": ""
+   },
+   {
+    "cuando": "mitad",
+    "t": "S1·E3: Office dance",
+    "d": "Jen and her new client Megan Thee Stallion dance around the office; when Holliway walks in, Jen says she'd die for her.",
+    "conecta": ""
+   },
+   {
+    "cuando": "mitad",
+    "t": "S1·E4: Wong and Madisynn",
+    "d": "Wong and Madisynn, now friends, hang out on his couch watching TV and chatting about drinks.",
+    "conecta": ""
+   },
+   {
+    "cuando": "mitad",
+    "t": "S1·E9: Off to Kamar-Taj",
+    "d": "Wong turns up at Emil Blonsky's cell and takes the Abomination to Kamar-Taj (which apparently has Wi-Fi).",
+    "conecta": "Leaves Blonsky free and tied to Wong."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/She-Hulk:_Attorney_at_Law",
+   "https://www.themarysue.com/every-she-hulk-post-credit-scene-explained/"
+  ]
+ },
+ "echo": {
+  "pc_real": "1 a mitad",
+  "pcn": "En el último episodio",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "T1·E5: Kingpin mira las noticias",
+    "d": "En su avión, Wilson Fisk sigue con interés una noticia sobre las elecciones a la alcaldía de Nueva York, en las que no hay un favorito claro.",
+    "conecta": "Kingpin se presenta a alcalde en Daredevil: Born Again."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "S1·E5: Kingpin watches the news",
+    "d": "On his plane, Wilson Fisk watches with interest a news report about New York's mayoral race and its lack of a front-runner.",
+    "conecta": "Kingpin runs for mayor in Daredevil: Born Again."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/Echo_(miniseries)",
+   "https://www.gamesradar.com/echo-post-credits-scene-explained-daredevil-kingpin-mayor/"
+  ]
+ },
+ "msmarvel": {
+  "pc_real": "2 a mitad",
+  "pcn": "En los episodios 1 y 6",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "T1·E1: Control de Daños",
+    "d": "Los agentes P. Cleary y Sadie Deever, del Departamento de Control de Daños, ven el vídeo de Kamala en la AvengerCon; nunca han visto unos poderes así y deciden ir a por ella.",
+    "conecta": "Control de Daños persigue a Kamala durante la serie."
+   },
+   {
+    "cuando": "mitad",
+    "t": "T1·E6: Cambio de sitio",
+    "d": "Kamala descansa en su cama con el traje cuando su brazalete empieza a brillar y la lanza dentro del armario. Quien sale es Carol Danvers, la Capitana Marvel, que ve la habitación llena de pósteres suyos y sale corriendo.",
+    "conecta": "Lleva directamente a The Marvels."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "S1·E1: Damage Control",
+    "d": "Department of Damage Control agents P. Cleary and Sadie Deever watch the video of Kamala at AvengerCon; they've never seen powers like that and decide to bring her in.",
+    "conecta": "Damage Control hunts Kamala through the series."
+   },
+   {
+    "cuando": "mitad",
+    "t": "S1·E6: Switching places",
+    "d": "Kamala lies on her bed in costume when her bangle glows and throws her into the closet. Out steps Carol Danvers, Captain Marvel, who sees posters of herself everywhere and runs off.",
+    "conecta": "Leads straight into The Marvels."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/Generation_Why_(Ms._Marvel)",
+   "https://www.thewrap.com/ms-marvel-episode-6-credits-scene-explained/"
+  ]
+ },
+ "ironheart": {
+  "pc_real": "1 a mitad",
+  "pcn": "En el último episodio",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "T1·E6: Parker pide magia",
+    "d": "Parker Robbins, vivo pero con las cicatrices que le dejó Mephisto y escondido bajo una capucha, entra en la tienda de la madre de Zelma y le pide «magia de la fuerte». Zelma le demuestra su poder, pero no le da una respuesta.",
+    "conecta": "Deja abierta una alianza entre Zelma y el Capucha."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "S1·E6: Parker wants magic",
+    "d": "Parker Robbins, alive but hiding Mephisto's scars under a hoodie, walks into Zelma's mother's shop and asks for \"some heavy duty magic.\" Zelma shows off her power but gives him no answer.",
+    "conecta": "Leaves a possible Zelma–Hood alliance open."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/Ironheart_(miniseries)",
+   "https://nerdist.com/article/ironheart-series-post-credits-scene-zelma-parker-the-hood/"
+  ]
+ },
+ "secretinvasion": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://screenrant.com/secret-invasion-no-post-credits-scene/",
+   "https://www.dexerto.com/tv-movies/secret-invasion-episode-6-post-credits-scene-2225340/"
+  ]
+ },
+ "wonderman": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://screenrant.com/marvel-wonder-man-post-credits-scene/",
+   "https://nerdist.com/article/does-wonder-man-have-post-credits-scene-series-ending-explained/"
+  ]
+ },
+ "loki2": {
+  "pc_real": "1 a mitad",
+  "pcn": "En el E5 hay además solo un audio al final",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "T2·E1: Sylvie en 1982",
+    "d": "Sylvie cruza una puerta temporal y aparece en un campo de Broxton (Oklahoma) en 1982. Entra en un McDonald's y, desconcertada, pide un poco de todo: nada que tenga cara.",
+    "conecta": "Muestra la vida tranquila que busca Sylvie tras matar a El Que Permanece."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "S2·E1: Sylvie in 1982",
+    "d": "Sylvie steps through a time door into a field in Broxton, Oklahoma, in 1982. She walks into a McDonald's and, puzzled, orders a bit of everything: nothing with a face.",
+    "conecta": "Shows the quiet life Sylvie is after since killing He Who Remains."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/Ouroboros_(Loki)",
+   "https://stylecaster.com/lists/loki-season-2-post-credit-scenes/"
+  ]
+ },
+ "ff2005": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://mediastinger.com/fantastic-four-2005-no-extras-during-or-after-the-credits/"
+  ]
+ },
+ "ff2007": {
+  "pc_real": "1 a mitad",
+  "pcn": "Al poco de empezar los créditos",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "Silver Surfer despierta",
+    "d": "Silver Surfer flota inerte en el espacio, lejos de la Tierra. Justo antes de perderse de vista abre los ojos y su tabla vuela hacia él.",
+    "conecta": "Deja claro que sobrevivió; no hubo tercera película."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "The Silver Surfer wakes",
+    "d": "The Silver Surfer floats lifeless in space, far from Earth. Just before drifting out of view, his eyes open and his board zooms toward him.",
+    "conecta": "Shows he survived; no third film followed."
+   }
+  ],
+  "fuentes": [
+   "https://aftercredits.com/2011/06/fantastic-four-rise-of-the-silver-surfer-2007/",
+   "https://mediastinger.com/fantastic-four-rise-of-the-silver-surfer-2007-extra-scene-during-the-credits/"
+  ]
+ },
+ "ff2015": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://mediastinger.com/fantastic-four-2015-after-the-credits/"
+  ]
+ },
+ "agatha": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://www.gamesradar.com/entertainment/marvel-tv-shows/does-the-agatha-all-along-finale-have-a-post-credits-scene/",
+   "https://screenrant.com/agatha-all-along-no-post-credits-scenes-scene-explained-showrunner/"
+  ]
+ },
+ "daredevil-ba": {
+  "pc_real": "1 a mitad",
+  "pcn": "Solo en la T1; la T2 no tiene",
+  "es": [
+   {
+    "cuando": "mitad",
+    "t": "T1·E9: El Castigador escapa",
+    "d": "Frank Castle está encerrado en una prisión secreta de Fisk. Engaña a un guardia para que abra la celda y se lanza a por los que le vigilan.",
+    "conecta": "Lleva a The Punisher: One Last Kill y a la T2."
+   }
+  ],
+  "en": [
+   {
+    "cuando": "mitad",
+    "t": "S1·E9: The Punisher breaks out",
+    "d": "Frank Castle is locked in one of Fisk's secret prisons. He tricks a guard into opening his cell and goes after his captors.",
+    "conecta": "Leads to The Punisher: One Last Kill and season 2."
+   }
+  ],
+  "fuentes": [
+   "https://en.wikipedia.org/wiki/Daredevil:_Born_Again_season_1",
+   "https://www.cbr.com/is-there-a-daredevil-born-again-season-2-post-credit-scene/"
+  ]
+ },
+ "punisher-olk": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://www.gamesradar.com/entertainment/marvel-tv-shows/punisher-one-last-kill-post-credits-scene-explained/",
+   "https://screenrant.com/the-punisher-one-last-kill-post-credits-scene/"
+  ]
+ },
+ "eyeswakanda": {
+  "pc_real": "0",
+  "pcn": "",
+  "es": [],
+  "en": [],
+  "fuentes": [
+   "https://www.yardbarker.com/entertainment/articles/does_wonder_man_have_a_post_credits_scene_the_series_ending_explained/s1_17316_43392198",
+   "https://screenrant.com/eyes-of-wakanda-ending-explained/"
+  ]
+ },
+ "doomsday": {
+  "pc_real": "",
+  "pcn": "Se estrena en diciembre de 2026",
+  "es": [],
+  "en": [],
+  "fuentes": []
+ }
+}

@@ -31,8 +31,13 @@ const lcpHtml = { name: 'lcp-inicial', transformIndexHtml: h => h.replace('%LCP_
 // la app solo ofrece el WebP de los que existen
 const fondosWebp = readdirSync('public/fondo').filter(f => f.endsWith('.webp'))
 
+// huella de los detalles de las fichas (26 sep 2026): va en su URL, así el
+// service worker (que sirve lo guardado y renueva de fondo) no enseña una copia
+// vieja la primera vez tras cambiar los datos
+const huellaDetalles = (() => { try { return createHash('md5').update(readFileSync('public/detalles/es.json')).update(readFileSync('public/detalles/en.json')).digest('hex').slice(0, 10) } catch { return '0' } })()
+
 export default defineConfig({
-  define: { __BUILD__: JSON.stringify(sello), __FONDOS_WEBP__: JSON.stringify(fondosWebp) },
+  define: { __BUILD__: JSON.stringify(sello), __FONDOS_WEBP__: JSON.stringify(fondosWebp), __DETALLES_V__: JSON.stringify(huellaDetalles) },
   plugins: [react(), viteSingleFile(), versionJson, lcpHtml],
   // Preact en lugar de React (21 sep 2026): el código sigue importando de
   // 'react' y 'react-dom' y aquí se redirige a preact/compat. react-dom era el

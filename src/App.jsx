@@ -6415,7 +6415,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
 const detallesMem = {}
 function cargaDetalles(idioma) {
   if (!detallesMem[idioma]) {
-    detallesMem[idioma] = fetch(`detalles/${idioma}.json`).then(r => (r.ok ? r.json() : {})).then(j => (esObj(j) ? j : {})).catch(() => { delete detallesMem[idioma]; return {} })
+    detallesMem[idioma] = fetch(`detalles/${idioma}.json?v=${typeof __DETALLES_V__ === 'string' ? __DETALLES_V__ : '0'}`).then(r => (r.ok ? r.json() : {})).then(j => (esObj(j) ? j : {})).catch(() => { delete detallesMem[idioma]; return {} })
   }
   return detallesMem[idioma]
 }

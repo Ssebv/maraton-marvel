@@ -1,0 +1,521 @@
+{
+  "gifted": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://en.wikipedia.org/wiki/The_Gifted_season_1", "https://en.wikipedia.org/wiki/The_Gifted_season_2"]
+  },
+  "legion": {
+    "pc_real": "1 al final",
+    "pcn": "solo en el final de la T1",
+    "es": [
+      {
+        "cuando": "final",
+        "t": "T1·E8: El orbe se lleva a David",
+        "d": "En el balcón de Summerland, David y Syd hablan cuando aparece un pequeño orbe metálico que escanea a David y lo absorbe. Con David gritando «¡Ayúdame!» desde dentro, el orbe se aleja volando en la oscuridad.",
+        "conecta": "Arranca la T2: David reaparece un año después sin recordar dónde ha estado."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "S1·E8: The orb takes David",
+        "d": "On a balcony at Summerland, David and Syd are talking when a small metal orb appears, scans David and sucks him inside. With David yelling \"Help me!\" from within, the orb flies off into the night.",
+        "conecta": "Sets up Season 2: David returns a year later with no memory of where he has been."
+      }
+    ],
+    "fuentes": ["https://screencrush.com/legion-post-credits-scene/", "https://en.wikipedia.org/wiki/Chapter_8_(Legion)", "https://www.cbr.com/legion-finale-post-credits-scene-season-2/"]
+  },
+  "xmen-tas": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://en.wikipedia.org/wiki/List_of_X-Men:_The_Animated_Series_episodes"]
+  },
+  "xmen97": {
+    "pc_real": "3",
+    "pcn": "una en la T1 y dos en la T2",
+    "es": [
+      {
+        "cuando": "final",
+        "t": "T1·E10: Apocalipsis en Genosha",
+        "d": "Entre las ruinas de Genosha, una mano recoge del cráter una carta rota de Gambito. Es Apocalipsis, más viejo, que se lamenta: «Cuánto dolor, hijos míos. Cuánta muerte».",
+        "conecta": "Anuncia a Apocalipsis como gran amenaza de la T2 y el posible regreso de Gambito."
+      },
+      {
+        "cuando": "mitad",
+        "t": "T2·E4: Capitán América y Viuda Negra",
+        "d": "De vuelta en los noventa, Lobezno se reúne con el Capitán América y la Viuda Negra, que le entregan una carpeta del programa Arma X. El Capi le pregunta si piensa ir solo y Logan responde que ya tiene un equipo.",
+        "conecta": "Guiño al Uncanny X-Men #268 y prepara la historia de Arma X del siguiente episodio."
+      },
+      {
+        "cuando": "mitad",
+        "t": "T2·E9: Mística ocupa el sitio de Val Cooper",
+        "d": "Valerie Cooper mata de un disparo a su doble recién llegada y se revela como Mística, que ojea su propio expediente. Un informativo anuncia que Graydon Creed, hijo de Mística y enemigo de los mutantes, es el nuevo presidente de EE. UU.",
+        "conecta": "Prepara la T3 con Mística infiltrada en el gobierno y Creed en la Casa Blanca."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "S1·E10: Apocalypse on Genosha",
+        "d": "In the ruins of Genosha, a hand pulls a torn Gambit card from a crater. It is an older Apocalypse, who mourns: \"So much pain, my children. So much death.\"",
+        "conecta": "Sets up Apocalypse as Season 2's big threat and hints at Gambit's return."
+      },
+      {
+        "cuando": "mitad",
+        "t": "S2·E4: Captain America and Black Widow",
+        "d": "Back in the 1990s, Wolverine meets Captain America and Black Widow, who hand him a file on the Weapon X program. Cap asks if he plans to go alone; Logan says he has put a crew together.",
+        "conecta": "Nods to Uncanny X-Men #268 and sets up the Weapon X story in the next episode."
+      },
+      {
+        "cuando": "mitad",
+        "t": "S2·E9: Mystique replaces Val Cooper",
+        "d": "Valerie Cooper shoots her newly arrived double and is revealed as Mystique, who leafs through her own file. A news report says Graydon Creed, Mystique's mutant-hating son, is the new US President.",
+        "conecta": "Sets up Season 3 with Mystique inside the government and Creed in the White House."
+      }
+    ],
+    "fuentes": ["https://www.thewrap.com/x-men-97-finale-ending-credits-scene-explained/", "https://en.wikipedia.org/wiki/X-Men_%2797_season_2", "https://www.thewrap.com/creative-content/tv-shows/x-men-97-season-2-episode-9-ending-credits-scene-explained/", "https://guides.justwatch.com/us/x-men-97-season-2-episode-4-after-credits-deep-cut"]
+  },
+  "oneshot-carter": {
+    "pc_real": "1 a mitad",
+    "pcn": "",
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "Dum Dum y Howard Stark en la piscina",
+        "d": "Dum Dum Dugan y Howard Stark, junto a una piscina, contemplan maravillados a dos mujeres que lucen los recién inventados biquinis.",
+        "conecta": "Un chiste de cierre; Peggy acaba de ser reclutada para dirigir S.H.I.E.L.D. junto a Stark."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "Dum Dum and Howard Stark by the pool",
+        "d": "Dum Dum Dugan sits by a pool with Howard Stark, both marveling at two women wearing the newly invented bikinis.",
+        "conecta": "A closing gag; Peggy has just been recruited to run S.H.I.E.L.D. alongside Stark."
+      }
+    ],
+    "fuentes": ["https://en.wikipedia.org/wiki/Agent_Carter_(film)", "https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe"]
+  },
+  "agent-carter": {
+    "pc_real": "0",
+    "pcn": "su escena final va antes de los créditos",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://en.wikipedia.org/wiki/Agent_Carter_season_1", "https://en.wikipedia.org/wiki/Agent_Carter_season_2"]
+  },
+  "oneshot-martillo": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://en.wikipedia.org/wiki/Marvel_One-Shots"]
+  },
+  "oneshot-consultor": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://en.wikipedia.org/wiki/Marvel_One-Shots"]
+  },
+  "oneshot-item47": {
+    "pc_real": "1 al final",
+    "pcn": "",
+    "es": [
+      {
+        "cuando": "final",
+        "t": "Claire, aburrida en S.H.I.E.L.D.",
+        "d": "Claire, ya con traje de agente, da vueltas en una silla de oficina en la sede de S.H.I.E.L.D., mirando al techo aburrida: es la nueva ayudante de Blake, que se quejaba de que no había ni una silla libre.",
+        "conecta": ""
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "Claire, bored at S.H.I.E.L.D.",
+        "d": "Now in an agent's suit, Claire spins around in an office chair at S.H.I.E.L.D. headquarters, staring at the ceiling in boredom: she is Blake's new assistant, after he complained there wasn't even a spare chair.",
+        "conecta": ""
+      }
+    ],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://tvtropes.org/pmwiki/pmwiki.php/Film/Item47"]
+  },
+  "oneshot-rey": {
+    "pc_real": "1 al final",
+    "pcn": "vuelve Justin Hammer",
+    "es": [
+      {
+        "cuando": "final",
+        "t": "Justin Hammer, celoso en la cárcel",
+        "d": "En la misma prisión, Justin Hammer (Sam Rockwell) se queja de que Trevor Slattery acapare toda la atención y le cuenta a su pareja lo mucho que se parece él a Tony Stark.",
+        "conecta": "Recupera al villano de Iron Man 2; es un chiste, sin continuación."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "Justin Hammer, jealous in prison",
+        "d": "In the same prison, Justin Hammer (Sam Rockwell) complains about all the attention Trevor Slattery gets and tells his lover about the parallels between himself and Tony Stark.",
+        "conecta": "Brings back the Iron Man 2 villain; a gag with no follow-up."
+      }
+    ],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://www.cinemablend.com/new/Easter-Eggs-Surprise-Cameos-Punisher-Hint-Our-Interview-With-Marvel-Studios-Drew-Pearce-41843.html"]
+  },
+  "iamgroot": {
+    "pc_real": "2 al final",
+    "pcn": "una por temporada",
+    "es": [
+      {
+        "cuando": "final",
+        "t": "T1·E5 «Magnum Opus»: el dibujo a la deriva",
+        "d": "El dibujo que Groot ha hecho de los Guardianes aparece flotando a la deriva por el espacio.",
+        "conecta": ""
+      },
+      {
+        "cuando": "final",
+        "t": "T2·E3 «Groot's Snow Day»: el chocolate quema",
+        "d": "Groot prueba su chocolate caliente, pero quema; tira la taza de la mesa, que se hace añicos, y se oye gritar a Rocket (Bradley Cooper).",
+        "conecta": ""
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "S1·E5 \"Magnum Opus\": the drawing adrift",
+        "d": "Groot's drawing of the Guardians is seen floating adrift in space.",
+        "conecta": ""
+      },
+      {
+        "cuando": "final",
+        "t": "S2·E3 \"Groot's Snow Day\": too-hot cocoa",
+        "d": "Groot sips his hot chocolate, but it is too hot; he swipes the mug off the table, it smashes, and Rocket (Bradley Cooper) shouts.",
+        "conecta": ""
+      }
+    ],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://wegotthiscovered.com/tv/does-i-am-groot-season-2-have-post-credits-scenes/"]
+  },
+  "aos": {
+    "pc_real": "0",
+    "pcn": "sus «tags» van antes de los créditos",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://comicbook.com/blog/2013/10/01/agents-of-s-h-i-e-l-d-after-the-credits-spoiler", "https://screenrant.com/agents-of-shield-post-credits-sequences/", "https://www.ksitetv.com/shield-2/agents-of-s-h-i-e-l-d-eps-on-coulsons-finale-ending-a-post-credits-scene/205058/"]
+  },
+  "daredevil": {
+    "pc_real": "1 al final",
+    "pcn": "es un avance de Luke Cage (T2)",
+    "es": [
+      {
+        "cuando": "final",
+        "t": "T2·E13: Avance de Luke Cage",
+        "d": "Tras los créditos del final de la T2 hay un avance de unos 24 segundos de Luke Cage: le acribillan a balazos sin inmutarse, solo le molesta que le agujereen la ropa. «Supongo que no habéis oído hablar de mí».",
+        "conecta": "Anuncia la serie Luke Cage (septiembre de 2016)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "S2·E13: Luke Cage teaser",
+        "d": "After the credits of the Season 2 finale comes a roughly 24-second Luke Cage teaser: he takes a barrage of bullets without flinching, only annoyed about his torn clothes. \"I guess you guys haven't heard about me?\"",
+        "conecta": "Announces the Luke Cage series (September 2016)."
+      }
+    ],
+    "fuentes": ["https://www.digitaltrends.com/movies/luke-cage-teaser-trailer-netflix-marvel/", "https://www.gamespot.com/articles/marvels-luke-cage-teaser-hidden-at-end-of-daredevi/1100-6435820/"]
+  },
+  "jessicajones": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://www.bustle.com/p/the-punisher-post-credits-scene-doesnt-exist-but-jessica-jones-is-still-right-around-the-corner-5500493"]
+  },
+  "lukecage": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://www.bustle.com/p/the-punisher-post-credits-scene-doesnt-exist-but-jessica-jones-is-still-right-around-the-corner-5500493"]
+  },
+  "ironfist": {
+    "pc_real": "1 al final",
+    "pcn": "en la T2 aparece Daredevil",
+    "es": [
+      {
+        "cuando": "final",
+        "t": "T2·E10: Matt Murdock, en el confesionario",
+        "d": "Matt Murdock, vivo pero herido y sangrando por la nariz, reza en un confesionario vestido de negro: «Prefiero morir como el diablo que vivir como Matt Murdock».",
+        "conecta": "Prepara la T3 de Daredevil, en la que Matt abraza del todo su lado de justiciero."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "S2·E10: Matt Murdock in the confessional",
+        "d": "Alive but hurt and bleeding from the nose, Matt Murdock sits in a confessional dressed in black: \"I'd rather die as the devil than live as Matt Murdock.\"",
+        "conecta": "Sets up Daredevil Season 3, where Matt fully embraces his vigilante side."
+      }
+    ],
+    "fuentes": ["https://www.cbr.com/iron-fist-season-2-post-credits-daredevil/", "https://screenrant.com/iron-fist-season-2-daredevil-post-credits-scene/"]
+  },
+  "defenders": {
+    "pc_real": "1 al final",
+    "pcn": "es un avance de The Punisher",
+    "es": [
+      {
+        "cuando": "final",
+        "t": "E8: Avance de The Punisher",
+        "d": "Pasados los créditos y los logotipos de Marvel y Netflix, un avance de un minuto muestra a Frank Castle (Jon Bernthal) grabando a martillazos su calavera en el hormigón mientras recuerda su pasado.",
+        "conecta": "Anuncia la serie The Punisher (noviembre de 2017)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "E8: The Punisher teaser",
+        "d": "After the credits and the Marvel and Netflix logos, a one-minute teaser shows Frank Castle (Jon Bernthal) hammering his skull into concrete as he recalls his past.",
+        "conecta": "Announces The Punisher series (November 2017)."
+      }
+    ],
+    "fuentes": ["https://www.imdb.com/news/ni61420491/", "https://bleedingcool.com/movies/post-credits-scene-defenders-episode-8-teases-next-marvel-netflix-series-come/"]
+  },
+  "punisher": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://www.bustle.com/p/the-punisher-post-credits-scene-doesnt-exist-but-jessica-jones-is-still-right-around-the-corner-5500493"]
+  },
+  "team-thor": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://en.wikipedia.org/wiki/Team_Thor"]
+  },
+  "inhumans": {
+    "pc_real": "0",
+    "pcn": "en TV la escena de Auran va antes de los créditos",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://en.wikipedia.org/wiki/Inhumans_premiere", "https://screenrant.com/marvels-inhumans-end-credits-scene-death-explained/"]
+  },
+  "team-darryl": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe"]
+  },
+  "cloakdagger": {
+    "pc_real": "1 al final",
+    "pcn": "nace Mayhem (final de la T1)",
+    "es": [
+      {
+        "cuando": "final",
+        "t": "T1·E10: O'Reilly sale del río",
+        "d": "En la orilla, una mano surge del barro y aplasta una abeja y una flor: es la detective Brigid O'Reilly, dada por muerta, que se levanta con los ojos verdes brillantes y un movimiento extraño y se adentra en el bosque.",
+        "conecta": "O'Reilly renace como Mayhem, su lado oscuro, protagonista de la T2."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "S1·E10: O'Reilly rises from the river",
+        "d": "On the riverbank, a hand bursts from the mud and crushes a bee and a flower: it is Detective Brigid O'Reilly, presumed dead, who pulls herself up with glowing green eyes and a glitchy gait and walks into the woods.",
+        "conecta": "O'Reilly is reborn as Mayhem, her dark half, a key figure in Season 2."
+      }
+    ],
+    "fuentes": ["https://comicbook.com/marvel/news/cloak-and-dagger-finale-post-credits-scene-mayhem/", "https://www.bustle.com/p/what-happened-to-oreilly-on-cloak-dagger-the-finales-post-credits-scene-introduced-a-new-foe-for-season-2-9949905", "https://www.marvel.com/articles/tv-shows/stars-and-creator-of-cloak-dagger-on-season-2-finale-and-beyond"]
+  },
+  "runaways": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://screenrant.com/marvel-runaways-season-3-series-finale-ending-explained/", "https://comicbook.com/marvel/news/runaways-season-finale-last-scene/"]
+  },
+  "loki1": {
+    "pc_real": "1 a mitad",
+    "pcn": "en el E6 solo hay un rótulo: vuelve en la T2",
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "E4: Loki despierta en el Vacío",
+        "d": "Tras ser «podado» por la AVT, Loki despierta en un lugar en ruinas rodeado de otras cuatro variantes de sí mismo: Loki Clásico, Loki Fanfarrón, Loki Niño y Loki Caimán.",
+        "conecta": "El E5 revela que es el Vacío, al final del tiempo, donde acaban los podados."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "E4: Loki wakes up in the Void",
+        "d": "Having been \"pruned\" by the TVA, Loki wakes up among ruins, surrounded by four other variants of himself: Classic Loki, Boastful Loki, Kid Loki and Alligator Loki.",
+        "conecta": "Episode 5 reveals this is the Void at the end of time, where pruned beings end up."
+      }
+    ],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://gizmodo.com/how-lokis-mid-credits-revealed-the-most-promising-part-1847205559", "https://comicbook.com/tv-shows/news/loki-finale-episode-6-doesnt-end-marvel-post-credits-scene-reveal-season-2-kate-herron/"]
+  },
+  "whatif": {
+    "pc_real": "4 (2 a mitad y 2 al final)",
+    "pcn": "las dos del final son solo audio",
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "T1·E9: Alguien dentro del Hydra Stomper",
+        "d": "De vuelta en su universo, la Capitana Carter y Natasha Romanoff vencen a Batroc a bordo del Lemurian Star y descubren la armadura Hydra Stomper con alguien dentro.",
+        "conecta": "En la T2 se revela que dentro está Steve Rogers, capturado y lavado de cerebro por la Habitación Roja."
+      },
+      {
+        "cuando": "final",
+        "t": "T2·E3: Darcy canta un villancico",
+        "d": "Solo audio: al terminar los créditos, Darcy canta «Good Queen Darcy», una parodia del villancico «Good King Wenceslas» con guiños a los héroes de Marvel, y desea felices fiestas.",
+        "conecta": ""
+      },
+      {
+        "cuando": "mitad",
+        "t": "T2·E4: El Gran Maestro, convertido en charco",
+        "d": "El Gran Maestro sobrevive al derretidor convertido en un charco parlante y le pide alegremente a Topaz que lo recoja en un cubo.",
+        "conecta": ""
+      },
+      {
+        "cuando": "final",
+        "t": "T3·E2: «¡Y corten!»",
+        "d": "Solo audio: al final de los créditos se oye a Howard Stark, director de la película de Agatha en el episodio, gritar «¡Y corten!».",
+        "conecta": ""
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "S1·E9: Someone inside the Hydra Stomper",
+        "d": "Back in her universe, Captain Carter and Natasha Romanoff defeat Batroc aboard the Lemurian Star and find the Hydra Stomper armor with someone inside.",
+        "conecta": "Season 2 reveals it is Steve Rogers, captured and brainwashed by the Red Room."
+      },
+      {
+        "cuando": "final",
+        "t": "S2·E3: Darcy sings a carol",
+        "d": "Audio only: at the end of the credits Darcy sings \"Good Queen Darcy\", a parody of \"Good King Wenceslas\" full of Marvel hero references, and wishes everyone happy holidays.",
+        "conecta": ""
+      },
+      {
+        "cuando": "mitad",
+        "t": "S2·E4: The Grandmaster, now a puddle",
+        "d": "The Grandmaster survives the melt stick as a talking puddle and cheerfully begs Topaz to scoop him into a bucket.",
+        "conecta": ""
+      },
+      {
+        "cuando": "final",
+        "t": "S3·E2: \"And cut!\"",
+        "d": "Audio only: at the end of the credits Howard Stark, who directs Agatha's film in the episode, calls out \"And cut!\".",
+        "conecta": ""
+      }
+    ],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://en.wikipedia.org/wiki/What_If..._the_Watcher_Broke_His_Oath%3F", "https://screenrant.com/what-if-season2-episode-3-post-credits-trend-audio/", "https://comicbookclublive.com/2023/12/25/what-if-season-2-episode-4-end-credits-scene-explained-grandmaster/", "https://en.wikipedia.org/wiki/What_If..._Agatha_Went_to_Hollywood%3F"]
+  },
+  "zombies": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://www.gamesradar.com/entertainment/marvel-tv-shows/marvel-zombies-post-credits-scene/", "https://screenrant.com/mcu-movies-tv-shows-without-post-credits-scenes/"]
+  },
+  "yfnsm": {
+    "pc_real": "0",
+    "pcn": "",
+    "es": [],
+    "en": [],
+    "fuentes": ["https://screenrant.com/mcu-movies-tv-shows-without-post-credits-scenes/", "https://movieweb.com/your-friendly-neighborhood-spider-man-ending-explained/"]
+  },
+  "wandavision": {
+    "pc_real": "4 (3 a mitad y 1 al final)",
+    "pcn": "en los episodios 7, 8 y 9",
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "E7: Monica en el sótano de Agnes",
+        "d": "Monica se cuela en el sótano de la casa de Agnes y encuentra raíces que brillan con energía morada. A su espalda aparece «Pietro»: «Los fisgones van a fisgar».",
+        "conecta": "Confirma que Agatha manipula Westview y que ese Pietro trabaja para ella."
+      },
+      {
+        "cuando": "mitad",
+        "t": "E8: Nace Visión Blanco",
+        "d": "En la base de S.W.O.R.D., el director Hayward usa la energía de un dron cargado de magia de Wanda para reactivar el cuerpo original de Visión, ahora completamente blanco.",
+        "conecta": "Visión Blanco se enfrenta a Visión en el último episodio."
+      },
+      {
+        "cuando": "mitad",
+        "t": "E9: Un skrull busca a Monica",
+        "d": "Mientras detienen a Hayward, un agente del FBI se revela como skrull y le dice a Monica que una amiga de su madre quiere verla en el espacio.",
+        "conecta": "Lleva a Monica hacia Nick Furia, Carol Danvers y The Marvels."
+      },
+      {
+        "cuando": "final",
+        "t": "E9: Wanda y el Darkhold",
+        "d": "En una cabaña aislada en la montaña, Wanda prepara té mientras su forma astral estudia el Darkhold. De pronto oye a sus hijos Billy y Tommy pidiendo ayuda.",
+        "conecta": "Lleva directamente a Doctor Strange en el multiverso de la locura."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "E7: Monica in Agnes's basement",
+        "d": "Monica sneaks into the basement of Agnes's house and finds roots glowing with purple energy. \"Pietro\" appears behind her: \"Snooper's gonna snoop.\"",
+        "conecta": "Confirms Agatha is manipulating Westview and that this Pietro works for her."
+      },
+      {
+        "cuando": "mitad",
+        "t": "E8: White Vision is born",
+        "d": "At the S.W.O.R.D. base, Director Hayward uses a drone charged with Wanda's magic to reactivate Vision's original body, now all white.",
+        "conecta": "White Vision fights Vision in the final episode."
+      },
+      {
+        "cuando": "mitad",
+        "t": "E9: A Skrull comes for Monica",
+        "d": "As Hayward is arrested, an FBI agent reveals himself as a Skrull and tells Monica a friend of her mother's wants to meet her in space.",
+        "conecta": "Leads Monica toward Nick Fury, Carol Danvers and The Marvels."
+      },
+      {
+        "cuando": "final",
+        "t": "E9: Wanda and the Darkhold",
+        "d": "In a remote mountain cabin, Wanda makes tea while her astral form studies the Darkhold. Suddenly she hears her sons Billy and Tommy crying for help.",
+        "conecta": "Leads straight into Doctor Strange in the Multiverse of Madness."
+      }
+    ],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://comicbook.com/tv-shows/news/wandavision-episode-7-spoilers-credits-scene-agnes-agatha-monica-pietro/", "https://www.techradar.com/news/wandavision-episode-8s-mid-credits-scene-explained", "https://www.tomsguide.com/news/wandavision-episode-9-mid-credits-scene-and-post-credits-scene-explained"]
+  },
+  "fatws": {
+    "pc_real": "2 a mitad",
+    "pcn": "en los episodios 5 y 6",
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "E5: Walker forja su propio escudo",
+        "d": "Expulsado y dolido por la muerte de Lemar, John Walker forja su propia versión del escudo del Capitán América con chatarra y su Medalla de Honor, y la pinta con la bandera.",
+        "conecta": "Walker aparece con ese escudo en el último episodio."
+      },
+      {
+        "cuando": "mitad",
+        "t": "E6: Sharon, la Mediadora",
+        "d": "Indultada y readmitida en la CIA, Sharon Carter sale del acto y llama por teléfono: con su nuevo acceso piensa vender secretos y armas del gobierno.",
+        "conecta": "Sharon sigue como la Mediadora (Power Broker), un cabo aún sin resolver."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "E5: Walker forges his own shield",
+        "d": "Discharged and grieving Lemar's death, John Walker forges his own version of Captain America's shield from scrap metal and his Medal of Honor, then paints it in the flag's colors.",
+        "conecta": "Walker shows up with that shield in the final episode."
+      },
+      {
+        "cuando": "mitad",
+        "t": "E6: Sharon, the Power Broker",
+        "d": "Pardoned and reinstated at the CIA, Sharon Carter steps out and makes a phone call: she plans to use her new access to sell government secrets and weapons.",
+        "conecta": "Sharon remains the Power Broker, a thread still left open."
+      }
+    ],
+    "fuentes": ["https://en.wikipedia.org/wiki/Mid-credits_and_post-credits_scenes_in_the_Marvel_Cinematic_Universe", "https://www.techradar.com/news/falcon-and-winter-soldier-episode-5-mid-credits-scene-explained", "https://collider.com/falcon-and-winter-soldier-episode-6-credits-scene-explained/"]
+  }
+}
