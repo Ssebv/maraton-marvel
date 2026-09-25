@@ -1386,14 +1386,30 @@ async function cargaTmdbRed(itemId) {
   // y la ficha caía a los proveedores de España bajo «Hoy en Bolivia»
   // v12: proveedores con nombre limpio, gratis con anuncios y, si no hay
   // ninguno, el alquiler (antes Hulk en Chile no enseñaba nada)
-  const claveLS = 'maraton-marvel-tmdb-v12:' + k
+  // v14: sin los «Featurette» que no son de la película (recetas, anuncios)
+  // v13: guarda también los vídeos extra (tomas falsas, reportajes, escenas
+  // eliminadas) y los pide en el idioma, en inglés y sin idioma
+  const claveLS = 'maraton-marvel-tmdb-v14:' + k
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[k] = g.d; return g.d }
   } catch {}
   const [tid, tipo] = m
-  const base = await tmdbJson(`/${tipo}/${tid}?append_to_response=videos,watch/providers,${tipo === 'tv' ? 'aggregate_credits' : 'credits'}`, idi)
-  const vids = (base.videos && base.videos.results) || []
+  const lang = idi.slice(0, 2)
+  const base = await tmdbJson(`/${tipo}/${tid}?append_to_response=videos,watch/providers,${tipo === 'tv' ? 'aggregate_credits' : 'credits'}&include_video_language=${lang},en,null`, idi)
+  // se piden también los vídeos en inglés y sin idioma, pero solo para los
+  // extras: el tráiler sigue saliendo de los del idioma, como antes (con uno en
+  // inglés, las fichas sin tráiler doblado pasaban a reproducirlo dentro)
+  const todos = ((base.videos && base.videos.results) || []).filter(v => v && v.site === 'YouTube' && typeof v.key === 'string')
+  const vids = todos.filter(v => v.iso_639_1 === lang)
+  // los «Featurette» de TMDB mezclan recetas y anuncios de Disney+: solo los
+  // que dicen ser de rodaje, efectos o escenas eliminadas
+  const extrasVid = [...vids, ...todos.filter(v => v.iso_639_1 !== lang)].filter(v => !/dish up|deets|recipe|receta|disney\s*\+|trailer|tráiler|teaser|tv spot/i.test(v.name || '') && (
+    v.type === 'Bloopers' || v.type === 'Behind the Scenes'
+    || (v.type === 'Featurette' && /making|behind|rodaje|gag|blooper|vfx|efectos|deleted|eliminad|set|stunt|design|diseño/i.test(v.name || ''))
+    || (v.type === 'Clip' && /delet|eliminad|extend|alternat/i.test(v.name || ''))))
+    .sort((a, b) => (b.official ? 1 : 0) - (a.official ? 1 : 0))
+    .slice(0, 12).map(v => ({ k: v.key, n: String(v.name || '').slice(0, 120), ty: v.type === 'Clip' ? 'Deleted' : v.type }))
   const tr = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official)
     || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer')
     || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser')
@@ -1427,6 +1443,7 @@ async function cargaTmdbRed(itemId) {
   })
   const d = {
     trailer: tr ? tr.key : null,
+    videos: extrasVid,
     fondo: base.backdrop_path || null,
     reparto,
     elenco,
@@ -1797,6 +1814,42 @@ function Avatar({ nombre, grande, foto }) {
   }
   return <img className={cls} src={src} alt="" loading="lazy" onError={() => setErr(true)} />
 }
+
+// La cara de un actor por su nombre (26 sep 2026, cambios de actor de la
+// ficha): la foto propia de public/people o, si no está, la de TMDB buscada por
+// nombre una vez y guardada (solo la ruta, unos bytes por persona)
+const KEY_CARAS = 'maraton-marvel-caras-v1'
+let carasMem = null
+const carasPend = {}
+function useCara(nombre) {
+  const limpio = limpiaNombre(nombre || '')
+  const [foto, setFoto] = useState(() => {
+    if (!limpio || PEOPLE[limpio]) return null
+    if (!carasMem) { try { carasMem = JSON.parse(localStorage.getItem(KEY_CARAS)) || {} } catch { carasMem = {} } }
+    return carasMem[limpio] || null
+  })
+  useEffect(() => {
+    if (!limpio || PEOPLE[limpio] || (carasMem && limpio in carasMem)) return undefined
+    let vivo = true
+    carasPend[limpio] = carasPend[limpio] || tmdbJson(`/search/person?query=${encodeURIComponent(limpio)}`)
+      .then(r => { const p = r && Array.isArray(r.results) && r.results.find(x => x && typeof x.profile_path === 'string'); return p ? p.profile_path : null })
+      .catch(() => undefined)
+    carasPend[limpio].then(f => {
+      if (f === undefined) return
+      carasMem = carasMem || {}; carasMem[limpio] = f
+      try { localStorage.setItem(KEY_CARAS, JSON.stringify(carasMem)) } catch {}
+      if (vivo) setFoto(f)
+    })
+    return () => { vivo = false }
+  }, [limpio])
+  return foto
+}
+function CaraActor({ nombre }) {
+  const foto = useCara(nombre)
+  return <Avatar nombre={nombre} foto={foto} />
+}
+// «Edward Norton (El increíble Hulk, 2008)» → «Edward Norton»
+const soloNombre = t => String(t || '').replace(/\s*\(.*$/, '').trim()
 
 const fmtFecha = f => f
   ? new Date(f + 'T00:00:00').toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' })
@@ -6376,11 +6429,68 @@ function useDetalles(id, idioma) {
       const x = j && esObj(j[id]) ? j[id] : null
       if (!vivo || !x) return
       const lista = (l, campos) => (Array.isArray(l) ? l : []).filter(e => esObj(e) && campos.every(c => textoOk(e[c]))).slice(0, 8)
-      setDatos({ larga: textoOk(x.larga) ? x.larga : '', cambios: lista(x.cambios, ['p', 'antes', 'ahora']), extras: lista(x.extras, ['t', 'd']) })
+      setDatos({ larga: textoOk(x.larga) ? x.larga : '', cambios: lista(x.cambios, ['p', 'antes', 'ahora']), extras: lista(x.extras, ['t', 'd']),
+        pcs: lista(x.pcs, ['t', 'd']).map(e => ({ ...e, cuando: e.cuando === 'mitad' ? 'mitad' : 'final', conecta: textoOk(e.conecta) ? e.conecta : '' })) })
     })
     return () => { vivo = false }
   }, [id, idioma])
   return datos
+}
+
+// La página de extras de un título (26 sep 2026, «que el usuario pueda
+// ingresar y revisar»): los extras con dónde verlos y los vídeos de TMDB
+// (tomas falsas, reportajes, escenas eliminadas) para ver dentro de la app
+const TIPO_VIDEO = { Bloopers: ['Tomas falsas', 'Bloopers'], Featurette: ['Reportaje', 'Featurette'], 'Behind the Scenes': ['Detrás de las cámaras', 'Behind the scenes'], Deleted: ['Escena eliminada', 'Deleted scene'] }
+function FichaExtras({ item, mas, extra, loc, onVolver }) {
+  const [viendo, setViendo] = useState(null)
+  const videos = (extra && extra.videos) || []
+  return (
+    <div className="extras-ficha">
+      <button className="volver-ficha" onClick={onVolver}><IcoAtras />{tr(`Volver a ${item.t}`, `Back to ${item.t}`)}</button>
+      <div className="xf-cab">
+        <span className="xf-etiqueta">{tr('Extras y versiones', 'Extras and versions')}</span>
+        <h3 className="xf-titulo">{item.t}</h3>
+      </div>
+      {videos.length > 0 && (
+        <section className="xf-bloque">
+          <h4 className="reparto-titulo">{tr('Para ver aquí', 'Watch here')}</h4>
+          <div className="xf-videos">
+            {videos.map(v => (
+              <div key={v.k} className="xf-video">
+                {viendo === v.k ? (
+                  <div className="xf-reproductor">
+                    <iframe src={`https://www.youtube-nocookie.com/embed/${v.k}?autoplay=1`} title={v.n} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+                  </div>
+                ) : (
+                  <button type="button" className="xf-mini" onClick={() => setViendo(v.k)} aria-label={tr(`Ver: ${v.n}`, `Watch: ${v.n}`)}>
+                    <img src={`https://i.ytimg.com/vi/${v.k}/mqdefault.jpg`} alt="" loading="lazy" decoding="async" />
+                    <span className="xf-play" aria-hidden="true"><IcoPlay /></span>
+                  </button>
+                )}
+                <span className="xf-video-tipo">{TIPO_VIDEO[v.ty] ? tr(...TIPO_VIDEO[v.ty]) : v.ty}</span>
+                <span className="xf-video-t">{v.n}</span>
+              </div>
+            ))}
+          </div>
+          <p className="xf-nota">{tr('Vídeos oficiales publicados en YouTube, vía TMDB. Suelen estar en inglés.', 'Official videos published on YouTube, via TMDB.')}</p>
+        </section>
+      )}
+      {mas && mas.extras.length > 0 && (
+        <section className="xf-bloque">
+          <h4 className="reparto-titulo">{tr('En Disney+ y en disco', 'On Disney+ and on disc')}</h4>
+          <ul className="ficha-extras">
+            {mas.extras.map((x, i) => (
+              <li key={i}>
+                <b>{loc(x.t)}</b>
+                <span>{loc(x.d)}</span>
+                {textoOk(x.donde) && x.donde && <small className="fe-donde">{loc(x.donde)}</small>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  )
 }
 
 function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca, saliendo, sinSpoilers, onForo }) {
@@ -6396,6 +6506,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
     return () => { cancelAnimationFrame(f); clearTimeout(t) }
   }, [d && d.item && d.item.id])
   const mas = useDetalles(d && d.item && d.item.id, idioma)
+  // la página de extras dentro de la ficha (como la biografía): atrás vuelve
+  const [verExtras, setVerExtras] = useState(false)
+  useEffect(() => { setVerExtras(false) }, [d && d.item && d.item.id])
+  // las escenas post-créditos que el usuario destapa a mano (sin haberla visto)
+  const [pcVistas, setPcVistas] = useState(false)
+  useEffect(() => { setPcVistas(false) }, [d && d.item && d.item.id])
   // fuera de España, los nombres del doblaje latino, como el resto de textos
   const loc = t => (t && idioma !== 'en' && pais !== 'ES' ? latiniza(t) : t)
   const { item, c, esComic } = d
@@ -6429,6 +6545,14 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   // La biografía es una capa dentro de la ficha: atrás vuelve a la ficha, como
   // hace Escape, y no cierra las dos de golpe
   useVolverCierra(!!persona, () => setPersona(null), () => refModal.current && refModal.current.querySelector('.persona-ficha'), true)
+  useVolverCierra(verExtras, () => setVerExtras(false), () => refModal.current && refModal.current.querySelector('.extras-ficha'), true)
+  // la página de extras empieza arriba y, al volver, la ficha sigue donde estaba
+  const scrollFicha = useRef(0)
+  const abreExtras = () => { if (refModal.current) { const m = refModal.current.querySelector('.modal'); scrollFicha.current = m ? m.scrollTop : 0; if (m) m.scrollTop = 0 } setVerExtras(true) }
+  useEffect(() => {
+    if (verExtras || !refModal.current) return
+    const m = refModal.current.querySelector('.modal'); if (m && scrollFicha.current) m.scrollTop = scrollFicha.current
+  }, [verExtras])
   // Cada pantalla de la hoja (un título, una biografía) recuerda su scroll
   // (17 sep 2026): la hoja es el mismo nodo para todas y la biografía abría a
   // 200 px, el título abierto desde ella a 150 (carátula y título cortados), y
@@ -6658,6 +6782,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
           <FichaPersona {...persona} idioma={idioma} itemActualId={item.id} tituloActual={item.t}
             onVolver={() => setPersona(null)}
             onAbrirTitulo={d => { onIrA && onIrA(d, persona); setPersona(null) }} />
+        ) : verExtras ? (
+          <FichaExtras item={item} mas={mas} extra={extra} loc={loc} onVolver={() => setVerExtras(false)} />
         ) : (
         <div className={cambios ? 'modal-info modal-cambio' : 'modal-info'} key={cambios}>
           {/* chips, título y meta juntos: en el móvil van a la derecha de la
@@ -6698,6 +6824,30 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
                 ? <>{tr('Sin escenas post-créditos', 'No post-credit scenes')}{item.pcn ? ` — ${item.pcn}` : tr(' — puedes saltarte los créditos', ' — you can skip the credits')}</>
                 : <>{tr('Escenas en los créditos: ', 'Scenes in the credits: ')}<b>{item.pc}</b>{item.pcn ? ` · ${item.pcn}` : ''}</>}
             </p>
+          )}
+          {/* qué pasa en cada escena de los créditos y a qué lleva (26 sep 2026).
+              Destripa: sin haberla visto, tapado hasta tocarlo */}
+          {!oculto && mas && mas.pcs.length > 0 && (
+            <section className="ficha-pcs">
+              <h3 className="reparto-titulo">{tr('Las escenas de los créditos, explicadas', 'The credits scenes, explained')}</h3>
+              {!vista && !pcVistas ? (
+                <button type="button" className="pcs-tapa" onClick={() => setPcVistas(true)}>
+                  <b>{tr(`${mas.pcs.length === 1 ? 'Ver la explicación' : `Ver las ${mas.pcs.length} explicaciones`}`, `${mas.pcs.length === 1 ? 'See the explanation' : `See the ${mas.pcs.length} explanations`}`)}</b>
+                  <small>{tr('Destripa el final: mejor después de verla', 'Spoils the ending: better after watching')}</small>
+                </button>
+              ) : (
+                <ol className="pcs-lista">
+                  {mas.pcs.map((e, i) => (
+                    <li key={i} className="pcs-escena">
+                      <span className="pcs-cuando">{e.cuando === 'mitad' ? tr('A mitad de los créditos', 'Mid-credits') : tr('Al final de los créditos', 'After the credits')}</span>
+                      <b>{loc(e.t)}</b>
+                      <p>{loc(e.d)}</p>
+                      {e.conecta && <p className="pcs-conecta"><span>{tr('Lleva a', 'Leads to')}</span> {loc(e.conecta)}</p>}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
           )}
           {/* las acciones van tras la sinopsis: en una serie quedaban debajo de
               todos los episodios (en X-Men '97 a 1.800 px; en las de 60, mucho más) */}
@@ -6741,28 +6891,39 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               <ul className="ficha-cambios">
                 {mas.cambios.map((c, i) => (
                   <li key={i}>
-                    <b className="fc-personaje">{loc(c.p)}</b>
-                    <span className="fc-actores"><s>{loc(c.antes)}</s><span aria-hidden="true"> → </span><span className="solo-lector">{tr(' ahora ', ' now ')}</span><b>{loc(c.ahora)}</b></span>
-                    {textoOk(c.nota) && c.nota && <span className="fc-nota">{loc(c.nota)}</span>}
+                    <span className="fc-caras" aria-hidden="true">
+                      <span className="fc-cara antes"><CaraActor nombre={soloNombre(c.antes)} /></span>
+                      <svg className="fc-flecha" viewBox="0 0 24 24"><path d="M5 12h13m-5-6 6 6-6 6" /></svg>
+                      <span className="fc-cara"><CaraActor nombre={soloNombre(c.ahora)} /></span>
+                    </span>
+                    <span className="fc-texto">
+                      <b className="fc-personaje">{loc(c.p)}</b>
+                      <span className="fc-actores"><s>{loc(c.antes)}</s><span aria-hidden="true"> → </span><span className="solo-lector">{tr(' ahora ', ' now ')}</span><b>{loc(c.ahora)}</b></span>
+                      {textoOk(c.nota) && c.nota && <span className="fc-nota">{loc(c.nota)}</span>}
+                    </span>
                   </li>
                 ))}
               </ul>
             </section>
           )}
-          {mas && mas.extras.length > 0 && (
-            <section className="ficha-bloque">
-              <h3 className="reparto-titulo">{tr('Extras y versiones', 'Extras and versions')}</h3>
-              <ul className="ficha-extras">
-                {mas.extras.map((x, i) => (
-                  <li key={i}>
-                    <b>{loc(x.t)}</b>
-                    <span>{loc(x.d)}</span>
-                    {textoOk(x.donde) && x.donde && <small className="fe-donde">{loc(x.donde)}</small>}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          {((mas && mas.extras.length > 0) || (extra && extra.videos && extra.videos.length > 0)) && (() => {
+            const nx = mas ? mas.extras.length : 0, nv = extra && extra.videos ? extra.videos.length : 0
+            const foto = FOTOGRAMAS[item.id] || (extra && extra.fondo)
+            return (
+              <section className="ficha-bloque">
+                <h3 className="reparto-titulo">{tr('Extras y versiones', 'Extras and versions')}</h3>
+                <button type="button" className="extras-entrada" onClick={abreExtras}>
+                  {foto && <img className="ee-foto" src={`${TMDB_IMG}w780${foto}`} alt="" loading="lazy" decoding="async" />}
+                  <span className="ee-texto">
+                    <b>{tr('Escenas eliminadas, versiones y vídeos', 'Deleted scenes, versions and videos')}</b>
+                    <small>{[nx ? tr(`${nx} extra${nx === 1 ? '' : 's'}`, `${nx} extra${nx === 1 ? '' : 's'}`) : null, nv ? tr(`${nv} vídeo${nv === 1 ? '' : 's'} para ver aquí`, `${nv} video${nv === 1 ? '' : 's'} to watch here`) : null].filter(Boolean).join(' · ')}</small>
+                    {mas && mas.extras[0] && <span className="ee-muestra">{loc(mas.extras.map(x => x.t).slice(0, 3).join(' · '))}</span>}
+                  </span>
+                  <svg className="ee-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                </button>
+              </section>
+            )
+          })()}
           {(directores.length > 0 || item.cast) && (
             <section className="reparto">
               <h3 className="reparto-titulo">{tr('Dirección y reparto', 'Direction and cast')}</h3>

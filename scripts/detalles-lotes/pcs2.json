@@ -1,0 +1,167 @@
+{
+ "cap2": {
+  "es": [
+   {"cuando":"mitad","t":"Strucker, el cetro y los gemelos","d":"En una base secreta, el barón Wolfgang von Strucker revela que HYDRA sigue viva y que tiene el cetro de Loki. Estudia a dos prisioneros enjaulados, los gemelos Pietro y Wanda Maximoff, a los que llama «milagros».","conecta":"Lleva a Vengadores: La era de Ultrón, que empieza con el asalto a esta base y presenta a Mercurio y la Bruja Escarlata."},
+   {"cuando":"final","t":"Bucky en el museo del Capitán América","d":"El Soldado de Invierno visita de incógnito la exposición del Capitán América en el Smithsonian. Ante el panel dedicado a James Buchanan «Bucky» Barnes empieza a recordar quién fue.","conecta":"Su búsqueda sigue en Capitán América: Civil War."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"Strucker, the scepter and the twins","d":"In a secret base, Baron Wolfgang von Strucker reveals that HYDRA is still alive and has Loki's scepter. He studies two caged prisoners, the twins Pietro and Wanda Maximoff, whom he calls \"miracles\".","conecta":"Leads to Avengers: Age of Ultron, which opens with the raid on this base and introduces Quicksilver and Scarlet Witch."},
+   {"cuando":"final","t":"Bucky at the Captain America exhibit","d":"The Winter Soldier visits the Captain America exhibit at the Smithsonian in disguise. Standing before the panel about James Buchanan \"Bucky\" Barnes, he begins to remember who he was.","conecta":"His story continues in Captain America: Civil War."}
+  ],
+  "fuentes": ["https://screenrant.com/captain-america-2-mid-post-credits-button-scenes-spoilers/","https://www.imdb.com/title/tt1843866/crazycredits/"]
+ },
+ "gotg1": {
+  "es": [
+   {"cuando":"mitad","t":"Bebé Groot baila","d":"En la Milano, Drax afila sus cuchillos mientras Bebé Groot, en su maceta, baila «I Want You Back» de los Jackson 5. Cada vez que Drax lo mira, se queda quieto.","conecta":"Bebé Groot sigue creciendo en Guardianes de la Galaxia Vol. 2."},
+   {"cuando":"final","t":"El Coleccionista y Howard el Pato","d":"El Coleccionista está sentado entre las ruinas de su museo en Sapiencial. La perra Cosmo le lame la cara y, a su lado, Howard el Pato, una de sus piezas, se burla de él con una copa en la mano.","conecta":"Una broma: Howard el Pato solo vuelve en cameos (Vol. 2, Vengadores: Endgame); el Coleccionista reaparece en Vengadores: Infinity War."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"Baby Groot dances","d":"Aboard the Milano, Drax sharpens his knives while Baby Groot, in his pot, dances to the Jackson 5's \"I Want You Back\". Every time Drax looks over, he freezes.","conecta":"Baby Groot keeps growing in Guardians of the Galaxy Vol. 2."},
+   {"cuando":"final","t":"The Collector and Howard the Duck","d":"The Collector sits in the ruins of his museum on Knowhere. Cosmo the dog licks his face and, next to him, Howard the Duck, one of his exhibits, mocks him with a drink in hand.","conecta":"A gag: Howard the Duck only returns in cameos (Vol. 2, Avengers: Endgame); the Collector reappears in Avengers: Infinity War."}
+  ],
+  "fuentes": ["https://mediastinger.com/guardians-of-the-galaxy-2014-extra-comedic-scenes-during-and-after-the-credits/"]
+ },
+ "gotg2": {
+  "es": [
+   {"cuando":"mitad","t":"Kraglin prueba la flecha de Yondu","d":"Kraglin se pone la aleta de Yondu para aprender a manejar su flecha silbante, pero no la controla y se la clava a Drax en el hombro.","conecta":"Kraglin domina la flecha en Guardianes de la Galaxia: Especial felices fiestas y Vol. 3."},
+   {"cuando":"mitad","t":"Stakar reúne a su antiguo equipo","d":"Conmovido por el funeral de Yondu, Stakar Ogord (Sylvester Stallone) propone volver a unirse a sus viejos compañeros saqueadores: Charlie-27, Aleta, Martinex, Mainframe y Krugarr, los Guardianes originales de los cómics.","conecta":"Nunca se retomó: este equipo no ha vuelto a aparecer en el UCM."},
+   {"cuando":"mitad","t":"Ayesha crea a Adam","d":"La sacerdotisa Ayesha, humillada por los Guardianes, muestra la cápsula donde crea a un ser más poderoso para destruirlos y decide llamarlo Adam.","conecta":"Adam Warlock aparece en Guardianes de la Galaxia Vol. 3."},
+   {"cuando":"mitad","t":"Groot adolescente","d":"Peter Quill entra en la habitación de Groot, ya adolescente, y le riñe por el desorden de lianas mientras juega a un videojuego. Groot responde con un «Yo soy Groot» de fastidio.","conecta":"Groot adolescente vuelve en Vengadores: Infinity War."},
+   {"cuando":"final","t":"Stan Lee y los Vigilantes","d":"Stan Lee, sentado ante un grupo de Vigilantes, les cuenta sus aventuras en la Tierra; ellos se marchan y lo dejan hablando solo.","conecta":"Un guiño: sugiere que Stan Lee es un informador de los Vigilantes en todos sus cameos."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"Kraglin tries Yondu's arrow","d":"Kraglin puts on Yondu's fin to learn to control his whistling arrow, but loses control and sticks it in Drax's shoulder.","conecta":"Kraglin masters the arrow in The Guardians of the Galaxy Holiday Special and Vol. 3."},
+   {"cuando":"mitad","t":"Stakar reunites his old team","d":"Moved by Yondu's funeral, Stakar Ogord (Sylvester Stallone) proposes getting his old Ravager crew back together: Charlie-27, Aleta, Martinex, Mainframe and Krugarr, the comics' original Guardians.","conecta":"Never followed up: this team has not appeared again in the MCU."},
+   {"cuando":"mitad","t":"Ayesha creates Adam","d":"The High Priestess Ayesha, humiliated by the Guardians, reveals the birthing pod where she is creating a more powerful being to destroy them, and names him Adam.","conecta":"Adam Warlock appears in Guardians of the Galaxy Vol. 3."},
+   {"cuando":"mitad","t":"Teenage Groot","d":"Peter Quill walks into the room of a now-teenage Groot and scolds him for the mess of vines while he plays a video game. Groot answers with an annoyed \"I am Groot\".","conecta":"Teenage Groot returns in Avengers: Infinity War."},
+   {"cuando":"final","t":"Stan Lee and the Watchers","d":"Stan Lee, sitting before a group of Watchers, tells them about his adventures on Earth; they leave and he keeps talking to himself.","conecta":"A wink: it suggests Stan Lee is an informant for the Watchers in all his cameos."}
+  ],
+  "fuentes": ["https://www.looper.com/62922/every-credits-scene-in-guardians-of-the-galaxy-2-explained/","https://time.com/4754639/guardians-galaxy-2-post-credit-scenes/"]
+ },
+ "ultron": {
+  "es": [
+   {"cuando":"mitad","t":"«Está bien, lo haré yo mismo»","d":"Harto de los fracasos de sus enviados (Loki, Ronan), Thanos saca de una cámara el Guantelete del Infinito vacío, se lo pone y decide buscar él mismo las Gemas del Infinito.","conecta":"Lleva a Vengadores: Infinity War, donde Thanos recorre el universo tras las gemas."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"\"Fine, I'll do it myself\"","d":"Fed up with his agents' failures (Loki, Ronan), Thanos takes the empty Infinity Gauntlet out of a vault, puts it on and decides to hunt the Infinity Stones himself.","conecta":"Leads to Avengers: Infinity War, where Thanos crosses the universe for the stones."}
+  ],
+  "fuentes": ["https://www.eonline.com/news/652506/here-s-what-you-need-to-know-about-that-ominous-avengers-age-of-ultron-mid-credits-scene"]
+ },
+ "antman1": {
+  "es": [
+   {"cuando":"mitad","t":"El traje de la Avispa","d":"Hank Pym lleva a Hope a un cuarto secreto y le enseña el prototipo del traje de la Avispa que diseñó con su madre, Janet. Hope responde: «Ya era hora».","conecta":"Hope se convierte en la Avispa en Ant-Man y la Avispa."},
+   {"cuando":"final","t":"«Conozco a alguien»","d":"Steve Rogers y Sam Wilson tienen a Bucky atrapado en un torno. No pueden avisar a Tony por los Acuerdos, así que están solos; Sam dice que conoce a alguien, en referencia a Scott Lang. Es metraje de Civil War.","conecta":"Lleva a Capitán América: Civil War, donde Ant-Man se une al bando del Capitán."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"The Wasp suit","d":"Hank Pym takes Hope to a secret room and shows her the prototype Wasp suit he designed with her mother, Janet. Hope replies: \"It's about damn time\".","conecta":"Hope becomes the Wasp in Ant-Man and the Wasp."},
+   {"cuando":"final","t":"\"I know a guy\"","d":"Steve Rogers and Sam Wilson have Bucky pinned in a vise. They can't call Tony because of the Accords, so they're on their own; Sam says he knows a guy, meaning Scott Lang. It's footage from Civil War.","conecta":"Leads to Captain America: Civil War, where Ant-Man joins Cap's side."}
+  ],
+  "fuentes": ["https://www.hollywoodreporter.com/movies/movie-news/ant-man-post-credit-scene-809530/","https://mediastinger.com/ant-man-2015-after-the-credits/"]
+ },
+ "civilwar": {
+  "es": [
+   {"cuando":"mitad","t":"Bucky vuelve a congelarse en Wakanda","d":"En Wakanda, Bucky, que no se fía de su mente, decide volver a la criogenización hasta que encuentren cómo quitarle la programación de HYDRA. Steve avisa a T'Challa de que irán a por él; T'Challa responde: «Que lo intenten».","conecta":"Lleva a Black Panther, cuya escena final muestra a Bucky ya curado en Wakanda."},
+   {"cuando":"final","t":"La señal de Spider-Man","d":"En Queens, Peter Parker se recupera y esconde a tía May sus nuevos lanzarredes. Cuando ella se va, prueba un regalo de Tony Stark: la luz que proyecta la señal de Spider-Man en el techo.","conecta":"Lleva a Spider-Man: Homecoming."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"Bucky goes back into the freeze in Wakanda","d":"In Wakanda, Bucky, who doesn't trust his own mind, chooses to go back into cryosleep until a way is found to remove HYDRA's programming. Steve warns T'Challa they'll come for him; T'Challa replies: \"Let them try\".","conecta":"Leads to Black Panther, whose final scene shows Bucky healed in Wakanda."},
+   {"cuando":"final","t":"The Spider-Signal","d":"In Queens, Peter Parker recovers and hides his new web-shooters from Aunt May. Once she leaves, he tests a gift from Tony Stark: a light that projects the Spider-Man signal on the ceiling.","conecta":"Leads to Spider-Man: Homecoming."}
+  ],
+  "fuentes": ["https://www.denofgeek.com/comics/captain-america-civil-war-ending-and-post-credits-scenes-explained/","https://screencrush.com/captain-america-civil-war-post-credits-scenes-revealed/"]
+ },
+ "blackwidow": {
+  "es": [
+   {"cuando":"final","t":"Yelena ante la tumba de Natasha","d":"Años después, tras Vengadores: Endgame, Yelena visita la tumba de Natasha y silba como hacían de niñas. Valentina Allegra de Fontaine la interrumpe y le da su próximo objetivo: Clint Barton, a quien culpa de la muerte de Natasha.","conecta":"Lleva a la serie Ojo de Halcón, donde Yelena va a por Clint; Valentina reaparece en Thunderbolts*."}
+  ],
+  "en": [
+   {"cuando":"final","t":"Yelena at Natasha's grave","d":"Years later, after Avengers: Endgame, Yelena visits Natasha's grave and whistles the way they did as girls. Valentina Allegra de Fontaine interrupts and hands her next target: Clint Barton, whom she blames for Natasha's death.","conecta":"Leads to the series Hawkeye, where Yelena goes after Clint; Valentina returns in Thunderbolts*."}
+  ],
+  "fuentes": ["https://www.denofgeek.com/movies/black-widow-post-credits-scene-explained/","https://www.thewrap.com/black-widow-post-credits-scene-explained/"]
+ },
+ "blackpanther": {
+  "es": [
+   {"cuando":"mitad","t":"T'Challa en las Naciones Unidas","d":"T'Challa se presenta ante la ONU y anuncia que Wakanda dejará de esconderse y compartirá su conocimiento y sus recursos con el mundo. Un delegado pregunta qué puede ofrecer una nación de granjeros, y él sonríe.","conecta":"El Wakanda abierto al mundo se ve en Black Panther: Wakanda Forever."},
+   {"cuando":"final","t":"El Lobo Blanco","d":"En un poblado de Wakanda, Bucky Barnes, sin brazo metálico, sale de una cabaña; los niños lo llaman «Lobo Blanco». Shuri le dice que aún le queda mucho por aprender.","conecta":"Bucky vuelve a la acción en Vengadores: Infinity War, en la batalla de Wakanda."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"T'Challa at the United Nations","d":"T'Challa addresses the UN and announces that Wakanda will stop hiding and share its knowledge and resources with the world. A delegate asks what a nation of farmers can offer, and he smiles.","conecta":"A Wakanda open to the world is seen in Black Panther: Wakanda Forever."},
+   {"cuando":"final","t":"The White Wolf","d":"In a Wakandan village, Bucky Barnes, without his metal arm, steps out of a hut; the children call him \"White Wolf\". Shuri tells him he still has much to learn.","conecta":"Bucky returns to action in Avengers: Infinity War, in the battle of Wakanda."}
+  ],
+  "fuentes": ["https://time.com/5156771/black-panther-after-credit-scenes-vibranium-and-bucky-barnes-explained/","https://www.denofgeek.com/movies/black-panther-post-credits-scenes-explained/"]
+ },
+ "homecoming": {
+  "es": [
+   {"cuando":"mitad","t":"Toomes y Mac Gargan en la cárcel","d":"En prisión, Mac Gargan, otro delincuente al que Spider-Man frenó, le dice a Adrian Toomes que ha oído que sabe quién es Spider-Man. Toomes, que le debe la vida a Peter, lo niega: «Si lo supiera, ya estaría muerto».","conecta":"Gargan es el Escorpión de los cómics, pero su historia nunca se retomó en el UCM."},
+   {"cuando":"final","t":"El Capitán América habla de la paciencia","d":"Uno de los vídeos educativos del Capitán América para institutos habla de la paciencia y reconoce que a veces esperar no compensa, burlándose de quienes se han quedado hasta el final de los créditos.","conecta":""}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"Toomes and Mac Gargan in prison","d":"In prison, Mac Gargan, another criminal Spider-Man stopped, tells Adrian Toomes he's heard he knows who Spider-Man is. Toomes, who owes Peter his life, denies it: \"If I knew who he was, he'd already be dead\".","conecta":"Gargan is the Scorpion of the comics, but his story was never followed up in the MCU."},
+   {"cuando":"final","t":"Captain America on patience","d":"One of Captain America's school PSA videos talks about patience and admits that sometimes waiting isn't worth it, teasing everyone who stayed until the end of the credits.","conecta":""}
+  ],
+  "fuentes": ["https://time.com/4833457/spiderman-homecoming-post-credit-scenes/","https://www.denofgeek.com/movies/spider-man-homecoming-post-credits-scenes-explained/"]
+ },
+ "drstrange": {
+  "es": [
+   {"cuando":"mitad","t":"Strange recibe a Thor","d":"En el Sanctum de Nueva York, Strange invita a Thor a un té (una jarra de cerveza que no se vacía). Le pregunta por qué ha traído a Loki a la Tierra; Thor explica que buscan a su padre, Odín, y Strange se ofrece a ayudar.","conecta":"Lleva a Thor: Ragnarok, donde se ve este encuentro desde el lado de Thor."},
+   {"cuando":"final","t":"Mordo: «Demasiados hechiceros»","d":"Mordo, desencantado con el Hechicero Supremo y sus normas, busca a Jonathan Pangborn, el paralítico que curó con magia, y le arrebata su poder: el mundo tiene «demasiados hechiceros».","conecta":"Nunca se retomó del todo: en Doctor Strange en el multiverso de la locura aparece otra versión de Mordo, no esta."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"Strange meets Thor","d":"At the New York Sanctum, Strange offers Thor tea (a mug of beer that refills itself). He asks why he brought Loki to Earth; Thor explains they're looking for their father, Odin, and Strange offers to help.","conecta":"Leads to Thor: Ragnarok, where this meeting is shown from Thor's side."},
+   {"cuando":"final","t":"Mordo: \"Too many sorcerers\"","d":"Mordo, disillusioned with the Sorcerer Supreme and her rules, finds Jonathan Pangborn, the paraplegic who healed himself with magic, and drains his power: the world has \"too many sorcerers\".","conecta":"Never fully followed up: Doctor Strange in the Multiverse of Madness shows a different Mordo, not this one."}
+  ],
+  "fuentes": ["https://collider.com/doctor-strange-post-credit-scenes-explained/","https://mediastinger.com/doctor-strange-2016-after-the-credits/"]
+ },
+ "ragnarok": {
+  "es": [
+   {"cuando":"mitad","t":"Una nave gigante","d":"En la nave con los supervivientes de Asgard, Thor y Loki hablan de volver a la Tierra. De pronto, una nave enorme les cierra el paso: el Santuario II de Thanos.","conecta":"Lleva directamente al inicio de Vengadores: Infinity War."},
+   {"cuando":"final","t":"El Gran Maestro: «Es un empate»","d":"En Sakaar, tras la revolución, el Gran Maestro sale de entre la chatarra rodeado de rebeldes y les dice que, como no hay revolución sin alguien a quien derrocar, lo justo es declarar un empate.","conecta":"Una broma: el Gran Maestro no ha vuelto en las películas."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"A giant ship","d":"On the ship carrying Asgard's survivors, Thor and Loki talk about returning to Earth. Suddenly a huge ship blocks their way: Thanos's Sanctuary II.","conecta":"Leads straight into the opening of Avengers: Infinity War."},
+   {"cuando":"final","t":"The Grandmaster: \"It's a tie\"","d":"On Sakaar, after the revolution, the Grandmaster crawls out of the scrap surrounded by rebels and tells them that since there's no revolution without someone to overthrow, it's only fair to call it a tie.","conecta":"A gag: the Grandmaster hasn't returned in the films."}
+  ],
+  "fuentes": ["https://www.denofgeek.com/movies/thor-ragnarok-post-credits-scenes-explained/","https://www.etonline.com/taika-waititi-explains-the-cliffhanger-mid-credits-scene-in-thor-ragnarok-exclusive-90409"]
+ },
+ "antman2": {
+  "es": [
+   {"cuando":"mitad","t":"El chasquido deja a Scott en el reino cuántico","d":"Hank, Janet y Hope envían a Scott al reino cuántico a recoger energía desde una furgoneta. Mientras él está dentro, los tres se convierten en polvo por el chasquido de Thanos y Scott queda atrapado.","conecta":"Clave para Vengadores: Endgame: Scott sale de allí cinco años después y propone el viaje en el tiempo."},
+   {"cuando":"final","t":"La hormiga gigante toca la batería","d":"En la casa vacía de Scott, la hormiga gigante que lo sustituía toca la batería. La tele emite un aviso de emergencia: el mundo sufre el efecto del chasquido.","conecta":"Muestra el mundo tras el chasquido de Vengadores: Infinity War."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"The Snap strands Scott in the Quantum Realm","d":"Hank, Janet and Hope send Scott into the Quantum Realm from a van to harvest energy. While he's inside, all three turn to dust from Thanos's snap, and Scott is trapped.","conecta":"Key to Avengers: Endgame: Scott gets out five years later and suggests time travel."},
+   {"cuando":"final","t":"The giant ant plays the drums","d":"In Scott's empty house, the giant ant that stood in for him plays the drums. The TV shows an emergency broadcast: the world is reeling from the Snap.","conecta":"Shows the world after the Snap of Avengers: Infinity War."}
+  ],
+  "fuentes": ["https://www.cbr.com/ant-man-and-the-wasp-post-credits-scenes-explained/","https://runpee.com/about-the-end-credits-scenes-in-ant-man-the-wasp/"]
+ },
+ "infinitywar": {
+  "es": [
+   {"cuando":"final","t":"Nick Furia llama a Capitana Marvel","d":"En Nueva York, Nick Furia y Maria Hill ven el caos del chasquido: coches sin conductor, gente que desaparece. Hill se convierte en polvo; Furia saca un viejo buscapersonas y envía una señal justo antes de desvanecerse. En la pantalla aparece el emblema de Capitana Marvel.","conecta":"Lleva a Capitana Marvel (el origen del buscapersonas, en los años 90) y a Vengadores: Endgame, donde ella acude."}
+  ],
+  "en": [
+   {"cuando":"final","t":"Nick Fury calls Captain Marvel","d":"In New York, Nick Fury and Maria Hill witness the chaos of the Snap: driverless cars, people vanishing. Hill turns to dust; Fury pulls out an old pager and sends a signal just before fading away. Captain Marvel's emblem appears on the screen.","conecta":"Leads to Captain Marvel (the pager's origin, in the '90s) and to Avengers: Endgame, where she answers."}
+  ],
+  "fuentes": ["https://time.com/5252891/avengers-infinity-war-post-credit-scene/","https://www.thewrap.com/avengers-infinity-war-post-credits-scene-explained-what-was-that-symbol-on-nick-fury-pager-captain-marvel/"]
+ },
+ "eternals": {
+  "es": [
+   {"cuando":"mitad","t":"Eros y Pip el Troll","d":"En la nave de Thena, Makkari y Druig aparece Pip el Troll, que presenta a Eros (Harry Styles), príncipe de Titán y hermano de Thanos. Eros les dice que sabe dónde están sus compañeros secuestrados por Arishem y les ofrece ayuda.","conecta":"Nunca se retomó: Eternals no ha tenido secuela y Eros no ha vuelto a aparecer."},
+   {"cuando":"final","t":"Dane Whitman y la Espada de Ébano","d":"Dane Whitman abre el cofre de su familia, que guarda la maldita Espada de Ébano, y duda si empuñarla. Una voz fuera de plano le pregunta si está preparado; es Blade (Mahershala Ali).","conecta":"Anuncia a Dane como Caballero Negro y a Blade, pero la película de Blade no ha llegado a estrenarse y esta trama sigue sin continuación."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"Eros and Pip the Troll","d":"On the ship of Thena, Makkari and Druig, Pip the Troll appears and introduces Eros (Harry Styles), prince of Titan and Thanos's brother. Eros says he knows where their comrades taken by Arishem are and offers his help.","conecta":"Never followed up: Eternals hasn't had a sequel and Eros hasn't appeared again."},
+   {"cuando":"final","t":"Dane Whitman and the Ebony Blade","d":"Dane Whitman opens his family's chest, which holds the cursed Ebony Blade, and hesitates to take it. A voice off-screen asks if he's ready; it's Blade (Mahershala Ali).","conecta":"Sets up Dane as the Black Knight and Blade, but the Blade film has never been released and this thread remains unresolved."}
+  ],
+  "fuentes": ["https://time.com/6112817/eternals-post-credits-scenes/","https://www.etonline.com/eternals-post-credits-scene-harry-styles-blade-eros-starfox-black-knight"]
+ },
+ "shangchi": {
+  "es": [
+   {"cuando":"mitad","t":"Los anillos, estudiados por los Vengadores","d":"Wong lleva a Shang-Chi y Katy a Kamar-Taj, donde Bruce Banner y Carol Danvers analizan los diez anillos por holograma: son muy antiguos, no son alienígenas y emiten una señal hacia algún lugar desconocido. Wong les dice: «Bienvenidos al circo».","conecta":"La señal de los anillos no se ha retomado aún; Wong vuelve a aparecer en Spider-Man: No Way Home y Hulka."},
+   {"cuando":"final","t":"Xialing al mando de los Diez Anillos","d":"Xialing, que debía desmantelar la organización de su padre, ocupa su trono y la renueva: entrena a mujeres y hombres por igual. Aparece el rótulo «Los Diez Anillos volverán».","conecta":"Prepara una secuela de Shang-Chi que aún no se ha estrenado."}
+  ],
+  "en": [
+   {"cuando":"mitad","t":"The Avengers study the rings","d":"Wong brings Shang-Chi and Katy to Kamar-Taj, where Bruce Banner and Carol Danvers analyze the ten rings by hologram: they're very old, not alien, and emit a signal to somewhere unknown. Wong tells them: \"Welcome to the circus\".","conecta":"The rings' signal hasn't been followed up yet; Wong returns in Spider-Man: No Way Home and She-Hulk."},
+   {"cuando":"final","t":"Xialing takes over the Ten Rings","d":"Xialing, who was supposed to dismantle her father's organization, takes his throne and remakes it, training women and men alike. A title card reads \"The Ten Rings will return\".","conecta":"Sets up a Shang-Chi sequel that hasn't been released yet."}
+  ],
+  "fuentes": ["https://variety.com/2021/film/news/shang-chi-post-credits-scenes-1235055964/","https://nerdist.com/article/shang-chi-post-credits-scenes-explained-marvel-mcu/"]
+ }
+}

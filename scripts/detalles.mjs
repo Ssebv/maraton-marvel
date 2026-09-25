@@ -49,12 +49,31 @@ for (const [id, v] of Object.entries(todo)) {
   if (nc(a) !== nc(b) || nx(a) !== nx(b)) problemas.push(`${id}: es/en no cuadran (cambios ${nc(a)}/${nc(b)}, extras ${nx(a)}/${nx(b)})`)
 }
 
+// escenas post-créditos explicadas (pcs*.json): { "<id>": { es:[{cuando,t,d,conecta}], en:[…], fuentes, pc_real? } }
+const pcReal = []
+for (const f of readdirSync(dir).filter(f => /^pcs.*\.json$/.test(f)).sort()) {
+  for (const [id, v] of Object.entries(JSON.parse(readFileSync(join(dir, f), 'utf8')))) {
+    if (!ids.has(id)) { problemas.push(`${id}: (pcs) no existe en el catálogo`); continue }
+    const escenas = l => (Array.isArray(l) ? l : []).filter(e => texto(e.t, 90) && texto(e.d, 500))
+      .map(e => ({ cuando: e.cuando === 'mitad' ? 'mitad' : 'final', t: e.t.trim(), d: e.d.trim(), ...(texto(e.conecta, 260) ? { conecta: e.conecta.trim() } : {}) }))
+    const a = escenas(v.es), b = escenas(v.en)
+    if (a.length !== b.length) problemas.push(`${id}: (pcs) es/en no cuadran (${a.length}/${b.length})`)
+    if (a.length) (es[id] ||= {}).pcs = a
+    if (b.length) (en[id] ||= {}).pcs = b
+    if (Array.isArray(v.fuentes) && v.fuentes.length) fuentes[id] = [...new Set([...(fuentes[id] || []), ...v.fuentes.filter(u => /^https?:\/\//.test(u))])]
+    if (typeof v.pc_real === 'string' && v.pc_real) pcReal.push(`${id}: ${v.pc_real}`)
+  }
+}
+
 mkdirSync(join(RAIZ, 'public/detalles'), { recursive: true })
 writeFileSync(join(RAIZ, 'public/detalles/es.json'), JSON.stringify(es))
 writeFileSync(join(RAIZ, 'public/detalles/en.json'), JSON.stringify(en))
 writeFileSync(join(RAIZ, 'scripts/detalles-fuentes.json'), JSON.stringify(fuentes, null, 1) + '\n')
 const cuenta = o => Object.values(o).reduce((n, x) => ({ l: n.l + (x.larga ? 1 : 0), c: n.c + (x.cambios || []).length, x: n.x + (x.extras || []).length }), { l: 0, c: 0, x: 0 })
 const c = cuenta(es)
+const npcs = Object.values(es).reduce((n, x) => n + (x.pcs || []).length, 0)
+console.log(`post-créditos: ${Object.values(es).filter(x => x.pcs).length} títulos · ${npcs} escenas explicadas`)
+if (pcReal.length) console.log('corregir «pc» en data.js: ' + pcReal.join(' · '))
 console.log(`detalles: ${Object.keys(es).length} títulos · ${c.l} historias · ${c.c} cambios de actor · ${c.x} extras · es ${(JSON.stringify(es).length / 1024).toFixed(0)} kB, en ${(JSON.stringify(en).length / 1024).toFixed(0)} kB`)
 const faltan = [...ids].filter(id => !id.startsWith('c-') && !todo[id])
 if (faltan.length) console.log(`sin detalles (${faltan.length}): ${faltan.slice(0, 12).join(', ')}${faltan.length > 12 ? '…' : ''}`)

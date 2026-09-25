@@ -491,7 +491,7 @@ h1 .rojo{color:var(--red)}
 }
 
 /* ── Ficha de una persona, dentro de la propia ficha del título ── */
-.persona-ficha{
+.persona-ficha, .extras-ficha{
   flex:1; min-width:0; display:flex; flex-direction:column; gap: var(--e-5);
   animation:entraVista var(--dur-media) var(--curva) both;
 }
@@ -1214,7 +1214,7 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
      una persona sustituye a .modal-info y, sin esto, caía en la columna de la
      carátula (104 px) */
   .modal > *{grid-column:1 / -1}
-  .modal > .persona-ficha{min-width:0; position:relative; z-index:1}
+  .modal > .persona-ficha, .modal > .extras-ficha{min-width:0; position:relative; z-index:1}
   .modal-cover, .modal-info{display:contents}
   /* disueltos pierden su z-index: los hijos se ponen encima del fotograma */
   .modal-cover > *, .modal-info > *{grid-column:1 / -1; min-width:0; position:relative; z-index:1}
@@ -1230,8 +1230,8 @@ h1, h2, .titulo, .modal-titulo, .cuenta-titulo{text-wrap:balance}
   /* con la biografía abierta la carátula y su botón dejaban un hueco vacío a
      la derecha (la cabeza del título no está): se esconden y la biografía
      sube, bajo el fotograma si lo hay; «Volver a…» ya dice de dónde vienes */
-  .modal:has(> .persona-ficha) > .modal-cover{display:none}
-  .modal.con-fondo > .persona-ficha{margin-top: var(--e-8)}
+  .modal:has(> .persona-ficha) > .modal-cover, .modal:has(> .extras-ficha) > .modal-cover{display:none}
+  .modal.con-fondo > .persona-ficha, .modal.con-fondo > .extras-ficha{margin-top: var(--e-8)}
 }
 
 /* ── Episodios ── */
@@ -5095,3 +5095,61 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
 .ficha-extras li > b{font-size: var(--t-b)}
 .fe-donde{align-self:flex-start; margin-top: var(--e-1); padding:2px 8px; border-radius:var(--r-pill); font-size: var(--t-xs); font-weight:700; color:var(--blue); background:color-mix(in srgb, var(--blue) 14%, transparent)}
 @media (prefers-reduced-motion: reduce){ .ficha-historia p{animation:none} .ficha-historia > summary::after{transition:none} }
+
+/* ── Cambios de actor con caras, entrada a los extras, página de extras y
+   escenas post-créditos explicadas (26 sep 2026) ── */
+.ficha-cambios li{flex-direction:row; align-items:center; gap: var(--e-4)}
+.fc-caras{flex:none; display:flex; align-items:center; gap: var(--e-1)}
+.fc-cara .avatar{width:44px; height:44px}
+.fc-cara.antes .avatar{filter:grayscale(1); opacity:.7}
+.fc-flecha{width:16px; height:16px; fill:none; stroke:var(--ink3); stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.fc-texto{display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
+
+.extras-entrada{
+  position:relative; width:100%; display:flex; align-items:center; gap: var(--e-4); margin-top: var(--e-3); padding: var(--e-3);
+  border-radius:var(--r-l); border:1px solid var(--filo); background:var(--sup-lustre), color-mix(in srgb, var(--panel2) 85%, transparent);
+  box-shadow:var(--sup-brillo); color:var(--ink); font:inherit; text-align:left; cursor:pointer; transition:transform var(--muelle-toque);
+}
+.extras-entrada:active{transform:scale(.985)}
+.ee-foto{flex:none; width:112px; aspect-ratio:16/9; object-fit:cover; border-radius:var(--r-m); background:var(--panel2)}
+.ee-texto{display:flex; flex-direction:column; gap: var(--e-1); min-width:0; flex:1}
+.ee-texto b{font-size: var(--t-b); line-height:1.3}
+.ee-texto small{font-size: var(--t-s); font-weight:600; color:var(--red)}
+.ee-muestra{font-size: var(--t-s); color:var(--ink3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ee-flecha{flex:none; width:18px; height:18px; fill:none; stroke:var(--ink3); stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+
+.xf-cab{display:flex; flex-direction:column; gap: var(--e-1)}
+.xf-etiqueta{font-size: var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--red)}
+.xf-titulo{margin:0; font-family:var(--f-texto); font-size: var(--t-xl); font-weight:800; letter-spacing:-.01em; text-transform:none; line-height:1.15}
+.xf-bloque{display:flex; flex-direction:column; gap: var(--e-3)}
+.xf-bloque .reparto-titulo{margin:0}
+.xf-videos{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap: var(--e-4)}
+.xf-video{display:flex; flex-direction:column; gap: var(--e-1); min-width:0}
+.xf-mini{position:relative; display:block; width:100%; aspect-ratio:16/9; padding:0; border:none; border-radius:var(--r-m); overflow:hidden; cursor:pointer; background:#000}
+.xf-mini img{width:100%; height:100%; object-fit:cover; display:block; transition:transform var(--dur-media) var(--curva)}
+.xf-play{position:absolute; inset:0; margin:auto; width:48px; height:48px; border-radius:50%; display:grid; place-items:center; color:#fff; background:rgba(8,9,14,.6); box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.xf-play svg{width:20px; height:20px}
+.xf-reproductor{aspect-ratio:16/9; border-radius:var(--r-m); overflow:hidden; background:#000}
+.xf-reproductor iframe{width:100%; height:100%; border:0; display:block}
+.xf-video-tipo{margin-top: var(--e-1); font-size: var(--t-xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--red)}
+.xf-video-t{font-size: var(--t-m); font-weight:600; line-height:1.3}
+.xf-nota{margin:0; font-size: var(--t-xs); color:var(--ink3)}
+@media (hover:hover){ .xf-mini:hover img{transform:scale(1.04)} }
+
+.ficha-pcs{margin-top: var(--e-4)}
+.pcs-tapa{
+  position:relative; width:100%; margin-top: var(--e-3); display:flex; flex-direction:column; gap: var(--e-1); padding: var(--e-4);
+  border-radius:var(--r-l); border:1px dashed color-mix(in srgb, var(--gold) 55%, var(--filo)); background:color-mix(in srgb, var(--gold) 8%, transparent);
+  color:var(--ink); font:inherit; text-align:left; cursor:pointer; transition:transform var(--muelle-toque);
+}
+.pcs-tapa:active{transform:scale(.985)}
+.pcs-tapa b{font-size: var(--t-b); color:var(--gold-texto)}
+.pcs-tapa small{font-size: var(--t-s); color:var(--ink3)}
+.pcs-lista{list-style:none; margin: var(--e-3) 0 0; padding:0; display:flex; flex-direction:column; gap: var(--e-3); animation:entraVista var(--dur-media) var(--curva) both}
+.pcs-escena{display:flex; flex-direction:column; gap: var(--e-1); padding: var(--e-3) var(--e-4); border-radius:var(--r-l); border:1px solid color-mix(in srgb, var(--gold) 35%, var(--filo)); background:color-mix(in srgb, var(--gold) 6%, var(--panel2))}
+.pcs-cuando{font-size: var(--t-xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-texto)}
+.pcs-escena b{font-size: var(--t-b)}
+.pcs-escena p{margin:0; font-size: var(--t-m); line-height:1.5; color:var(--ink2)}
+.pcs-conecta{font-size: var(--t-s) !important; color:var(--ink) !important}
+.pcs-conecta span{font-weight:700; color:var(--red)}
+@media (prefers-reduced-motion: reduce){ .pcs-lista{animation:none} .xf-mini img{transition:none} }

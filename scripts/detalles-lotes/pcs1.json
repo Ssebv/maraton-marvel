@@ -1,0 +1,367 @@
+{
+  "origins-wolverine": {
+    "pc_real": "2 (mitad y final)",
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "Stryker, detenido",
+        "d": "Stryker camina descalzo y herido por una carretera cuando le para la policía militar: le buscan para interrogarle por la muerte del general Munson, al que él mismo mató para proteger su experimento.",
+        "conecta": "Deja a Stryker libre para volver como villano en X-Men 2 (2003), donde lo interpreta Brian Cox."
+      },
+      {
+        "cuando": "final",
+        "t": "Deadpool sigue vivo",
+        "d": "Entre los escombros de la torre, la mano del decapitado Arma XI se arrastra hasta su cabeza, que abre los ojos y hace «chsss» a cámara. En cines, algunas copias ponían otra escena: Logan bebiendo en un bar de Japón, que dice beber «para recordar».",
+        "conecta": "Deadpool volvió reiniciado en Deadpool (2016), que se burla de esta versión; la del bar anticipaba Lobezno inmortal (2013)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "Stryker is detained",
+        "d": "Stryker walks barefoot and bleeding down a road when military police stop him: he is wanted for questioning over the death of General Munson, whom he killed himself to protect his experiment.",
+        "conecta": "Leaves Stryker free to return as the villain of X2 (2003), played by Brian Cox."
+      },
+      {
+        "cuando": "final",
+        "t": "Deadpool is still alive",
+        "d": "In the tower rubble, the hand of the beheaded Weapon XI crawls to his head, which opens its eyes and goes \"shhh\" at the camera. Some theatrical prints showed a different scene instead: Logan drinking in a bar in Japan, saying he drinks \"to remember\".",
+        "conecta": "Deadpool came back rebooted in Deadpool (2016), which mocks this version; the bar scene pointed to The Wolverine (2013)."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/X-Men_Origins:_Wolverine"
+    ]
+  },
+  "last-stand": {
+    "es": [
+      {
+        "cuando": "final",
+        "t": "Xavier en otro cuerpo",
+        "d": "Moira MacTaggert examina a un paciente en coma. Él la saluda con la voz de Charles Xavier: el profesor ha trasladado su mente a otro cuerpo antes de que Jean le desintegrara.",
+        "conecta": "Explica que Xavier siga vivo en la escena de Lobezno inmortal (2013) y en X-Men: Días del futuro pasado (2014)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "Xavier in another body",
+        "d": "Moira MacTaggert checks on a comatose patient. He greets her in Charles Xavier's voice: the Professor transferred his mind into another body before Jean disintegrated him.",
+        "conecta": "Explains why Xavier is alive in The Wolverine's (2013) credits scene and in X-Men: Days of Future Past (2014)."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/X-Men:_The_Last_Stand"
+    ]
+  },
+  "the-wolverine": {
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "Magneto y Xavier en el aeropuerto",
+        "d": "Dos años después, Logan pasa por un aeropuerto donde se anuncian las Industrias Trask. Todo el metal se detiene: aparece Magneto con sus poderes de vuelta y, tras él, Charles Xavier, vivo. Avisan a Logan de que hay quien quiere acabar con los mutantes y le necesitan.",
+        "conecta": "Lleva directamente a X-Men: Días del futuro pasado (2014), con Trask y sus Centinelas como amenaza."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "Magneto and Xavier at the airport",
+        "d": "Two years later, Logan walks through an airport showing ads for Trask Industries. All the metal freezes: Magneto appears with his powers back and, behind him, a living Charles Xavier. They warn Logan that someone wants to wipe out mutants and that they need him.",
+        "conecta": "Leads straight into X-Men: Days of Future Past (2014), with Trask and his Sentinels as the threat."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/The_Wolverine_(film)",
+      "https://en.wikipedia.org/wiki/X-Men:_Days_of_Future_Past"
+    ]
+  },
+  "dofp": {
+    "es": [
+      {
+        "cuando": "final",
+        "t": "En Sabah Nur en el antiguo Egipto",
+        "d": "Una multitud corea el nombre de En Sabah Nur mientras él, joven, levanta con la mente los bloques de una pirámide. En lo alto de una colina le observan cuatro jinetes.",
+        "conecta": "Presenta a Apocalipsis y a sus Cuatro Jinetes, villanos de X-Men: Apocalipsis (2016)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "En Sabah Nur in ancient Egypt",
+        "d": "A crowd chants the name of En Sabah Nur as he, young, raises the blocks of a pyramid with his mind. Four horsemen watch from a hilltop.",
+        "conecta": "Introduces Apocalypse and his Four Horsemen, villains of X-Men: Apocalypse (2016)."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/X-Men:_Days_of_Future_Past"
+    ]
+  },
+  "apocalypse": {
+    "es": [
+      {
+        "cuando": "final",
+        "t": "Sangre del Arma X",
+        "d": "En las instalaciones del Arma X en el lago Alkali, unos hombres trajeados recogen viales con la sangre de Lobezno etiquetados «Arma X» y los guardan en un maletín de Essex Corp.",
+        "conecta": "Essex apunta a Míster Siniestro, que nunca llegó a salir; Simon Kinberg lo ligó a Logan (2017), donde los mutantes creados con ADN serían el eco de esta escena."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "Weapon X blood",
+        "d": "At the Weapon X facility at Alkali Lake, men in suits collect vials of Wolverine's blood labelled \"Weapon X\" and put them in a briefcase marked Essex Corp.",
+        "conecta": "Essex points to Mister Sinister, who never appeared; writer Simon Kinberg tied it to Logan (2017), whose lab-made mutants echo this scene."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/X-Men:_Apocalypse"
+    ]
+  },
+  "deadpool1": {
+    "es": [
+      {
+        "cuando": "final",
+        "t": "Deadpool imita a Ferris Bueller",
+        "d": "Deadpool sale en albornoz, como Ferris Bueller al final de Todo en un día, extrañado de que sigas en la sala. Dice que solo les queda dinero para anunciar que Cable saldrá en la secuela y propone actores para interpretarle.",
+        "conecta": "Anuncia a Cable, que llegó en Deadpool 2 (2018) interpretado por Josh Brolin."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "Deadpool does Ferris Bueller",
+        "d": "Deadpool appears in a bathrobe, like Ferris Bueller at the end of Ferris Bueller's Day Off, surprised you're still there. He says they only have money left to announce that Cable will be in the sequel and suggests actors to play him.",
+        "conecta": "Announces Cable, who arrived in Deadpool 2 (2018) played by Josh Brolin."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/Deadpool_(film)"
+    ]
+  },
+  "deadpool2": {
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "Deadpool arregla el pasado",
+        "d": "Negasonic y Yukio reparan el aparato de viajar en el tiempo de Cable. Deadpool lo usa para salvar a Vanessa y a Peter, matar al Deadpool de X-Men Orígenes: Lobezno y matar a Ryan Reynolds justo cuando acaba de leer el guion de Green Lantern.",
+        "conecta": "Se burla de X-Men Orígenes: Lobezno (2009); Vanessa viva es la situación de partida de Deadpool y Lobezno (2024)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "Deadpool fixes the past",
+        "d": "Negasonic and Yukio repair Cable's time-travel device. Deadpool uses it to save Vanessa and Peter, kill the Deadpool from X-Men Origins: Wolverine, and kill Ryan Reynolds right after he finishes reading the Green Lantern script.",
+        "conecta": "Mocks X-Men Origins: Wolverine (2009); a living Vanessa is the starting point of Deadpool & Wolverine (2024)."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/Deadpool_2"
+    ]
+  },
+  "cap1": {
+    "es": [
+      {
+        "cuando": "final",
+        "t": "Nick Furia recluta a Steve",
+        "d": "En el presente, Steve descarga su rabia contra un saco de boxeo. Nick Furia le propone una misión para salvar el mundo. Sigue un avance de Los Vengadores.",
+        "conecta": "Lleva a Los Vengadores (2012), con Steve ya en el equipo de Furia."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "Nick Fury recruits Steve",
+        "d": "In the present, Steve takes out his anger on a punching bag. Nick Fury offers him a mission to save the world. A teaser for The Avengers follows.",
+        "conecta": "Leads to The Avengers (2012), with Steve now on Fury's team."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/Captain_America:_The_First_Avenger"
+    ]
+  },
+  "capmarvel": {
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "«¿Dónde está Furia?»",
+        "d": "En el cuartel de los Vengadores, Viuda Negra, el Capitán América, Bruce Banner y Máquina de Guerra vigilan el busca de Furia, que ha dejado de emitir. De pronto aparece Carol Danvers y pregunta dónde está Furia.",
+        "conecta": "Enlaza el final de Vengadores: Infinity War (2018) con Vengadores: Endgame (2019), donde Carol se une al equipo."
+      },
+      {
+        "cuando": "final",
+        "t": "Goose escupe el Teseracto",
+        "d": "Goose, el flerken, salta sobre la mesa de Nick Furia y vomita el Teseracto que se había tragado.",
+        "conecta": "Explica cómo el Teseracto llega a S.H.I.E.L.D., donde está en Thor (2011) y Los Vengadores (2012)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "\"Where's Fury?\"",
+        "d": "At Avengers HQ, Black Widow, Captain America, Bruce Banner and War Machine watch Fury's pager, which has stopped transmitting. Suddenly Carol Danvers appears and asks where Fury is.",
+        "conecta": "Bridges the end of Avengers: Infinity War (2018) and Avengers: Endgame (2019), where Carol joins the team."
+      },
+      {
+        "cuando": "final",
+        "t": "Goose coughs up the Tesseract",
+        "d": "Goose the flerken jumps onto Nick Fury's desk and throws up the Tesseract it had swallowed.",
+        "conecta": "Explains how the Tesseract reaches S.H.I.E.L.D., where it is in Thor (2011) and The Avengers (2012)."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/Captain_Marvel_(film)"
+    ]
+  },
+  "ironman1": {
+    "es": [
+      {
+        "cuando": "final",
+        "t": "La Iniciativa Vengadores",
+        "d": "Tony llega a casa y encuentra a Nick Furia esperándole. Furia le dice que no es el único superhéroe del mundo y que ha venido a hablarle de la Iniciativa Vengadores.",
+        "conecta": "Primera escena del UCM que conecta películas: lleva a Iron Man 2 (2010) y a Los Vengadores (2012)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "The Avengers Initiative",
+        "d": "Tony comes home to find Nick Fury waiting. Fury tells him he's not the only superhero in the world and that he's there to talk about the Avengers Initiative.",
+        "conecta": "The MCU's first connecting scene: leads to Iron Man 2 (2010) and The Avengers (2012)."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/Iron_Man_(2008_film)"
+    ]
+  },
+  "ironman2": {
+    "es": [
+      {
+        "cuando": "final",
+        "t": "Coulson encuentra el martillo",
+        "d": "El agente Coulson llega a un cráter en el desierto de Nuevo México y llama a Furia: «Lo hemos encontrado». En el centro hay un martillo clavado en el suelo.",
+        "conecta": "El martillo es Mjolnir: lleva a Thor (2011)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "Coulson finds the hammer",
+        "d": "Agent Coulson arrives at a crater in the New Mexico desert and calls Fury: \"We found it.\" In the middle, a hammer is stuck in the ground.",
+        "conecta": "The hammer is Mjolnir: leads to Thor (2011)."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/Iron_Man_2"
+    ]
+  },
+  "thor1": {
+    "es": [
+      {
+        "cuando": "final",
+        "t": "Selvig y el Teseracto",
+        "d": "Nick Furia lleva a Erik Selvig a una base de S.H.I.E.L.D. y le pide que estudie el Teseracto, un cubo que quizá encierra un poder ilimitado. En un reflejo aparece Loki, vivo e invisible para los demás: dice que merece la pena echarle un vistazo y Selvig repite sus palabras, controlado por él.",
+        "conecta": "Lleva a Los Vengadores (2012): Loki roba el Teseracto con Selvig bajo su control."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "Selvig and the Tesseract",
+        "d": "Nick Fury takes Erik Selvig to a S.H.I.E.L.D. base and asks him to study the Tesseract, a cube that may hold untold power. Loki, alive and unseen by the others, appears in a reflection and says \"Well, I guess that's worth a look\"; Selvig repeats the line, under his control.",
+        "conecta": "Leads to The Avengers (2012): Loki steals the Tesseract with Selvig under his control."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/Thor_(film)"
+    ]
+  },
+  "avengers1": {
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "Thanos sonríe",
+        "d": "El Otro informa a su amo de que la Tierra no es tan débil como creían: atacarla sería cortejar a la muerte. Su amo se gira y sonríe: es Thanos.",
+        "conecta": "Primera aparición de Thanos, que busca las Gemas del Infinito hasta Vengadores: Infinity War (2018)."
+      },
+      {
+        "cuando": "final",
+        "t": "Shawarma",
+        "d": "Tras la batalla, los seis Vengadores comen shawarma en un local destrozado de Nueva York, agotados y en silencio. Solo es una broma que remata una frase de Tony.",
+        "conecta": ""
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "Thanos smiles",
+        "d": "The Other tells his master that Earth is not as weak as they thought: to challenge it would be to court death. His master turns and smiles: it's Thanos.",
+        "conecta": "Thanos's first appearance; he hunts the Infinity Stones up to Avengers: Infinity War (2018)."
+      },
+      {
+        "cuando": "final",
+        "t": "Shawarma",
+        "d": "After the battle, the six Avengers eat shawarma in a wrecked New York restaurant, exhausted and silent. It pays off a line Tony says earlier.",
+        "conecta": ""
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/The_Avengers_(2012_film)"
+    ]
+  },
+  "ironman3": {
+    "es": [
+      {
+        "cuando": "final",
+        "t": "Bruce Banner, dormido",
+        "d": "Resulta que Tony le ha contado toda la película a Bruce Banner, que se ha dormido. Bruce se disculpa: no es esa clase de doctor, no es terapeuta. Tony vuelve a empezar y Bruce resopla. Cierra el rótulo «Tony Stark volverá».",
+        "conecta": "Comedia sin trama nueva; Tony y Bruce vuelven a trabajar juntos en Vengadores: La era de Ultrón (2015)."
+      }
+    ],
+    "en": [
+      {
+        "cuando": "final",
+        "t": "Bruce Banner falls asleep",
+        "d": "It turns out Tony has been telling the whole film to Bruce Banner, who fell asleep. Bruce apologises: he's not that kind of doctor, not a therapist. Tony starts over and Bruce sighs. The card \"Tony Stark will return\" closes it.",
+        "conecta": "Comic relief with no new plot; Tony and Bruce work together again in Avengers: Age of Ultron (2015)."
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/Iron_Man_3"
+    ]
+  },
+  "thor2": {
+    "es": [
+      {
+        "cuando": "mitad",
+        "t": "El Éter, al Coleccionista",
+        "d": "Sif y Volstagg dejan el Éter en manos del Coleccionista, porque no es prudente guardar dos Gemas del Infinito juntas en Asgard. Cuando se van, él dice: «Una menos, faltan cinco».",
+        "conecta": "Presenta al Coleccionista y las Gemas del Infinito; lleva a Guardianes de la Galaxia (2014)."
+      },
+      {
+        "cuando": "final",
+        "t": "Thor vuelve con Jane",
+        "d": "Jane, de vuelta en Londres, ve el Bifröst y sale corriendo: Thor ha vuelto y la besa. Mientras, una bestia de hielo de Jotunheim que cruzó en la batalla final sigue suelta por la ciudad, persiguiendo palomas.",
+        "conecta": ""
+      }
+    ],
+    "en": [
+      {
+        "cuando": "mitad",
+        "t": "The Aether goes to the Collector",
+        "d": "Sif and Volstagg leave the Aether with the Collector, since keeping two Infinity Stones together in Asgard would be unwise. As they leave, he says: \"One down, five to go.\"",
+        "conecta": "Introduces the Collector and the Infinity Stones; leads to Guardians of the Galaxy (2014)."
+      },
+      {
+        "cuando": "final",
+        "t": "Thor returns to Jane",
+        "d": "Back in London, Jane sees the Bifröst and runs outside: Thor has returned and kisses her. Meanwhile, a Jotunheim frost beast that crossed over during the final battle is still loose in the city, chasing pigeons.",
+        "conecta": ""
+      }
+    ],
+    "fuentes": [
+      "https://en.wikipedia.org/wiki/Thor:_The_Dark_World"
+    ]
+  }
+}
