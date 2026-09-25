@@ -5185,3 +5185,17 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
 .pf-item-papel{font-size: var(--t-xs); font-weight:700; color:var(--red); line-height:1.25; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden}
 .pf-conocido .pf-item{cursor:default}
 .pf-imdb{align-self:flex-start; display:inline-flex; align-items:center; gap: var(--e-1); min-height:44px; font-size: var(--t-s); font-weight:600; color:var(--blue); text-decoration:none}
+
+/* ── Personas en la búsqueda (26 sep 2026) ── */
+.busca-personas{display:flex; gap: var(--e-3); overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; margin: var(--e-4) calc(-1 * var(--e-6)) 0; padding: var(--e-1) var(--e-6)}
+.busca-personas::-webkit-scrollbar{display:none}
+.bp-persona{
+  flex:0 0 auto; min-width:min(260px, 78%); display:flex; align-items:center; gap: var(--e-3); padding: var(--e-3) var(--e-4) var(--e-3) var(--e-3);
+  border-radius:var(--r-l); border:1px solid var(--filo); background:var(--foco-luz), var(--sup-lustre), var(--panel); box-shadow:var(--sup-brillo), var(--sup-sombra);
+  color:var(--ink); font:inherit; text-align:left; cursor:pointer; transition:transform var(--muelle-toque);
+}
+.bp-persona:active{transform:scale(.98)}
+.bp-persona .avatar{width:48px; height:48px}
+.bp-texto{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1}
+.bp-texto b{font-size: var(--t-b); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.bp-texto small{font-size: var(--t-s); color:var(--ink3)}

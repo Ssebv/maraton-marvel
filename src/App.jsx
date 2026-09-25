@@ -1941,6 +1941,55 @@ const personajeEs = t => {
   const es = t.split(/\s*\/\s*/).map(una).join(' / ')
   return PAIS_ACTUAL === 'ES' ? es : latiniza(es)
 }
+// Personas del catálogo (reparto y dirección de data.js) para el buscador (26
+// sep 2026): nombre → títulos, en orden del maratón
+let PERSONAS_IDX = null
+const personasIdx = () => {
+  if (PERSONAS_IDX) return PERSONAS_IDX
+  const m = new Map()
+  DATA.forEach(sg => sg.eras.forEach(era => era.items.forEach(it => {
+    const gente = [...(it.cast || []).map(n => [limpiaNombre(n), 'cast']), ...(it.dir ? it.dir.split(/, | y | & /).map(n => [limpiaNombre(n), 'dir']) : [])]
+    gente.forEach(([n, rol]) => {
+      if (!n) return
+      const e = m.get(n) || { nombre: n, rol, titulos: [], p: pajarBusca(n) }
+      if (!e.titulos.some(x => x.item.id === it.id)) e.titulos.push({ item: it, c: era.c, esComic: sg.saga === 'comics' })
+      m.set(n, e)
+    })
+  })))
+  PERSONAS_IDX = [...m.values()]
+  return PERSONAS_IDX
+}
+// la búsqueda: nombre o apellido que empiece por lo escrito (3 letras o más)
+const buscaPersonas = texto => {
+  const q = norm(texto || '').trim()
+  if (q.length < 3) return []
+  return personasIdx().filter(e => e.p.palabras.some(w => w.startsWith(q)) || e.p.n.startsWith(q) || (q.includes(' ') && e.p.n.includes(q)))
+    .sort((a, b) => b.titulos.length - a.titulos.length).slice(0, 4)
+}
+const idPersonaMem = {}
+const idPersona = nombre => (idPersonaMem[nombre] = idPersonaMem[nombre] || tmdbJson(`/search/person?query=${encodeURIComponent(nombre)}`)
+  .then(r => { const x = r && Array.isArray(r.results) && r.results[0]; return x && typeof x.id === 'number' ? x.id : null })
+  .catch(() => { delete idPersonaMem[nombre]; return null }))
+function PersonasEnBusca({ texto, onAbrir }) {
+  const lista = useMemo(() => buscaPersonas(texto), [texto])
+  if (!lista.length) return null
+  return (
+    <div className="busca-personas" role="group" aria-label={tr('Personas', 'People')}>
+      {lista.map(e => (
+        <button type="button" key={e.nombre} className="bp-persona" onClick={() => onAbrir(e)}>
+          <CaraActor nombre={e.nombre} />
+          <span className="bp-texto">
+            <b>{e.nombre}</b>
+            {/* sin recuento: data.js solo guarda el reparto principal de cada
+                título; la página cuenta todos (TMDB) */}
+            <small>{e.rol === 'dir' ? tr('Dirección · su carrera y sus títulos', 'Director · career and titles') : tr('Reparto · su carrera y sus papeles', 'Cast · career and roles')}</small>
+          </span>
+          <svg className="ee-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+        </button>
+      ))}
+    </div>
+  )
+}
 // «Edward Norton (El increíble Hulk, 2008)» → «Edward Norton»
 const soloNombre = t => String(t || '').replace(/\s*\(.*$/, '').trim()
 
@@ -10401,6 +10450,15 @@ export default function App() {
         </p>
       )}
 
+      {/* quien escribe el nombre de un actor llega a su página (26 sep 2026) */}
+      {enMaraton && buscaLenta.trim().length >= 3 && (
+        <PersonasEnBusca texto={buscaLenta} onAbrir={async e => {
+          const primero = e.titulos[0]
+          const tmdbId = await idPersona(e.nombre)
+          setPersonaPendiente({ p: { nombre: e.nombre, rol: e.rol === 'dir' ? tr('Dirección', 'Director') : tr('Reparto', 'Cast'), papel: '', tmdbId } })
+          setDetalle(primero)
+        }} />
+      )}
       <Estrellas />
       {vista === 'inicio' ? (
         <InicioNf pais={pais} stats={stats} vistas={vistas} eps={eps} notas={notas} listas={listas} pasaFiltro={pasaFiltro} sinSpoilers={sinSpoilers}
