@@ -41,7 +41,12 @@ let enTransicion = false
 // quieta; con tope, para que una imagen que no llega no congele el cambio.
 function caratulasListas(tope = 120) {
   const alto = window.innerHeight
+  // primero, sin maquetar nada, fuera las que caen en partes que el navegador
+  // se salta (content-visibility): medir su posición le obligaba a maquetar
+  // esas tarjetas, ~83 ms con CPU ×4 al entrar por primera vez en Cronológico
+  // (25 sep 2026). checkVisibility no maqueta; sin él, se mide todo como antes
   const imgs = [...document.querySelectorAll('main img, .overlay img')].filter(i => {
+    if (i.checkVisibility && !i.checkVisibility({ contentVisibilityAuto: true })) return false
     const r = i.getBoundingClientRect()
     return r.width > 0 && r.bottom > -40 && r.top < alto + 40
   })
