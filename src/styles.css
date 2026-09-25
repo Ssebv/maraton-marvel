@@ -5069,3 +5069,29 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
 }
 /* hueco de la lista de episodios mientras se monta (un fotograma) */
 .episodios-reserva{min-height:420px; border-top-color:transparent}
+
+/* ── Ficha: historia larga, cambios de actor y extras (26 sep 2026) ── */
+.ficha-historia{margin: var(--e-3) 0 0}
+.ficha-historia > summary{
+  position:relative; display:inline-flex; align-items:center; gap: var(--e-2); cursor:pointer; list-style:none;
+  font-size: var(--t-m); font-weight:600; color:var(--red);
+}
+.ficha-historia > summary::-webkit-details-marker{display:none}
+.ficha-historia > summary::after{content:""; width:7px; height:7px; border-right:2px solid currentColor; border-bottom:2px solid currentColor; transform:translateY(-2px) rotate(45deg); transition:transform var(--dur-corta) var(--curva)}
+.ficha-historia[open] > summary::after{transform:translateY(1px) rotate(-135deg)}
+.ficha-historia > summary::before{content:""; position:absolute; inset:-10px -6px}
+.ficha-historia p{margin: var(--e-3) 0 0; font-size: var(--t-b); line-height:1.55; color:var(--ink2); max-width:62ch; animation:entraVista var(--dur-media) var(--curva) both}
+.ficha-bloque{margin-top: var(--e-6)}
+.ficha-cambios, .ficha-extras{list-style:none; margin: var(--e-3) 0 0; padding:0; display:flex; flex-direction:column; gap: var(--e-3)}
+.ficha-cambios li, .ficha-extras li{
+  display:flex; flex-direction:column; gap: var(--e-1); padding: var(--e-3) var(--e-4);
+  border-radius:var(--r-l); background:color-mix(in srgb, var(--panel2) 80%, transparent); border:1px solid var(--filo);
+}
+.fc-personaje{font-size: var(--t-b)}
+.fc-actores{font-size: var(--t-m); color:var(--ink2)}
+.fc-actores s{text-decoration-color:color-mix(in srgb, var(--ink3) 70%, transparent)}
+.fc-actores b{color:var(--ink)}
+.fc-nota, .ficha-extras li > span{font-size: var(--t-s); color:var(--ink3); line-height:1.45}
+.ficha-extras li > b{font-size: var(--t-b)}
+.fe-donde{align-self:flex-start; margin-top: var(--e-1); padding:2px 8px; border-radius:var(--r-pill); font-size: var(--t-xs); font-weight:700; color:var(--blue); background:color-mix(in srgb, var(--blue) 14%, transparent)}
+@media (prefers-reduced-motion: reduce){ .ficha-historia p{animation:none} .ficha-historia > summary::after{transition:none} }

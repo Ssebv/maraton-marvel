@@ -4,7 +4,7 @@
 // La versión va en el nombre: al subirla, el activate borra las cachés viejas.
 // Sin esto una carátula sustituida se quedaba con la vieja para siempre en quien
 // ya la tuviera guardada.
-const CACHE = 'maraton-marvel-v5'
+const CACHE = 'maraton-marvel-v6'
 // Cachés propias que NUNCA se barren al subir de versión: el espejo del
 // horario que escribe la app y las marcas de avisos ya enseñados. Barrerlas
 // mataba los recordatorios en cada despliegue y repetía a mitad de día las
@@ -66,6 +66,16 @@ self.addEventListener('fetch', e => {
       }
       return r
     }))))
+    return
+  }
+  // detalles de las fichas (26 sep 2026): la copia guardada al momento (sin
+  // conexión también) y la red la renueva para la próxima vez
+  if (url.origin === location.origin && url.pathname.includes('/detalles/')) {
+    e.respondWith(caches.open(CACHE).then(c => c.match(e.request).then(hit => {
+      const red = fetch(e.request).then(r => { if (r.ok) e.waitUntil(c.put(e.request, r.clone())); return r })
+      if (hit) { e.waitUntil(red.catch(() => {})); return hit }
+      return red
+    })))
     return
   }
   if (esEstatico) {

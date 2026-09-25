@@ -6352,6 +6352,37 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
   )
 }
 
+// ── Detalles ampliados de cada título (26 sep 2026, Sebastián: «descripción
+// más detallada, si cambiaron actor como en Vengadores con Hulk, y si Disney
+// agregó escenas extra») ──
+// public/detalles/<idioma>.json: la historia larga (sin destripar), los
+// cambios de actor y los extras (escenas eliminadas, versiones extendidas…,
+// verificados con fuentes). Van aparte del paquete de la app: se piden al
+// abrir la primera ficha (~100 kB que el arranque no paga) y quedan en memoria.
+const detallesMem = {}
+function cargaDetalles(idioma) {
+  if (!detallesMem[idioma]) {
+    detallesMem[idioma] = fetch(`detalles/${idioma}.json`).then(r => (r.ok ? r.json() : {})).then(j => (esObj(j) ? j : {})).catch(() => { delete detallesMem[idioma]; return {} })
+  }
+  return detallesMem[idioma]
+}
+const textoOk = x => typeof x === 'string' && x.length < 2000
+function useDetalles(id, idioma) {
+  const [datos, setDatos] = useState(null)
+  useEffect(() => {
+    let vivo = true
+    setDatos(null)
+    cargaDetalles(idioma === 'en' ? 'en' : 'es').then(j => {
+      const x = j && esObj(j[id]) ? j[id] : null
+      if (!vivo || !x) return
+      const lista = (l, campos) => (Array.isArray(l) ? l : []).filter(e => esObj(e) && campos.every(c => textoOk(e[c]))).slice(0, 8)
+      setDatos({ larga: textoOk(x.larga) ? x.larga : '', cambios: lista(x.cambios, ['p', 'antes', 'ahora']), extras: lista(x.extras, ['t', 'd']) })
+    })
+    return () => { vivo = false }
+  }, [id, idioma])
+  return datos
+}
+
 function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, nota, ponNota, listas, toggleEnLista, club, onNav, onIrA, personaPendiente, pais, idioma, onLeer, lectura, onOlvida, onBiblioteca, saliendo, sinSpoilers, onForo }) {
   // La lista de episodios (13–40 filas con miniatura) se monta un fotograma
   // después de abrir la ficha (26 sep 2026): era la mitad de la maquetación al
@@ -6364,6 +6395,9 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
     const f = requestAnimationFrame(() => { t = setTimeout(() => setEpsListos(true), 0) })
     return () => { cancelAnimationFrame(f); clearTimeout(t) }
   }, [d && d.item && d.item.id])
+  const mas = useDetalles(d && d.item && d.item.id, idioma)
+  // fuera de España, los nombres del doblaje latino, como el resto de textos
+  const loc = t => (t && idioma !== 'en' && pais !== 'ES' ? latiniza(t) : t)
   const { item, c, esComic } = d
   // Sin spoilers: lo que no has visto se esconde, salvo que lo pidas para ESTA ficha
   const [revela, setRevela] = useState(false)
@@ -6651,6 +6685,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
             </div>
           )}
           {!oculto && item.res && <p className="modal-res">{item.res}</p>}
+          {!oculto && mas && mas.larga && (
+            <details className="ficha-historia">
+              <summary>{tr('La historia, con más detalle', 'The story, in more detail')}</summary>
+              <p>{loc(mas.larga)}</p>
+            </details>
+          )}
           {item.n && <p className="modal-nota">{item.n}</p>}
           {!oculto && item.pc != null && (
             <p className={`modal-pc${item.pc === '0' ? ' sin' : ''}`}>
@@ -6695,6 +6735,34 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               }}>{tr('Compartir…', 'Share…')}</button>
             )}
           </div>
+          {mas && mas.cambios.length > 0 && (
+            <section className="ficha-bloque">
+              <h3 className="reparto-titulo">{tr('Cambios de actor', 'Recasts')}</h3>
+              <ul className="ficha-cambios">
+                {mas.cambios.map((c, i) => (
+                  <li key={i}>
+                    <b className="fc-personaje">{loc(c.p)}</b>
+                    <span className="fc-actores"><s>{loc(c.antes)}</s><span aria-hidden="true"> → </span><span className="solo-lector">{tr(' ahora ', ' now ')}</span><b>{loc(c.ahora)}</b></span>
+                    {textoOk(c.nota) && c.nota && <span className="fc-nota">{loc(c.nota)}</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {mas && mas.extras.length > 0 && (
+            <section className="ficha-bloque">
+              <h3 className="reparto-titulo">{tr('Extras y versiones', 'Extras and versions')}</h3>
+              <ul className="ficha-extras">
+                {mas.extras.map((x, i) => (
+                  <li key={i}>
+                    <b>{loc(x.t)}</b>
+                    <span>{loc(x.d)}</span>
+                    {textoOk(x.donde) && x.donde && <small className="fe-donde">{loc(x.donde)}</small>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           {(directores.length > 0 || item.cast) && (
             <section className="reparto">
               <h3 className="reparto-titulo">{tr('Dirección y reparto', 'Direction and cast')}</h3>
