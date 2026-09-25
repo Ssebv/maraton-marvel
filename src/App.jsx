@@ -1599,6 +1599,31 @@ function suenaPop() {
 // (index.html lo repone antes del primer pintado) y ajusta el color de la barra
 // del navegador, que con los <meta media=…> seguiría al sistema.
 const KEY_TEMA = 'maraton-marvel-tema-v1'
+// Tamaño de letra (26 sep 2026, «para iOS»): «sistema» sigue al tamaño de
+// texto del iPhone (Ajustes › Pantalla y brillo › Tamaño del texto) leyendo
+// la letra -apple-system-body, que Safari escala con él (17 px por defecto);
+// el resto, un factor fijo. Se aplica también desde index.html antes de pintar.
+const KEY_LETRA = 'maraton-marvel-letra-v1'
+const LETRAS = [
+  { id: 'sistema', nombre: 'Como el iPhone', en: 'Like my device' },
+  { id: 'normal', nombre: 'Normal', en: 'Normal', f: 1 },
+  { id: 'grande', nombre: 'Grande', en: 'Large', f: 1.12 },
+  { id: 'muy', nombre: 'Muy grande', en: 'Extra large', f: 1.25 },
+]
+function factorLetra(id) {
+  const l = LETRAS.find(x => x.id === id)
+  if (l && l.f) return l.f
+  try {
+    const e = document.createElement('span')
+    e.style.cssText = 'font:-apple-system-body;position:absolute;visibility:hidden'
+    document.documentElement.appendChild(e)
+    const px = parseFloat(getComputedStyle(e).fontSize)
+    e.remove()
+    // solo Safari conoce esa letra; en otro navegador cae a 16 y sería 0,94
+    return CSS.supports('font', '-apple-system-body') && px ? Math.min(1.35, Math.max(0.9, px / 17)) : 1
+  } catch { return 1 }
+}
+const aplicaLetra = id => document.documentElement.style.setProperty('--letra', String(factorLetra(id)))
 const TEMAS = [
   { id: 'sistema', nombre: 'Como el sistema', en: 'Follow system' },
   { id: 'light', nombre: 'Claro', en: 'Light' },
@@ -3016,6 +3041,66 @@ if (typeof window !== 'undefined') {
 // Sigue al dedo en los dos sentidos; al soltar decide por recorrido (35 %) o
 // latigazo, con un tic al cruzar el umbral, como las hojas. Cerrado, el cajón
 // sale por CSS (transición desde donde lo dejó el dedo).
+// Tirar para actualizar (26 sep 2026, «para iOS»): instalada en el iPhone la app
+// no tiene el gesto de Safari. Con la página arriba del todo y nada abierto,
+// tirar hacia abajo saca una píldora que sigue al dedo (a la mitad, con tope);
+// pasado el umbral vibra y, al soltar, la app se recarga (el service worker da
+// la red primero: noticias, estrenos y versión nueva). Solo instalada: en Safari
+// ya existe y dos gestos iguales se pisarían.
+function gestoRecarga() {
+  if (typeof window === 'undefined' || !YA_INSTALADA) return
+  const UMBRAL = 72
+  let g = null, pill = null
+  const pildora = () => {
+    if (pill) return pill
+    pill = document.createElement('div')
+    pill.className = 'tira-recarga'
+    pill.setAttribute('aria-hidden', 'true')
+    pill.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>'
+    document.body.appendChild(pill)
+    return pill
+  }
+  const pinta = y => {
+    const p = pildora(), v = Math.min(y, UMBRAL * 1.6)
+    p.style.transition = 'none'
+    p.style.transform = `translate(-50%, ${v - 56}px) rotate(${v * 4}deg)`
+    p.style.opacity = String(Math.min(1, v / (UMBRAL * 0.7)))
+    p.classList.toggle('lista', y >= UMBRAL)
+  }
+  const esconde = () => { if (!pill) return; pill.style.transition = ''; pill.style.transform = 'translate(-50%, -56px)'; pill.style.opacity = '0'; pill.classList.remove('lista') }
+  window.addEventListener('touchstart', e => {
+    if (g || e.touches.length !== 1 || window.scrollY > 0 || capasAtras.length || document.documentElement.classList.contains('capa-abierta') || document.querySelector('.lateral.cajon')) return
+    const t = e.touches[0]
+    g = { x0: t.clientX, y0: t.clientY, dy: 0, fijo: false, cruzado: false }
+  }, { passive: true })
+  window.addEventListener('touchmove', e => {
+    if (!g) return
+    const t = e.touches[0], dx = t.clientX - g.x0, dy = t.clientY - g.y0
+    if (!g.fijo) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+      if (dy <= 0 || Math.abs(dy) < Math.abs(dx) * 1.3 || window.scrollY > 0) { g = null; return }
+      g.fijo = true
+    }
+    g.dy = dy * 0.5
+    if ((g.dy >= UMBRAL) !== g.cruzado) { g.cruzado = g.dy >= UMBRAL; tic() }
+    pinta(g.dy)
+  }, { passive: true })
+  const fin = () => {
+    if (!g) return
+    const listo = g.fijo && g.dy >= UMBRAL
+    g = null
+    if (!listo) { esconde(); return }
+    const p = pildora()
+    p.style.transition = 'transform var(--dur-media) var(--curva)'
+    p.style.transform = 'translate(-50%, 24px)'
+    p.classList.add('girando')
+    setTimeout(() => window.location.reload(), 350)
+  }
+  window.addEventListener('touchend', fin)
+  window.addEventListener('touchcancel', () => { g = null; esconde() })
+}
+gestoRecarga()
+
 const BORDE_CAJON = 36
 const UMBRAL_PAGINA = 72
 // dónde un deslizar horizontal NO es pasar de pestaña
@@ -5035,7 +5120,7 @@ function InicioNfBase({ pais = 'ES', stats, vistas, eps, notas, listas, pasaFilt
           {verTrailer && (
             <div className="nf-trailer">
               <iframe src={`https://www.youtube-nocookie.com/embed/${extraS.trailer}?autoplay=1&playsinline=1`}
-                title={tr(`Tráiler de ${s.t}`, `Trailer for ${s.t}`)} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+                title={tr(`Tráiler de ${s.t}`, `Trailer for ${s.t}`)} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen />
             </div>
           )}
           {/* a la derecha (escritorio): la carátula, dónde verla y lo que viene
@@ -6641,7 +6726,7 @@ function FichaExtras({ item, mas, extra, loc, onVolver }) {
               <div key={v.k} className="xf-video">
                 {viendo === v.k ? (
                   <div className="xf-reproductor">
-                    <iframe src={`https://www.youtube-nocookie.com/embed/${v.k}?autoplay=1`} title={v.n} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+                    <iframe src={`https://www.youtube-nocookie.com/embed/${v.k}?autoplay=1&playsinline=1`} title={v.n} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen />
                   </div>
                 ) : (
                   <button type="button" className="xf-mini" onClick={() => setViendo(v.k)} aria-label={tr(`Ver: ${v.n}`, `Watch: ${v.n}`)}>
@@ -7046,8 +7131,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               todos los episodios (en X-Men '97 a 1.800 px; en las de 60, mucho más) */}
           {verTrailer && extra && extra.trailer && (
             <div className="trailer-caja">
-              <iframe src={`https://www.youtube-nocookie.com/embed/${extra.trailer}?autoplay=1`}
-                title={tr(`Tráiler de ${item.t}`, `Trailer for ${item.t}`)} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+              <iframe src={`https://www.youtube-nocookie.com/embed/${extra.trailer}?autoplay=1&playsinline=1`}
+                title={tr(`Tráiler de ${item.t}`, `Trailer for ${item.t}`)} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen />
             </div>
           )}
           <div className="modal-acciones">
@@ -9133,6 +9218,9 @@ export default function App() {
     return next
   })
   const setF = k => setFiltros(f => ({ ...f, [k]: !f[k] }))
+  const [letra, setLetra] = useState(() => { try { const v = localStorage.getItem(KEY_LETRA); return LETRAS.some(l => l.id === v) ? v : 'normal' } catch { return 'normal' } })
+  const ponLetra = v => { setLetra(v); try { localStorage.setItem(KEY_LETRA, v) } catch {} }
+  useEffect(() => { aplicaLetra(letra) }, [letra])
   const [tema, setTema] = useState(() => {
     try { const t = localStorage.getItem(KEY_TEMA); return TEMAS.some(x => x.id === t) ? t : 'sistema' } catch { return 'sistema' }
   })
@@ -11551,6 +11639,18 @@ export default function App() {
                 <Seg clave={tema} className="ajuste-ops" role="radiogroup" aria-labelledby="aj-tema">
                   {TEMAS.map(t => (
                     <button key={t.id} className="chip-btn" role="radio" aria-checked={tema === t.id} onClick={() => setTema(t.id)}>{tr(t.nombre, t.en || t.nombre)}</button>
+                  ))}
+                </Seg>
+              </div>
+
+              <div className="ajuste">
+                <div className="ajuste-cab">
+                  <h3 className="ajuste-titulo" id="aj-letra">{tr('Tamaño de letra', 'Text size')}</h3>
+                  <p className="ajuste-pista">{tr('«Como el iPhone» sigue al tamaño de texto de Ajustes › Pantalla y brillo del teléfono.', '“Like my device” follows the text size in your phone’s Display settings.')}</p>
+                </div>
+                <Seg clave={letra} className="ajuste-ops" role="radiogroup" aria-labelledby="aj-letra">
+                  {LETRAS.map(l => (
+                    <button key={l.id} className="chip-btn" role="radio" aria-checked={letra === l.id} onClick={() => ponLetra(l.id)}>{tr(l.nombre, l.en)}</button>
                   ))}
                 </Seg>
               </div>

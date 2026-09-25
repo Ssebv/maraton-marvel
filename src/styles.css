@@ -74,8 +74,10 @@
   --marca-sombra:0 8px 22px color-mix(in srgb, var(--sello) 28%, transparent);
   --foco-luz:linear-gradient(transparent, transparent);
   /* Tipografía: siete pasos. La única excepción es el clamp del titular. */
-  --t-xs:11px; --t-s:12px; --t-m:13px; --t-b:15px;
-  --t-l:19px; --t-xl:24px; --t-xxl:40px;
+  /* --letra: el tamaño de letra de Ajustes (1 normal; «como el iPhone» lo
+     lee de la letra del sistema). Escala los siete pasos (26 sep 2026) */
+  --t-xs:calc(11px * var(--letra, 1)); --t-s:calc(12px * var(--letra, 1)); --t-m:calc(13px * var(--letra, 1)); --t-b:calc(15px * var(--letra, 1));
+  --t-l:calc(19px * var(--letra, 1)); --t-xl:calc(24px * var(--letra, 1)); --t-xxl:calc(40px * var(--letra, 1));
   /* Espacio: ritmo de 4/8 más un paso de 2px para el detalle fino */
   --e-1:2px; --e-2:4px; --e-3:8px; --e-4:12px;
   --e-5:16px; --e-6:24px; --e-7:32px; --e-8:48px; --e-9:64px;
@@ -5199,3 +5201,16 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
 .bp-texto{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1}
 .bp-texto b{font-size: var(--t-b); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .bp-texto small{font-size: var(--t-s); color:var(--ink3)}
+
+/* ── Tirar para actualizar (app instalada, 26 sep 2026) ── */
+.tira-recarga{
+  position:fixed; z-index:60; left:50%; top:calc(env(safe-area-inset-top, 0px) + 8px); width:40px; height:40px; border-radius:50%;
+  display:grid; place-items:center; pointer-events:none; opacity:0; transform:translate(-50%, -56px);
+  background:var(--sup-lustre), var(--panel); border:1px solid var(--filo); box-shadow:var(--sup-brillo), 0 8px 22px -8px rgba(0,0,0,.5);
+  transition:transform var(--dur-media) var(--curva), opacity var(--dur-corta) var(--curva); color:var(--ink3);
+}
+.tira-recarga svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+.tira-recarga.lista{color:var(--red)}
+.tira-recarga.girando svg{animation:recargaGira .8s linear infinite}
+@keyframes recargaGira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){ .tira-recarga.girando svg{animation:none} }
