@@ -75,7 +75,9 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Noticias | `scripts/noticias.mjs` (RSS de Espinof, Cinemascomics, IGN, SuperHeroHype; Google Noticias no, por sus condiciones), imágenes servidas desde la app, tarea diaria `.github/workflows/noticias.yml` que hace commit en main | ✅ |
 | Rendimiento | LCP de Inicio 6,5 → 2,3–2,7 s (precarga desde index.html, sin fundido, `nfLazy` en vez de loading=lazy); 1.191 → 800 kB; filas de Inicio en dos tiempos, sin precargar Archivo, navegación del service worker con 2,5 s de paciencia; sonda `safari` (WebKit) | ✅ |
 
-### 24 sep 2026 — Auditoría iOS
+### Jornada del 24 al 26 sep 2026 — iOS, navegación, líneas de tiempo, fichas ampliadas y foro preparado
+
+Unos 45 despliegues, todos en producción y con las sondas en verde; dos revisiones de código (10 y 8 fallos arreglados). El detalle técnico de cada bloque está en DESARROLLO.md.
 
 | Qué | Estado |
 |---|---|
@@ -114,6 +116,10 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Inicio: cabeceras de fila con el nombre en una línea y los datos debajo, «Tu semana» a todo el ancho, medalla al completar un universo | ✅ |
 
 ### Pendiente (siguientes jornadas)
+
+- **Encender la nube** (cuentas, comunidades y el foro tipo Reddit, ya preparado): Sebastián escribe `! npx supabase login` y luego `npm run nube:encender` + `npm run desplegar`; «Entrar con Google», aparte (supabase/LEEME.md, apartado 3).
+- **Ideas de iOS no hechas**: avisos push de verdad (necesitan la nube) y modo sin conexión completo («Guardar para ver sin conexión», ~30–40 MB).
+- **Probar en un iPhone real**: suscripción al calendario, vibración, apertura sin señal, tirar para actualizar en la app instalada y el tamaño de letra «Como el iPhone».
 
 - **Login y datos en la nube** (desde el 24 sep: `npx supabase login` + `npm run nube:encender`): el código de la cuenta (Google o enlace por correo) y las comunidades está hecho y apagado (`src/nube.js`). Falta que Sebastián entre a Supabase (`! npx supabase login`) para crear el proyecto gratis (São Paulo), aplicar las migraciones y encenderlo; Google pide un paso suyo en su consola (supabase/LEEME.md). Con eso, también push de verdad en iOS.
 - **A mano en GitHub**: fijar la bienvenida de Discusiones y subir `docs/social.jpg` en Settings › Social preview.
