@@ -5153,3 +5153,22 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
 .pcs-conecta{font-size: var(--t-s) !important; color:var(--ink) !important}
 .pcs-conecta span{font-weight:700; color:var(--red)}
 @media (prefers-reduced-motion: reduce){ .pcs-lista{animation:none} .xf-mini img{transition:none} }
+
+/* ── Ficha en el móvil: extras y zonas táctiles (26 sep 2026) ──
+   En el iPhone cada vídeo de extras ocupaba el ancho entero (una pantalla por
+   vídeo): ahora un carril que se desliza, con la siguiente miniatura asomando,
+   como las filas de Inicio. «La historia, con más detalle» medía 20 px de alto
+   y «Volver a…» 28: los dos a 44 con la zona táctil. */
+.xf-titulo{color:var(--ink)}
+@media (max-width:900px){
+  .xf-videos{display:flex; gap: var(--e-3); overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none;
+    scroll-snap-type:x mandatory; scroll-padding-inline: var(--pad, var(--e-6));
+    margin-inline:calc(-1 * var(--pad, var(--e-6))); padding: var(--e-1) var(--pad, var(--e-6)) var(--e-2)}
+  .xf-videos::-webkit-scrollbar{display:none}
+  .xf-video{flex:0 0 min(78%, 300px); scroll-snap-align:start}
+  .xf-video-t{display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden}
+}
+.ficha-historia > summary{min-height:44px}
+.ficha-historia > summary::before{inset:-2px -6px}
+.volver-ficha{position:relative}
+.volver-ficha::after{content:""; position:absolute; inset:-8px -4px}
