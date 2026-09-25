@@ -84,6 +84,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
 | Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
 | Panel lateral en el móvil: sale con un botón o arrastrando desde el borde (instalada), sigue al dedo, y atrás o tocar fuera lo cierran | ✅ |
+| Página del actor: edad, carrera, créditos, su primera vez en el maratón, su personaje en cada título, «conocido también por» y biografía en español desde Wikipedia | ✅ |
 | Revisión de código de dos días: 10 fallos arreglados (deslizar vídeos cambiaba de título, foro, caras, scroll de la ficha…) y control de integridad de los datos en cada compilación | ✅ |
 | Post-créditos de todo el catálogo: 73 títulos y 119 escenas explicadas (series incluidas), el resto marcado «sin escenas»; los detalles ya no salen de una copia vieja | ✅ |
 | Extras con página propia y vídeos para ver dentro, caras en los cambios de actor, y 72 escenas post-créditos explicadas | ✅ |

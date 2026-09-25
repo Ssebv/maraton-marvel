@@ -5172,3 +5172,16 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
 .ficha-historia > summary::before{inset:-2px -6px}
 .volver-ficha{position:relative}
 .volver-ficha::after{content:""; position:absolute; inset:-8px -4px}
+
+/* ── Página del actor ampliada (26 sep 2026) ── */
+.pf-cifras{display:grid; grid-template-columns:repeat(auto-fit, minmax(74px, 1fr)); gap: var(--e-2)}
+.pf-cifra{display:flex; flex-direction:column; gap:2px; padding: var(--e-3); border-radius:var(--r-m); background:color-mix(in srgb, var(--panel2) 80%, transparent); border:1px solid var(--filo)}
+.pf-cifra b{font-family:var(--f-titulo); font-size: var(--t-l); font-weight:800; line-height:1.1; font-variant-numeric:tabular-nums}
+.pf-cifra small{font-size: var(--t-xs); font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink3)}
+.pf-primero{margin:0; font-size: var(--t-m); color:var(--ink2)}
+.pf-primero b{color:var(--ink)}
+.pf-fuente{display:block; margin-top: var(--e-2); font-size: var(--t-xs); color:var(--ink3)}
+.pf-fuente a{color:var(--blue)}
+.pf-item-papel{font-size: var(--t-xs); font-weight:700; color:var(--red); line-height:1.25; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden}
+.pf-conocido .pf-item{cursor:default}
+.pf-imdb{align-self:flex-start; display:inline-flex; align-items:center; gap: var(--e-1); min-height:44px; font-size: var(--t-s); font-weight:600; color:var(--blue); text-decoration:none}

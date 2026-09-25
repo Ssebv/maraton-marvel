@@ -1294,7 +1294,9 @@ async function cargaPersona(tmdbId) {
   const idi = tmdbIdioma()
   const k = (idi === 'en-US' ? 'en:' : '') + tmdbId
   if (personaMem[k]) return personaMem[k]
-  const ls = 'maraton-marvel-persona-v3:' + k
+  // v4 (26 sep 2026): papeles en el maratón, carrera y «conocido por»
+  // v5: la carrera sin entrevistas, documentales ni «él mismo»
+  const ls = 'maraton-marvel-persona-v5:' + k
   try {
     const g = JSON.parse(localStorage.getItem(ls))
     if (g && Date.now() - g.t < 30 * 864e5) { personaMem[k] = g.d; return g.d }
@@ -1316,6 +1318,58 @@ async function cargaPersona(tmdbId) {
         .map(c => TMDB_INV[`${c.media_type}:${c.id}`])
         .filter(Boolean))]
     })(),
+    // a quién interpreta en cada título del maratón (en las series, su papel)
+    papeles: (() => {
+      const cc = j.combined_credits || {}, out = {}
+      ;(Array.isArray(cc.cast) ? cc.cast : []).forEach(c => {
+        const id = c && TMDB_INV[`${c.media_type}:${c.id}`]
+        if (!id || out[id] || typeof c.character !== 'string' || !c.character.trim()) return
+        out[id] = c.character.replace(/\s*\((?:[^)]*\b(?:voice|uncredited|archive|footage)\b[^)]*)\)/gi, '').replace(/\s*\/\s*/g, ' / ').trim().slice(0, 80)
+      })
+      return out
+    })(),
+    // la carrera: desde cuándo trabaja, cuántos créditos tiene y lo más
+    // conocido fuera del maratón (por votos en TMDB)
+    carrera: (() => {
+      const cc = j.combined_credits || {}
+      // fuera lo que no es su trabajo: hacer de sí mismo, programas de
+      // entrevistas, noticias, documentales y realities (un late show de 1954
+      // ponía «empezó en 1944»)
+      const NO = new Set([10767, 10763, 99, 10764])
+      const suyo = c => c && (c.media_type === 'movie' || c.media_type === 'tv') && !(c.genre_ids || []).some(g => NO.has(g))
+        && !/\b(himself|herself|self|themselves|narrator|host|él mismo|ella misma)\b/i.test(c.character || '')
+      const cast = (Array.isArray(cc.cast) ? cc.cast : []).filter(suyo), crew = (Array.isArray(cc.crew) ? cc.crew : []).filter(suyo)
+      const anio = c => { const f = c.release_date || c.first_air_date; return typeof f === 'string' && /^\d{4}/.test(f) ? +f.slice(0, 4) : null }
+      // desde: sus películas (el año de una serie es el de la serie, no el suyo)
+      const anios = cast.filter(c => c.media_type === 'movie').concat(crew.filter(c => c.media_type === 'movie')).map(anio).filter(Boolean)
+      const vistos = new Set()
+      const conocido = [...cast, ...crew]
+        .filter(c => c && (c.media_type === 'movie' || c.media_type === 'tv') && !TMDB_INV[`${c.media_type}:${c.id}`]
+          && typeof c.poster_path === 'string' && !(c.genre_ids || []).includes(10767) && !(c.genre_ids || []).includes(10763)
+          && !vistos.has(c.id) && vistos.add(c.id))
+        .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
+        .slice(0, 8)
+        .map(c => ({ t: String(c.title || c.name || '').slice(0, 80), a: anio(c), p: c.poster_path, papel: typeof c.character === 'string' ? c.character.slice(0, 60) : (typeof c.job === 'string' ? c.job : '') }))
+      return { desde: anios.length ? Math.min(...anios) : null, creditos: new Set([...cast, ...crew].map(c => c && c.id)).size, conocido }
+    })(),
+    imdb: typeof j.imdb_id === 'string' ? j.imdb_id : null,
+  }
+  // sin biografía en el idioma: la Wikipedia (solo si el artículo es de
+  // alguien del oficio, para no traer a un homónimo) y, si no, la de TMDB en
+  // inglés, avisando
+  if (!d.bio) {
+    const wiki = idi === 'en-US' ? 'en' : 'es'
+    try {
+      const w = await fetch(`https://${wiki}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(String(j.name || '').replace(/ /g, '_'))}`).then(r => (r.ok ? r.json() : null))
+      const texto = w && w.type === 'standard' && typeof w.extract === 'string' ? w.extract.trim() : ''
+      if (texto.length > 120 && /act(or|riz|ress)|direct(or|ora)|guionist|productor|producer|comedian|comediante|cantante|singer|screenwriter|filmmaker|cineasta/i.test((w.description || '') + ' ' + texto.slice(0, 300))) {
+        d.bio = texto; d.bioFuente = 'wikipedia'
+        d.bioUrl = w.content_urls && w.content_urls.mobile && typeof w.content_urls.mobile.page === 'string' ? w.content_urls.mobile.page : null
+      }
+    } catch {}
+    if (!d.bio && idi !== 'en-US') {
+      try { const e = await tmdbJson(`/person/${tmdbId}`, 'en-US'); if (typeof e.biography === 'string' && e.biography.trim()) { d.bio = e.biography.trim(); d.bioFuente = 'tmdb-en' } } catch {}
+    }
   }
   personaMem[k] = d
   try { localStorage.setItem(ls, JSON.stringify({ t: Date.now(), d })) } catch {}
@@ -1692,7 +1746,9 @@ const urlPersona = n => `https://www.imdb.com/find/?q=${encodeURIComponent(limpi
 // («Additional Voices» bajo una actriz de doblaje): se traducen al pintar
 // (la caché de TMDB guarda el texto original y no hace falta invalidarla)
 const ROLES_ES = { 'additional voices': 'Voces adicionales', 'additional voice': 'Voz adicional', himself: 'Él mismo', herself: 'Ella misma', self: 'Como sí mismo', narrator: 'Narrador', 'narrator (voice)': 'Narrador', various: 'Varios papeles', 'various characters': 'Varios papeles' }
-const rolLocal = p => tr(ROLES_ES[p.toLowerCase()] || p, p)
+// el papel del reparto: los oficios (ROLES_ES) y, si no, el personaje con su
+// nombre en español (personajeEs, definida más abajo; se llama en tiempo de uso)
+const rolLocal = p => (ROLES_ES[p.toLowerCase()] ? tr(ROLES_ES[p.toLowerCase()], p) : personajeEs(p))
 const tipoSello = (item, esComic) => (esComic ? tr('CÓMIC', 'COMIC') : item.tipo === 'serie' ? tr('SERIE', 'SERIES') : item.tipo === 'esp' ? tr('ESPECIAL', 'SPECIAL') : tr('PELÍCULA', 'MOVIE'))
 
 function Cover({ item, c, esComic }) {
@@ -1863,6 +1919,28 @@ function CaraActor({ nombre }) {
   const foto = useCara(nombre)
   return <Avatar nombre={nombre} foto={foto} />
 }
+// Los personajes vienen de TMDB en inglés («Captain America», «Loki as Captain
+// America»): en español, con los nombres de España, y fuera de España pasan
+// por latiniza como el resto de textos (26 sep 2026)
+// Se traduce cada NOMBRE entero del personaje (los separa « / »), no palabras
+// sueltas: «Johnny Storm» no es Tormenta
+const PERSONAJES_ES = {
+  'captain america': 'Capitán América', 'captain marvel': 'Capitana Marvel', 'black widow': 'Viuda Negra', hawkeye: 'Ojo de Halcón',
+  'scarlet witch': 'Bruja Escarlata', 'winter soldier': 'Soldado de Invierno', 'the winter soldier': 'Soldado de Invierno',
+  'black panther': 'Pantera Negra', 'war machine': 'Máquina de Guerra', wasp: 'la Avispa', 'the wasp': 'la Avispa', falcon: 'Halcón',
+  'the falcon': 'Halcón', vision: 'Visión', 'the vision': 'Visión', 'nick fury': 'Nick Furia', 'the hulk': 'Hulk', wolverine: 'Lobezno',
+  storm: 'Tormenta', cyclops: 'Cíclope', beast: 'Bestia', mystique: 'Mística', rogue: 'Pícara', iceman: 'el Hombre de Hielo',
+  'human torch': 'Antorcha Humana', 'the human torch': 'Antorcha Humana', 'invisible woman': 'Mujer Invisible', 'the invisible woman': 'Mujer Invisible',
+  'the thing': 'la Cosa', thing: 'la Cosa', 'mister fantastic': 'Señor Fantástico', 'mr. fantastic': 'Señor Fantástico',
+  'green goblin': 'Duende Verde', quicksilver: 'Mercurio', nightcrawler: 'Rondador Nocturno', 'red skull': 'Cráneo Rojo',
+  'white wolf': 'Lobo Blanco', 'star-lord': 'Star-Lord', 'iron man': 'Iron Man', 'spider-man': 'Spider-Man',
+}
+const personajeEs = t => {
+  if (!t || IDIOMA_ACTUAL === 'en') return t
+  const una = x => { const m = /^(.*?)\s+as\s+(.+)$/i.exec(x); if (m) return `${una(m[1])} como ${una(m[2])}`; const k = x.trim().toLowerCase(); return PERSONAJES_ES[k] || x.trim() }
+  const es = t.split(/\s*\/\s*/).map(una).join(' / ')
+  return PAIS_ACTUAL === 'ES' ? es : latiniza(es)
+}
 // «Edward Norton (El increíble Hulk, 2008)» → «Edward Norton»
 const soloNombre = t => String(t || '').replace(/\s*\(.*$/, '').trim()
 
@@ -1903,6 +1981,14 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
 
   const bio = datos && datos.bio
   const bioCorta = bio && bio.length > 420 && !masBio ? bio.slice(0, 420).replace(/\s+\S*$/, '') + '…' : bio
+  // datos de carrera (26 sep 2026, «cuando entre al actor, que me diga todos
+  // los detalles de él en el UCM, su vida como actor»)
+  const edad = datos && datos.nacimiento ? (() => { const n = new Date(datos.nacimiento + 'T00:00:00'), h = new Date(); let a = h.getFullYear() - n.getFullYear(); if (h < new Date(h.getFullYear(), n.getMonth(), n.getDate())) a--; return a > 0 && a < 120 ? a : null })() : null
+  const papeles = (datos && datos.papeles) || {}
+  const carrera = datos && datos.carrera
+  const actual = itemActualId && buscaItem(itemActualId)
+  const enTotal = tambienEn.length + (actual ? 1 : 0)
+  const primero = [...tambienEn.map(x => x.item), ...(actual ? [actual.item] : [])].filter(it => it && it.r).sort((a, b) => a.r - b.r)[0]
 
   return (
     <div className="persona-ficha">
@@ -1914,7 +2000,7 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
         <div className="pf-titulos">
           <h3 className="pf-nombre">{nombre}</h3>
           {papel
-            ? <p className="pf-papel">{tr('Interpreta a', 'Plays')} <b>{papel}</b></p>
+            ? <p className="pf-papel">{tr('Interpreta a', 'Plays')} <b>{personajeEs(papel)}</b></p>
             : <p className="pf-papel pf-papel-rol">{rol}</p>}
           {datos && (datos.nacimiento || datos.lugar) && (
             <p className="pf-datos">
@@ -1925,10 +2011,25 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
         </div>
       </div>
 
+      {datos && (edad || (carrera && carrera.desde) || enTotal > 1) && (
+        <div className="pf-cifras">
+          {edad && <span className="pf-cifra"><b>{edad}</b><small>{tr('años', 'years old')}</small></span>}
+          {carrera && carrera.desde && <span className="pf-cifra"><b>{carrera.desde}</b><small>{tr('empezó', 'first credit')}</small></span>}
+          {carrera && carrera.creditos > 0 && <span className="pf-cifra"><b>{carrera.creditos}</b><small>{tr('créditos', 'credits')}</small></span>}
+          {enTotal > 1 && <span className="pf-cifra"><b>{enTotal}</b><small>{tr('en el maratón', 'in the marathon')}</small></span>}
+        </div>
+      )}
+      {primero && enTotal > 1 && (
+        <p className="pf-primero">{tr('Su primera vez en el maratón: ', 'First time in the marathon: ')}<b>{primero.t}</b>{String(primero.t).includes(String(primero.r)) ? '' : ` (${primero.r})`}{papeles[primero.id] ? tr(`, como ${personajeEs(papeles[primero.id])}`, `, as ${papeles[primero.id]}`) : ''}</p>
+      )}
+
       {bioCorta
         ? <p className="pf-bio">{bioCorta}{bio.length > 420 && (
             <button className="pf-mas" onClick={() => setMasBio(v => !v)}>{masBio ? tr('Menos', 'Less') : tr('Leer más', 'Read more')}</button>
-          )}</p>
+          )}
+          {datos.bioFuente === 'wikipedia' && <small className="pf-fuente">{tr('Fuente: Wikipedia', 'Source: Wikipedia')}{datos.bioUrl ? <> · <a href={datos.bioUrl} target="_blank" rel="noopener noreferrer">{tr('artículo completo', 'full article')}</a></> : null}</small>}
+          {datos.bioFuente === 'tmdb-en' && <small className="pf-fuente">{tr('Biografía en inglés: TMDB no la tiene en español.', 'Biography from TMDB.')}</small>}
+          </p>
         : <p className="pf-bio pf-vacia">
             {!tmdbId ? tr('No hay ficha de esta persona en TMDB.', 'TMDB has no page for this person.')
               : fallo ? tr('No se pudo cargar su biografía. Comprueba tu conexión.', 'Could not load their biography. Check your connection.')
@@ -1944,12 +2045,27 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
               <button className="pf-item" key={item.id} onClick={() => onAbrirTitulo({ item, c, esComic })}>
                 <Portada item={item} c={c} esComic={esComic} />
                 <span className="pf-item-t">{item.t}</span>
-                <span className="pf-item-h">{item.h}</span>
+                {papeles[item.id] ? <span className="pf-item-papel">{personajeEs(papeles[item.id])}</span> : <span className="pf-item-h">{item.h}</span>}
               </button>
             ))}
           </div>
         </div>
       )}
+      {carrera && carrera.conocido.length > 0 && (
+        <div className="pf-tambien">
+          <h4 className="pf-sub">{tr('Conocido también por', 'Also known for')}</h4>
+          <div className="pf-lista pf-conocido">
+            {carrera.conocido.map((x, i) => (
+              <span className="pf-item" key={i}>
+                <img className="cover foto" src={`${TMDB_IMG}w185${x.p}`} alt="" loading="lazy" decoding="async" />
+                <span className="pf-item-t">{x.t}</span>
+                <span className="pf-item-h">{[x.a, x.papel].filter(Boolean).join(' · ')}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {datos && datos.imdb && <a className="pf-imdb" href={`https://www.imdb.com/name/${datos.imdb}/`} target="_blank" rel="noopener noreferrer">{tr('Su ficha completa en IMDb', 'Full profile on IMDb')}<IcoFuera /></a>}
     </div>
   )
 }
@@ -3195,8 +3311,10 @@ const leeIdiomaGuardado = () => {
 // Las carátulas siguen al idioma como los títulos: POSTERS se usa en decenas de
 // sitios, así que se cambia su contenido y no cada uso (23 sep 2026)
 const POSTERS_ES = { ...POSTERS }
+let PAIS_ACTUAL = 'ES'
 function aplicaTitulos(pais, idioma = IDIOMA_ACTUAL) {
   IDIOMA_ACTUAL = idioma
+  PAIS_ACTUAL = pais
   const en = idioma === 'en'
   // el idioma del documento sigue al de la app (24 sep 2026): con <html
   // lang="es"> fijo, VoiceOver leía la app en inglés con voz española. Fuera
