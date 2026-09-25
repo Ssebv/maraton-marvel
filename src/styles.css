@@ -2280,6 +2280,16 @@ main.crono, main.comics, main.estreno{animation:none}
   .cielo{view-transition-name:cielo}
   ::view-transition-old(cielo){display:none}
   ::view-transition-new(cielo){animation:none}
+  /* (25 sep) la imagen de detrás de la cabecera también: sin nombre propio
+     iba dentro de la foto de la página y se deslizaba con ella */
+  .fondo-hero{view-transition-name:fondo-hero}
+  ::view-transition-old(fondo-hero){display:none}
+  ::view-transition-new(fondo-hero){animation:none}
+  /* las capas con nombre se pintan ENCIMA de la página, y el degradado
+     inferior del fondo tapaba el borde de «Siguiente». Por debajo no sirve (la
+     foto de la página es opaca y lo escondería): se recorta donde empieza el
+     contenido, bajo las pestañas (--fondo-corte lo mide conTransicion) */
+  ::view-transition-new(fondo-hero){clip-path:inset(0 0 var(--fondo-corte, 0px) 0)}
   /* la pestaña del cajón es fija: no viaja con la página */
   .cajon-asa{view-transition-name:asa}
   ::view-transition-old(asa){display:none}

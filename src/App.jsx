@@ -54,13 +54,20 @@ function caratulasListas(tope = 120) {
   const listas = Promise.all(imgs.map(i => (i.decode ? i.decode().catch(() => {}) : null)))
   return Promise.race([listas, new Promise(r => setTimeout(r, tope))])
 }
-function conTransicion(dir, fn) {
-  if (typeof document === 'undefined' || !document.startViewTransition || movimientoReducido()) { fn(); return }
+// `despues` (opcional): lo que hay que hacer con la vista nueva ya pintada y
+// ANTES de su foto (llevarla a una tarjeta, a una era), para que entre ya en su
+// sitio y no salte al terminar
+function conTransicion(dir, fn, despues) {
+  if (typeof document === 'undefined' || !document.startViewTransition || movimientoReducido()) { flushSync(fn); if (despues) despues(); return }
   const raiz = document.documentElement
   raiz.dataset.vt = dir
+  // cuánto del fondo de la cabecera cae ya sobre el contenido (ver styles.css)
+  const fondo = document.querySelector('.fondo-hero'), tope = document.querySelector('nav.subvistas, .toolbar')
+  if (fondo && tope) raiz.style.setProperty('--fondo-corte', Math.max(0, fondo.getBoundingClientRect().bottom - tope.getBoundingClientRect().bottom) + 'px')
   const t = document.startViewTransition(() => {
     enTransicion = true
     try { flushSync(fn) } finally { enTransicion = false }
+    if (despues) despues()
     return caratulasListas()
   })
   // si se salta (otra transición encima, pestaña oculta), `ready` se rechaza:
@@ -10018,8 +10025,14 @@ export default function App() {
             // viste; y se reintenta hasta que Cronológico esté pintado (la
             // transición y el render pueden tardar más de 150 ms en un móvil lento)
             const v = saga === 'comics' ? 'comics' : saga === 'animacion' ? 'animacion' : 'crono'
-            conTransicion('adelante', () => setVista(v))
-            despliegaPara(id)
+            // la era, desplegada y arriba ANTES de la foto de la vista nueva:
+            // entra ya en su sitio (con un rAF después, entraba en el principio
+            // de la lista y saltaba al terminar)
+            conTransicion('adelante', () => setVista(v), () => {
+              flushSync(() => despliegaPara(id))
+              const era = document.getElementById('era-' + id)
+              if (era) era.scrollIntoView({ behavior: 'instant', block: 'start' })
+            })
             const t0 = performance.now()
             let sinFiltro = false
             const busca = () => {
