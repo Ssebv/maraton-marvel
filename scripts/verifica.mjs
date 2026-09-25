@@ -202,6 +202,35 @@ bien.push('ni dist/ ni docs/ llevan páginas de prueba')
   else bien.push(`los ${textos.length} textos de data.js tienen su inglés`)
 }
 
+// ── 10 · Detalles de las fichas y escenas post-créditos (26 sep 2026) ──
+// Que no vuelva a pasar en silencio: 58 títulos sin dato de escenas en los
+// créditos dejaban la ficha sin explicación y nadie se enteraba.
+{
+  const { DATA } = fuentes
+  const ahora = new Date()
+  const items = DATA.filter(s => s.saga === 'xmen' || s.saga === 'ucm').flatMap(s => s.eras.flatMap(e => e.items))
+  const sinPc = items.filter(i => i.pc == null && !(i.r > ahora.getFullYear() || (i.r === ahora.getFullYear() && /doomsday/.test(i.id))))
+  if (sinPc.length) ojo(`${sinPc.length} título(s) de X-Men/UCM sin «pc» (escenas en los créditos): ${sinPc.slice(0, 8).map(i => i.id).join(', ')}`)
+  else bien.push(`los ${items.length} títulos de X-Men y UCM dicen si tienen escenas en los créditos`)
+  const leeJson = f => { try { return JSON.parse(readFileSync(join(raiz, f), 'utf8')) } catch { return null } }
+  const es = leeJson('public/detalles/es.json'), en = leeJson('public/detalles/en.json')
+  if (!es || !en) mal('public/detalles/es.json o en.json no existe o no es JSON válido (npm run detalles -- scripts/detalles-lotes)')
+  else {
+    const ids = new Set(DATA.flatMap(s => s.eras.flatMap(e => e.items.map(i => i.id))))
+    const huerfanos = [...Object.keys(es), ...Object.keys(en)].filter(id => !ids.has(id))
+    if (huerfanos.length) mal(`detalles de ids que no existen: ${[...new Set(huerfanos)].slice(0, 6).join(', ')}`)
+    // cuántas escenas dice «pc» frente a cuántas hay explicadas
+    const numero = pc => { const m = /^(\d+)/.exec(pc || ''); return m ? +m[1] : 0 }
+    const sinExplicar = items.filter(i => numero(i.pc) > 0 && !(es[i.id] && es[i.id].pcs && es[i.id].pcs.length))
+    const noCuadran = items.filter(i => numero(i.pc) > 0 && es[i.id] && es[i.id].pcs && es[i.id].pcs.length !== numero(i.pc))
+    const esEn = Object.keys(es).filter(id => (es[id].pcs || []).length !== ((en[id] || {}).pcs || []).length)
+    if (sinExplicar.length) ojo(`${sinExplicar.length} título(s) con escenas en los créditos sin explicación: ${sinExplicar.slice(0, 8).map(i => i.id).join(', ')}`)
+    if (noCuadran.length) ojo(`«pc» no cuadra con las escenas explicadas en: ${noCuadran.slice(0, 8).map(i => `${i.id} (${i.pc} / ${es[i.id].pcs.length})`).join(', ')}`)
+    if (esEn.length) mal(`escenas post-créditos distintas en español e inglés: ${esEn.slice(0, 6).join(', ')}`)
+    if (!sinExplicar.length && !esEn.length) bien.push(`${Object.values(es).filter(x => x.pcs).length} títulos con sus escenas de los créditos explicadas en español e inglés`)
+  }
+}
+
 // ── informe ──
 for (const b of bien) console.log('  ✓ ' + b)
 for (const a of avisos) console.log('  · ' + a)

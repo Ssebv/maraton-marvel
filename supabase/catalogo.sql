@@ -1,5 +1,5 @@
 -- GENERADO por scripts/comunidad/catalogo.mjs (npm run comunidad:catalogo). No editar a mano.
--- 144 títulos. Se aplica DESPUÉS de la migración y cada vez que entre un título nuevo.
+-- 156 títulos. Se aplica DESPUÉS de la migración y cada vez que entre un título nuevo.
 insert into public.catalogo (id, saga, minutos, episodios) values
   ('first-class', 'xmen', 132, 0),
   ('origins-wolverine', 'xmen', 107, 0),
@@ -72,7 +72,17 @@ insert into public.catalogo (id, saga, minutos, episodios) values
   ('moonknight', 'ucm', 280, 6),
   ('peter-lista', 'ucm', 4, 0),
   ('ffh', 'ucm', 129, 0),
-  ('sony', 'ucm', 1330, 0),
+  ('sm-raimi1', 'ucm', 121, 0),
+  ('sm-raimi2', 'ucm', 127, 0),
+  ('sm-raimi3', 'ucm', 139, 0),
+  ('asm1', 'ucm', 136, 0),
+  ('asm2', 'ucm', 142, 0),
+  ('venom1', 'ucm', 112, 0),
+  ('venom2', 'ucm', 97, 0),
+  ('morbius', 'ucm', 104, 0),
+  ('madameweb', 'ucm', 116, 0),
+  ('venom3', 'ucm', 109, 0),
+  ('kraven', 'ucm', 127, 0),
   ('nwh', 'ucm', 148, 0),
   ('mom', 'ucm', 126, 0),
   ('hawkeye', 'ucm', 280, 6),
@@ -88,7 +98,9 @@ insert into public.catalogo (id, saga, minutos, episodios) values
   ('wonderman', 'ucm', 240, 8),
   ('quantumania', 'ucm', 125, 0),
   ('loki2', 'ucm', 300, 6),
-  ('fox4f', 'ucm', 297, 0),
+  ('ff2005', 'ucm', 106, 0),
+  ('ff2007', 'ucm', 92, 0),
+  ('ff2015', 'ucm', 100, 0),
   ('deadpool3', 'ucm', 128, 0),
   ('gotg3', 'ucm', 150, 0),
   ('agatha', 'ucm', 342, 9),

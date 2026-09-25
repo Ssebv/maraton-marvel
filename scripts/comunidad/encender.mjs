@@ -37,8 +37,11 @@ const NUBE_JS = join(RAIZ, 'src/nube.js')
 const espera = ms => new Promise(r => setTimeout(r, ms))
 const paso = t => console.log(`\n▸ ${t}`)
 
-function sb(args, { json = false, cwd = RAIZ, entrada, mostrar = false } = {}) {
-  const r = spawnSync('npx', [...CLI, ...args, ...(json ? ['-o', 'json'] : [])], { cwd, encoding: 'utf8', input: entrada, stdio: mostrar ? ['pipe', 'inherit', 'inherit'] : 'pipe' })
+// `clave`: la contraseña de la base va por variable de entorno, no en la línea
+// de órdenes (ahí la vería cualquiera con `ps`)
+function sb(args, { json = false, cwd = RAIZ, entrada, mostrar = false, clave } = {}) {
+  const env = clave ? { ...process.env, SUPABASE_DB_PASSWORD: clave } : process.env
+  const r = spawnSync('npx', [...CLI, ...args, ...(json ? ['-o', 'json'] : [])], { cwd, env, encoding: 'utf8', input: entrada, stdio: mostrar ? ['pipe', 'inherit', 'inherit'] : 'pipe' })
   if (r.status !== 0) {
     const err = new Error(`supabase ${args.join(' ')} falló:\n${(r.stderr || r.stdout || '').trim()}`)
     err.salida = (r.stderr || '') + (r.stdout || '')
@@ -70,11 +73,12 @@ async function main() {
 
   paso(`Proyecto «${NOMBRE}»`)
   let clave = existsSync(CLAVE_DB) ? readFileSync(CLAVE_DB, 'utf8').trim() : ''
+  const creado = !p
   if (!p) {
     const orgs = sb(['orgs', 'list'], { json: true })
     if (!orgs.length) throw new Error('La cuenta no tiene organización: crea una (gratis) en supabase.com y vuelve a intentarlo.')
     clave = randomBytes(24).toString('base64url')
-    writeFileSync(CLAVE_DB, clave + '\n'); chmodSync(CLAVE_DB, 0o600)
+    writeFileSync(CLAVE_DB, clave + '\n', { mode: 0o600 }); chmodSync(CLAVE_DB, 0o600)
     console.log(`  contraseña de la base guardada en ${CLAVE_DB} (no va al repositorio)`)
     sb(['projects', 'create', NOMBRE, '--org-id', orgs[0].id, '--region', REGION, '--db-password', clave], { mostrar: true })
     p = sb(['projects', 'list'], { json: true }).find(x => x.name === NOMBRE)
@@ -93,10 +97,15 @@ async function main() {
   }
 
   paso('Migraciones y catálogo')
-  sb(['link', '--project-ref', ref, '-p', clave], { mostrar: true })
-  sb(['db', 'push', '--linked', '-p', clave, '--include-seed', '--yes'], { mostrar: true })
+  sb(['link', '--project-ref', ref], { mostrar: true, clave })
+  sb(['db', 'push', '--linked', '--include-seed', '--yes'], { mostrar: true, clave })
 
   paso('Configuración de acceso de producción')
+  // solo en un proyecto recién creado: `config push` sube también los valores
+  // por defecto de lo que el archivo no declara, y en uno que ya existía
+  // apagaría lo activado después a mano (Google, el correo propio)
+  if (!creado) console.log('  el proyecto ya existía: la configuración de acceso no se toca (revísala en el panel si hace falta)')
+  else {
   const dir = mkdtempSync(join(tmpdir(), 'maraton-nube-'))
   mkdirSync(join(dir, 'supabase'))
   writeFileSync(join(dir, 'supabase', 'config.toml'), [
@@ -112,6 +121,7 @@ async function main() {
   ].join('\n'))
   console.log(sb(['--workdir', dir, 'config', 'diff', '--project-ref', ref]))
   sb(['--workdir', dir, 'config', 'push', '--project-ref', ref, '--yes'], { mostrar: true })
+  }
 
   paso('Claves en src/nube.js')
   const claves = sb(['projects', 'api-keys', '--project-ref', ref], { json: true })

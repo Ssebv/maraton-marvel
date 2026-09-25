@@ -63,16 +63,22 @@ function caratulasListas(tope = 120) {
 // ANTES de su foto (llevarla a una tarjeta, a una era), para que entre ya en su
 // sitio y no salte al terminar
 function conTransicion(dir, fn, despues) {
-  if (typeof document === 'undefined' || !document.startViewTransition || movimientoReducido()) { flushSync(fn); if (despues) despues(); return }
+  if (typeof document === 'undefined' || !document.startViewTransition || movimientoReducido()) {
+    enTransicion = true
+    try { flushSync(fn); if (despues) despues() } finally { enTransicion = false }
+    return
+  }
   const raiz = document.documentElement
   raiz.dataset.vt = dir
   // cuánto del fondo de la cabecera cae ya sobre el contenido (ver styles.css)
   const fondo = document.querySelector('.fondo-hero'), tope = document.querySelector('nav.subvistas, .toolbar')
   if (fondo && tope) raiz.style.setProperty('--fondo-corte', Math.max(0, fondo.getBoundingClientRect().bottom - tope.getBoundingClientRect().bottom) + 'px')
+  else raiz.style.removeProperty('--fondo-corte')
   const t = document.startViewTransition(() => {
     enTransicion = true
-    try { flushSync(fn) } finally { enTransicion = false }
-    if (despues) despues()
+    // `despues` también dentro de enTransicion: las tarjetas que monta (una era
+    // desplegada) no deben nacer con su retraso de entrada en la foto nueva
+    try { flushSync(fn); if (despues) despues() } finally { enTransicion = false }
     return caratulasListas()
   })
   // si se salta (otra transición encima, pestaña oculta), `ready` se rechaza:
@@ -495,6 +501,9 @@ function NuevoHilo({ foro, episodios, cuenta, token, onCancelar, onCreado }) {
   const [titulo, setTitulo] = useState('')
   const [cuerpo, setCuerpo] = useState('')
   const [episodio, setEpisodio] = useState('')
+  // al cambiar el título (portada del foro) el episodio elegido ya no vale; el
+  // texto escrito se conserva
+  useEffect(() => { setEpisodio('') }, [foro.id])
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const publica = async e => {
@@ -568,16 +577,22 @@ function ForoPortada({ cuenta, token, vistas, eps, recarga, onEntrar, onAbrirHil
       body: { orden, saga_in: saga || null, etiqueta_in: etiqueta || null, desde } })
     return (Array.isArray(filas) ? filas : []).map(saneaHilo).filter(Boolean)
   }
+  // cada consulta lleva su generación: una página de «Ver más» que llega después
+  // de cambiar de filtro no se pega a la lista nueva (revisión del 26 sep)
+  const gen = useRef(0)
   useEffect(() => {
-    let vivo = true
-    setHilos(null)
-    pide(0).then(l => { if (vivo) { setHilos(l); setMas(l.length === 30) } }).catch(() => { if (vivo) { setHilos([]); setMas(false) } })
-    return () => { vivo = false }
+    const g = ++gen.current
+    setHilos(null); setCargandoMas(false)
+    pide(0).then(l => { if (g === gen.current) { setHilos(l); setMas(l.length === 30) } }).catch(() => { if (g === gen.current) { setHilos([]); setMas(false) } })
   }, [orden, saga, etiqueta, recarga, cuenta && cuenta.uid])
   const cargaMas = async () => {
+    const g = gen.current
     setCargandoMas(true)
-    try { const l = await pide(hilos.length); setHilos(h => [...h, ...l.filter(x => !h.some(y => y.id === x.id))]); setMas(l.length === 30) } catch {}
-    setCargandoMas(false)
+    try {
+      const l = await pide(hilos.length)
+      if (g !== gen.current) return
+      setHilos(h => (h ? [...h, ...l.filter(x => !h.some(y => y.id === x.id))] : h)); setMas(l.length === 30)
+    } catch {} finally { if (g === gen.current) setCargandoMas(false) }
   }
   // para escribir: el título por defecto es lo último que marcaste
   const abreNuevo = () => {
@@ -608,7 +623,7 @@ function ForoPortada({ cuenta, token, vistas, eps, recarga, onEntrar, onAbrirHil
               ))}
             </select>
           </label>
-          <NuevoHilo key={tituloNuevo} foro={{ tipo: 'titulo', id: tituloNuevo }} episodios={EPISODES[tituloNuevo] || null} cuenta={cuenta} token={token}
+          <NuevoHilo foro={{ tipo: 'titulo', id: tituloNuevo }} episodios={EPISODES[tituloNuevo] || null} cuenta={cuenta} token={token}
             onCancelar={() => setEscribiendo(false)} onCreado={id => { setEscribiendo(false); onCreado(); onAbrirHilo(id) }} />
         </div>
       )}
@@ -6415,7 +6430,7 @@ function Lector({ item, registro, pagInicial, onPagina, onCerrar, leido, onLeido
 const detallesMem = {}
 function cargaDetalles(idioma) {
   if (!detallesMem[idioma]) {
-    detallesMem[idioma] = fetch(`detalles/${idioma}.json?v=${typeof __DETALLES_V__ === 'string' ? __DETALLES_V__ : '0'}`).then(r => (r.ok ? r.json() : {})).then(j => (esObj(j) ? j : {})).catch(() => { delete detallesMem[idioma]; return {} })
+    detallesMem[idioma] = fetch(`detalles/${idioma}.json?v=${typeof __DETALLES_V__ === 'string' ? __DETALLES_V__ : '0'}`).then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status))))).then(j => (esObj(j) ? j : {})).catch(() => { delete detallesMem[idioma]; return {} })
   }
   return detallesMem[idioma]
 }
@@ -6498,20 +6513,27 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   // después de abrir la ficha (26 sep 2026): era la mitad de la maquetación al
   // abrir (~80 de 170 ms con CPU ×4) y en el móvil queda por debajo de lo que
   // se ve; así la hoja empieza a subir antes. Al pasar de título, igual.
-  const [epsListos, setEpsListos] = useState(false)
+  // (revisión del 26 sep) estos estados se guardan con el id del título al que
+  // pertenecen: con un booleano reiniciado en un efecto, el primer render del
+  // título nuevo heredaba el valor del anterior (la lista se montaba, se quitaba
+  // y se volvía a montar, y el scroll restaurado se recortaba)
+  const idAct = d && d.item && d.item.id
+  const [epsDe, setEpsDe] = useState(null)
+  const epsListos = epsDe === idAct
   useEffect(() => {
-    setEpsListos(false)
     let t = 0
-    const f = requestAnimationFrame(() => { t = setTimeout(() => setEpsListos(true), 0) })
+    const f = requestAnimationFrame(() => { t = setTimeout(() => setEpsDe(idAct), 0) })
     return () => { cancelAnimationFrame(f); clearTimeout(t) }
-  }, [d && d.item && d.item.id])
-  const mas = useDetalles(d && d.item && d.item.id, idioma)
+  }, [idAct])
+  const mas = useDetalles(idAct, idioma)
   // la página de extras dentro de la ficha (como la biografía): atrás vuelve
-  const [verExtras, setVerExtras] = useState(false)
-  useEffect(() => { setVerExtras(false) }, [d && d.item && d.item.id])
+  const [extrasDe, setExtrasDe] = useState(null)
+  const verExtras = extrasDe === idAct
+  const setVerExtras = v => setExtrasDe(v ? idAct : null)
   // las escenas post-créditos que el usuario destapa a mano (sin haberla visto)
-  const [pcVistas, setPcVistas] = useState(false)
-  useEffect(() => { setPcVistas(false) }, [d && d.item && d.item.id])
+  const [pcDe, setPcDe] = useState(null)
+  const pcVistas = pcDe === idAct
+  const setPcVistas = v => setPcDe(v ? idAct : null)
   // fuera de España, los nombres del doblaje latino, como el resto de textos
   const loc = t => (t && idioma !== 'en' && pais !== 'ES' ? latiniza(t) : t)
   const { item, c, esComic } = d
@@ -6548,10 +6570,12 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   useVolverCierra(verExtras, () => setVerExtras(false), () => refModal.current && refModal.current.querySelector('.extras-ficha'), true)
   // la página de extras empieza arriba y, al volver, la ficha sigue donde estaba
   const scrollFicha = useRef(0)
-  const abreExtras = () => { if (refModal.current) { const m = refModal.current.querySelector('.modal'); scrollFicha.current = m ? m.scrollTop : 0; if (m) m.scrollTop = 0 } setVerExtras(true) }
+  // refModal ya es la hoja (.modal)
+  const abreExtras = () => { const m = refModal.current; if (m) { scrollFicha.current = m.scrollTop; m.scrollTop = 0 } setVerExtras(true) }
   useEffect(() => {
-    if (verExtras || !refModal.current) return
-    const m = refModal.current.querySelector('.modal'); if (m && scrollFicha.current) m.scrollTop = scrollFicha.current
+    const m = refModal.current
+    if (verExtras || !m || !scrollFicha.current) return
+    m.scrollTop = scrollFicha.current; scrollFicha.current = 0
   }, [verExtras])
   // Cada pantalla de la hoja (un título, una biografía) recuerda su scroll
   // (17 sep 2026): la hoja es el mismo nodo para todas y la biografía abría a
@@ -6588,6 +6612,8 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   refNav.current = onNav
   const refPersona = useRef(persona)
   refPersona.current = persona
+  const refExtras = useRef(verExtras)
+  refExtras.current = verExtras
   // Deslizar en horizontal pasa de título, como las flechas ‹ ›. El eje se
   // decide con el primer tramo del movimiento: si domina la vertical, el
   // scroll sigue siendo del navegador y aquí no se toca nada. Quedan fuera el
@@ -6599,11 +6625,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
     if (!el || !window.matchMedia('(max-width:720px)').matches) return undefined
     let x0 = null, y0 = null, dx = 0, modo = null, t0 = 0
     const onStart = e => {
-      if (e.touches.length !== 1 || refPersona.current || !refNav.current) return
+      if (e.touches.length !== 1 || refPersona.current || refExtras.current || !refNav.current) return
       const t = e.touches[0]
       if (t.clientY - el.getBoundingClientRect().top <= 44) return
       // el carril de temporadas también se desliza solo (14 sep 2026)
-      if (e.target.closest('.carril-personas,.temporadas,input,textarea')) return
+      if (e.target.closest('.carril-personas,.temporadas,.xf-videos,input,textarea')) return
       x0 = t.clientX; y0 = t.clientY; dx = 0; modo = null; t0 = e.timeStamp
     }
     const onMove = e => {
@@ -6692,13 +6718,13 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
   useEffect(() => {
     const onKey = e => {
       // las flechas no deben saltar de título mientras se lee una biografía
-      if (persona || !onNav || /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) return
+      if (persona || verExtras || !onNav || /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) return
       if (e.key === 'ArrowLeft') onNav(-1)
       if (e.key === 'ArrowRight') onNav(1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onNav, persona])
+  }, [onNav, persona, verExtras])
   // Episodios por temporadas (14 sep 2026): la ficha pintaba todas seguidas
   // (216 episodios en Spidey, 136 en Agentes de S.H.I.E.L.D.: hasta ~12.000 px
   // de hoja en el móvil). Se ve una temporada; por defecto, la primera con algo
@@ -6890,11 +6916,11 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               <h3 className="reparto-titulo">{tr('Cambios de actor', 'Recasts')}</h3>
               <ul className="ficha-cambios">
                 {mas.cambios.map((c, i) => (
-                  <li key={i}>
+                  <li key={c.p + '|' + c.antes}>
                     <span className="fc-caras" aria-hidden="true">
-                      <span className="fc-cara antes"><CaraActor nombre={soloNombre(c.antes)} /></span>
+                      <span className="fc-cara antes"><CaraActor key={soloNombre(c.antes)} nombre={soloNombre(c.antes)} /></span>
                       <svg className="fc-flecha" viewBox="0 0 24 24"><path d="M5 12h13m-5-6 6 6-6 6" /></svg>
-                      <span className="fc-cara"><CaraActor nombre={soloNombre(c.ahora)} /></span>
+                      <span className="fc-cara"><CaraActor key={soloNombre(c.ahora)} nombre={soloNombre(c.ahora)} /></span>
                     </span>
                     <span className="fc-texto">
                       <b className="fc-personaje">{loc(c.p)}</b>
@@ -7024,7 +7050,7 @@ function Detalle({ d, vista, onToggle, onClose, eps, toggleEp, marcaTemporada, n
               </span>
             </div>
           )}
-          {item.tipo === 'serie' && EPISODES[item.id] && !epsListos && <div className="episodios episodios-reserva" aria-hidden="true" />}
+          {item.tipo === 'serie' && EPISODES[item.id] && !epsListos && <div className="episodios episodios-reserva" aria-hidden="true" style={{ minHeight: Math.min(EPISODES[item.id].length, 30) * 64 + 120 }} />}
           {item.tipo === 'serie' && EPISODES[item.id] && epsListos && (() => {
             const lista = listaEps
             const hechos = lista.filter(e => eps[`${item.id}:${e.s}:${e.n}`]).length

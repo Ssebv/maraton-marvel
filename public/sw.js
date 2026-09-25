@@ -70,11 +70,20 @@ self.addEventListener('fetch', e => {
   }
   // detalles de las fichas (26 sep 2026): la copia guardada al momento (sin
   // conexión también) y la red la renueva para la próxima vez
+  // (revisión del 26 sep) al guardar una huella nueva se borran las viejas del
+  // mismo archivo, y sin conexión tras una actualización se sirve la anterior
   if (url.origin === location.origin && url.pathname.includes('/detalles/')) {
     e.respondWith(caches.open(CACHE).then(c => c.match(e.request).then(hit => {
-      const red = fetch(e.request).then(r => { if (r.ok) e.waitUntil(c.put(e.request, r.clone())); return r })
+      const red = fetch(e.request).then(r => {
+        if (r.ok) {
+          const copia = r.clone()
+          e.waitUntil(c.keys().then(ks => Promise.all(ks.filter(k => new URL(k.url).pathname === url.pathname && k.url !== e.request.url).map(k => c.delete(k))))
+            .then(() => c.put(e.request, copia)))
+        }
+        return r
+      })
       if (hit) { e.waitUntil(red.catch(() => {})); return hit }
-      return red
+      return red.catch(() => c.match(e.request, { ignoreSearch: true }).then(viejo => viejo || Response.error()))
     })))
     return
   }
