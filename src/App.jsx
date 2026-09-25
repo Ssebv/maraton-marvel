@@ -9802,79 +9802,16 @@ export default function App() {
           )}
         </header>
       ) : enMaraton ? (
-      <section className={vista === 'inicio' ? 'hero hero-maraton en-inicio' : 'hero hero-maraton'}>
+      <section className="hero hero-maraton en-inicio">
+        {/* La cabecera es la MISMA en todas las vistas de Maratón (25 sep 2026,
+            Sebastián: «en el cambio de Inicio a Cronológico se mueve todo el
+            UI»): antes, fuera de Inicio llevaba además «Siguiente» (y en tableta
+            las cajas de cifras), medía 92 px más (136 en tableta) y al cambiar
+            todo lo de debajo saltaba. Ese bloque va ahora con el contenido, bajo
+            las pestañas (.bloque-siguiente), y entra y sale con su página. */}
         <div className="hero-titulo">
           <p className="hero-eyebrow">{tr('Guía de maratón · cronología completa', 'Marathon guide · the full chronology')}</p>
           <h1>{tr(<>Maratón <span className="rojo">Marvel</span> &amp; X-Men</>, <><span className="rojo">Marvel</span> &amp; <span className="sinparto">X-Men</span> Marathon</>)}</h1>
-        </div>
-        <div className="stats stats-inicio">
-          <div className="stat">
-            <span className="stat-label">{tr('Completados', 'Completed')}</span>
-            <span className="stat-num"><Cifra n={stats.totV} /><small> / {stats.totN}</small></span>
-            <div className="barra"><i style={{ width: `${pct}%` }} /></div>
-            <span className="stat-foot">{pct}{tr('% del maratón', '% of the marathon')}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">{tr('Te quedan', 'Left to watch')}</span>
-            <span className="stat-num"><Cifra n={Math.round(stats.mins / 60)} /><small> h</small></span>
-            <span className="stat-foot">{tr('de películas y series', 'of movies and series')}</span>
-          </div>
-          {stats.siguiente && (
-            <>
-            <button className="stat siguiente-stat" title={tr('Ir a la tarjeta', 'Go to the card')} onClick={() => {
-              // en móvil la tarjeta se lee como una fila con flecha: abre la
-              // ficha (ver, marcar), que es lo que promete; en escritorio
-              // sigue llevando a la tarjeta dentro de la lista
-              if (window.matchMedia('(max-width:640px)').matches) {
-                const d = buscaItem(stats.siguiente.id)
-                if (d) { setDetalle(d); return }
-              }
-              if (vista !== 'crono') setVista('crono')
-              const desplegado = despliegaPara(stats.siguiente.id)
-              setTimeout(() => {
-                const el = document.getElementById('card-' + stats.siguiente.id)
-                if (el) {
-                  el.scrollIntoView({ behavior: movimientoReducido() ? 'instant' : 'smooth', block: 'center' })
-                  // el foco va con la vista: con teclado, la tarjeta es donde sigue
-                  el.querySelector('.abrir')?.focus({ preventScroll: true })
-                  el.classList.add('destello')
-                  setTimeout(() => el.classList.remove('destello'), 1600)
-                }
-              }, vista !== 'crono' || desplegado ? 120 : 0)
-            }}>
-              {/* carátula: «Siguiente» es la acción de la primera pantalla y
-                  debe leerse como una tarjeta (en escritorio desde el 21 sep) */}
-              {POSTERS[stats.siguiente.id] && <img className="stat-sig-img" ref={nfLazy} data-src={POSTERS[stats.siguiente.id]} alt="" decoding="async" />}
-              <span className="stat-sig-texto">
-              <span className="stat-label">{tr('Siguiente', 'Up next')}</span>
-              <span className="stat-sig">{stats.siguiente.t}</span>
-              {stats.siguienteEp
-                ? <span className="stat-foot stat-sig-ep" title={sinSpoilers ? undefined : stats.siguienteEp.t}>
-                    {tr('Sigue con', 'Continue with')} T{stats.siguienteEp.s} · E{stats.siguienteEp.n}{sinSpoilers ? '' : `: ${stats.siguienteEp.t}`}
-                  </span>
-                : <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>}
-              </span>
-              {/* solo en móvil (CSS): la flecha dice que la tarjeta se pulsa, como una fila de iOS */}
-              <svg className="stat-sig-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
-            </button>
-            {/* marcar sin abrir la ficha: va FUERA del botón
-                de la tarjeta —un botón no puede llevar otro dentro— y el CSS lo
-                pone encima, a la derecha (en escritorio, abajo en la misma celda) */}
-            {(() => {
-              const s = stats.siguiente
-              const lista = s.tipo === 'serie' ? EPISODES[s.id] : null
-              const e = lista && lista.find(x => !eps[`${s.id}:${x.s}:${x.n}`])
-              return (
-                <button type="button" className="siguiente-marcar" onClick={() => marcaSiguiente(s)}
-                  aria-label={e ? tr(`Marcar visto T${e.s}·E${e.n} de ${s.t}`, `Mark S${e.s}·E${e.n} of ${s.t} watched`) : tr(`Marcar vista: ${s.t}`, `Mark watched: ${s.t}`)}>
-                  <CheckIcon />
-                  {/* verbo, no estado: en la ficha «✓ Vista» significa «ya vista» */}
-                  <span>{e ? `T${e.s}·E${e.n}` : tr('Marcar', 'Mark')}</span>
-                </button>
-              )
-            })()}
-            </>
-          )}
         </div>
         {/* En móvil las dos cajas de cifras se resumen en esta línea (CSS las
             esconde y enseña esto): la primera pantalla es para el siguiente
@@ -9980,6 +9917,82 @@ export default function App() {
           </nav>
         )
       })()}
+
+      {/* «Siguiente» (y en tableta y escritorio las cajas de cifras): con el
+          contenido, no en la cabecera; en Inicio lo es la cartelera */}
+      {enMaraton && vista !== 'inicio' && (
+      <div className="bloque-siguiente">
+        <div className="stats stats-inicio">
+          <div className="stat">
+            <span className="stat-label">{tr('Completados', 'Completed')}</span>
+            <span className="stat-num"><Cifra n={stats.totV} /><small> / {stats.totN}</small></span>
+            <div className="barra"><i style={{ width: `${pct}%` }} /></div>
+            <span className="stat-foot">{pct}{tr('% del maratón', '% of the marathon')}</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">{tr('Te quedan', 'Left to watch')}</span>
+            <span className="stat-num"><Cifra n={Math.round(stats.mins / 60)} /><small> h</small></span>
+            <span className="stat-foot">{tr('de películas y series', 'of movies and series')}</span>
+          </div>
+          {stats.siguiente && (
+            <>
+            <button className="stat siguiente-stat" title={tr('Ir a la tarjeta', 'Go to the card')} onClick={() => {
+              // en móvil la tarjeta se lee como una fila con flecha: abre la
+              // ficha (ver, marcar), que es lo que promete; en escritorio
+              // sigue llevando a la tarjeta dentro de la lista
+              if (window.matchMedia('(max-width:640px)').matches) {
+                const d = buscaItem(stats.siguiente.id)
+                if (d) { setDetalle(d); return }
+              }
+              if (vista !== 'crono') setVista('crono')
+              const desplegado = despliegaPara(stats.siguiente.id)
+              setTimeout(() => {
+                const el = document.getElementById('card-' + stats.siguiente.id)
+                if (el) {
+                  el.scrollIntoView({ behavior: movimientoReducido() ? 'instant' : 'smooth', block: 'center' })
+                  // el foco va con la vista: con teclado, la tarjeta es donde sigue
+                  el.querySelector('.abrir')?.focus({ preventScroll: true })
+                  el.classList.add('destello')
+                  setTimeout(() => el.classList.remove('destello'), 1600)
+                }
+              }, vista !== 'crono' || desplegado ? 120 : 0)
+            }}>
+              {/* carátula: «Siguiente» es la acción de la primera pantalla y
+                  debe leerse como una tarjeta (en escritorio desde el 21 sep) */}
+              {POSTERS[stats.siguiente.id] && <img className="stat-sig-img" ref={nfLazy} data-src={POSTERS[stats.siguiente.id]} alt="" decoding="async" />}
+              <span className="stat-sig-texto">
+              <span className="stat-label">{tr('Siguiente', 'Up next')}</span>
+              <span className="stat-sig">{stats.siguiente.t}</span>
+              {stats.siguienteEp
+                ? <span className="stat-foot stat-sig-ep" title={sinSpoilers ? undefined : stats.siguienteEp.t}>
+                    {tr('Sigue con', 'Continue with')} T{stats.siguienteEp.s} · E{stats.siguienteEp.n}{sinSpoilers ? '' : `: ${stats.siguienteEp.t}`}
+                  </span>
+                : <span className="stat-foot">{stats.siguiente.h} · {fmtDur(stats.siguiente.d)}</span>}
+              </span>
+              {/* solo en móvil (CSS): la flecha dice que la tarjeta se pulsa, como una fila de iOS */}
+              <svg className="stat-sig-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+            </button>
+            {/* marcar sin abrir la ficha: va FUERA del botón
+                de la tarjeta —un botón no puede llevar otro dentro— y el CSS lo
+                pone encima, a la derecha (en escritorio, abajo en la misma celda) */}
+            {(() => {
+              const s = stats.siguiente
+              const lista = s.tipo === 'serie' ? EPISODES[s.id] : null
+              const e = lista && lista.find(x => !eps[`${s.id}:${x.s}:${x.n}`])
+              return (
+                <button type="button" className="siguiente-marcar" onClick={() => marcaSiguiente(s)}
+                  aria-label={e ? tr(`Marcar visto T${e.s}·E${e.n} de ${s.t}`, `Mark S${e.s}·E${e.n} of ${s.t} watched`) : tr(`Marcar vista: ${s.t}`, `Mark watched: ${s.t}`)}>
+                  <CheckIcon />
+                  {/* verbo, no estado: en la ficha «✓ Vista» significa «ya vista» */}
+                  <span>{e ? `T${e.s}·E${e.n}` : tr('Marcar', 'Mark')}</span>
+                </button>
+              )
+            })()}
+            </>
+          )}
+        </div>
+      </div>
+      )}
 
       <span id="contenido" tabIndex={-1} />
 

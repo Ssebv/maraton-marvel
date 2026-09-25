@@ -4989,3 +4989,14 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
    (--nm, el lado con más). */
 .tl-fila{content-visibility:auto; contain-intrinsic-size:auto calc(var(--nm, 1) * 86px)}
 @media (max-width:700px){ .tl-fila{contain-intrinsic-size:auto calc(var(--nt, 1) * 86px)} }
+
+/* «Siguiente» fuera de la cabecera (25 sep 2026): la cabecera ya lleva la
+   línea de progreso en todas las vistas, así que las cajas de cifras sobran;
+   en tableta y escritorio «Siguiente» va a lo ancho, con el botón a la derecha */
+.bloque-siguiente{margin-top: var(--e-4)}
+.bloque-siguiente .stats-inicio > .stat:not(.siguiente-stat){display:none}
+@media (min-width:641px){
+  .bloque-siguiente .stats-inicio{display:grid; grid-template-columns:1fr; margin-top:0; position:relative}
+  .bloque-siguiente .stats-inicio .siguiente-stat{grid-column:1; align-items:center; padding: var(--e-4) calc(var(--e-5) + 140px) var(--e-4) var(--e-5)}
+  .bloque-siguiente .stats-inicio .siguiente-marcar{grid-column:1; align-self:center; margin: 0 var(--e-5) 0 0}
+}
