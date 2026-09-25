@@ -84,6 +84,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
 | Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
 | Panel lateral en el móvil: sale con un botón o arrastrando desde el borde (instalada), sigue al dedo, y atrás o tocar fuera lo cierran | ✅ |
+| Última revisión de la sesión: 8 fallos arreglados (cachés que se borraban al arrancar, edad de fallecidos, homónimos, biografías vacías por un fallo de red…) | ✅ |
 | iOS: vídeos con imagen dentro de imagen, tamaño de letra (también «como el iPhone») y tirar para actualizar en la app instalada | ✅ |
 | Buscar un actor lleva a su página; la bóveda de animación con historia, cambios de voz y extras (130 títulos con detalles) | ✅ |
 | Página del actor: edad, carrera, créditos, su primera vez en el maratón, su personaje en cada título, «conocido también por» y biografía en español desde Wikipedia | ✅ |

@@ -6,17 +6,17 @@ import { abre, espera, informe } from './lib.mjs'
 const dia = 864e5, ahora = Date.now()
 const entrada = t => JSON.stringify({ t, d: { elenco: [] } })
 const { cdp, navega, cierra, errores } = await abre({ siembra: {
-  'maraton-marvel-tmdb-v12:vigente': entrada(ahora - 2 * dia),
-  'maraton-marvel-tmdb-v12:caducada': entrada(ahora - 9 * dia),
-  'maraton-marvel-tmdb-v11:vieja': entrada(ahora),
-  'maraton-marvel-persona-v3:bio': entrada(ahora - 20 * dia),
-  'maraton-marvel-persona-v3:biovieja': entrada(ahora - 40 * dia),
+  'maraton-marvel-tmdb-v14:vigente': entrada(ahora - 2 * dia),
+  'maraton-marvel-tmdb-v14:caducada': entrada(ahora - 9 * dia),
+  'maraton-marvel-tmdb-v13:vieja': entrada(ahora),
+  'maraton-marvel-persona-v6:bio': entrada(ahora - 20 * dia),
+  'maraton-marvel-persona-v6:biovieja': entrada(ahora - 40 * dia),
 } })
 try {
   await navega('#crono')
   await espera(4000) // la poda va en un momento libre
-  const poda = await cdp.eval(`['vigente', 'caducada'].map(k => !!localStorage.getItem('maraton-marvel-tmdb-v12:' + k))
-    .concat(!!localStorage.getItem('maraton-marvel-tmdb-v11:vieja'), !!localStorage.getItem('maraton-marvel-persona-v3:bio'), !!localStorage.getItem('maraton-marvel-persona-v3:biovieja'))`)
+  const poda = await cdp.eval(`['vigente', 'caducada'].map(k => !!localStorage.getItem('maraton-marvel-tmdb-v14:' + k))
+    .concat(!!localStorage.getItem('maraton-marvel-tmdb-v13:vieja'), !!localStorage.getItem('maraton-marvel-persona-v6:bio'), !!localStorage.getItem('maraton-marvel-persona-v6:biovieja'))`)
 
   // llenar hasta el cupo con caché «vigente»
   // llenar hasta el último byte con caché «vigente»: trozos cada vez menores
@@ -24,9 +24,9 @@ try {
     let i = 0
     for (const tam of [256 * 1024, 16 * 1024, 1024, 64, 1]) {
       const trozo = '{"t":' + Date.now() + ',"d":"' + 'x'.repeat(tam) + '"}'
-      try { for (;;) localStorage.setItem('maraton-marvel-tmdb-v12:relleno' + i++, trozo) } catch {}
+      try { for (;;) localStorage.setItem('maraton-marvel-tmdb-v14:relleno' + i++, trozo) } catch {}
     }
-    try { localStorage.setItem('maraton-marvel-tmdb-v12:prueba', 'x'.repeat(40)); return -1 } catch { return i }
+    try { localStorage.setItem('maraton-marvel-tmdb-v14:prueba', 'x'.repeat(40)); return -1 } catch { return i }
   })()`)
   await cdp.eval(`window.scrollTo({ top: 0, behavior: 'instant' })`)
   await espera(300)

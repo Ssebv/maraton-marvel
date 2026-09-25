@@ -1290,13 +1290,15 @@ const tmdbMem = {}
 const clave = n => (n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
 
 const personaMem = {}
+// v6: con la fecha de fallecimiento
+const PREF_TMDB = 'maraton-marvel-tmdb-v14:', PREF_PERSONA = 'maraton-marvel-persona-v6:'
 async function cargaPersona(tmdbId) {
   const idi = tmdbIdioma()
   const k = (idi === 'en-US' ? 'en:' : '') + tmdbId
   if (personaMem[k]) return personaMem[k]
   // v4 (26 sep 2026): papeles en el maratón, carrera y «conocido por»
   // v5: la carrera sin entrevistas, documentales ni «él mismo»
-  const ls = 'maraton-marvel-persona-v5:' + k
+  const ls = PREF_PERSONA + k
   try {
     const g = JSON.parse(localStorage.getItem(ls))
     if (g && Date.now() - g.t < 30 * 864e5) { personaMem[k] = g.d; return g.d }
@@ -1305,6 +1307,7 @@ async function cargaPersona(tmdbId) {
   const d = {
     bio: typeof j.biography === 'string' ? j.biography.trim() : '',
     nacimiento: typeof j.birthday === 'string' ? j.birthday : null,
+    muerte: typeof j.deathday === 'string' ? j.deathday : null,
     lugar: typeof j.place_of_birth === 'string'
       ? (j.place_of_birth.replace(/\s*\[[^\]]*\]/g, '').trim() || null) : null,
     foto: typeof j.profile_path === 'string' ? j.profile_path : null,
@@ -1357,21 +1360,30 @@ async function cargaPersona(tmdbId) {
   // sin biografía en el idioma: la Wikipedia (solo si el artículo es de
   // alguien del oficio, para no traer a un homónimo) y, si no, la de TMDB en
   // inglés, avisando
+  // (revisión del 26 sep) un fallo de red aquí no se guarda: la biografía
+  // vacía quedaba 30 días. Y el filtro de oficio con límites de palabra
+  // («redactor» o «director técnico» pasaban por actor o director)
+  let incompleto = false
   if (!d.bio) {
     const wiki = idi === 'en-US' ? 'en' : 'es'
     try {
-      const w = await fetch(`https://${wiki}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(String(j.name || '').replace(/ /g, '_'))}`).then(r => (r.ok ? r.json() : null))
+      const r = await fetch(`https://${wiki}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(String(j.name || '').replace(/ /g, '_'))}`, typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? { signal: AbortSignal.timeout(6000) } : undefined)
+      if (!r.ok && r.status !== 404) incompleto = true
+      const w = r.ok ? await r.json() : null
       const texto = w && w.type === 'standard' && typeof w.extract === 'string' ? w.extract.trim() : ''
-      if (texto.length > 120 && /act(or|riz|ress)|direct(or|ora)|guionist|productor|producer|comedian|comediante|cantante|singer|screenwriter|filmmaker|cineasta/i.test((w.description || '') + ' ' + texto.slice(0, 300))) {
+      const OFICIO = /\b(actor|actriz|actress|actor de voz|voice actor|director(a)? de cine|film director|cineasta|filmmaker|guionista|screenwriter|productor(a)? de cine|film producer|comedian|comediante)\b/i
+      const NO_OFICIO = /\b(futbol|fútbol|football|soccer|político|politician|empresari|businessman|periodista|journalist|entrenador|coach)\b/i
+      if (texto.length > 120 && OFICIO.test((w.description || '') + ' ' + texto.slice(0, 300)) && !NO_OFICIO.test(w.description || '')) {
         d.bio = texto; d.bioFuente = 'wikipedia'
         d.bioUrl = w.content_urls && w.content_urls.mobile && typeof w.content_urls.mobile.page === 'string' ? w.content_urls.mobile.page : null
       }
-    } catch {}
+    } catch { incompleto = true }
     if (!d.bio && idi !== 'en-US') {
-      try { const e = await tmdbJson(`/person/${tmdbId}`, 'en-US'); if (typeof e.biography === 'string' && e.biography.trim()) { d.bio = e.biography.trim(); d.bioFuente = 'tmdb-en' } } catch {}
+      try { const e = await tmdbJson(`/person/${tmdbId}`, 'en-US'); if (typeof e.biography === 'string' && e.biography.trim()) { d.bio = e.biography.trim(); d.bioFuente = 'tmdb-en' } } catch { incompleto = true }
     }
   }
   personaMem[k] = d
+  if (incompleto) { delete personaMem[k]; return d }
   try { localStorage.setItem(ls, JSON.stringify({ t: Date.now(), d })) } catch {}
   return d
 }
@@ -1403,7 +1415,10 @@ async function tmdbJson(ruta, idi = tmdbIdioma()) {
 //  2. si una escritura que NO es de caché no cabe, se vacían las cachés y se
 //     reintenta: el progreso manda, las fichas se vuelven a bajar solas.
 const ES_CACHE = /^maraton-marvel-(tmdb|persona|fondos)-v[0-9]+:/
-const CACHE_VIVA = { 'maraton-marvel-tmdb-v12:': 7 * 864e5, 'maraton-marvel-persona-v3:': 30 * 864e5, 'maraton-marvel-fondos-v1:': 30 * 864e5 }
+// (revisión del 26 sep) los prefijos salen de las mismas constantes que usan
+// las cachés: aquí seguían tmdb-v12 y persona-v3 y las entradas v14 y v5 se
+// borraban en cada arranque
+const CACHE_VIVA = { [PREF_TMDB]: 7 * 864e5, [PREF_PERSONA]: 30 * 864e5, 'maraton-marvel-fondos-v1:': 30 * 864e5 }
 function podaCaches(todo = false) {
   let n = 0
   try {
@@ -1458,7 +1473,7 @@ async function cargaTmdbRed(itemId) {
   // v14: sin los «Featurette» que no son de la película (recetas, anuncios)
   // v13: guarda también los vídeos extra (tomas falsas, reportajes, escenas
   // eliminadas) y los pide en el idioma, en inglés y sin idioma
-  const claveLS = 'maraton-marvel-tmdb-v14:' + k
+  const claveLS = PREF_TMDB + k
   try {
     const g = JSON.parse(localStorage.getItem(claveLS))
     if (g && Date.now() - g.t < 7 * 864e5) { tmdbMem[k] = g.d; return g.d }
@@ -1620,7 +1635,9 @@ function factorLetra(id) {
     const px = parseFloat(getComputedStyle(e).fontSize)
     e.remove()
     // solo Safari conoce esa letra; en otro navegador cae a 16 y sería 0,94
-    return CSS.supports('font', '-apple-system-body') && px ? Math.min(1.35, Math.max(0.9, px / 17)) : 1
+    // solo en iPhone/iPad: en Safari de Mac esa letra mide ~13 px y encogería
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
+    return ios && CSS.supports('font', '-apple-system-body') && px ? Math.min(1.35, Math.max(0.9, px / 17)) : 1
   } catch { return 1 }
 }
 const aplicaLetra = id => document.documentElement.style.setProperty('--letra', String(factorLetra(id)))
@@ -1992,9 +2009,16 @@ const buscaPersonas = texto => {
     .sort((a, b) => b.titulos.length - a.titulos.length).slice(0, 4)
 }
 const idPersonaMem = {}
+// entre homónimos, quien tiene algún título del maratón entre lo conocido; si
+// no, el del nombre exacto. Sin red devuelve undefined (no «no existe»)
 const idPersona = nombre => (idPersonaMem[nombre] = idPersonaMem[nombre] || tmdbJson(`/search/person?query=${encodeURIComponent(nombre)}`)
-  .then(r => { const x = r && Array.isArray(r.results) && r.results[0]; return x && typeof x.id === 'number' ? x.id : null })
-  .catch(() => { delete idPersonaMem[nombre]; return null }))
+  .then(r => {
+    const rs = (r && Array.isArray(r.results) ? r.results : []).filter(x => x && typeof x.id === 'number')
+    const enMaraton = x => (Array.isArray(x.known_for) ? x.known_for : []).some(k => k && TMDB_INV[`${k.media_type}:${k.id}`])
+    const x = rs.find(enMaraton) || rs.find(x => clave(x.name) === clave(nombre)) || rs[0]
+    return x ? x.id : null
+  })
+  .catch(() => { delete idPersonaMem[nombre]; return undefined }))
 function PersonasEnBusca({ texto, onAbrir }) {
   const lista = useMemo(() => buscaPersonas(texto), [texto])
   if (!lista.length) return null
@@ -2057,7 +2081,7 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
   const bioCorta = bio && bio.length > 420 && !masBio ? bio.slice(0, 420).replace(/\s+\S*$/, '') + '…' : bio
   // datos de carrera (26 sep 2026, «cuando entre al actor, que me diga todos
   // los detalles de él en el UCM, su vida como actor»)
-  const edad = datos && datos.nacimiento ? (() => { const n = new Date(datos.nacimiento + 'T00:00:00'), h = new Date(); let a = h.getFullYear() - n.getFullYear(); if (h < new Date(h.getFullYear(), n.getMonth(), n.getDate())) a--; return a > 0 && a < 120 ? a : null })() : null
+  const edad = datos && datos.nacimiento ? (() => { const n = new Date(datos.nacimiento + 'T00:00:00'), h = datos.muerte ? new Date(datos.muerte + 'T00:00:00') : new Date(); let a = h.getFullYear() - n.getFullYear(); if (h < new Date(h.getFullYear(), n.getMonth(), n.getDate())) a--; return a > 0 && a < 120 ? a : null })() : null
   const papeles = (datos && datos.papeles) || {}
   const carrera = datos && datos.carrera
   const actual = itemActualId && buscaItem(itemActualId)
@@ -2087,7 +2111,7 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
 
       {datos && (edad || (carrera && carrera.desde) || enTotal > 1) && (
         <div className="pf-cifras">
-          {edad && <span className="pf-cifra"><b>{edad}</b><small>{tr('años', 'years old')}</small></span>}
+          {edad && <span className="pf-cifra"><b>{edad}</b><small>{datos.muerte ? tr('años al morir', 'at death') : tr('años', 'years old')}</small></span>}
           {carrera && carrera.desde && <span className="pf-cifra"><b>{carrera.desde}</b><small>{tr('empezó', 'first credit')}</small></span>}
           {carrera && carrera.creditos > 0 && <span className="pf-cifra"><b>{carrera.creditos}</b><small>{tr('créditos', 'credits')}</small></span>}
           {enTotal > 1 && <span className="pf-cifra"><b>{enTotal}</b><small>{tr('en el maratón', 'in the marathon')}</small></span>}
@@ -2105,7 +2129,8 @@ function FichaPersona({ nombre, rol, papel, tmdbId, idioma, onVolver, onAbrirTit
           {datos.bioFuente === 'tmdb-en' && <small className="pf-fuente">{tr('Biografía en inglés: TMDB no la tiene en español.', 'Biography from TMDB.')}</small>}
           </p>
         : <p className="pf-bio pf-vacia">
-            {!tmdbId ? tr('No hay ficha de esta persona en TMDB.', 'TMDB has no page for this person.')
+            {tmdbId === undefined ? tr('No se pudo buscar a esta persona. Comprueba tu conexión y vuelve a intentarlo.', 'Could not look this person up. Check your connection and try again.')
+              : !tmdbId ? tr('No hay ficha de esta persona en TMDB.', 'TMDB has no page for this person.')
               : fallo ? tr('No se pudo cargar su biografía. Comprueba tu conexión.', 'Could not load their biography. Check your connection.')
               : datos ? tr('TMDB no tiene biografía en español de esta persona.', 'TMDB has no biography for this person.')
               : tr('Cargando su biografía…', 'Loading their biography…')}
@@ -8161,6 +8186,7 @@ export default function App() {
   // la ficha abierta (flechas, pila) o con función, cambio directo. Por ref:
   // las tarjetas memoizadas guardan un onAbrir de un render viejo
   const detalleAbierto = useRef(detalle)
+  const turnoPersona = useRef(0)
   detalleAbierto.current = detalle
   const setDetalle = v => {
     if (typeof v === 'function' || !v || !v.item || detalleAbierto.current) { setDetalleEstado(v); return }
@@ -9220,7 +9246,14 @@ export default function App() {
   const setF = k => setFiltros(f => ({ ...f, [k]: !f[k] }))
   const [letra, setLetra] = useState(() => { try { const v = localStorage.getItem(KEY_LETRA); return LETRAS.some(l => l.id === v) ? v : 'normal' } catch { return 'normal' } })
   const ponLetra = v => { setLetra(v); try { localStorage.setItem(KEY_LETRA, v) } catch {} }
-  useEffect(() => { aplicaLetra(letra) }, [letra])
+  useEffect(() => {
+    aplicaLetra(letra)
+    if (letra !== 'sistema') return undefined
+    // si cambia el tamaño de texto del iPhone con la app instalada abierta, al volver a ella
+    const f = () => { if (document.visibilityState === 'visible') aplicaLetra('sistema') }
+    document.addEventListener('visibilitychange', f)
+    return () => document.removeEventListener('visibilitychange', f)
+  }, [letra])
   const [tema, setTema] = useState(() => {
     try { const t = localStorage.getItem(KEY_TEMA); return TEMAS.some(x => x.id === t) ? t : 'sistema' } catch { return 'sistema' }
   })
@@ -10541,8 +10574,12 @@ export default function App() {
       {/* quien escribe el nombre de un actor llega a su página (26 sep 2026) */}
       {enMaraton && buscaLenta.trim().length >= 3 && (
         <PersonasEnBusca texto={buscaLenta} onAbrir={async e => {
+          // (revisión del 26 sep) un turno por toque: dos toques, o abrir otra
+          // ficha mientras responde TMDB, no deben abrir la persona después
+          const turno = ++turnoPersona.current
           const primero = e.titulos[0]
           const tmdbId = await idPersona(e.nombre)
+          if (turno !== turnoPersona.current || detalleAbierto.current) return
           setPersonaPendiente({ p: { nombre: e.nombre, rol: e.rol === 'dir' ? tr('Dirección', 'Director') : tr('Reparto', 'Cast'), papel: '', tmdbId } })
           setDetalle(primero)
         }} />
@@ -11876,7 +11913,7 @@ export default function App() {
       <VersionNueva />
       <Deshacer aviso={deshacer} onCerrar={() => setDeshacer(null)} />
       <LogroAviso aviso={logroAviso} onCerrar={() => setLogroAviso(null)}
-        onIr={() => { if (detalle) setDetalle(null); if (vista !== 'stats') conTransicion('adelante', () => setVista('stats')) }} />
+        onIr={() => { if (detalle) { setDetalleEstado(null); setPilaFichas([]); setPersonaPendiente(null) } if (vista !== 'stats') conTransicion('adelante', () => setVista('stats')) }} />
       {(vista === 'crono' || vista === 'comics' || vista === 'animacion') && createPortal(
         <DondeEstoy version={`${vista}|${Object.keys(vistas).length}|${Object.keys(eps).length}|${JSON.stringify(filtros)}|${buscaLenta}|${idioma}|${pais}`}
           siguiente={stats.siguiente ? { id: stats.siguiente.id, t: stats.siguiente.t } : null}
