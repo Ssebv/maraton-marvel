@@ -10083,7 +10083,7 @@ export default function App() {
                   return (
                     <div key={año}>
                       {salto > 0 && <div className="tl-salto">⋯ {tr(`${salto} años después`, `${salto} years later`)} ⋯</div>}
-                      <section className="tl-fila" style={{ '--nt': grupo.length, '--nm': Math.max(nx, nu, 1) }}>
+                      <section className={'tl-fila' + (grupo.every(g => vistas[g.item.id]) ? ' completo' : '')} style={{ '--nt': grupo.length, '--nm': Math.max(nx, nu, 1) }}>
                         <div className="tl-lado izq">
                           {grupo.filter(g => g.saga === 'xmen').map(g => (
                             <MiniTl key={g.item.id} item={g.item} c={g.c}

@@ -84,6 +84,7 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 | Ficha y plan con `dvh`: no se meten bajo la barra de Safari | ✅ |
 | Pantalla de arranque del iPhone Air (vertical y horizontal, claro y oscuro) | ✅ |
 | Panel lateral en el móvil: sale con un botón o arrastrando desde el borde (instalada), sigue al dedo, y atrás o tocar fuera lo cierran | ✅ |
+| Línea temporal en el móvil con el mismo diseño de estaciones que Cronológico y Por estreno | ✅ |
 | La imagen de detrás de la cabecera se queda fija al cambiar de vista; «Ver todo» entra ya en su era | ✅ |
 | La cabecera de Maratón mide lo mismo en todas las vistas: al pasar de Inicio a Cronológico ya no se mueve nada de arriba | ✅ |
 | Tocar una pestaña pasa la página igual que deslizar (paginador sin fundido) y la tira de pestañas ya no deja letras fantasma | ✅ |

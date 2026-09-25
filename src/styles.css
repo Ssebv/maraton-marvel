@@ -5010,3 +5010,37 @@ html.desplazando .giro, html.desplazando .contra, html.desplazando .duelo-live, 
   .bloque-siguiente .stats-inicio .siguiente-stat{grid-column:1; align-items:center; padding: var(--e-4) calc(var(--e-5) + 140px) var(--e-4) var(--e-5)}
   .bloque-siguiente .stats-inicio .siguiente-marcar{grid-column:1; align-self:center; margin: 0 var(--e-5) 0 0}
 }
+
+/* ── Línea temporal en el móvil: el mismo lenguaje que Cronológico y Por
+   estreno (25 sep 2026) ──
+   Antes: el año en una píldora, una línea única sin progreso y las tarjetas a
+   otro ancho. Ahora cada año es una estación sobre la línea (punto relleno en
+   verde si viste todo lo de ese año, y su tramo también), las tarjetas van a
+   lo ancho, y los saltos («98 años después») son un tramo discontinuo. */
+@media (max-width:700px){
+  .tl::before{display:none}
+  .tl-fila{display:flex; flex-direction:column; position:relative; margin:0; padding: 0 0 var(--e-3) 36px;
+    contain-intrinsic-size:auto calc(var(--nt, 1) * 86px + 48px)}
+  .tl-fila::before{content:""; position:absolute; left:17px; top:0; bottom:0; width:2px; border-radius:var(--r-s); background:var(--filo)}
+  .tl-fila.completo::before{background:color-mix(in srgb, var(--done) 55%, var(--filo))}
+  .tl > div:first-child .tl-fila::before{top:calc(var(--e-4) + 11px)}
+  .tl > div:last-child .tl-fila::before{bottom:auto; height:calc(var(--e-4) + 11px)}
+  /* el año primero (en el HTML va entre X-Men y UCM) */
+  .tl-nodo{display:block; position:static; padding:0; margin-bottom: var(--e-3); order:-1}
+  .tl-lado.izq{order:0}
+  .tl-lado.der{order:1}
+  .tl-lado.izq:not(:empty) + .tl-nodo + .tl-lado.der:not(:empty){margin-top: var(--e-3)}
+  .tl-nodo span{display:inline-block; background:none; border:none; border-radius:0; padding: var(--e-4) 0 0; font-size: var(--t-l); line-height:1.2}
+  .tl-nodo::before{
+    content:""; position:absolute; left:11px; top:calc(var(--e-4) + 4px); width:14px; height:14px; border-radius:50%;
+    box-sizing:border-box; background:var(--bg); border:3px solid var(--ink3); z-index:1;
+  }
+  .tl-fila.completo .tl-nodo::before{background:var(--done); border-color:var(--done)}
+  .tl-fila{gap:0}
+  .tl-lado{align-items:stretch !important; gap: var(--e-3); width:100%}
+  /* sombra que cabe en el margen (content-visibility recorta lo que sale) */
+  .tl-card{max-width:none; width:100%; box-shadow:var(--sup-brillo), 0 5px 12px -8px rgba(0,0,0,.45)}
+  .tl-salto{position:relative; margin:0; padding: var(--e-3) 0 var(--e-3) 36px; text-align:left}
+  .tl-salto::before{content:""; position:absolute; left:17px; top:0; bottom:0; width:2px;
+    background:repeating-linear-gradient(180deg, var(--filo) 0 4px, transparent 4px 9px)}
+}
