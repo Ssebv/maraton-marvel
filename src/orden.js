@@ -295,6 +295,7 @@ export const ORDEN_CONGELADO = {
   "wolverine-xmen:1:10","wolverine-xmen:1:11","wolverine-xmen:1:12","wolverine-xmen:1:13","wolverine-xmen:1:14",
   "wolverine-xmen:1:15","wolverine-xmen:1:16","wolverine-xmen:1:17","wolverine-xmen:1:18","wolverine-xmen:1:19",
   "wolverine-xmen:1:20","wolverine-xmen:1:21","wolverine-xmen:1:22","wolverine-xmen:1:23","wolverine-xmen:1:24",
-  "wolverine-xmen:1:25","wolverine-xmen:1:26"
+  "wolverine-xmen:1:25","wolverine-xmen:1:26","xmen97:2:1","xmen97:2:2","xmen97:2:3","xmen97:2:4","xmen97:2:5",
+  "xmen97:2:6","xmen97:2:7","xmen97:2:8","xmen97:2:9"
 ],
 }

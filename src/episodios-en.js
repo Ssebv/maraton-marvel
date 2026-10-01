@@ -297,7 +297,14 @@ export const EPISODIOS_EN = {
   "1:7": "Bright Eyes",
   "1:8": "Tolerance Is Extinction (1)",
   "1:9": "Tolerance Is Extinction (2)",
-  "1:10": "Tolerance Is Extinction (3)"
+  "1:10": "Tolerance Is Extinction (3)",
+  "2:1": "Days of Future Past",
+  "2:2": "A Force to Be Reckoned With",
+  "2:3": "Rise of Apocalypse (1)",
+  "2:4": "Rise of Apocalypse (2)",
+  "2:5": "Weapon X, Lies, and DVDs",
+  "2:6": "Danger.exe",
+  "2:7": "Strange Land, Savage Heart"
  },
  "agent-carter": {
   "1:1": "Now Is Not the End",

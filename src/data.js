@@ -69,7 +69,7 @@ export const DATA = [
         cast: ["Cedric Smith", "Norm Spencer", "Catherine Disher"],
         dir: "Eric Lewald (showrunner)",
         res: "La serie de los 90 que definió a los X-Men para una generación.", n: "Prólogo directo de X-Men '97: los foros la consideran imprescindible antes de '97." },
-      { id: "xmen97", pc: "3", t: "X-Men '97", h: "—", r: 2024, s: 8.4, d: 300, tipo: "serie", opt: true, plat: "Disney+",
+      { id: "xmen97", pc: "3", t: "X-Men '97", h: "—", r: 2024, s: 8.7, d: 570, tipo: "serie", opt: true, plat: "Disney+",
         cast: ["Terri Douglas", "Ray Chase", "Jennifer Hale"],
         dir: "Beau DeMayo (creador)",
         res: "Continuación directa de la serie animada de los 90, y a su altura." },
@@ -550,8 +550,8 @@ export const ESTRENOS = [
     n: "Visión busca recuperar su memoria; con Paul Bettany y James Spader (Ultrón)." },
   { t: "Avengers: Secret Wars", poster: "posters/estreno-secretwars.webp", fecha: "2027-12-17", tipo: "Película · Cine",
     n: "El cierre de la Saga del Multiverso." },
-  { t: "X-Men (UCM)", fecha: null, aprox: "En desarrollo", tipo: "Película",
-    n: "El reinicio mutante dentro del UCM, tras Secret Wars." },
+  { t: "X-Men (UCM)", fecha: "2028-05-05", tipo: "Película · Cine",
+    n: "El reinicio mutante dentro del UCM, tras Secret Wars. Dirige Jake Schreier, con Sadie Sink (Jean Grey), Kit Connor (Cíclope), Christopher Abbott (Profesor X) y Adam Driver (Mr. Siniestro)." },
 ]
 
 // Guía de universos del multiverso (rescatada del análisis en vídeo "Multiverso de Marvel antes de Doomsday")

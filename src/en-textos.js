@@ -268,6 +268,7 @@ export const EN_TEXTOS = {
   "Finales de 2026": "Late 2026",
   "El cierre de la Saga del Multiverso.": "The close of the Multiverse Saga.",
   "El reinicio mutante dentro del UCM, tras Secret Wars.": "The mutant reboot inside the MCU, after Secret Wars.",
+  "El reinicio mutante dentro del UCM, tras Secret Wars. Dirige Jake Schreier, con Sadie Sink (Jean Grey), Kit Connor (Cíclope), Christopher Abbott (Profesor X) y Adam Driver (Mr. Siniestro).": "The mutant reboot inside the MCU, after Secret Wars. Directed by Jake Schreier, with Sadie Sink (Jean Grey), Kit Connor (Cyclops), Christopher Abbott (Professor X) and Adam Driver (Mr. Sinister).",
   "Película": "Film",
   "En desarrollo": "In development",
   "El UCM — la Línea Sagrada": "The MCU — the Sacred Timeline",

@@ -9,6 +9,36 @@ X-WR-CALDESC:Marvel and X-Men premieres and new episodes\, from the Marvel
 REFRESH-INTERVAL;VALUE=DURATION:P1D
 X-PUBLISHED-TTL:P1D
 BEGIN:VEVENT
+UID:ep-xmen97-2-8@maraton-marvel
+DTSTAMP:20260923T000000Z
+DTSTART;VALUE=DATE:20260805
+DTEND;VALUE=DATE:20260806
+SUMMARY:X-Men '97 · S2E8
+DESCRIPTION:New episode. Check it off in the Marvel & X-Men Marathon.
+URL:https://ssebv.github.io/maraton-marvel/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:X-Men '97 · S2E8
+TRIGGER:PT10H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:ep-xmen97-2-9@maraton-marvel
+DTSTAMP:20260923T000000Z
+DTSTART;VALUE=DATE:20260812
+DTEND;VALUE=DATE:20260813
+SUMMARY:X-Men '97 · S2E9
+DESCRIPTION:New episode. Check it off in the Marvel & X-Men Marathon.
+URL:https://ssebv.github.io/maraton-marvel/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:X-Men '97 · S2E9
+TRIGGER:PT10H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
 UID:estreno-2026-10-14-VisionQuest@maraton-marvel
 DTSTAMP:20260923T000000Z
 DTSTART;VALUE=DATE:20261014
@@ -52,6 +82,24 @@ TRANSP:TRANSPARENT
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:Premiere: Avengers: Secret Wars
+TRIGGER:PT10H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:estreno-2028-05-05-XMenUCM@maraton-marvel
+DTSTAMP:20260923T000000Z
+DTSTART;VALUE=DATE:20280505
+DTEND;VALUE=DATE:20280506
+SUMMARY:Premiere: X-Men (UCM)
+DESCRIPTION:Film · Theaters. The mutant reboot inside the MCU\, after Sec
+ ret Wars. Directed by Jake Schreier\, with Sadie Sink (Jean Grey)\, Kit C
+ onnor (Cyclops)\, Christopher Abbott (Professor X) and Adam Driver (Mr. S
+ inister).
+URL:https://ssebv.github.io/maraton-marvel/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Premiere: X-Men (UCM)
 TRIGGER:PT10H
 END:VALARM
 END:VEVENT

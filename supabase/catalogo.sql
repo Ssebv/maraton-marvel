@@ -17,7 +17,7 @@ insert into public.catalogo (id, saga, minutos, episodios) values
   ('gifted', 'xmen', 1250, 29),
   ('legion', 'xmen', 1350, 27),
   ('xmen-tas', 'xmen', 1672, 76),
-  ('xmen97', 'xmen', 300, 10),
+  ('xmen97', 'xmen', 570, 19),
   ('cap1', 'ucm', 124, 0),
   ('oneshot-carter', 'ucm', 16, 0),
   ('agent-carter', 'ucm', 756, 18),
