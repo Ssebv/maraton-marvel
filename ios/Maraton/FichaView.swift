@@ -18,94 +18,119 @@ struct FichaView: View {
             let color = Tema.color(saga: catalogo.saga(de: titulo.id))
             let detalle = catalogo.detalle(titulo.id, en: ajustes.idioma)
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    cabecera(catalogo, color: color)
-                    acciones(catalogo, color: color)
-                    if let res = catalogo.texto(titulo.res, en: ajustes.idioma) {
-                        Text(res).font(.body).foregroundStyle(Tema.tinta)
-                    }
-                    if let n = catalogo.texto(titulo.n, en: ajustes.idioma) {
-                        Bloque(titulo: ajustes.tr("Antes de verla", "Before watching"), icono: "lightbulb") {
-                            Text(n)
+                VStack(alignment: .leading, spacing: 0) {
+                    Fotograma(remota: catalogo.urlFotograma(titulo.id), local: catalogo.urlPoster(titulo.id), color: color)
+                        .frame(height: 210)
+                        .overlay(LinearGradient(colors: [.clear, Tema.fondo], startPoint: .center, endPoint: .bottom))
+                    VStack(alignment: .leading, spacing: 18) {
+                        cabecera(catalogo, color: color)
+                            .padding(.top, -96)
+                        botonVisto(color: color)
+                        if let res = catalogo.texto(titulo.res, en: ajustes.idioma) {
+                            Text(res).font(.body).foregroundStyle(Tema.tinta)
                         }
-                    }
-                    if let larga = detalle?.larga {
-                        Bloque(titulo: ajustes.tr("La historia", "The story"), icono: "book") { Text(larga) }
-                    }
-                    postCreditos(catalogo, detalle: detalle)
-                    if titulo.esSerie && !catalogo.episodios(de: titulo.id).isEmpty {
-                        Episodios(titulo: titulo, color: color)
-                    }
-                    if let cambios = detalle?.cambios, !cambios.isEmpty {
-                        Bloque(titulo: ajustes.tr("Cambios de actor", "Recasts"), icono: "person.2") {
-                            ForEach(cambios, id: \.self) { c in
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(c.p).font(.subheadline.weight(.semibold))
-                                    Text([c.antes, c.ahora].compactMap { $0 }.joined(separator: " → "))
-                                    if let nota = c.nota { Text(nota).foregroundStyle(Tema.tinta2) }
+                        postCreditos(catalogo, detalle: detalle)
+                        pildoras(catalogo)
+                        if let n = catalogo.texto(titulo.n, en: ajustes.idioma) {
+                            Bloque(titulo: ajustes.tr("Antes de verla", "Before watching"), icono: "lightbulb") { Text(n) }
+                        }
+                        if let larga = detalle?.larga {
+                            Bloque(titulo: ajustes.tr("La historia", "The story"), icono: "book") { Text(larga) }
+                        }
+                        if titulo.esSerie && !catalogo.episodios(de: titulo.id).isEmpty {
+                            Episodios(titulo: titulo, color: color)
+                        }
+                        reparto(catalogo)
+                        if let cambios = detalle?.cambios, !cambios.isEmpty {
+                            Bloque(titulo: ajustes.tr("Cambios de actor", "Recasts"), icono: "person.2") {
+                                ForEach(cambios, id: \.self) { c in
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(c.p).font(.subheadline.weight(.semibold))
+                                        Text([c.antes, c.ahora].compactMap { $0 }.joined(separator: " → "))
+                                        if let nota = c.nota { Text(nota).foregroundStyle(Tema.tinta2) }
+                                    }
+                                }
+                            }
+                        }
+                        if let extras = detalle?.extras, !extras.isEmpty {
+                            Bloque(titulo: ajustes.tr("Extras", "Extras"), icono: "sparkles.tv") {
+                                ForEach(extras, id: \.self) { x in
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(x.t).font(.subheadline.weight(.semibold))
+                                        if let d = x.d { Text(d) }
+                                        if let donde = x.donde { Text(donde).font(.caption).foregroundStyle(Tema.tinta2) }
+                                    }
                                 }
                             }
                         }
                     }
-                    if let extras = detalle?.extras, !extras.isEmpty {
-                        Bloque(titulo: ajustes.tr("Extras", "Extras"), icono: "sparkles.tv") {
-                            ForEach(extras, id: \.self) { x in
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(x.t).font(.subheadline.weight(.semibold))
-                                    if let d = x.d { Text(d) }
-                                    if let donde = x.donde { Text(donde).font(.caption).foregroundStyle(Tema.tinta2) }
-                                }
-                            }
-                        }
-                    }
-                    reparto(catalogo)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 28)
                 }
-                .padding(20)
             }
             .background(Tema.fondo)
+            .ignoresSafeArea(edges: .top)
         }
     }
 
     private func cabecera(_ catalogo: Catalogo, color: Color) -> some View {
         HStack(alignment: .bottom, spacing: 16) {
-            Poster(url: catalogo.urlPoster(titulo.id, idioma: ajustes.idioma), ancho: 120, radio: Tema.radioL)
-                .shadow(color: color.opacity(0.35), radius: 14, y: 8)
+            Poster(url: catalogo.urlPoster(titulo.id, idioma: ajustes.idioma), ancho: 118, radio: Tema.radioL)
+                .overlay { if progreso.visto(titulo.id) { SelloVista().transition(.scale.combined(with: .opacity)) } }
+                .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
             VStack(alignment: .leading, spacing: 6) {
-                Text(catalogo.nombre(titulo, en: ajustes.idioma))
-                    .font(.title2.weight(.bold)).foregroundStyle(Tema.tinta)
-                Text(Formato.meta(titulo, catalogo: catalogo)).font(.subheadline).foregroundStyle(Tema.tinta2)
-                if let h = titulo.h, h != "—" {
-                    Label(ajustes.tr("Ocurre en \(h)", "Set in \(h)"), systemImage: "clock")
-                        .font(.footnote).foregroundStyle(Tema.tinta2)
-                }
-                if let a = titulo.a { Text(a).font(.footnote).foregroundStyle(Tema.tinta2) }
                 if let plat = catalogo.plataforma(titulo, pais: ajustes.pais) {
                     Text(plat)
                         .font(.footnote.weight(.semibold))
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(color.opacity(0.15), in: .capsule)
-                        .foregroundStyle(color)
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(Tema.verde.opacity(0.16), in: .rect(cornerRadius: Tema.radioS + 2))
+                        .foregroundStyle(Tema.verde)
                 }
+                Text(catalogo.nombre(titulo, en: ajustes.idioma))
+                    .font(.title2.weight(.bold)).foregroundStyle(Tema.tinta)
+                HStack(spacing: 4) {
+                    if let s = titulo.s {
+                        Text("★ \(String(format: "%.1f", s)) \(ajustes.tr("en IMDb", "on IMDb"))").foregroundStyle(Tema.oro).bold()
+                    }
+                    if let r = titulo.r {
+                        Text("· \(String(r))").foregroundStyle(Tema.azul).bold()
+                        Text(ajustes.tr("estreno", "release")).foregroundStyle(Tema.tinta2)
+                    }
+                }
+                .font(.subheadline)
+                Text([titulo.h.flatMap { $0 == "—" ? nil : $0 }, titulo.esSerie ? Formato.meta(titulo, catalogo: catalogo) : titulo.d.map(Formato.duracion), titulo.a]
+                        .compactMap { $0 }.joined(separator: " · "))
+                    .font(.subheadline).foregroundStyle(Tema.tinta2)
             }
         }
     }
 
-    private func acciones(_ catalogo: Catalogo, color: Color) -> some View {
+    private func botonVisto(color: Color) -> some View {
         let visto = progreso.visto(titulo.id)
+        return Button {
+            withAnimation(.snappy) { progreso.alternar(titulo.id) }
+        } label: {
+            Text(visto ? ajustes.tr("✓ Vista — marcar pendiente", "✓ Seen — mark as pending")
+                       : ajustes.tr("Marcar como vista", "Mark as seen"))
+                .font(.body.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 50)
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.capsule)
+        .tint(visto ? Tema.verde : color)
+        .shadow(color: (visto ? Tema.verde : color).opacity(0.4), radius: 12, y: 5)
+        .sensoryFeedback(.success, trigger: visto) { _, nuevo in nuevo }
+    }
+
+    /// Tráiler, IMDb y Letterboxd en píldoras, como en la web
+    private func pildoras(_ catalogo: Catalogo) -> some View {
+        // sin el sufijo de temporadas («Cloak & Dagger (S1–S2)») y con & codificado
+        let enIngles = catalogo.nombre(titulo, en: .en)
+            .replacingOccurrences(of: #"\s*\([^)]*\)$"#, with: "", options: .regularExpression)
+        var permitidos = CharacterSet.urlQueryAllowed
+        permitidos.remove(charactersIn: "&=+?/#")
+        let q = enIngles.addingPercentEncoding(withAllowedCharacters: permitidos) ?? enIngles
         return HStack(spacing: 10) {
-            Button {
-                withAnimation(.snappy) { progreso.alternar(titulo.id) }
-            } label: {
-                Label(visto ? ajustes.tr("Visto", "Watched") : ajustes.tr("Marcar como visto", "Mark as watched"),
-                      systemImage: visto ? "checkmark.circle.fill" : "circle")
-                    .font(.body.weight(.semibold))
-                    .frame(maxWidth: .infinity, minHeight: 44)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(visto ? Tema.panel2 : color)
-            .foregroundStyle(visto ? Tema.tinta : .white)
-            .buttonBorderShape(.capsule)
-            .sensoryFeedback(.success, trigger: visto) { _, nuevo in nuevo }
             if let ref = catalogo.tmdb(titulo.id), let clave = catalogo.claveTMDB {
                 Button {
                     Task { await abreTrailer(ref: ref, clave: clave) }
@@ -113,32 +138,40 @@ struct FichaView: View {
                     Group {
                         if buscandoTrailer { ProgressView() } else { Label(ajustes.tr("Tráiler", "Trailer"), systemImage: "play.fill") }
                     }
-                    .font(.body.weight(.semibold))
-                    .frame(minWidth: 96, minHeight: 44)
                 }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
                 .disabled(buscandoTrailer)
                 .alert(ajustes.tr("No encontré el tráiler", "No trailer found"), isPresented: $sinTrailer) {
                     Button("OK", role: .cancel) {}
                 }
             }
+            if let imdb = URL(string: "https://www.imdb.com/find/?q=\(q)") {
+                Link(destination: imdb) { Label("IMDb", systemImage: "arrow.up.right.square") }
+            }
+            if let lb = URL(string: "https://letterboxd.com/search/films/\(q)/") {
+                Link(destination: lb) { Label("Letterboxd", systemImage: "arrow.up.right.square") }
+            }
         }
+        .font(.subheadline.weight(.semibold))
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .tint(Tema.tinta)
+        .labelStyle(.titleAndIcon)
     }
 
+    /// El recuadro dorado de la web; lo que pasa, tapado hasta tocarlo
     @ViewBuilder
     private func postCreditos(_ catalogo: Catalogo, detalle: Detalle?) -> some View {
         let escenas = detalle?.pcs ?? []
         if let pc = titulo.pc, pc != "0" || !escenas.isEmpty {
-            Bloque(titulo: ajustes.tr("Escenas post-créditos", "Post-credit scenes"), icono: "film.stack") {
-                Text((Int(pc).map { ajustes.tr("\($0) escenas", "\($0) scenes") } ?? pc) + (titulo.pcn.map { " · " + (catalogo.texto($0, en: ajustes.idioma) ?? $0) } ?? ""))
-                    .font(.subheadline.weight(.semibold))
+            VStack(alignment: .leading, spacing: 10) {
+                let nota = titulo.pcn.map { " · " + (catalogo.texto($0, en: ajustes.idioma) ?? $0) } ?? ""
+                Text("\(ajustes.tr("Escenas en los créditos:", "Credit scenes:")) \(Text(pc).bold())\(nota)")
                 if !escenas.isEmpty {
                     if verPostCreditos {
                         ForEach(escenas, id: \.self) { e in
                             VStack(alignment: .leading, spacing: 2) {
-                                Text([e.cuando, e.t].compactMap { $0 }.joined(separator: " · ")).font(.subheadline.weight(.semibold))
-                                if let d = e.d { Text(d) }
+                                Text([e.cuando, e.t].compactMap { $0 }.joined(separator: " · ")).bold()
+                                if let d = e.d { Text(d).foregroundStyle(Tema.tinta) }
                                 if let c = e.conecta { Text(c).foregroundStyle(Tema.tinta2) }
                             }
                         }
@@ -146,22 +179,29 @@ struct FichaView: View {
                         Button(ajustes.tr("Ver qué pasa (spoiler)", "Show what happens (spoiler)")) {
                             withAnimation(.snappy) { verPostCreditos = true }
                         }
-                        .font(.subheadline.weight(.semibold))
+                        .bold()
                     }
                 }
             }
+            .font(.subheadline)
+            .foregroundStyle(Tema.oro)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(Tema.oro.opacity(0.1), in: .rect(cornerRadius: Tema.radioL))
+            .overlay(RoundedRectangle(cornerRadius: Tema.radioL).strokeBorder(Tema.oro.opacity(0.6), lineWidth: 1.5))
         }
     }
 
     @ViewBuilder
     private func reparto(_ catalogo: Catalogo) -> some View {
-        let cast = titulo.cast ?? []
-        if !cast.isEmpty || titulo.dir != nil {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(ajustes.tr("Reparto", "Cast")).font(.headline)
+        let personas = (titulo.dir.map { [($0, ajustes.tr("Dirección", "Director"))] } ?? [])
+            + (titulo.cast ?? []).map { ($0, "") }
+        if !personas.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Rotulo(texto: ajustes.tr("Dirección y reparto", "Director and cast"))
                 ScrollView(.horizontal) {
-                    HStack(alignment: .top, spacing: 14) {
-                        ForEach(cast, id: \.self) { p in
+                    HStack(alignment: .top, spacing: 16) {
+                        ForEach(personas, id: \.0) { p, papel in
                             VStack(spacing: 6) {
                                 Group {
                                     if let img = Imagenes.compartidas.imagen(catalogo.urlFoto(persona: p)) {
@@ -170,17 +210,17 @@ struct FichaView: View {
                                         Tema.panel2.overlay(Image(systemName: "person.fill").foregroundStyle(Tema.tinta3))
                                     }
                                 }
-                                .frame(width: 72, height: 72)
+                                .frame(width: 76, height: 76)
                                 .clipShape(.circle)
-                                Text(p).font(.caption).multilineTextAlignment(.center).frame(width: 84)
+                                .overlay(Circle().strokeBorder(Tema.linea, lineWidth: 2))
+                                Text(p).font(.caption.weight(.semibold)).multilineTextAlignment(.center)
+                                if !papel.isEmpty { Text(papel).font(.caption2).foregroundStyle(Tema.tinta2) }
                             }
+                            .frame(width: 88)
                         }
                     }
                 }
                 .scrollIndicators(.hidden)
-                if let dir = titulo.dir {
-                    Text(ajustes.tr("Dirección: \(dir)", "Directed by \(dir)")).font(.footnote).foregroundStyle(Tema.tinta2)
-                }
             }
         }
     }

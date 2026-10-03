@@ -10,13 +10,15 @@ struct ProgresoView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
-                    let r = progreso.resumen
-                    VStack(alignment: .leading, spacing: 10) {
+                let r = progreso.resumen
+                VStack(alignment: .leading, spacing: 0) {
+                    CabeceraPestana(titulo: ajustes.tr("Progreso", "Progress"),
+                                    fondo: catalogo?.urlFondo(saga: "ucm")) {
+                        // el odómetro: las cifras ruedan al cambiar
                         Text("\(Int((r.fraccion * 100).rounded())) %")
-                            .font(.system(size: 56, weight: .bold).monospacedDigit())
+                            .font(Tema.marca(64).monospacedDigit())
                             .contentTransition(.numericText(value: r.fraccion))
-                        Barra(fraccion: r.fraccion)
+                        BarraMarca(fraccion: r.fraccion, alto: 9)
                         HStack {
                             Dato(valor: "\(r.vistos)/\(r.total)", texto: ajustes.tr("títulos", "titles"))
                             Spacer()
@@ -25,29 +27,37 @@ struct ProgresoView: View {
                             Dato(valor: Formato.duracion(r.minutosRestantes), texto: ajustes.tr("por ver", "to go"))
                         }
                     }
-                    .padding(20)
-                    .superficie()
                     .animation(.snappy, value: r)
-
-                    ForEach(catalogo?.sagas ?? []) { saga in
-                        let items = saga.eras.flatMap(\.items)
-                        let vistos = items.filter { progreso.visto($0.id) }.count
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text(catalogo?.texto(saga.titulo, en: ajustes.idioma) ?? saga.titulo).font(.headline)
-                                Spacer()
-                                Text("\(vistos)/\(items.count)").font(.subheadline.monospacedDigit()).foregroundStyle(Tema.tinta2)
+                    VStack(spacing: 12) {
+                        ForEach(catalogo?.sagas ?? []) { saga in
+                            let items = saga.eras.flatMap(\.items)
+                            let vistos = items.filter { progreso.visto($0.id) }.count
+                            let color = Tema.color(saga: saga.saga)
+                            HStack(spacing: 14) {
+                                Fotograma(remota: nil, local: catalogo?.urlFondo(saga: saga.saga)
+                                          ?? items.first.flatMap { catalogo?.urlPoster($0.id) }, color: color)
+                                    .frame(width: 56, height: 56)
+                                    .clipShape(.rect(cornerRadius: Tema.radioM))
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Text(catalogo?.texto(saga.titulo, en: ajustes.idioma) ?? saga.titulo).font(.headline)
+                                        Spacer()
+                                        Text("\(vistos)/\(items.count)").font(.subheadline.weight(.semibold).monospacedDigit())
+                                            .foregroundStyle(color)
+                                    }
+                                    Barra(fraccion: items.isEmpty ? 0 : Double(vistos) / Double(items.count), color: color)
+                                }
                             }
-                            Barra(fraccion: items.isEmpty ? 0 : Double(vistos) / Double(items.count), color: Tema.color(saga: saga.saga))
+                            .padding(14)
+                            .superficie(radio: Tema.radioL)
                         }
-                        .padding(16)
-                        .superficie(radio: Tema.radioL)
                     }
+                    .padding(16)
                 }
-                .padding(16)
             }
             .background(Tema.fondo)
-            .navigationTitle(ajustes.tr("Progreso", "Progress"))
+            .ignoresSafeArea(edges: .top)
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
@@ -58,7 +68,7 @@ private struct Dato: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(valor).font(.headline.monospacedDigit())
-            Text(texto).font(.caption).foregroundStyle(Tema.tinta2)
+            Text(texto).font(.caption).opacity(0.75)
         }
     }
 }

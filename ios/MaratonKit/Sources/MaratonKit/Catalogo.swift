@@ -156,13 +156,50 @@ public final class Catalogo: Sendable {
         imagenes.personas[persona].map { recursos.appendingPathComponent($0) }
     }
 
+    /// El fotograma de TMDB de un título (red; la web lo pide igual en w780)
+    public func urlFotograma(_ id: String, ancho: Int = 780) -> URL? {
+        imagenes.fotogramas?[id].flatMap { URL(string: "https://image.tmdb.org/t/p/w\(ancho)\($0)") }
+    }
+
+    /// Un fichero del paquete por su ruta relativa («fondo/ucm.webp»), si está
+    public func urlLocal(_ ruta: String?) -> URL? {
+        guard let ruta else { return nil }
+        let url = recursos.appendingPathComponent(ruta)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    /// El fondo de una saga (public/fondo/<saga>.webp); X-Men no tiene y usa fotogramas
+    public func urlFondo(saga: String) -> URL? { urlLocal("fondo/\(saga).webp") }
+
+    /// El próximo estreno con fecha y los días que faltan (la cuenta atrás de la cabecera)
+    public func proximoEstreno(hoy: Date = Date()) -> (estreno: Estreno, dias: Int)? {
+        let cal = Calendar(identifier: .gregorian)
+        let f = DateFormatter()
+        f.calendar = cal
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        let inicio = cal.startOfDay(for: hoy)
+        return estrenos
+            .compactMap { e in e.fecha.flatMap(f.date(from:)).map { (e, $0) } }
+            .filter { $0.1 >= inicio }
+            .min { $0.1 < $1.1 }
+            .map { ($0.0, cal.dateComponents([.day], from: inicio, to: $0.1).day ?? 0) }
+    }
+
+    /// Posición de un título del maratón dentro de su saga (1…n) y cuántos tiene
+    public func posicionEnSaga(_ id: String) -> (posicion: Int, total: Int)? {
+        guard let saga = sagaDe[id] else { return nil }
+        let ids = titulos.filter { sagaDe[$0.id] == saga && idsMaraton.contains($0.id) }.map(\.id)
+        return ids.firstIndex(of: id).map { ($0 + 1, ids.count) }
+    }
+
     public func tmdb(_ id: String) -> RefTMDB? { imagenes.tmdb[id] }
     /// La clave pública de lectura de TMDB que usa la web (src/tmdb.js)
     public var claveTMDB: String? { imagenes.tmdbKey }
 
     // MARK: Búsqueda
 
-    /// Busca en títulos (los tres idiomas), reparto y dirección, sin importar
+    /// Busca en títulos y episodios (los tres idiomas), reparto y dirección, sin importar
     /// tildes, mayúsculas, guiones ni espacios («spiderman» encuentra «Spider-Man»).
     public func buscar(_ consulta: String) -> [Titulo] {
         let q = Texto.compacto(consulta)
@@ -170,7 +207,11 @@ public final class Catalogo: Sendable {
         return titulos.filter { t in
             var campos = [t.t, idiomas.latam.titulos[t.id], idiomas.en.titulos[t.id], t.en, t.dir]
             campos += (t.cast ?? []).map(Optional.some)
-            return campos.contains { $0.map { Texto.compacto($0).contains(q) } ?? false }
+            if campos.contains(where: { $0.map { Texto.compacto($0).contains(q) } ?? false }) { return true }
+            // y los episodios de las series, en los tres idiomas
+            return episodios(de: t.id).contains { e in
+                Idioma.allCases.contains { Texto.compacto(nombre(e, de: t.id, en: $0)).contains(q) }
+            }
         }
     }
 }

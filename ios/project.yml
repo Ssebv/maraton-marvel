@@ -40,5 +40,6 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.ssebv.maraton
             CFBundleURLSchemes: [maraton]
+        UIAppFonts: [ArchivoBlack.ttf]
         CFBundleDevelopmentRegion: es
         CFBundleLocalizations: [es, en]

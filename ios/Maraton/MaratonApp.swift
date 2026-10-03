@@ -5,6 +5,11 @@ import MaratonKit
 struct MaratonApp: App {
     @State private var app = EstadoApp.carga()
 
+    init() {
+        // los fotogramas de TMDB se piden una vez y quedan en disco
+        URLCache.shared = URLCache(memoryCapacity: 30 << 20, diskCapacity: 300 << 20)
+    }
+
     var body: some Scene {
         WindowGroup {
             switch app {

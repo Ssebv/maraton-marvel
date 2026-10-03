@@ -142,6 +142,10 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
 - [x] **4 · Series y filtros**: episodios por temporada con casillas, buscador y ruta express (faltan más filtros).
 - [x] **5 · Pasar el progreso**: iOS acepta el «Copiar código» que ya tiene la web y el enlace
   `maraton://importar?v=…&e=…` de «Compartir mi progreso»; se suma sin borrar.
+- [x] **5b · Identidad de la web** (Sebastián: «ve con la recomendación»): navegación del iPhone y lo visual de
+  la web: marca en Archivo Black sobre fotograma, barra rojo→oro, cuenta atrás, tarjetas por saga con brillo,
+  portada del siguiente, línea de tiempo con nodos y estaciones, ficha con fotograma, sello «VISTA», botón
+  verde, post-créditos en dorado y píldoras (Tráiler, IMDb, Letterboxd); odómetro en Progreso.
 - [ ] **6 · En su iPhone**: Xcode › Signing con su Apple ID (equipo personal) y probar en el teléfono real.
 - Después: estrenos, Multiverso, estadísticas y logros, horario, lector, parte social, widget y App Store.
 

@@ -85,9 +85,30 @@ struct PruebasCatalogo {
         ("JACKMAN", "xmen1"),
         ("primera generacion", "first-class"),
         ("First Class", "first-class"),
+        ("noche de los centinelas", "xmen-tas"),
+        ("Night of the Sentinels", "xmen-tas"),
+        ("Gavin Hood", "origins-wolverine"),
     ])
     func buscar(consulta: String, espera: String) {
         #expect(catalogo.buscar(consulta).contains { $0.id == espera }, "«\(consulta)» no encuentra \(espera)")
+    }
+
+    @Test func fondosYEstrenos() throws {
+        #expect(catalogo.urlFondo(saga: "ucm") != nil)
+        #expect(catalogo.urlFotograma("first-class")?.absoluteString.hasPrefix("https://image.tmdb.org/t/p/w780/") == true)
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
+        let (e, dias) = try #require(catalogo.proximoEstreno(hoy: f.date(from: "2026-12-01")!))
+        #expect(e.id == "doomsday" && dias == 17)
+        #expect(catalogo.urlLocal(e.img) != nil, "su fondo va en el paquete")
+        #expect(catalogo.proximoEstreno(hoy: f.date(from: "2099-01-01")!) == nil)
+    }
+
+    @Test func posicionEnSaga() throws {
+        let p = try #require(catalogo.posicionEnSaga("first-class"))
+        #expect(p.posicion == 1)
+        #expect(catalogo.posicionEnSaga("origins-wolverine")?.posicion == 2)
+        #expect(p.total == catalogo.titulos.filter { catalogo.saga(de: $0.id) == "xmen" }.count)
+        #expect(catalogo.posicionEnSaga("c-giantsize") == nil, "los cómics no están en el maratón")
     }
 
     @Test func buscarVacioNoDevuelveNada() {

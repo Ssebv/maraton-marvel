@@ -19,7 +19,7 @@ const fallos = []
 const tmp = mkdtempSync(join(tmpdir(), 'maraton-ios-'))
 const mod = {}
 for (const f of ['data', 'episodes', 'episodios-en', 'episodios-latam', 'en-textos', 'titulos', 'titulos-en',
-  'people', 'posters', 'posters-en', 'plataformas', 'tmdb', 'orden']) {
+  'people', 'posters', 'posters-en', 'plataformas', 'tmdb', 'orden', 'fondos']) {
   const org = join(raiz, 'src', f + '.js')
   if (!existsSync(org)) { fallos.push(`falta src/${f}.js`); continue }
   copyFileSync(org, join(tmp, f + '.mjs'))
@@ -28,7 +28,7 @@ for (const f of ['data', 'episodes', 'episodios-en', 'episodios-latam', 'en-text
 rmSync(tmp, { recursive: true, force: true })
 
 const { DATA, ESTRENOS, MULTIVERSO, JOYA_MIN, EPISODES, EPISODIOS_EN, EPISODIOS_LATAM, EN_TEXTOS, TITULOS_LATAM,
-  TITULOS_EN, PEOPLE, POSTERS, POSTERS_EN, PAISES, PLATAFORMAS, TMDB, TMDB_KEY, ORDEN_CONGELADO } = mod
+  TITULOS_EN, PEOPLE, POSTERS, POSTERS_EN, PAISES, PLATAFORMAS, TMDB, TMDB_KEY, FOTOGRAMAS, ORDEN_CONGELADO } = mod
 
 // Lo que vive dentro de App.jsx y no en un módulo: se extrae por su texto y,
 // si cambia de forma, el script falla en vez de exportar algo a medias.
@@ -69,7 +69,7 @@ escribe('idiomas.json', {
   latam: { titulos: TITULOS_LATAM, episodios: EPISODIOS_LATAM },
 })
 escribe('plataformas.json', { paises: PAISES, porPais: PLATAFORMAS })
-escribe('imagenes.json', { posters: POSTERS, postersEn: POSTERS_EN, personas: PEOPLE, tmdb: TMDB, tmdbKey: TMDB_KEY })
+escribe('imagenes.json', { posters: POSTERS, postersEn: POSTERS_EN, personas: PEOPLE, tmdb: TMDB, tmdbKey: TMDB_KEY, fotogramas: FOTOGRAMAS })
 for (const l of ['es', 'en']) copyFileSync(join(raiz, 'public', 'detalles', l + '.json'), join(datos, `detalles-${l}.json`))
 
 // Imágenes: solo las que los mapas citan, con su misma ruta relativa
@@ -79,6 +79,14 @@ for (const ruta of new Set([...Object.values(POSTERS), ...Object.values(POSTERS_
   if (!existsSync(org)) { console.log(`  aviso: falta public/${ruta}`); continue }
   mkdirSync(join(salida, ruta, '..'), { recursive: true })
   copyFileSync(org, join(salida, ruta))
+  nImg++
+}
+
+// Fondos de saga y de estrenos (public/fondo), en su tamaño grande
+mkdirSync(join(salida, 'fondo'), { recursive: true })
+for (const f of readdirSync(join(raiz, 'public', 'fondo'))) {
+  if (/-\d+\.(webp|jpg)$/.test(f)) continue
+  copyFileSync(join(raiz, 'public', 'fondo', f), join(salida, 'fondo', f))
   nImg++
 }
 
