@@ -26,7 +26,9 @@
     "fondos": "node scripts/fondos.mjs",
     "detalles": "node scripts/detalles.mjs",
     "capturas": "node scripts/capturas.mjs",
-    "posters-en": "node scripts/posters-en.mjs"
+    "posters-en": "node scripts/posters-en.mjs",
+    "ios:datos": "node scripts/exportar-ios.mjs",
+    "ios:test": "node scripts/exportar-ios.mjs && sh ios/MaratonKit/pruebas.sh"
   },
   "keywords": [],
   "author": "",

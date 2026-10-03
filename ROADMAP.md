@@ -126,6 +126,22 @@ Pedido por Sebastián: «crea un plan de mejoras y optimización y funcionalidad
 - Tarjetas de cómics más compactas (texto corto junto a una carátula alta).
 - Probar en un iPhone real: suscripción al calendario, vibración al mantener una carátula y la apertura sin señal.
 
+## Fase 10 — App nativa para iPhone en Swift (plan del 3 oct 2026, rama `swift`)
+
+SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gratis) y lista para el App Store
+(nombre neutro, aviso «no oficial», sin páginas de cómics). La web sigue siendo la fuente de los datos.
+
+- [x] **1 · Datos a JSON**: `npm run ios:datos` (scripts/exportar-ios.mjs) escribe catálogo, episodios, orden de
+  los bits, idiomas, plataformas, fichas ampliadas y 504 imágenes en `ios/MaratonKit/…/Recursos` (fuera de git).
+- [x] **2 · MaratonKit**: catálogo, búsqueda, progreso, resumen, «siguiente» e importar/exportar con bits
+  idénticos a la web. `npm run ios:test`: 18 pruebas en verde.
+- [ ] **0 · Preparar el Mac** (Sebastián): liberar ≥ 45 GB con `limpieza`, instalar Xcode del App Store,
+  `sudo xcode-select -s /Applications/Xcode.app` y su Apple ID en Xcode › Settings › Accounts.
+- [ ] **3 · App SwiftUI**: XcodeGen, tema Norte, Inicio, Cronología, Progreso, Ajustes y la ficha.
+- [ ] **4 · Series y filtros**: episodios por temporada, filtros y buscador.
+- [ ] **5 · Pasar el progreso**: «Pasar al iPhone» en la web → enlace `maraton://importar?v=…&e=…`.
+- Después: estrenos, Multiverso, estadísticas y logros, horario, lector, parte social, widget y App Store.
+
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 
 **Estado:** fases 1 y 2 hechas y probadas contra un Supabase local (`npm run comunidad:sonda`: reglas 69/69 y cuenta de punta a punta). La cuenta está en la app, apagada: se enciende pegando Project URL + anon key en `src/nube.js` tras crear el proyecto (supabase/LEEME.md). Perfil público `#u/…`, seguir, buscar por @ y «Sigues a…» también hechos (fase 2 completa). Fase 3 en marcha: comunidades (crear, descubrir, unirse, invitar con #i/, ranking 7/30 días) hechas. Retos con fecha y muro con aplausos también hechos: fase 3 completa. Fase 4 hecha: foros por título y por comunidad, hilos con velo según tu progreso, spoilers en línea, menciones, votos, respuestas anidadas, reportes, avisos y moderación. Siguiente: fase 5 (cola de reportes para moderar dentro de la app, bloquear desde el perfil, editar en 24 h).

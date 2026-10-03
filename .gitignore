@@ -4,3 +4,11 @@ dist/
 .claude/skills/
 # fragmento del espejo en Artifacts (lo genera npm run desplegar; se publica a mano)
 .espejo/
+
+# iOS: generado por npm run ios:datos, y lo que compila Swift
+ios/MaratonKit/Sources/MaratonKit/Recursos/
+ios/**/.build/
+ios/**/.swiftpm/
+ios/*.xcodeproj/
+ios/**/xcuserdata/
+ios/MaratonKit/Tests/MaratonKitTests/vectores.json
