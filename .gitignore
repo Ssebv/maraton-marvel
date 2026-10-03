@@ -12,3 +12,4 @@ ios/**/.swiftpm/
 ios/*.xcodeproj/
 ios/**/xcuserdata/
 ios/MaratonKit/Tests/MaratonKitTests/vectores.json
+ios/Maraton/Info.plist

@@ -105,14 +105,35 @@ public final class Progreso {
     /// Devuelve cuántos títulos y episodios nuevos entraron.
     @discardableResult
     public func importa(v: String, e: String) -> (titulos: Int, episodios: Int) {
-        var nv = 0, ne = 0
-        let traidos = migraLotes(Dictionary(uniqueKeysWithValues:
-            Bits.decodifica(v, orden: catalogo.ordenIds).map { ($0, 1.0) }))
-        for id in traidos.keys where vistas[id] == nil && catalogo.titulo(id) != nil {
-            vistas[id] = 1; nv += 1
+        func unos(_ s: Set<String>) -> [String: Double] { Dictionary(uniqueKeysWithValues: s.map { ($0, 1.0) }) }
+        return suma(unos(Bits.decodifica(v, orden: catalogo.ordenIds)), unos(Bits.decodifica(e, orden: catalogo.ordenEps)))
+    }
+
+    /// El código de la web (Ajustes › Tu progreso › «Copiar código»): JSON
+    /// {v, e, n, l} en base64 sobre UTF-8. Aquí se usan v y e, con su momento.
+    /// nil si el texto no es un código de la web.
+    @discardableResult
+    public func importa(codigoWeb: String) -> (titulos: Int, episodios: Int)? {
+        let limpio = codigoWeb.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let datos = Data(base64Encoded: limpio + String(repeating: "=", count: (4 - limpio.count % 4) % 4)),
+              let json = try? JSONSerialization.jsonObject(with: datos) as? [String: Any] else { return nil }
+        func marcas(_ x: Any?) -> [String: Double] {
+            guard let d = x as? [String: Any] else { return [:] }
+            return d.compactMapValues { ($0 as? NSNumber)?.doubleValue }.filter { $0.value != 0 }
         }
-        for clave in Bits.decodifica(e, orden: catalogo.ordenEps) where eps[clave] == nil {
-            eps[clave] = 1; ne += 1
+        let v = marcas(json["v"]), e = marcas(json["e"])
+        guard json["v"] is [String: Any] || json["e"] is [String: Any] else { return nil }
+        return suma(v, e)
+    }
+
+    func suma(_ v: [String: Double], _ e: [String: Double]) -> (titulos: Int, episodios: Int) {
+        var nv = 0, ne = 0
+        let epsValidos = Set(catalogo.ordenEps)
+        for (id, marca) in migraLotes(v) where vistas[id] == nil && catalogo.titulo(id) != nil {
+            vistas[id] = marca; nv += 1
+        }
+        for (clave, marca) in e where eps[clave] == nil && epsValidos.contains(clave) {
+            eps[clave] = marca; ne += 1
         }
         if nv + ne > 0 { guarda() }
         return (nv, ne)

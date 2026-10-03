@@ -28,7 +28,7 @@ for (const f of ['data', 'episodes', 'episodios-en', 'episodios-latam', 'en-text
 rmSync(tmp, { recursive: true, force: true })
 
 const { DATA, ESTRENOS, MULTIVERSO, JOYA_MIN, EPISODES, EPISODIOS_EN, EPISODIOS_LATAM, EN_TEXTOS, TITULOS_LATAM,
-  TITULOS_EN, PEOPLE, POSTERS, POSTERS_EN, PAISES, PLATAFORMAS, TMDB, ORDEN_CONGELADO } = mod
+  TITULOS_EN, PEOPLE, POSTERS, POSTERS_EN, PAISES, PLATAFORMAS, TMDB, TMDB_KEY, ORDEN_CONGELADO } = mod
 
 // Lo que vive dentro de App.jsx y no en un módulo: se extrae por su texto y,
 // si cambia de forma, el script falla en vez de exportar algo a medias.
@@ -69,7 +69,7 @@ escribe('idiomas.json', {
   latam: { titulos: TITULOS_LATAM, episodios: EPISODIOS_LATAM },
 })
 escribe('plataformas.json', { paises: PAISES, porPais: PLATAFORMAS })
-escribe('imagenes.json', { posters: POSTERS, postersEn: POSTERS_EN, personas: PEOPLE, tmdb: TMDB })
+escribe('imagenes.json', { posters: POSTERS, postersEn: POSTERS_EN, personas: PEOPLE, tmdb: TMDB, tmdbKey: TMDB_KEY })
 for (const l of ['es', 'en']) copyFileSync(join(raiz, 'public', 'detalles', l + '.json'), join(datos, `detalles-${l}.json`))
 
 // Imágenes: solo las que los mapas citan, con su misma ruta relativa

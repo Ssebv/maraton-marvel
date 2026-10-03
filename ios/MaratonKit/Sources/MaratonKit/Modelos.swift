@@ -156,4 +156,4 @@ struct FicheroIdiomas: Codable {
     let latam: Traduccion
 }
 struct FicheroPlataformas: Codable { let paises: [Pais]; let porPais: [String: [String: String]] }
-struct FicheroImagenes: Codable { let posters: [String: String]; let postersEn: [String: String]?; let personas: [String: String]; let tmdb: [String: RefTMDB] }
+struct FicheroImagenes: Codable { let posters: [String: String]; let postersEn: [String: String]?; let personas: [String: String]; let tmdb: [String: RefTMDB]; let tmdbKey: String? }

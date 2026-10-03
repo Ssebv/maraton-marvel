@@ -204,4 +204,18 @@ struct PruebasProgreso {
         #expect(nombres.contains { $0.hasPrefix("progreso.respaldo-") }, "el archivo viejo se conserva")
         #expect(Progreso(catalogo: catalogo, archivo: archivo).visto("xmen1"))
     }
+
+    @Test func importaElCodigoDeLaWeb() throws {
+        // como exportar() de la web: btoa(unescape(encodeURIComponent(JSON.stringify(datos))))
+        let json = #"{"v":{"logan":1727000000000,"sony":1727000000001},"e":{"xmen97:1:1":1727000000002,"no:9:9":1},"n":{"logan":"¡Qué final!"},"l":[]}"#
+        let codigo = Data(json.utf8).base64EncodedString()
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let r = try #require(p.importa(codigoWeb: codigo))
+        #expect(p.vistas["logan"] == 1727000000000, "conserva el momento")
+        #expect(p.visto("venom1"), "el lote sony se reparte")
+        #expect(p.eps["xmen97:1:1"] != nil && p.eps["no:9:9"] == nil)
+        #expect(r.episodios == 1)
+        #expect(p.importa(codigoWeb: "hola") == nil)
+        #expect(p.importa(codigoWeb: Data(#"{"x":1}"#.utf8).base64EncodedString()) == nil)
+    }
 }

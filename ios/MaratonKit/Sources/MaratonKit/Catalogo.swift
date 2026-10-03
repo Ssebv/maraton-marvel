@@ -157,6 +157,8 @@ public final class Catalogo: Sendable {
     }
 
     public func tmdb(_ id: String) -> RefTMDB? { imagenes.tmdb[id] }
+    /// La clave pública de lectura de TMDB que usa la web (src/tmdb.js)
+    public var claveTMDB: String? { imagenes.tmdbKey }
 
     // MARK: Búsqueda
 

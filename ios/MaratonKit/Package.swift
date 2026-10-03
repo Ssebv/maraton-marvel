@@ -7,7 +7,7 @@ import PackageDescription
 let package = Package(
     name: "MaratonKit",
     defaultLocalization: "es",
-    platforms: [.iOS(.v17), .macOS(.v14)],
+    platforms: [.iOS(.v18), .macOS(.v14)],
     products: [.library(name: "MaratonKit", targets: ["MaratonKit"])],
     targets: [
         .target(name: "MaratonKit", resources: [.copy("Recursos")]),

@@ -134,12 +134,15 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
 - [x] **1 · Datos a JSON**: `npm run ios:datos` (scripts/exportar-ios.mjs) escribe catálogo, episodios, orden de
   los bits, idiomas, plataformas, fichas ampliadas y 504 imágenes en `ios/MaratonKit/…/Recursos` (fuera de git).
 - [x] **2 · MaratonKit**: catálogo, búsqueda, progreso, resumen, «siguiente» e importar/exportar con bits
-  idénticos a la web. `npm run ios:test`: 18 pruebas en verde.
-- [ ] **0 · Preparar el Mac** (Sebastián): liberar ≥ 45 GB con `limpieza`, instalar Xcode del App Store,
-  `sudo xcode-select -s /Applications/Xcode.app` y su Apple ID en Xcode › Settings › Accounts.
-- [ ] **3 · App SwiftUI**: XcodeGen, tema Norte, Inicio, Cronología, Progreso, Ajustes y la ficha.
-- [ ] **4 · Series y filtros**: episodios por temporada, filtros y buscador.
-- [ ] **5 · Pasar el progreso**: «Pasar al iPhone» en la web → enlace `maraton://importar?v=…&e=…`.
+  idénticos a la web. `npm run ios:test`: 20 pruebas en verde.
+- [x] **0 · Preparar el Mac**: Xcode 27 instalado (3 oct).
+- [x] **3 · App SwiftUI**: XcodeGen, tema Norte claro/oscuro, Inicio (siguiente + carruseles), Cronología,
+  Progreso, Ajustes y la ficha (dónde ver por país, historia, post-créditos tapados, cambios, extras, reparto,
+  tráiler de TMDB en YouTube).
+- [x] **4 · Series y filtros**: episodios por temporada con casillas, buscador y ruta express (faltan más filtros).
+- [x] **5 · Pasar el progreso**: iOS acepta el «Copiar código» que ya tiene la web y el enlace
+  `maraton://importar?v=…&e=…` de «Compartir mi progreso»; se suma sin borrar.
+- [ ] **6 · En su iPhone**: Xcode › Signing con su Apple ID (equipo personal) y probar en el teléfono real.
 - Después: estrenos, Multiverso, estadísticas y logros, horario, lector, parte social, widget y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
