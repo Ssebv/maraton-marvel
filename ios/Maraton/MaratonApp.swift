@@ -51,6 +51,9 @@ final class Navegacion {
     var ficha: Titulo?
     var pestana = Navegacion.pestanaInicial
     var aviso: String?
+    /// El logro recién desbloqueado (aviso arriba) y cuántos más a la vez
+    var logroNuevo: Logro?
+    var logrosMas = 0
     enum Pestana: String, Hashable { case inicio, cronologia, progreso, ajustes }
 
     /// En depuración, `-pestana cronologia` al lanzar (capturas del simulador)
@@ -76,9 +79,11 @@ struct RaizView: View {
             Tab(ajustes.tr("Progreso", "Progress"), systemImage: "chart.bar", value: .progreso) { ProgresoView() }
             Tab(ajustes.tr("Ajustes", "Settings"), systemImage: "gearshape", value: .ajustes) { AjustesView() }
         }
+        .modifier(CapaAvisoLogro(visible: nav.ficha == nil))
         .environment(nav)
         .sheet(item: $nav.ficha) { t in
             FichaView(titulo: t)
+                .modifier(CapaAvisoLogro())
                 .environment(nav)
                 .presentationDragIndicator(.visible)
         }
@@ -95,7 +100,20 @@ struct RaizView: View {
         #endif
         // maraton://importar?v=…&e=… (el enlace «Pasar al iPhone» de la web)
         .onOpenURL(perform: importa)
+        .onChange(of: conseguidos) { antes, ahora in
+            let nuevos = progreso.logros().filter { ahora.contains($0.id) && !antes.contains($0.id) }
+            guard let primero = nuevos.first else { return }
+            nav.logroNuevo = primero
+            nav.logrosMas = nuevos.count - 1
+        }
+        .task(id: nav.logroNuevo?.id) {
+            guard nav.logroNuevo != nil else { return }
+            try? await Task.sleep(for: .seconds(3.5))
+            nav.logroNuevo = nil
+        }
     }
+
+    private var conseguidos: Set<String> { Set(progreso.logros().filter(\.conseguido).map(\.id)) }
 
     private func importa(_ url: URL) {
         guard let (v, e) = Enlace.lee(url) else { return }

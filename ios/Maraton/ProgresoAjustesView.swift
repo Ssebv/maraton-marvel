@@ -51,10 +51,12 @@ struct ProgresoView: View {
                             .padding(14)
                             .superficie(radio: Tema.radioL)
                         }
+                        SeccionLogros().padding(.top, 16).ancla("logros")
                     }
                     .padding(16)
                 }
             }
+            .conAnclaDepuracion()
             .background(Tema.fondo)
             .ignoresSafeArea(edges: .top)
             .toolbar(.hidden, for: .navigationBar)

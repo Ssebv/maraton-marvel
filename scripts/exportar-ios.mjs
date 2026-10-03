@@ -72,9 +72,9 @@ escribe('plataformas.json', { paises: PAISES, porPais: PLATAFORMAS })
 escribe('imagenes.json', { posters: POSTERS, postersEn: POSTERS_EN, personas: PEOPLE, tmdb: TMDB, tmdbKey: TMDB_KEY, fotogramas: FOTOGRAMAS })
 for (const l of ['es', 'en']) copyFileSync(join(raiz, 'public', 'detalles', l + '.json'), join(datos, `detalles-${l}.json`))
 
-// Imágenes: solo las que los mapas citan, con su misma ruta relativa
+// Imágenes: solo las que los mapas y los estrenos citan, con su misma ruta relativa
 let nImg = 0
-for (const ruta of new Set([...Object.values(POSTERS), ...Object.values(POSTERS_EN || {}), ...Object.values(PEOPLE)])) {
+for (const ruta of new Set([...Object.values(POSTERS), ...Object.values(POSTERS_EN || {}), ...Object.values(PEOPLE), ...ESTRENOS.map(e => e.poster).filter(Boolean)])) {
   const org = join(raiz, 'public', ruta)
   if (!existsSync(org)) { console.log(`  aviso: falta public/${ruta}`); continue }
   mkdirSync(join(salida, ruta, '..'), { recursive: true })

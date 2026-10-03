@@ -146,8 +146,10 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   la web: marca en Archivo Black sobre fotograma, barra rojo→oro, cuenta atrás, tarjetas por saga con brillo,
   portada del siguiente, línea de tiempo con nodos y estaciones, ficha con fotograma, sello «VISTA», botón
   verde, post-créditos en dorado y píldoras (Tráiler, IMDb, Letterboxd); odómetro en Progreso.
+- [x] **7 · Estrenos y logros**: «Próximos estrenos» en Inicio (cuenta atrás, los aproximados al final, fecha en
+  hora de Chile) y los 27 logros de la web en Progreso (sin los 2 de notas), con avance y aviso «Logro desbloqueado».
 - [ ] **6 · En su iPhone**: Xcode › Signing con su Apple ID (equipo personal) y probar en el teléfono real.
-- Después: estrenos, Multiverso, estadísticas y logros, horario, lector, parte social, widget y App Store.
+- Después: Multiverso, estadísticas, notas y reseñas, horario, lector, parte social, widget y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 

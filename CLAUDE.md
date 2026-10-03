@@ -11,7 +11,8 @@ PWA en Preact + Vite que se publica en GitHub Pages desde `docs/` (rama `main`).
   las pruebas de `ios/MaratonKit` (funciona solo con Command Line Tools). La app: `cd ios && xcodegen` y
   `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Maraton.xcodeproj -scheme Maraton
   -destination 'platform=iOS Simulator,name=Maratón iPhone' build`. Usar el simulador «Maratón iPhone»: otras
-  sesiones usan los de Xcode. En depuración, `simctl launch … -pestana cronologia -abrir dofp -importar <enlace>`.
+  sesiones usan los de Xcode. En depuración, `simctl launch … -pestana cronologia -abrir dofp -importar <enlace> -ancla estrenos` (`-ancla` baja a
+  una sección marcada con `.ancla(…)`).
 
 ## Qué no tocar
 - `src/orden.js` es GENERADO (`npm run contrato`) y solo crece por el final: los bits de los perfiles dependen de él.

@@ -240,3 +240,55 @@ struct PruebasProgreso {
         #expect(p.importa(codigoWeb: Data(#"{"x":1}"#.utf8).base64EncodedString()) == nil)
     }
 }
+
+@Suite("Estrenos y logros")
+@MainActor
+struct PruebasEstrenosLogros {
+    @Test func estrenosPendientes() {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
+        let lista = catalogo.estrenosPendientes(hoy: f.date(from: "2026-10-03")!)
+        let dias = lista.compactMap(\.dias)
+        #expect(dias == dias.sorted() && dias.first == 11, "Vision Quest el 14 de octubre")
+        #expect(lista.last?.dias == nil, "los aproximados al final")
+        #expect(lista.allSatisfy { catalogo.urlImagen(estreno: $0.estreno) != nil || $0.estreno.fecha == nil })
+        #expect(catalogo.texto(lista.first?.estreno.n, en: .en) != lista.first?.estreno.n, "su nota tiene inglés")
+    }
+
+    @Test func logrosConIdsQueExisten() {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let logros = p.logros()
+        #expect(logros.count == 27 && Set(logros.map(\.id)).count == 27)
+        #expect(logros.allSatisfy { !$0.conseguido }, "sin marcas no hay ninguno")
+        for l in logros {
+            #expect(GrupoLogro.todos.contains { $0.id == l.grupo })
+            #expect(l.avance.map { $0.meta > 0 } ?? true, "\(l.id) cuenta contra un total vacío: falta un id")
+            #expect(catalogo.texto(l.titulo, en: .en) != l.titulo, "\(l.id) sin inglés")
+        }
+    }
+
+    @Test func logrosPorIdsYHabitos() throws {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/Santiago")!
+        let base = cal.date(from: DateComponents(year: 2026, month: 9, day: 1, hour: 21))!.timeIntervalSince1970 * 1000
+        // Logan los tres en días seguidos y Capi el mismo día que el último
+        let marcas: [String: Double] = ["origins-wolverine": base, "the-wolverine": base + 864e5, "logan": base + 2 * 864e5,
+                                        "cap1": base + 2 * 864e5, "cap2": base + 2 * 864e5 + 60_000]
+        _ = p.suma(marcas, [:])
+        let l = Dictionary(uniqueKeysWithValues: p.logros(calendario: cal).map { ($0.id, $0) })
+        #expect(l["primero"]?.conseguido == true)
+        #expect(l["logan"]?.conseguido == true)
+        #expect(l["capi"]?.avance == Logro.Avance(hecho: 2, meta: 3))
+        #expect(l["racha"]?.avance == Logro.Avance(hecho: 3, meta: 7))
+        #expect(l["maraton-dia"]?.avance == Logro.Avance(hecho: 3, meta: 5))
+        // la racha no se corta el 6 de septiembre (en Chile no existe esa medianoche)
+        let r = Progreso(catalogo: catalogo, archivo: nil)
+        let dia1 = cal.date(from: DateComponents(year: 2026, month: 9, day: 3, hour: 20))!.timeIntervalSince1970 * 1000
+        let ids = catalogo.titulos.prefix(8).map(\.id)
+        _ = r.suma(Dictionary(uniqueKeysWithValues: ids.enumerated().map { ($1, dia1 + Double($0) * 864e5) }), [:])
+        #expect(r.logros(calendario: cal).first { $0.id == "racha" }?.conseguido == true)
+        // las marcas por bits no tienen fecha: no cuentan para hábitos
+        let q = Progreso(catalogo: catalogo, archivo: nil)
+        _ = q.suma(["logan": 1, "cap1": 1], [:])
+        #expect(q.logros().first { $0.id == "racha" }?.avance?.hecho == 0)
+    }
+}

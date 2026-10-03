@@ -113,3 +113,30 @@ enum Formato {
         return partes.joined(separator: " · ")
     }
 }
+
+#if DEBUG
+/// Para capturas: `-ancla estrenos` baja el scroll hasta esa sección al abrir
+struct AnclaDepuracion: ViewModifier {
+    func body(content: Content) -> some View {
+        ScrollViewReader { lector in
+            content.task {
+                guard let a = UserDefaults.standard.string(forKey: "ancla") else { return }
+                try? await Task.sleep(for: .milliseconds(400))
+                lector.scrollTo(a, anchor: .top)
+            }
+        }
+    }
+}
+#endif
+
+extension View {
+    /// Marca una sección a la que `-ancla` puede bajar (solo en depuración)
+    func ancla(_ id: String) -> some View { self.id(id) }
+    @ViewBuilder func conAnclaDepuracion() -> some View {
+        #if DEBUG
+        modifier(AnclaDepuracion())
+        #else
+        self
+        #endif
+    }
+}

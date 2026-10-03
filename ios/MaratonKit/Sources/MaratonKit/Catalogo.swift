@@ -173,17 +173,30 @@ public final class Catalogo: Sendable {
 
     /// El próximo estreno con fecha y los días que faltan (la cuenta atrás de la cabecera)
     public func proximoEstreno(hoy: Date = Date()) -> (estreno: Estreno, dias: Int)? {
+        estrenosPendientes(hoy: hoy).first.flatMap { e in e.dias.map { (e.estreno, $0) } }
+    }
+
+    /// Los estrenos que faltan: primero los que tienen fecha (del más cercano al
+    /// más lejano) y luego los aproximados («Otoño de 2026»), en el orden de los datos
+    public func estrenosPendientes(hoy: Date = Date()) -> [(estreno: Estreno, dias: Int?)] {
         let cal = Calendar(identifier: .gregorian)
         let f = DateFormatter()
         f.calendar = cal
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd"
         let inicio = cal.startOfDay(for: hoy)
-        return estrenos
+        let conFecha = estrenos
             .compactMap { e in e.fecha.flatMap(f.date(from:)).map { (e, $0) } }
             .filter { $0.1 >= inicio }
-            .min { $0.1 < $1.1 }
-            .map { ($0.0, cal.dateComponents([.day], from: inicio, to: $0.1).day ?? 0) }
+            .sorted { $0.1 < $1.1 }
+            .map { (estreno: $0.0, dias: Optional(cal.dateComponents([.day], from: inicio, to: $0.1).day ?? 0)) }
+        let sinFecha = estrenos.filter { $0.fecha == nil }.map { (estreno: $0, dias: Int?.none) }
+        return conFecha + sinFecha
+    }
+
+    /// La imagen de un estreno: su fondo, su póster propio o el del título
+    public func urlImagen(estreno e: Estreno) -> URL? {
+        urlLocal(e.img) ?? urlLocal(e.poster) ?? e.id.flatMap { urlPoster($0) }
     }
 
     /// Posición de un título del maratón dentro de su saga (1…n) y cuántos tiene

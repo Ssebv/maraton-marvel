@@ -16,6 +16,7 @@ struct InicioView: View {
                         VStack(alignment: .leading, spacing: 28) {
                             TarjetasSaga(catalogo: catalogo)
                             Portada(catalogo: catalogo)
+                            Estrenos(catalogo: catalogo).ancla("estrenos")
                             ForEach(catalogo.sagas) { saga in Carrusel(saga: saga, catalogo: catalogo) }
                         }
                         .padding(.top, 18)
@@ -23,6 +24,7 @@ struct InicioView: View {
                     }
                 }
             }
+            .conAnclaDepuracion()
             .background(Tema.fondo)
             .ignoresSafeArea(edges: .top)
             .toolbar(.hidden, for: .navigationBar)
@@ -194,6 +196,87 @@ private struct Portada: View {
             .environment(\.colorScheme, .dark)
             .onTapGesture { nav.ficha = t }
         }
+    }
+}
+
+/// Lo que viene: una tarjeta por estreno con su cuenta atrás (o «Otoño de 2026»)
+private struct Estrenos: View {
+    let catalogo: Catalogo
+    @Environment(Ajustes.self) private var ajustes
+    @Environment(Navegacion.self) private var nav
+
+    var body: some View {
+        let lista = catalogo.estrenosPendientes()
+        if !lista.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(ajustes.tr("Próximos estrenos", "Coming soon")).font(.title3.weight(.bold))
+                    .padding(.horizontal, 16)
+                ScrollView(.horizontal) {
+                    LazyHStack(alignment: .top, spacing: 12) {
+                        ForEach(lista, id: \.estreno) { e in tarjeta(e.estreno, dias: e.dias) }
+                    }
+                    .padding(.horizontal, 16)
+                    .scrollTargetLayout()
+                }
+                .scrollTargetBehavior(.viewAligned)
+                .scrollIndicators(.hidden)
+            }
+        }
+    }
+
+    private func tarjeta(_ e: Estreno, dias: Int?) -> some View {
+        let titulo = e.id.flatMap { catalogo.titulo($0) }
+        let cuando: String = switch dias {
+        case 0: ajustes.tr("¡Hoy!", "Today!")
+        case 1: ajustes.tr("Mañana", "Tomorrow")
+        case let n?: ajustes.tr("En \(n) días", "In \(n) days")
+        case nil: catalogo.texto(e.aprox, en: ajustes.idioma) ?? ajustes.tr("Sin fecha", "TBA")
+        }
+        return Button {
+            if let titulo { nav.ficha = titulo }
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                Spacer(minLength: 0)
+                Text(cuando)
+                    .font(.caption.weight(.bold).monospacedDigit())
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .background(dias == nil ? .white.opacity(0.18) : Tema.verde.opacity(0.9), in: .capsule)
+                Text(titulo.map { catalogo.nombre($0, en: ajustes.idioma) } ?? catalogo.texto(e.t, en: ajustes.idioma) ?? e.t)
+                    .font(.headline)
+                    .lineLimit(2)
+                if let tipo = catalogo.texto(e.tipo, en: ajustes.idioma) {
+                    Text([tipo, fecha(e.fecha)].compactMap { $0 }.joined(separator: " · "))
+                        .font(.caption.weight(.semibold)).opacity(0.75)
+                }
+                if let n = catalogo.texto(e.n, en: ajustes.idioma) {
+                    Text(n).font(.caption).opacity(0.85).lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(14)
+            .frame(width: 250, height: 230, alignment: .leading)
+            .background {
+                ZStack {
+                    Fotograma(remota: nil, local: catalogo.urlImagen(estreno: e), color: Tema.azul)
+                    Velo()
+                }
+            }
+            .clipShape(.rect(cornerRadius: Tema.radioXL))
+            .environment(\.colorScheme, .dark)
+        }
+        .buttonStyle(.plain)
+        .allowsHitTesting(titulo != nil)  // sin ficha: no se apaga, solo no responde
+        .accessibilityElement(children: .combine)
+    }
+
+    /// «2026-12-18» → «18 dic 2026»
+    private func fecha(_ s: String?) -> String? {
+        guard let s, let d = try? Date(s, strategy: .iso8601.year().month().day()) else { return nil }
+        // la fecha se lee en UTC: se muestra en UTC para que en Chile no salga el día anterior
+        return d.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted,
+                                            locale: Locale(identifier: ajustes.idioma == .en ? "en_US" : "es_CL"),
+                                            timeZone: .gmt))
     }
 }
 
