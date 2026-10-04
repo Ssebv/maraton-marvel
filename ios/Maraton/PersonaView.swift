@@ -262,11 +262,7 @@ struct PersonaView: View {
 
 enum Fecha {
     /// «1968-10-12» a medianoche local
-    static func dia(_ texto: String) -> Date? {
-        let p = texto.split(separator: "-").compactMap { Int($0) }
-        guard p.count == 3 else { return nil }
-        return Calendar.current.date(from: DateComponents(year: p[0], month: p[1], day: p[2]))
-    }
+    static func dia(_ texto: String) -> Date? { Catalogo.dia(texto) }
 }
 
 /// TMDB (y la Wikipedia si no hay biografía), con caché en disco de 30 días

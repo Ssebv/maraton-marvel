@@ -214,10 +214,18 @@ public final class Catalogo: Sendable {
     }
 
     /// «2026-12-18» a medianoche en hora local (sin DateFormatter: no se crea uno por llamada)
-    static func dia(_ texto: String, _ cal: Calendar) -> Date? {
+    /// (siempre gregoriano, en la zona horaria de `cal`: con el calendario budista
+    /// o el japonés del iPhone, «2026» sería otro año)
+    public static func dia(_ texto: String, _ cal: Calendar = .current) -> Date? {
         let p = texto.split(separator: "-").compactMap { Int($0) }
         guard p.count == 3 else { return nil }
-        return cal.date(from: DateComponents(year: p[0], month: p[1], day: p[2]))
+        return gregoriano(cal).date(from: DateComponents(year: p[0], month: p[1], day: p[2]))
+    }
+
+    static func gregoriano(_ cal: Calendar) -> Calendar {
+        var g = Calendar(identifier: .gregorian)
+        g.timeZone = cal.timeZone
+        return g
     }
 
     /// La imagen de un estreno: su fondo, su póster propio o el del título

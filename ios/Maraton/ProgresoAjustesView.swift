@@ -115,6 +115,19 @@ struct AjustesView: View {
                         ForEach(catalogo?.paises ?? []) { p in Text(p.nombre).tag(p.id) }
                     }
                 }
+                Section {
+                    Toggle(isOn: Binding(get: { agenda.avisosEstrenos }, set: { on in
+                        Task { if on { await agenda.activaEstrenos() } else { agenda.avisosEstrenos = false } }
+                    })) {
+                        Label(ajustes.tr("Avisos de estreno", "Premiere alerts"), systemImage: "bell.badge")
+                    }
+                    .tint(Tema.verde)
+                } header: {
+                    Text(ajustes.tr("Estrenos", "Premieres"))
+                } footer: {
+                    Text(ajustes.tr("Un aviso a las \(Agenda.horaEstreno):00 del día de cada estreno y de los episodios nuevos de las series que sigues.",
+                                    "A notification at \(Agenda.horaEstreno):00 on each premiere day and when series you follow get new episodes."))
+                }
                 Section(ajustes.tr("Horario de maratón", "Marathon schedule")) {
                     Button { nav.horarioAbierto = true } label: {
                         LabeledContent {

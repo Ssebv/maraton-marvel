@@ -1,13 +1,30 @@
 import SwiftUI
+import UserNotifications
 import MaratonKit
+
+/// Tocar un aviso de estreno abre la ficha (por el mismo maraton://abrir del
+/// widget); con la app abierta, el aviso se ve igual arriba
+final class DelegadoAvisos: NSObject, UNUserNotificationCenterDelegate {
+    func userNotificationCenter(_ c: UNUserNotificationCenter, willPresent n: UNNotification) async -> UNNotificationPresentationOptions {
+        [.banner, .sound]
+    }
+
+    func userNotificationCenter(_ c: UNUserNotificationCenter, didReceive r: UNNotificationResponse) async {
+        guard let id = r.notification.request.content.userInfo["id"] as? String,
+              let url = URL(string: "maraton://abrir?id=\(id)") else { return }
+        await MainActor.run { UIApplication.shared.open(url) }
+    }
+}
 
 @main
 struct MaratonApp: App {
     @State private var app = EstadoApp.carga()
+    private let delegado = DelegadoAvisos()
 
     init() {
         // los fotogramas de TMDB se piden una vez y quedan en disco
         URLCache.shared = URLCache(memoryCapacity: 30 << 20, diskCapacity: 300 << 20)
+        UNUserNotificationCenter.current().delegate = delegado
     }
 
     var body: some Scene {
@@ -56,6 +73,8 @@ final class Navegacion {
     var horarioAbierto = false
     var pestana = Navegacion.pestanaInicial
     var aviso: String?
+    /// «Desde tu última visita: …» (se calcula una vez al abrir la app)
+    var novedades: [String] = []
     /// El logro recién desbloqueado (aviso arriba) y cuántos más a la vez
     var logroNuevo: Logro?
     var logrosMas = 0
@@ -115,6 +134,7 @@ struct RaizView: View {
                 guard !Task.isCancelled else { return }
             }
             await agenda.reprograma(progreso: progreso, ajustes: ajustes)
+            await agenda.reprogramaEstrenos(progreso: progreso, ajustes: ajustes)
             PuenteWidget.publica(progreso: progreso, ajustes: ajustes, agenda: agenda)
         }
         .alert(nav.aviso ?? "", isPresented: Binding(get: { nav.aviso != nil }, set: { if !$0 { nav.aviso = nil } })) {
@@ -137,6 +157,14 @@ struct RaizView: View {
             }
         }
         #endif
+        .task {
+            var ahora = Date()
+            #if DEBUG
+            // capturas: `-hoyDepuracion 2026-10-15 -ultimaVisita 2026-10-01`
+            if let f = UserDefaults.standard.string(forKey: "hoyDepuracion").flatMap(Fecha.dia) { ahora = f }
+            #endif
+            nav.novedades = Avisos.desdeTuUltimaVisita(progreso, ajustes, ahora: ahora)
+        }
         // maraton://importar?v=…&e=… (el enlace «Pasar al iPhone» de la web)
         .onOpenURL(perform: importa)
         .onChange(of: conseguidos) { antes, ahora in
@@ -154,10 +182,10 @@ struct RaizView: View {
     }
 
     private struct ClaveAvisos: Hashable {
-        let horario: Horario?, avisos: Bool, vistas: Int, eps: Int, idioma: Idioma, activa: Bool
+        let horario: Horario?, avisos: Bool, estrenos: Bool, vistas: Int, eps: Int, idioma: Idioma, activa: Bool
     }
     private var claveAvisos: ClaveAvisos {
-        ClaveAvisos(horario: agenda.horario, avisos: agenda.avisos, vistas: Set(progreso.vistas.keys).hashValue,
+        ClaveAvisos(horario: agenda.horario, avisos: agenda.avisos, estrenos: agenda.avisosEstrenos, vistas: Set(progreso.vistas.keys).hashValue,
                     eps: Set(progreso.eps.keys).hashValue, idioma: ajustes.idioma, activa: fase == .active)
     }
 
@@ -202,6 +230,31 @@ enum Enlace {
 }
 
 enum Avisos {
+    /// El nombre de un estreno: el del título si está en el catálogo
+    @MainActor static func nombre(_ e: Estreno, _ catalogo: Catalogo, _ ajustes: Ajustes) -> String {
+        e.id.flatMap { catalogo.titulo($0) }.map { catalogo.nombre($0, en: ajustes.idioma) }
+            ?? catalogo.texto(e.t, en: ajustes.idioma) ?? e.t
+    }
+
+    /// Como Novedades de la web: lo estrenado desde el último día que abriste la
+    /// app (hasta 4). Guarda hoy como la última visita.
+    @MainActor static func desdeTuUltimaVisita(_ progreso: Progreso, _ ajustes: Ajustes, ahora: Date = Date()) -> [String] {
+        let d = UserDefaults.standard, clave = "ultimaVisita"
+        let hoy = Catalogo.diaTexto(ahora)
+        let antes = d.string(forKey: clave)
+        d.set(hoy, forKey: clave)
+        guard let antes, antes < hoy else { return [] }
+        let c = progreso.catalogo
+        return c.novedades(desde: antes, hasta: hoy, seguidas: progreso.seriesSeguidas).prefix(4).map { n in
+            switch n {
+            case let .estreno(e): ajustes.tr("\(nombre(e, c, ajustes)) ya se estrenó", "\(nombre(e, c, ajustes)) is out now")
+            case let .episodios(t, k):
+                k == 1 ? ajustes.tr("\(c.nombre(t, en: ajustes.idioma)): 1 episodio nuevo", "\(c.nombre(t, en: ajustes.idioma)): 1 new episode")
+                       : ajustes.tr("\(c.nombre(t, en: ajustes.idioma)): \(k) episodios nuevos", "\(c.nombre(t, en: ajustes.idioma)): \(k) new episodes")
+            }
+        }
+    }
+
     /// «Progreso importado: N títulos y N episodios nuevos» (y las notas, si llegaron)
     @MainActor static func importado(_ r: Progreso.Importado, _ ajustes: Ajustes) -> String {
         let notas = r.notas > 0 ? ajustes.tr(" y \(r.notas) notas", ", \(r.notas) ratings") : ""

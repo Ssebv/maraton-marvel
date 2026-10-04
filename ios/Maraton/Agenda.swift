@@ -13,9 +13,15 @@ final class Agenda {
     var horario: Horario? { didSet { guardaHorario() } }
     /// Avisar 15 minutos antes de cada sesión
     var avisos: Bool { didSet { UserDefaults.standard.set(avisos, forKey: Self.claveAvisos) } }
+    /// Avisar el día de cada estreno y de los episodios nuevos de lo que sigues
+    var avisosEstrenos: Bool { didSet { UserDefaults.standard.set(avisosEstrenos, forKey: Self.claveEstrenos) } }
 
     private static let claveHorario = "horario"
     private static let claveAvisos = "avisosSesion"
+    private static let claveEstrenos = "avisosEstreno"
+    private static let prefijoEstreno = "estreno-"
+    /// A qué hora del día del estreno se avisa
+    static let horaEstreno = 10
     /// Los avisos que programa la app llevan este prefijo (y solo esos se borran)
     private static let prefijo = "sesion-"
     /// Cuántas sesiones por delante: iOS guarda hasta 64 avisos por app
@@ -28,6 +34,8 @@ final class Agenda {
         horario = d.data(forKey: Self.claveHorario)
             .flatMap { try? JSONDecoder().decode(Horario.self, from: $0) }?.saneado
         avisos = d.object(forKey: Self.claveAvisos) as? Bool ?? true
+        // estos se piden: no se pide permiso sin que la persona lo active
+        avisosEstrenos = d.bool(forKey: Self.claveEstrenos)
     }
 
     private func guardaHorario() {
@@ -44,6 +52,58 @@ final class Agenda {
         let ok = (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
         if !ok { avisos = false }
         return ok
+    }
+
+    /// Al activar los avisos de estreno: el permiso, y si lo niegan, se apagan
+    /// Si ya estaban negados, iOS no vuelve a preguntar: se abren sus ajustes de avisos
+    func activaEstrenos() async {
+        let centro = UNUserNotificationCenter.current()
+        if await centro.notificationSettings().authorizationStatus == .denied {
+            if let url = URL(string: UIApplication.openNotificationSettingsURLString) { await UIApplication.shared.open(url) }
+            return
+        }
+        avisosEstrenos = (try? await centro.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+    }
+
+    /// Borra los avisos de estreno y programa los próximos (hasta 24: iOS guarda
+    /// 64 por app y las sesiones usan 8), a las 10:00 del día
+    func reprogramaEstrenos(progreso: Progreso, ajustes: Ajustes, ahora: Date = Date()) async {
+        let centro = UNUserNotificationCenter.current()
+        let viejos = await centro.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix(Self.prefijoEstreno) }
+        centro.removePendingNotificationRequests(withIdentifiers: viejos)
+        guard avisosEstrenos, await centro.notificationSettings().authorizationStatus == .authorized else { return }
+        let cal = Calendar.current
+        let catalogo = progreso.catalogo
+        for a in catalogo.proximosAvisos(desde: Catalogo.diaTexto(ahora, cal), seguidas: progreso.seriesSeguidas) {
+            guard let dia = Fecha.dia(a.fecha), let cuando = cal.date(bySettingHour: Self.horaEstreno, minute: 0, second: 0, of: dia),
+                  cuando > ahora else { continue }
+            let c = UNMutableNotificationContent()
+            (c.title, c.body) = Self.texto(a.novedad, catalogo, ajustes)
+            c.sound = .default
+            c.threadIdentifier = "estreno"
+            if case let .estreno(e) = a.novedad, let id = e.id { c.userInfo = ["id": id] }
+            if case let .episodios(t, _) = a.novedad { c.userInfo = ["id": t.id] }
+            try? await centro.add(UNNotificationRequest(
+                identifier: Self.prefijoEstreno + a.clave, content: c,
+                trigger: UNCalendarNotificationTrigger(dateMatching: cal.dateComponents([.year, .month, .day, .hour, .minute], from: cuando),
+                                                       repeats: false)))
+        }
+    }
+
+    /// (título, cuerpo) de un aviso de estreno
+    static func texto(_ n: Novedad, _ catalogo: Catalogo, _ ajustes: Ajustes) -> (String, String) {
+        switch n {
+        case let .estreno(e):
+            let nombre = Avisos.nombre(e, catalogo, ajustes)
+            return (ajustes.tr("Hoy se estrena \(nombre)", "\(nombre) is out today"),
+                    catalogo.texto(e.n, en: ajustes.idioma)
+                        ?? ajustes.tr("Ya puedes añadirla a tu maratón.", "You can add it to your marathon now."))
+        case let .episodios(t, k):
+            let nombre = catalogo.nombre(t, en: ajustes.idioma)
+            return (k == 1 ? ajustes.tr("Episodio nuevo de \(nombre)", "New episode of \(nombre)")
+                           : ajustes.tr("\(k) episodios nuevos de \(nombre)", "\(k) new episodes of \(nombre)"),
+                    ajustes.tr("Sigues esta serie en tu maratón.", "You're following this series in your marathon."))
+        }
     }
 
     /// Borra los avisos de sesión y programa los de las próximas sesiones con lo

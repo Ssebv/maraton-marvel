@@ -190,6 +190,11 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   cuándo trabaja, créditos y cuántas veces sale en el maratón, su primera vez en el maratón, la biografía de TMDB (o la
   Wikipedia si es del oficio, o TMDB en inglés), «En tu maratón» (sus títulos con su papel; abren su ficha encima),
   «Conocido también por» e IMDb. Caché de 30 días por persona e idioma; un fallo de red no se guarda.
+- [x] **16 · Avisos de estreno**: como la campana y las Novedades de la web. «Avisarme» en «Próximos estrenos» y
+  «Avisos de estreno» en Ajustes: un aviso a las 10:00 del día de cada estreno con fecha y de los episodios nuevos de
+  las series que sigues (hasta 24 por delante); tocarlo abre su ficha y con la app abierta se ve arriba. Si el permiso
+  estaba negado, abre los ajustes de avisos del iPhone. Al abrir, «Desde tu última visita: Vision Quest ya se estrenó»
+  en Inicio (hasta 4, se cierra).
 - Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago) y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)

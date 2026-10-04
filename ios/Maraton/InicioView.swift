@@ -14,6 +14,7 @@ struct InicioView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         Cabecera(catalogo: catalogo)
                         VStack(alignment: .leading, spacing: 28) {
+                            DesdeTuUltimaVisita()
                             TarjetasSaga(catalogo: catalogo)
                             Portada(catalogo: catalogo)
                             TarjetaHorario(catalogo: catalogo).ancla("horario")
@@ -211,8 +212,12 @@ private struct Estrenos: View {
         let lista = catalogo.estrenosPendientes()
         if !lista.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text(ajustes.tr("Próximos estrenos", "Coming soon")).font(.title3.weight(.bold))
-                    .padding(.horizontal, 16)
+                HStack {
+                    Text(ajustes.tr("Próximos estrenos", "Coming soon")).font(.title3.weight(.bold))
+                    Spacer()
+                    CampanaEstrenos()
+                }
+                .padding(.horizontal, 16)
                 ScrollView(.horizontal) {
                     LazyHStack(alignment: .top, spacing: 12) {
                         ForEach(lista, id: \.estreno) { e in tarjeta(e.estreno, dias: e.dias) }
@@ -359,6 +364,58 @@ private struct Favoritas: View {
                 }
                 .scrollIndicators(.hidden)
             }
+        }
+    }
+}
+
+/// La campana de «Próximos estrenos»: avisar el día de cada estreno
+private struct CampanaEstrenos: View {
+    @Environment(Agenda.self) private var agenda
+    @Environment(Ajustes.self) private var ajustes
+
+    var body: some View {
+        let on = agenda.avisosEstrenos
+        Button {
+            Task { if on { agenda.avisosEstrenos = false } else { await agenda.activaEstrenos() } }
+        } label: {
+            Label(on ? ajustes.tr("Te avisaré", "On") : ajustes.tr("Avisarme", "Notify me"),
+                  systemImage: on ? "bell.fill" : "bell")
+                .font(.subheadline.weight(.semibold))
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .tint(on ? Tema.oro : Tema.tinta2)
+        .sensoryFeedback(.selection, trigger: on)
+        .accessibilityHint(ajustes.tr("Un aviso el día de cada estreno", "A notification on each premiere day"))
+    }
+}
+
+/// «Desde tu última visita: Vision Quest ya se estrenó» (se cierra con ✕)
+private struct DesdeTuUltimaVisita: View {
+    @Environment(Navegacion.self) private var nav
+    @Environment(Ajustes.self) private var ajustes
+
+    var body: some View {
+        if !nav.novedades.isEmpty {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "sparkles").foregroundStyle(Tema.oro).font(.title3)
+                (Text(ajustes.tr("Desde tu última visita: ", "Since your last visit: ")).bold()
+                    + Text(nav.novedades.joined(separator: " · ")))
+                    .font(.subheadline).foregroundStyle(Tema.tinta)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button {
+                    withAnimation(.snappy) { nav.novedades = [] }
+                } label: {
+                    Image(systemName: "xmark").font(.footnote.weight(.bold)).foregroundStyle(Tema.tinta2)
+                        .frame(width: 32, height: 32)
+                }
+                .accessibilityLabel(ajustes.tr("Cerrar aviso", "Dismiss"))
+            }
+            .padding(14)
+            .superficie(radio: Tema.radioL)
+            .padding(.horizontal, 16)
+            .transition(.opacity.combined(with: .move(edge: .top)))
         }
     }
 }

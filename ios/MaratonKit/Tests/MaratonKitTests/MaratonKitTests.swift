@@ -822,3 +822,44 @@ struct PruebasPersonas {
         #expect(!Personas.esDelOficio(descripcion: "futbolista y entrenador", texto: String(repeating: "Juega al fútbol como actor. ", count: 10)))
     }
 }
+
+@Suite("Novedades y avisos de estreno")
+@MainActor
+struct PruebasNovedades {
+    @Test func desdeTuUltimaVisita() {
+        let n = catalogo.novedades(desde: "2026-10-13", hasta: "2026-10-20", seguidas: [])
+        #expect(n.count == 1)
+        if case let .estreno(e)? = n.first { #expect(e.t == "Vision Quest") } else { Issue.record("falta Vision Quest") }
+        #expect(catalogo.novedades(desde: "2026-10-14", hasta: "2026-10-20", seguidas: []).isEmpty, "el día de antes no cuenta dos veces")
+        // episodios de una serie que sigues, agrupados por día
+        let primero = catalogo.episodios(de: "xmen97").compactMap(\.f).min()!
+        let antes = Catalogo.diaAnterior(primero)
+        let conSerie = catalogo.novedades(desde: antes, hasta: primero, seguidas: ["xmen97"])
+        #expect(conSerie.contains { if case let .episodios(t, k) = $0 { t.id == "xmen97" && k >= 1 } else { false } })
+        #expect(!catalogo.novedades(desde: antes, hasta: primero, seguidas: []).contains {
+            if case .episodios = $0 { true } else { false } }, "sin seguirla, no")
+    }
+
+    @Test func proximosAvisos() {
+        let a = catalogo.proximosAvisos(desde: "2026-10-14", seguidas: [])
+        #expect(a.first?.fecha == "2026-10-14", "el de hoy entra")
+        #expect(a.map(\.fecha) == a.map(\.fecha).sorted())
+        #expect(a.contains { if case let .estreno(e) = $0.novedad { e.id == "doomsday" } else { false } })
+        #expect(Set(a.map(\.clave)).count == a.count)
+        #expect(catalogo.proximosAvisos(desde: "2026-10-15", seguidas: []).first?.fecha == "2026-12-18")
+        #expect(Catalogo.diaAnterior("2026-03-01") == "2026-02-28")
+        // con el calendario budista o el japonés del iPhone, las fechas siguen siendo gregorianas
+        for id in [Calendar.Identifier.buddhist, .japanese] {
+            var cal = Calendar(identifier: id); cal.timeZone = TimeZone(identifier: "America/Santiago")!
+            let d = Catalogo.dia("2026-10-04", cal)!
+            #expect(Catalogo.diaTexto(d, cal) == "2026-10-04")
+        }
+    }
+
+    @Test func seriesQueSigues() {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let ep = catalogo.episodios(de: "xmen97")[0]
+        p.alternar(ep, de: "xmen97")
+        #expect(p.seriesSeguidas == ["xmen97"])
+    }
+}
