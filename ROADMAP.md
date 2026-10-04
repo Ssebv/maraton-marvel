@@ -178,6 +178,12 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   «Doomsday en 75 días». Tocarlo abre la ficha. Se redibuja al marcar, al cambiar horario o idioma, cada medianoche
   y al empezar cada sesión. Sin App Group (la cuenta gratis no deja registrarlo desde la terminal): la app deja una
   foto pequeña en un grupo del llavero compartido y el widget lee el póster del paquete de la app.
+- [x] **14 · Listas propias**: como la pestaña Listas de la web. En Progreso, «Tus listas» (tarjeta con los pósters,
+  vistos / total y barra) y «Nueva lista»; cada lista abre su página con su avance aparte del maratón, buscador para
+  añadir, casillas propias, «Visto en el maratón» en lo ya visto, deslizar para quitar y renombrar o borrar. En la
+  ficha, un chip por lista (lleno si está dentro) y «Nueva lista», que la crea con ese título. Se guardan en
+  progreso.json y las de la web entran con su «Copiar código» (se suman sin borrar). Arreglado: la «l» de ese código
+  son las listas, no las páginas de los cómics como suponía la etapa 12 (la web no manda esas páginas).
 - Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago) y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)

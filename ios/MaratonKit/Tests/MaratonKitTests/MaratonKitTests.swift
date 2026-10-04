@@ -691,3 +691,64 @@ struct PruebasLector {
         #expect(p.lecturas["nada"] == nil && p.lecturas[ids[3]] == nil && p.lecturas[ids[4]] == nil)
     }
 }
+
+@Suite("Listas")
+@MainActor
+struct PruebasListas {
+    @Test func crearMeterYVer() throws {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        #expect(p.creaLista("   ") == nil, "sin nombre no hay lista")
+        let id = try #require(p.creaLista("  Para ver con Cata  "))
+        #expect(p.lista(id)?.nombre == "Para ver con Cata" && id.count == 7)
+        ["x2", "xmen1", "cap1"].forEach { p.alternar($0, enLista: id) }
+        p.alternarVista("x2", enLista: id)
+        let l = try #require(p.lista(id))
+        #expect(l.vistos == 1 && !p.visto("x2"), "lo visto en la lista no toca el maratón")
+        let orden = p.titulos(de: l).map(\.id)
+        let pos = Dictionary(uniqueKeysWithValues: catalogo.titulos.enumerated().map { ($1.id, $0) })
+        #expect(orden.count == 3 && orden == orden.sorted { pos[$0]! < pos[$1]! }, "en el orden del maratón")
+        p.alternar("x2", enLista: id)
+        #expect(p.lista(id)?.prog["x2"] == nil && p.lista(id)?.items.count == 2, "sacarlo olvida lo visto")
+        p.renombraLista(id, a: String(repeating: "a", count: 200))
+        #expect(p.lista(id)?.nombre.count == Lista.largoNombre)
+        p.borraLista(id)
+        #expect(p.listas.isEmpty)
+    }
+
+    @Test func seGuardanEnElArchivo() throws {
+        let archivo = FileManager.default.temporaryDirectory
+            .appendingPathComponent("maraton-\(UUID().uuidString)/progreso.json")
+        defer { try? FileManager.default.removeItem(at: archivo.deletingLastPathComponent()) }
+        let p = Progreso(catalogo: catalogo, archivo: archivo)
+        let id = try #require(p.creaLista("Mutantes"))
+        p.alternar("logan", enLista: id)
+        p.alternarVista("logan", enLista: id)
+        let q = Progreso(catalogo: catalogo, archivo: archivo)
+        #expect(q.listas == p.listas && q.lista(id)?.vista("logan") == true)
+    }
+
+    @Test func entranConElCodigoDeLaWeb() throws {
+        // «l» son las listas en la web (KEY_LISTAS), no las páginas de los cómics
+        let json = #"""
+        {"v":{},"e":{},"l":[
+          {"id":"abc1234","nombre":"Con Cata","items":["logan","x2","no-existe","logan"],"prog":{"logan":1727000000000,"x2":true,"no-existe":5}},
+          {"nombre":{"raro":1},"items":"nada"},
+          7
+        ]}
+        """#
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let r = try #require(p.importa(codigoWeb: Data(json.utf8).base64EncodedString()))
+        #expect(r.listas == 2 && r.lecturas == 0)
+        let l = try #require(p.lista("abc1234"))
+        #expect(l.items == ["logan", "x2"], "sin títulos que no existen ni repetidos")
+        #expect(l.prog == ["logan": 1727000000000, "x2": 1])
+        #expect(p.listas.last?.nombre == "Lista" && p.listas.last?.items.isEmpty == true, "lo malformado se sanea")
+        // otra vez con un título más: se suma a la misma lista sin borrar nada
+        p.alternarVista("x2", enLista: "abc1234")
+        let mas = #"{"v":{},"l":[{"id":"abc1234","nombre":"Otro nombre","items":["cap1"],"prog":{}}]}"#
+        let r2 = try #require(p.importa(codigoWeb: Data(mas.utf8).base64EncodedString()))
+        let l2 = try #require(p.lista("abc1234"))
+        #expect(r2.listas == 1 && l2.items == ["logan", "x2", "cap1"] && l2.nombre == "Con Cata" && l2.prog["x2"] == nil)
+        #expect(try #require(p.importa(codigoWeb: Data(mas.utf8).base64EncodedString())).listas == 0, "nada nuevo")
+    }
+}

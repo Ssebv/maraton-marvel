@@ -194,7 +194,8 @@ enum Avisos {
     @MainActor static func importado(_ r: Progreso.Importado, _ ajustes: Ajustes) -> String {
         let notas = r.notas > 0 ? ajustes.tr(" y \(r.notas) notas", ", \(r.notas) ratings") : ""
         let lecturas = r.lecturas > 0 ? ajustes.tr(" y \(r.lecturas) cómics a medias", ", \(r.lecturas) comics in progress") : ""
-        return ajustes.tr("Progreso importado: \(r.titulos) títulos, \(r.episodios) episodios nuevos\(notas)\(lecturas).",
-                          "Progress imported: \(r.titulos) titles, \(r.episodios) new episodes\(notas)\(lecturas).")
+        let listas = r.listas == 0 ? "" : r.listas == 1 ? ajustes.tr(" y 1 lista", ", 1 list") : ajustes.tr(" y \(r.listas) listas", ", \(r.listas) lists")
+        return ajustes.tr("Progreso importado: \(r.titulos) títulos, \(r.episodios) episodios nuevos\(notas)\(lecturas)\(listas).",
+                          "Progress imported: \(r.titulos) titles, \(r.episodios) new episodes\(notas)\(lecturas)\(listas).")
     }
 }

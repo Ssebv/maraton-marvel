@@ -29,6 +29,7 @@ struct FichaView: View {
                         botonVisto(color: color)
                         if catalogo.saga(de: titulo.id) == "comics" { LeerAqui(titulo: titulo) }
                         TuValoracion(id: titulo.id, vista: progreso.visto(titulo.id))
+                        EnTusListas(id: titulo.id)
                         if let res = catalogo.texto(titulo.res, en: ajustes.idioma) {
                             Text(res).font(.body).foregroundStyle(Tema.tinta)
                         }
@@ -486,5 +487,102 @@ struct LeerAqui: View {
         } catch {
             self.error = Lectura.texto(de: error, ajustes)
         }
+    }
+}
+
+/// «Tus listas»: un chip por lista (lleno si el título está en ella) y «Nueva
+/// lista», que la crea con este título dentro
+private struct EnTusListas: View {
+    let id: String
+    @Environment(Progreso.self) private var progreso
+    @Environment(Ajustes.self) private var ajustes
+    @State private var creando = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(ajustes.tr("Tus listas", "Your lists")).font(.headline).foregroundStyle(Tema.tinta)
+            Fluir(espacio: 8) {
+                ForEach(progreso.listas) { l in
+                    let dentro = l.items.contains(id)
+                    Button {
+                        withAnimation(.snappy) { progreso.alternar(id, enLista: l.id) }
+                    } label: {
+                        Label(l.nombre, systemImage: dentro ? "checkmark" : "plus")
+                            .lineLimit(1)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(ChipLista(dentro: dentro))
+                    .accessibilityValue(dentro ? ajustes.tr("En la lista", "On the list") : "")
+                    .sensoryFeedback(.selection, trigger: dentro)
+                }
+                Button { creando = true } label: {
+                    Label(ajustes.tr("Nueva lista", "New list"), systemImage: "plus")
+                }
+                .buttonStyle(ChipLista(dentro: false, discreto: true))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .modifier(PideNombre(titulo: ajustes.tr("Nueva lista", "New list"), activo: $creando) { nombre in
+            if let l = progreso.creaLista(nombre) { progreso.alternar(id, enLista: l) }
+        })
+    }
+}
+
+private struct ChipLista: ButtonStyle {
+    let dentro: Bool
+    var discreto = false
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 14)
+            .frame(minHeight: 36)
+            .foregroundStyle(dentro ? Color.black : discreto ? Tema.tinta2 : Tema.tinta)
+            .background(dentro ? Tema.oro : Tema.panel2, in: .capsule)
+            .overlay(Capsule().strokeBorder(discreto ? Tema.linea : .clear, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .contentShape(.capsule)
+    }
+}
+
+/// Fila que salta de línea cuando no cabe (los chips de las listas)
+struct Fluir: Layout {
+    var espacio: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let filas = reparte(ancho: proposal.width ?? .infinity, subviews)
+        let alto = filas.map(\.alto).reduce(0, +) + espacio * CGFloat(max(0, filas.count - 1))
+        return CGSize(width: proposal.width ?? filas.map(\.ancho).max() ?? 0, height: alto)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for f in reparte(ancho: bounds.width, subviews) {
+            var x = bounds.minX
+            for i in f.indices {
+                let t = subviews[i].sizeThatFits(.init(width: bounds.width, height: nil))
+                subviews[i].place(at: CGPoint(x: x, y: y), proposal: .init(width: min(t.width, bounds.width), height: t.height))
+                x += min(t.width, bounds.width) + espacio
+            }
+            y += f.alto + espacio
+        }
+    }
+
+    private struct Fila { var indices: [Int] = []; var ancho: CGFloat = 0; var alto: CGFloat = 0 }
+
+    private func reparte(ancho: CGFloat, _ subviews: Subviews) -> [Fila] {
+        var filas: [Fila] = [Fila()]
+        for (i, v) in subviews.enumerated() {
+            let t = v.sizeThatFits(.init(width: ancho, height: nil))
+            let w = min(t.width, ancho)
+            if !filas[filas.count - 1].indices.isEmpty && filas[filas.count - 1].ancho + espacio + w > ancho {
+                filas.append(Fila())
+            }
+            var f = filas[filas.count - 1]
+            f.ancho += (f.indices.isEmpty ? 0 : espacio) + w
+            f.alto = max(f.alto, t.height)
+            f.indices.append(i)
+            filas[filas.count - 1] = f
+        }
+        return filas
     }
 }

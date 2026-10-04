@@ -12,6 +12,8 @@ public final class Progreso {
     public private(set) var notas: [String: Nota] = [:]
     /// Por qué página vas en cada cómic, como KEY_LECTOR de la web
     public private(set) var lecturas: [String: Lectura] = [:]
+    /// Tus listas, como KEY_LISTAS de la web (Listas.swift)
+    public internal(set) var listas: [Lista] = []
 
     @ObservationIgnored public let catalogo: Catalogo
     @ObservationIgnored let archivo: URL?
@@ -29,6 +31,7 @@ public final class Progreso {
             eps = g.e
             notas = g.n ?? [:]
             lecturas = g.l ?? [:]
+            listas = g.ls ?? []
         } else {
             apartarAntesDeGuardar = true
         }
@@ -160,8 +163,9 @@ public final class Progreso {
     }
 
     /// El código de la web (Ajustes › Tu progreso › «Copiar código»): JSON
-    /// {v, e, n, l} en base64 sobre UTF-8. Aquí se usan v y e, con su momento,
-    /// las notas n y la página de cada cómic l. nil si el texto no es un código de la web.
+    /// {v, e, n, l} en base64 sobre UTF-8: v y e con su momento, las notas n y
+    /// las listas l. Si l llega como objeto es la página de cada cómic (por si
+    /// la web algún día la manda). nil si el texto no es un código de la web.
     @discardableResult
     public func importa(codigoWeb: String) -> Importado? {
         let limpio = codigoWeb.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -173,7 +177,9 @@ public final class Progreso {
         }
         let v = marcas(json["v"]), e = marcas(json["e"])
         guard json["v"] is [String: Any] || json["e"] is [String: Any] else { return nil }
-        return suma(v, e, notas: Nota.sanea(json["n"]), lecturas: Lectura.sanea(json["l"]))
+        var r = suma(v, e, notas: Nota.sanea(json["n"]), lecturas: Lectura.sanea(json["l"]))
+        r.listas = sumaListas(Lista.sanea(json["l"]))
+        return r
     }
 
     public struct Importado: Sendable, Equatable {
@@ -182,6 +188,8 @@ public final class Progreso {
         public var notas = 0
         /// Páginas por las que ibas en cómics de la web
         public var lecturas = 0
+        /// Listas nuevas o que ganaron títulos
+        public var listas = 0
     }
 
     func suma(_ v: [String: Double], _ e: [String: Double], notas nuevas: [String: Nota] = [:],
@@ -226,8 +234,10 @@ public final class Progreso {
 
     // MARK: Guardar
 
-    /// n y l son opcionales: los progreso.json de antes de las notas no la tienen
-    struct Guardado: Codable { let v: [String: Double]; let e: [String: Double]; var n: [String: Nota]?; var l: [String: Lectura]? }
+    /// n, l y ls son opcionales: los progreso.json de antes no los tienen
+    struct Guardado: Codable {
+        let v: [String: Double]; let e: [String: Double]; var n: [String: Nota]?; var l: [String: Lectura]?; var ls: [Lista]?
+    }
 
     var ahora: Double { (Date().timeIntervalSince1970 * 1000).rounded() }
 
@@ -242,7 +252,8 @@ public final class Progreso {
                 try fm.moveItem(at: archivo, to: respaldo)
                 apartarAntesDeGuardar = false
             }
-            try JSONEncoder().encode(Guardado(v: vistas, e: eps, n: notas, l: lecturas.isEmpty ? nil : lecturas)).write(to: archivo, options: .atomic)
+            try JSONEncoder().encode(Guardado(v: vistas, e: eps, n: notas, l: lecturas.isEmpty ? nil : lecturas,
+                                                ls: listas.isEmpty ? nil : listas)).write(to: archivo, options: .atomic)
         } catch {
             // sin disco no hay nada que hacer: la marca sigue en memoria
         }

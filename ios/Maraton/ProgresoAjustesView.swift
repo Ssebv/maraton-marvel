@@ -6,9 +6,13 @@ struct ProgresoView: View {
     @Environment(\.catalogo) private var catalogo
     @Environment(Progreso.self) private var progreso
     @Environment(Ajustes.self) private var ajustes
+    @State private var ruta: [RutaLista] = []
+    #if DEBUG
+    @State private var listaDepuracionAbierta = false
+    #endif
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $ruta) {
             ScrollView {
                 let r = progreso.resumen
                 VStack(alignment: .leading, spacing: 0) {
@@ -51,6 +55,7 @@ struct ProgresoView: View {
                             .padding(14)
                             .superficie(radio: Tema.radioL)
                         }
+                        SeccionListas().padding(.top, 16).ancla("listas")
                         SeccionTuMes().padding(.top, 16).ancla("mes")
                         SeccionDiario()
                         SeccionLogros().padding(.top, 16).ancla("logros")
@@ -62,6 +67,16 @@ struct ProgresoView: View {
             .background(Tema.fondo)
             .ignoresSafeArea(edges: .top)
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: RutaLista.self) { ListaView(id: $0.id) }
+            #if DEBUG
+            // capturas: `-abrirLista <id>`
+            // (una vez: la tarea de la raíz vuelve a correr al volver atrás)
+            .task {
+                guard !listaDepuracionAbierta, let id = UserDefaults.standard.string(forKey: "abrirLista") else { return }
+                listaDepuracionAbierta = true
+                ruta = [RutaLista(id: id)]
+            }
+            #endif
         }
     }
 }
