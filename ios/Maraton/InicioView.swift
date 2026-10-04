@@ -17,6 +17,7 @@ struct InicioView: View {
                             TarjetasSaga(catalogo: catalogo)
                             Portada(catalogo: catalogo)
                             Estrenos(catalogo: catalogo).ancla("estrenos")
+                            Favoritas(catalogo: catalogo)
                             ForEach(catalogo.sagas) { saga in Carrusel(saga: saga, catalogo: catalogo) }
                         }
                         .padding(.top, 18)
@@ -314,6 +315,53 @@ private struct Carrusel: View {
                 .padding(.horizontal, 16)
             }
             .scrollIndicators(.hidden)
+        }
+    }
+}
+
+/// Lo que valoraste con 4 o 5 estrellas, de más a menos (como «Tus favoritas» de la web)
+private struct Favoritas: View {
+    let catalogo: Catalogo
+    @Environment(Progreso.self) private var progreso
+    @Environment(Ajustes.self) private var ajustes
+    @Environment(Navegacion.self) private var nav
+
+    var body: some View {
+        // con las mismas estrellas, en el orden del maratón
+        let lista = catalogo.titulos.enumerated()
+            .compactMap { i, t in progreso.notas[t.id]?.p.map { (t, $0, i) } }
+            .filter { $0.1 >= 4 }
+            .sorted { ($1.1, $0.2) < ($0.1, $1.2) }
+            .map { ($0.0, $0.1) }
+        if !lista.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(ajustes.tr("Tus favoritas", "Your favorites")).font(.title3.weight(.bold))
+                    .padding(.horizontal, 16)
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 12) {
+                        ForEach(lista, id: \.0.id) { t, p in
+                            Button { nav.ficha = t } label: {
+                                Poster(url: catalogo.urlPoster(t.id, idioma: ajustes.idioma), ancho: 104)
+                                    .overlay(alignment: .bottomLeading) {
+                                        HStack(spacing: 1) {
+                                            ForEach(0..<p, id: \.self) { _ in Image(systemName: "star.fill") }
+                                        }
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(Tema.oroVivo)
+                                        .padding(.horizontal, 6).padding(.vertical, 4)
+                                        .background(.black.opacity(0.7), in: .capsule)
+                                        .padding(6)
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(catalogo.nombre(t, en: ajustes.idioma))
+                            .accessibilityValue(ajustes.tr("\(p) estrellas", "\(p) stars"))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+                .scrollIndicators(.hidden)
+            }
         }
     }
 }

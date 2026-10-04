@@ -8,6 +8,8 @@ import Observation
 public final class Progreso {
     public private(set) var vistas: [String: Double] = [:]
     public private(set) var eps: [String: Double] = [:]
+    /// Tus estrellas y reseñas, como KEY_NOTAS de la web
+    public private(set) var notas: [String: Nota] = [:]
 
     @ObservationIgnored public let catalogo: Catalogo
     @ObservationIgnored let archivo: URL?
@@ -23,6 +25,7 @@ public final class Progreso {
         if let datos = try? Data(contentsOf: archivo), let g = try? JSONDecoder().decode(Guardado.self, from: datos) {
             vistas = migraLotes(g.v)
             eps = g.e
+            notas = g.n ?? [:]
         } else {
             apartarAntesDeGuardar = true
         }
@@ -60,6 +63,31 @@ public final class Progreso {
     func completa(_ serie: String) -> Bool {
         let (v, t) = vistosDe(serie: serie)
         return t > 0 && v == t
+    }
+
+    // MARK: Notas
+
+    public func nota(_ id: String) -> Nota { notas[id] ?? Nota() }
+
+    /// Tocar la estrella que ya tenía la quita, como guardaNota de la web
+    public func ponEstrellas(_ p: Int, a id: String) {
+        var n = nota(id)
+        n.p = n.p == p || !(1...5).contains(p) ? nil : p
+        fija(n, id)
+    }
+
+    /// Corta en 280 lo que escribes aquí, pero una reseña más larga que llegó
+    /// de la web no pierde texto al retocarla
+    public func ponTexto(_ texto: String, a id: String) {
+        var n = nota(id)
+        let tope = max(Nota.largoMaximo, n.txt?.count ?? 0)
+        n.txt = texto.isEmpty ? nil : String(texto.prefix(tope))
+        fija(n, id)
+    }
+
+    func fija(_ n: Nota, _ id: String) {
+        notas[id] = n.vacia ? nil : n
+        guarda()
     }
 
     // MARK: Resumen
@@ -104,16 +132,16 @@ public final class Progreso {
     /// Suma lo que trae el enlace sin borrar nada de lo marcado aquí.
     /// Devuelve cuántos títulos y episodios nuevos entraron.
     @discardableResult
-    public func importa(v: String, e: String) -> (titulos: Int, episodios: Int) {
+    public func importa(v: String, e: String) -> Importado {
         func unos(_ s: Set<String>) -> [String: Double] { Dictionary(uniqueKeysWithValues: s.map { ($0, 1.0) }) }
         return suma(unos(Bits.decodifica(v, orden: catalogo.ordenIds)), unos(Bits.decodifica(e, orden: catalogo.ordenEps)))
     }
 
     /// El código de la web (Ajustes › Tu progreso › «Copiar código»): JSON
-    /// {v, e, n, l} en base64 sobre UTF-8. Aquí se usan v y e, con su momento.
-    /// nil si el texto no es un código de la web.
+    /// {v, e, n, l} en base64 sobre UTF-8. Aquí se usan v y e, con su momento,
+    /// y las notas n. nil si el texto no es un código de la web.
     @discardableResult
-    public func importa(codigoWeb: String) -> (titulos: Int, episodios: Int)? {
+    public func importa(codigoWeb: String) -> Importado? {
         let limpio = codigoWeb.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let datos = Data(base64Encoded: limpio + String(repeating: "=", count: (4 - limpio.count % 4) % 4)),
               let json = try? JSONSerialization.jsonObject(with: datos) as? [String: Any] else { return nil }
@@ -123,11 +151,17 @@ public final class Progreso {
         }
         let v = marcas(json["v"]), e = marcas(json["e"])
         guard json["v"] is [String: Any] || json["e"] is [String: Any] else { return nil }
-        return suma(v, e)
+        return suma(v, e, notas: Nota.sanea(json["n"]))
     }
 
-    func suma(_ v: [String: Double], _ e: [String: Double]) -> (titulos: Int, episodios: Int) {
-        var nv = 0, ne = 0
+    public struct Importado: Sendable, Equatable {
+        public let titulos: Int
+        public let episodios: Int
+        public var notas = 0
+    }
+
+    func suma(_ v: [String: Double], _ e: [String: Double], notas nuevas: [String: Nota] = [:]) -> Importado {
+        var nv = 0, ne = 0, nn = 0
         let epsValidos = Set(catalogo.ordenEps)
         for (id, marca) in migraLotes(v) where vistas[id] == nil && catalogo.titulo(id) != nil {
             vistas[id] = marca; nv += 1
@@ -135,8 +169,18 @@ public final class Progreso {
         for (clave, marca) in e where eps[clave] == nil && epsValidos.contains(clave) {
             eps[clave] = marca; ne += 1
         }
-        if nv + ne > 0 { guarda() }
-        return (nv, ne)
+        // la nota de un lote viejo pasa a su primera pieza (como la web);
+        // una nota que ya tienes aquí no se pisa
+        var porId = nuevas
+        for (lote, piezas) in catalogo.lotes {
+            guard let n = porId.removeValue(forKey: lote), let primera = piezas.first else { continue }
+            if porId[primera] == nil { porId[primera] = n }
+        }
+        for (id, n) in porId where notas[id] == nil && catalogo.titulo(id) != nil {
+            notas[id] = n; nn += 1
+        }
+        if nv + ne + nn > 0 { guarda() }
+        return Importado(titulos: nv, episodios: ne, notas: nn)
     }
 
     /// Quien tenía marcado un lote viejo (p. ej. «sony») conserva la marca en
@@ -153,7 +197,8 @@ public final class Progreso {
 
     // MARK: Guardar
 
-    struct Guardado: Codable { let v: [String: Double]; let e: [String: Double] }
+    /// n es opcional: los progreso.json de antes de las notas no la tienen
+    struct Guardado: Codable { let v: [String: Double]; let e: [String: Double]; var n: [String: Nota]? }
 
     var ahora: Double { (Date().timeIntervalSince1970 * 1000).rounded() }
 
@@ -168,9 +213,37 @@ public final class Progreso {
                 try fm.moveItem(at: archivo, to: respaldo)
                 apartarAntesDeGuardar = false
             }
-            try JSONEncoder().encode(Guardado(v: vistas, e: eps)).write(to: archivo, options: .atomic)
+            try JSONEncoder().encode(Guardado(v: vistas, e: eps, n: notas)).write(to: archivo, options: .atomic)
         } catch {
             // sin disco no hay nada que hacer: la marca sigue en memoria
         }
+    }
+}
+
+/// Tus estrellas (1 a 5) y tu reseña de un título
+public struct Nota: Codable, Sendable, Hashable {
+    public var p: Int?
+    public var txt: String?
+    /// El campo de la web acepta 280; lo importado se corta en 4000 (saneaNotas)
+    public static let largoMaximo = 280
+
+    public init(p: Int? = nil, txt: String? = nil) { self.p = p; self.txt = txt }
+
+    var vacia: Bool { p == nil && txt == nil }
+    /// Cuenta como reseña si tiene algo escrito (no solo espacios)
+    public var tieneResena: Bool { !(txt ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    /// Las notas del código de la web, con las reglas de saneaNotas
+    static func sanea(_ x: Any?) -> [String: Nota] {
+        guard let d = x as? [String: Any] else { return [:] }
+        var out: [String: Nota] = [:]
+        for (id, v) in d {
+            guard let o = v as? [String: Any] else { continue }
+            var n = Nota()
+            if let p = (o["p"] as? NSNumber)?.doubleValue, p >= 1, p <= 5 { n.p = Int(p.rounded()) }
+            if let t = o["txt"] as? String { n.txt = String(t.prefix(4000)) }
+            if !n.vacia { out[id] = n }
+        }
+        return out
     }
 }

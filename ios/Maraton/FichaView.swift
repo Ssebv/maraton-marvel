@@ -26,6 +26,7 @@ struct FichaView: View {
                         cabecera(catalogo, color: color)
                             .padding(.top, -96)
                         botonVisto(color: color)
+                        TuValoracion(id: titulo.id, vista: progreso.visto(titulo.id))
                         if let res = catalogo.texto(titulo.res, en: ajustes.idioma) {
                             Text(res).font(.body).foregroundStyle(Tema.tinta)
                         }
@@ -313,5 +314,81 @@ enum Trailer {
             cualquiera = cualquiera ?? youtube.first
         }
         return cualquiera.flatMap { URL(string: "https://www.youtube.com/watch?v=\($0.key)") }
+    }
+}
+
+/// Tus estrellas y tu reseña (solo tuyas), como «Tu valoración» de la web.
+/// Tocar la estrella que ya tenías la quita.
+private struct TuValoracion: View {
+    let id: String
+    let vista: Bool
+    @Environment(Progreso.self) private var progreso
+    @Environment(Ajustes.self) private var ajustes
+    @FocusState private var escribiendo: Bool
+    /// Lo que vas escribiendo: se guarda al parar de escribir, no con cada tecla
+    /// (cada guardado escribe progreso.json y recalcula los logros)
+    @State private var borrador: String?
+
+    var body: some View {
+        let nota = progreso.nota(id)
+        let p = nota.p ?? 0
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(p > 0 || !vista ? ajustes.tr("Tu valoración", "Your rating") : ajustes.tr("¿Qué te pareció?", "What did you think?"))
+                    .font(.headline).foregroundStyle(Tema.tinta)
+                Spacer()
+                HStack(spacing: 2) {
+                    ForEach(1...5, id: \.self) { n in
+                        Button {
+                            withAnimation(.snappy) { progreso.ponEstrellas(n, a: id) }
+                        } label: {
+                            Image(systemName: p >= n ? "star.fill" : "star")
+                                .font(.title3)
+                                .foregroundStyle(p >= n ? Tema.oro : Tema.tinta3)
+                                .symbolEffect(.bounce, value: p == n)
+                                .frame(width: 40, height: 44)
+                                .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(ajustes.tr("\(n) estrella\(n == 1 ? "" : "s")", "\(n) star\(n == 1 ? "" : "s")"))
+                        .accessibilityAddTraits(p == n ? .isSelected : [])
+                    }
+                }
+                .sensoryFeedback(.selection, trigger: p)
+            }
+            TextField(ajustes.tr("Tus notas (solo tuyas)…", "Your notes (yours only)…"),
+                      text: Binding(get: { borrador ?? progreso.nota(id).txt ?? "" }, set: { borrador = $0 }),
+                      axis: .vertical)
+                .lineLimit(2...6)
+                .focused($escribiendo)
+                .padding(12)
+                .background(Tema.panel2, in: .rect(cornerRadius: Tema.radioM))
+                .accessibilityLabel(ajustes.tr("Tus notas", "Your notes"))
+            if escribiendo {
+                HStack {
+                    Text("\((borrador ?? nota.txt ?? "").count)/\(Nota.largoMaximo)")
+                        .font(.caption.monospacedDigit()).foregroundStyle(Tema.tinta2)
+                    Spacer()
+                    Button(ajustes.tr("Listo", "Done")) { escribiendo = false }
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
+        }
+        .padding(16)
+        .superficie(radio: Tema.radioL)
+        .task(id: borrador) {
+            guard borrador != nil else { return }
+            // otra tecla cancela la espera: entonces no se guarda todavía
+            guard (try? await Task.sleep(for: .seconds(0.8))) != nil else { return }
+            guarda()
+        }
+        .onChange(of: escribiendo) { _, ahora in if !ahora { guarda() } }
+        .onDisappear(perform: guarda)
+    }
+
+    private func guarda() {
+        guard let b = borrador else { return }
+        borrador = nil
+        if b != (progreso.nota(id).txt ?? "") { progreso.ponTexto(b, a: id) }
     }
 }

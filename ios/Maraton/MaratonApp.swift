@@ -54,6 +54,9 @@ final class Navegacion {
     /// El logro recién desbloqueado (aviso arriba) y cuántos más a la vez
     var logroNuevo: Logro?
     var logrosMas = 0
+    /// Los ya anunciados en esta sesión: perder un logro y recuperarlo
+    /// (borrar una reseña y volver a escribirla) no repite el aviso
+    @ObservationIgnored var anunciados: Set<String> = []
     enum Pestana: String, Hashable { case inicio, cronologia, progreso, ajustes }
 
     /// En depuración, `-pestana cronologia` al lanzar (capturas del simulador)
@@ -101,7 +104,8 @@ struct RaizView: View {
         // maraton://importar?v=…&e=… (el enlace «Pasar al iPhone» de la web)
         .onOpenURL(perform: importa)
         .onChange(of: conseguidos) { antes, ahora in
-            let nuevos = progreso.logros().filter { ahora.contains($0.id) && !antes.contains($0.id) }
+            let nuevos = progreso.logros().filter { ahora.contains($0.id) && !antes.contains($0.id) && !nav.anunciados.contains($0.id) }
+            nav.anunciados.formUnion(nuevos.map(\.id))
             guard let primero = nuevos.first else { return }
             nav.logroNuevo = primero
             nav.logrosMas = nuevos.count - 1
@@ -118,8 +122,7 @@ struct RaizView: View {
     private func importa(_ url: URL) {
         guard let (v, e) = Enlace.lee(url) else { return }
         let r = progreso.importa(v: v, e: e)
-        nav.aviso = ajustes.tr("Progreso importado: \(r.titulos) títulos y \(r.episodios) episodios nuevos.",
-                               "Progress imported: \(r.titulos) titles and \(r.episodios) new episodes.")
+        nav.aviso = Avisos.importado(r, ajustes)
     }
 }
 
@@ -139,5 +142,14 @@ enum Enlace {
         c.host = "importar"
         c.queryItems = [URLQueryItem(name: "v", value: v), URLQueryItem(name: "e", value: e)]
         return c.url
+    }
+}
+
+enum Avisos {
+    /// «Progreso importado: N títulos y N episodios nuevos» (y las notas, si llegaron)
+    @MainActor static func importado(_ r: Progreso.Importado, _ ajustes: Ajustes) -> String {
+        let notas = r.notas > 0 ? ajustes.tr(" y \(r.notas) notas", ", \(r.notas) ratings") : ""
+        return ajustes.tr("Progreso importado: \(r.titulos) títulos, \(r.episodios) episodios nuevos\(notas).",
+                          "Progress imported: \(r.titulos) titles, \(r.episodios) new episodes\(notas).")
     }
 }

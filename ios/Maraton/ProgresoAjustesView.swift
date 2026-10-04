@@ -134,7 +134,7 @@ struct AjustesView: View {
 
     private func importa() {
         let texto = pegado.trimmingCharacters(in: .whitespacesAndNewlines)
-        let r: (titulos: Int, episodios: Int)
+        let r: Progreso.Importado
         if let url = URL(string: texto), let (v, e) = Enlace.lee(url) {
             r = progreso.importa(v: v, e: e)
         } else if let deLaWeb = progreso.importa(codigoWeb: texto) {
@@ -144,7 +144,6 @@ struct AjustesView: View {
             return
         }
         pegado = ""
-        nav.aviso = ajustes.tr("Progreso importado: \(r.titulos) títulos y \(r.episodios) episodios nuevos.",
-                               "Progress imported: \(r.titulos) titles and \(r.episodios) new episodes.")
+        nav.aviso = Avisos.importado(r, ajustes)
     }
 }

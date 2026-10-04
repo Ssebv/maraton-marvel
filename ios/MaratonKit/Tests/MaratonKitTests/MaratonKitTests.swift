@@ -190,7 +190,7 @@ struct PruebasProgreso {
         #expect(!p.visto(lote))
         #expect(r.titulos == piezas.count + 1)
         #expect(r.episodios == 3)
-        #expect(p.importa(v: v, e: e) == (0, 0), "importar dos veces no suma nada")
+        #expect(p.importa(v: v, e: e) == .init(titulos: 0, episodios: 0), "importar dos veces no suma nada")
     }
 
     @Test func idaYVuelta() {
@@ -236,6 +236,7 @@ struct PruebasProgreso {
         #expect(p.visto("venom1"), "el lote sony se reparte")
         #expect(p.eps["xmen97:1:1"] != nil && p.eps["no:9:9"] == nil)
         #expect(r.episodios == 1)
+        #expect(r.notas == 0 && p.notas.isEmpty, "una nota que no es objeto se ignora, como saneaNotas")
         #expect(p.importa(codigoWeb: "hola") == nil)
         #expect(p.importa(codigoWeb: Data(#"{"x":1}"#.utf8).base64EncodedString()) == nil)
     }
@@ -257,7 +258,7 @@ struct PruebasEstrenosLogros {
     @Test func logrosConIdsQueExisten() {
         let p = Progreso(catalogo: catalogo, archivo: nil)
         let logros = p.logros()
-        #expect(logros.count == 27 && Set(logros.map(\.id)).count == 27)
+        #expect(logros.count == 29 && Set(logros.map(\.id)).count == 29)
         #expect(logros.allSatisfy { !$0.conseguido }, "sin marcas no hay ninguno")
         for l in logros {
             #expect(GrupoLogro.todos.contains { $0.id == l.grupo })
@@ -290,5 +291,73 @@ struct PruebasEstrenosLogros {
         let q = Progreso(catalogo: catalogo, archivo: nil)
         _ = q.suma(["logan": 1, "cap1": 1], [:])
         #expect(q.logros().first { $0.id == "racha" }?.avance?.hecho == 0)
+    }
+}
+
+@Suite("Notas y reseñas")
+@MainActor
+struct PruebasNotas {
+    @Test func estrellasYTexto() {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        p.ponEstrellas(4, a: "logan")
+        #expect(p.nota("logan").p == 4)
+        p.ponEstrellas(4, a: "logan")
+        #expect(p.notas["logan"] == nil, "tocar la misma estrella la quita y sin nada no queda la nota")
+        p.ponEstrellas(9, a: "logan")
+        #expect(p.notas["logan"] == nil)
+        p.ponTexto(String(repeating: "a", count: 400), a: "logan")
+        #expect(p.nota("logan").txt?.count == Nota.largoMaximo)
+        p.ponTexto("   ", a: "cap1")
+        #expect(p.notas["cap1"] != nil && !p.nota("cap1").tieneResena, "solo espacios no es reseña")
+        p.ponTexto("", a: "cap1")
+        #expect(p.notas["cap1"] == nil)
+    }
+
+    @Test func seGuardanYLosArchivosViejosSiguenLeyendose() throws {
+        let carpeta = FileManager.default.temporaryDirectory.appendingPathComponent("maraton-\(UUID().uuidString)")
+        let archivo = carpeta.appendingPathComponent("progreso.json")
+        defer { try? FileManager.default.removeItem(at: carpeta) }
+        try FileManager.default.createDirectory(at: carpeta, withIntermediateDirectories: true)
+        try Data(#"{"v":{"logan":1727000000000},"e":{}}"#.utf8).write(to: archivo)
+        let p = Progreso(catalogo: catalogo, archivo: archivo)
+        #expect(p.visto("logan") && p.notas.isEmpty, "un progreso.json sin notas se lee igual")
+        p.ponEstrellas(5, a: "logan")
+        p.ponTexto("¡Qué final!", a: "logan")
+        let q = Progreso(catalogo: catalogo, archivo: archivo)
+        #expect(q.nota("logan") == Nota(p: 5, txt: "¡Qué final!") && q.visto("logan"))
+    }
+
+    @Test func importaLasNotasDeLaWebSinPisar() throws {
+        let json = #"{"v":{},"e":{},"n":{"logan":{"p":5,"txt":"Brutal"},"cap1":{"p":3},"sony":{"p":4},"x2":{"p":9,"txt":7},"no-existe":{"p":2}}}"#
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        p.ponEstrellas(2, a: "cap1")
+        let r = try #require(p.importa(codigoWeb: Data(json.utf8).base64EncodedString()))
+        #expect(p.nota("logan") == Nota(p: 5, txt: "Brutal"))
+        #expect(p.nota("cap1").p == 2, "la nota de aquí no se pisa")
+        let primera = try #require(catalogo.lotes["sony"]?.first)
+        #expect(p.nota(primera).p == 4 && p.notas["sony"] == nil, "la del lote pasa a su primera pieza")
+        #expect(p.notas["x2"] == nil && p.notas["no-existe"] == nil, "fuera de rango o sin título no entra")
+        #expect(r.notas == 2)
+        // una reseña larga de la web no se corta al retocarla aquí
+        let larga = String(repeating: "x", count: 1000)
+        let q = Progreso(catalogo: catalogo, archivo: nil)
+        _ = q.importa(codigoWeb: Data(#"{"v":{},"n":{"logan":{"txt":"\#(larga)"}}}"#.utf8).base64EncodedString())
+        q.ponTexto(larga + "y", a: "logan")
+        #expect(q.nota("logan").txt?.count == 1000)
+        q.ponTexto(String(larga.prefix(500)), a: "logan")
+        #expect(q.nota("logan").txt?.count == 500)
+    }
+
+    @Test func logrosDeNotas() {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let ids = catalogo.titulos.prefix(10).map(\.id)
+        ids.prefix(9).forEach { p.ponEstrellas(3, a: $0) }
+        ["a", "b"].enumerated().forEach { p.ponTexto($1, a: ids[$0]) }
+        var l = Dictionary(uniqueKeysWithValues: p.logros().map { ($0.id, $0) })
+        #expect(l["critico"]?.conseguido == false && l["critico"]?.avance?.hecho == 9)
+        #expect(l["resenas"]?.avance?.hecho == 2)
+        p.ponEstrellas(1, a: ids[9]); p.ponTexto("c", a: ids[2])
+        l = Dictionary(uniqueKeysWithValues: p.logros().map { ($0.id, $0) })
+        #expect(l["critico"]?.conseguido == true && l["resenas"]?.conseguido == true)
     }
 }

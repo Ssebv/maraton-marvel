@@ -1,5 +1,4 @@
-// Los logros de la web (LOGROS en src/App.jsx) con las mismas reglas. Faltan
-// «Crítico» y «Pluma afilada»: dependen de las notas, que la app aún no tiene.
+// Los logros de la web (LOGROS en src/App.jsx) con las mismas reglas.
 // Los textos van en español; el inglés sale de en-textos (Catalogo.texto).
 import Foundation
 
@@ -93,6 +92,10 @@ extension Progreso {
         agrega("racha", "habitos", "calendar", "Una semana sin parar", "Marca algo 7 días seguidos", racha >= 7, (min(7, racha), 7))
         agrega("maraton-dia", "habitos", "popcorn.fill", "Maratón de verdad", "5 títulos o episodios el mismo día", mejorDia >= 5, (min(5, mejorDia), 5))
         agrega("enganchado", "habitos", "play.rectangle.on.rectangle.fill", "Enganchado", "100 episodios vistos", eps.count >= 100, (min(100, eps.count), 100))
+        let estrellas = notas.values.filter { $0.p != nil }.count
+        let resenas = notas.values.filter(\.tieneResena).count
+        agrega("critico", "habitos", "star.fill", "Crítico", "Valora 10 títulos con estrellas", estrellas >= 10, (min(10, estrellas), 10))
+        agrega("resenas", "habitos", "pencil.line", "Pluma afilada", "Escribe 3 reseñas", resenas >= 3, (min(3, resenas), 3))
         return lista
     }
 
