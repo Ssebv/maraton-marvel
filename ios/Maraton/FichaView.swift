@@ -204,12 +204,8 @@ struct FichaView: View {
                     HStack(alignment: .top, spacing: 16) {
                         ForEach(personas, id: \.0) { p, papel in
                             VStack(spacing: 6) {
-                                Group {
-                                    if let img = Imagenes.compartidas.imagen(catalogo.urlFoto(persona: p)) {
-                                        Image(uiImage: img).resizable().scaledToFill()
-                                    } else {
-                                        Tema.panel2.overlay(Image(systemName: "person.fill").foregroundStyle(Tema.tinta3))
-                                    }
+                                ImagenLocal(url: catalogo.urlFoto(persona: p)) {
+                                    Tema.panel2.overlay(Image(systemName: "person.fill").foregroundStyle(Tema.tinta3))
                                 }
                                 .frame(width: 76, height: 76)
                                 .clipShape(.circle)

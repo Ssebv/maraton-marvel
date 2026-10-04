@@ -42,6 +42,13 @@ const lotesTxt = extrae(/const LOTES_PARTIDOS = (\{[\s\S]*?\n\})/, 'LOTES_PARTID
 const LOTES_PARTIDOS = lotesTxt ? Function(`return ${lotesTxt}`)() : {}
 const aBitsTxt = extrae(/const aBits = (\(marcas, orden\) => \{[\s\S]*?\n\})/, 'aBits')
 const deBitsTxt = extrae(/const deBits = (\(b64, orden\) => \{[\s\S]*?\n\})/, 'deBits')
+// El Multiverso: las conexiones del mapa, las órbitas y anillos del sistema y los nombres cortos
+const objeto = (re, nombre) => { const t = extrae(re, nombre); return t ? Function(`return ${t}`)() : null }
+const MAPA_ARISTAS = objeto(/const MAPA_ARISTAS = (\[[\s\S]*?\n\])/, 'MAPA_ARISTAS')
+const ANILLOS = objeto(/const ANILLOS = (\[[\s\S]*?\n\])/, 'ANILLOS')
+const ORBITAS = objeto(/const ORBITAS = (\{[\s\S]*?\n\})/, 'ORBITAS')
+const NUM_EN = objeto(/const NUM_EN = (\{[\s\S]*?\})\n/, 'NUM_EN')
+const CORTO_SISTEMA = objeto(/const CORTO_SISTEMA = (\{[^\n]*\})\n/, 'CORTO_SISTEMA')
 
 // El orden de los bits: congelado + lo nuevo detrás (igual que ORDEN_IDS/ORDEN_EPS)
 const { ids, eps } = ordenes({ DATA, EPISODES, ORDEN_CONGELADO })
@@ -63,6 +70,7 @@ const escribe = (nombre, obj) => writeFileSync(join(datos, nombre), JSON.stringi
 
 escribe('catalogo.json', { sagas: DATA, estrenos: ESTRENOS, multiverso: MULTIVERSO, joyaMin: JOYA_MIN })
 escribe('episodios.json', EPISODES)
+escribe('multiverso.json', { aristas: MAPA_ARISTAS, anillos: ANILLOS, orbitas: ORBITAS, numEn: NUM_EN, corto: CORTO_SISTEMA })
 escribe('orden.json', { ids, eps, lotes: LOTES_PARTIDOS })
 escribe('idiomas.json', {
   en: { textos: EN_TEXTOS, titulos: TITULOS_EN, episodios: EPISODIOS_EN },

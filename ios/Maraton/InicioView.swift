@@ -343,11 +343,7 @@ private struct Favoritas: View {
                             Button { nav.ficha = t } label: {
                                 Poster(url: catalogo.urlPoster(t.id, idioma: ajustes.idioma), ancho: 104)
                                     .overlay(alignment: .bottomLeading) {
-                                        HStack(spacing: 1) {
-                                            ForEach(0..<p, id: \.self) { _ in Image(systemName: "star.fill") }
-                                        }
-                                        .font(.system(size: 9, weight: .bold))
-                                        .foregroundStyle(Tema.oroVivo)
+                                        Estrellas(n: p, color: Tema.oroVivo)
                                         .padding(.horizontal, 6).padding(.vertical, 4)
                                         .background(.black.opacity(0.7), in: .capsule)
                                         .padding(6)

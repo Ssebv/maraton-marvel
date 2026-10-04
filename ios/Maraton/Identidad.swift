@@ -77,9 +77,7 @@ struct Fotograma: View {
                 LinearGradient(colors: [color.opacity(0.55), .black], startPoint: .topLeading, endPoint: .bottomTrailing)
             }
             .overlay {
-                if let img = Imagenes.compartidas.imagen(local) {
-                    Image(uiImage: img).resizable().scaledToFill()
-                }
+                if local != nil { ImagenLocal(url: local) { Color.clear } }
             }
             .overlay {
                 if let remota {

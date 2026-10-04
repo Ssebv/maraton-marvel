@@ -57,7 +57,7 @@ final class Navegacion {
     /// Los ya anunciados en esta sesión: perder un logro y recuperarlo
     /// (borrar una reseña y volver a escribirla) no repite el aviso
     @ObservationIgnored var anunciados: Set<String> = []
-    enum Pestana: String, Hashable { case inicio, cronologia, progreso, ajustes }
+    enum Pestana: String, Hashable { case inicio, cronologia, multiverso, progreso, ajustes }
 
     /// En depuración, `-pestana cronologia` al lanzar (capturas del simulador)
     static var pestanaInicial: Pestana {
@@ -79,6 +79,7 @@ struct RaizView: View {
         TabView(selection: $nav.pestana) {
             Tab(ajustes.tr("Inicio", "Home"), systemImage: "house", value: .inicio) { InicioView() }
             Tab(ajustes.tr("Cronología", "Timeline"), systemImage: "list.bullet", value: .cronologia) { CronologiaView() }
+            Tab(ajustes.tr("Multiverso", "Multiverse"), systemImage: "globe", value: .multiverso) { MultiversoView() }
             Tab(ajustes.tr("Progreso", "Progress"), systemImage: "chart.bar", value: .progreso) { ProgresoView() }
             Tab(ajustes.tr("Ajustes", "Settings"), systemImage: "gearshape", value: .ajustes) { AjustesView() }
         }

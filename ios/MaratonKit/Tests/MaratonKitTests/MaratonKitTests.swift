@@ -405,3 +405,62 @@ struct PruebasEstadisticas {
         #expect(p.diario(limite: 1).count == 1)
     }
 }
+
+@Suite("Multiverso")
+@MainActor struct PruebasMultiverso {
+    @Test func cadaTierraTieneTitulosYOrbita() {
+        for u in catalogo.multiverso {
+            #expect(!catalogo.titulos(de: u).isEmpty, "\(u.num) sin títulos")
+            #expect(u.num == "Tierra-616" || catalogo.orbita(u.num) != nil, "\(u.num) sin órbita")
+        }
+        // cada anillo con sus Tierras y cada arista entre títulos que existen
+        #expect(catalogo.anillos.allSatisfy { !catalogo.universos(anillo: $0).isEmpty })
+        #expect(catalogo.aristas.allSatisfy { catalogo.titulo($0.a) != nil && catalogo.titulo($0.b) != nil })
+    }
+
+    @Test func la616NoTraeLosDeOtroUniverso() {
+        let u = catalogo.universo("Tierra-616")!
+        let ts = catalogo.titulos(de: u)
+        #expect(ts.allSatisfy { $0.uni == nil && catalogo.saga(de: $0.id) == "ucm" })
+        #expect(!ts.contains { $0.id == "deadpool3" })
+    }
+
+    @Test func nombresEnIngles() {
+        #expect(catalogo.numero("Tierra-616", en: .en) == "Earth-616")
+        #expect(catalogo.numero("El Vacío", en: .en) == "The Void")
+        #expect(catalogo.numero("El Vacío", en: .es) == "El Vacío")
+        #expect(catalogo.numeroCorto("Tierra-10005", en: .es) == "T-10005")
+        #expect(catalogo.numeroCorto("Tierra-10005", en: .en) == "E-10005")
+        #expect(catalogo.numeroCorto("Tierra-121698", en: .en) == "Fox's FF")
+    }
+
+    @Test func crucesYConexiones() {
+        // como la web: de más a menos títulos en común y, a igualdad, en el orden de data.js
+        let u616 = catalogo.universo("Tierra-616")!
+        #expect(catalogo.cruces(de: u616).map(\.universo.num) == ["El Vacío", "Tierra-96283", "Tierra-120703", "Tierra-838"])
+        #expect(catalogo.cruces(de: u616).first?.comunes == 2)
+        let fox = catalogo.universo("Tierra-10005")!
+        let mios = Set(catalogo.titulos(de: fox).map(\.id))
+        let con = catalogo.conexiones(de: fox)
+        #expect(con.contains { $0.aqui.id == "logan" && $0.otro.id == "deadpool3" })
+        #expect(con.allSatisfy { mios.contains($0.aqui.id) })
+    }
+
+    @Test func progresoPorTierraYResumen() {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let raimi = catalogo.universo("Tierra-96283")!
+        #expect(p.progreso(de: raimi).vistos == 0)
+        #expect(p.siguiente(en: raimi)?.id == catalogo.titulos(de: raimi).first?.id)
+        for t in catalogo.titulos(de: raimi) { p.alternar(t.id) }
+        #expect(p.progreso(de: raimi).completa)
+        #expect(p.siguiente(en: raimi) == nil)
+        let r = p.resumenMultiverso
+        #expect(r.completas >= 1 && r.cuentan == catalogo.multiverso.filter { $0.opc != true }.count)
+        // nwh está también en la de Garfield y en la 616: cuenta una vez
+        #expect(r.vistos == catalogo.titulos(de: raimi).count)
+        // los 4F de Fox son opcionales: no suman al total
+        let fox4 = catalogo.titulos(de: catalogo.universo("Tierra-121698")!).map(\.id)
+        let todos = Set(catalogo.multiverso.filter { $0.opc != true }.flatMap { catalogo.titulos(de: $0).map(\.id) })
+        #expect(r.total == todos.count && fox4.contains { !todos.contains($0) })
+    }
+}

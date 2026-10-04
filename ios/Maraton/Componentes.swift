@@ -28,16 +28,44 @@ final class Ajustes {
     func tr(_ es: String, _ en: String) -> String { idioma == .en ? en : es }
 }
 
-/// Las imágenes del paquete (WebP) leídas una vez y guardadas en memoria
+/// Las imágenes del paquete (WebP), decodificadas fuera del hilo principal
+/// una vez y guardadas listas para pintar. @unchecked: NSCache es seguro entre hilos.
 final class Imagenes: @unchecked Sendable {
     static let compartidas = Imagenes()
-    private let cache = NSCache<NSURL, UIImage>()
-    func imagen(_ url: URL?) -> UIImage? {
-        guard let url else { return nil }
-        if let i = cache.object(forKey: url as NSURL) { return i }
-        guard let i = UIImage(contentsOfFile: url.path) else { return nil }
-        cache.setObject(i, forKey: url as NSURL)
+    /// Decodificadas pesan mucho más que el WebP (un póster ~0,7 MB): tope de 80 MB
+    private let cache: NSCache<NSURL, UIImage> = {
+        let c = NSCache<NSURL, UIImage>()
+        c.totalCostLimit = 80 << 20
+        return c
+    }()
+
+    /// La ya preparada, si está (para pintarla en la primera pasada sin parpadeo)
+    func enCache(_ url: URL?) -> UIImage? { url.flatMap { cache.object(forKey: $0 as NSURL) } }
+
+    func imagen(_ url: URL) async -> UIImage? {
+        if let i = enCache(url) { return i }
+        guard let i = await UIImage(contentsOfFile: url.path)?.byPreparingForDisplay() else { return nil }
+        cache.setObject(i, forKey: url as NSURL, cost: i.cgImage.map { $0.bytesPerRow * $0.height } ?? 0)
         return i
+    }
+}
+
+/// Una imagen del paquete que llena su marco; mientras se decodifica, `relleno`
+struct ImagenLocal<Relleno: View>: View {
+    let url: URL?
+    @ViewBuilder var relleno: Relleno
+    @State private var cargada: (url: URL, imagen: UIImage)?
+
+    var body: some View {
+        // la de la url actual: una celda reciclada no enseña la imagen de otra
+        if let img = cargada.flatMap({ $0.url == url ? $0.imagen : nil }) ?? Imagenes.compartidas.enCache(url) {
+            Image(uiImage: img).resizable().scaledToFill()
+        } else {
+            relleno.task(id: url) {
+                guard let url, let img = await Imagenes.compartidas.imagen(url) else { return }
+                cargada = (url, img)
+            }
+        }
     }
 }
 
@@ -47,12 +75,8 @@ struct Poster: View {
     var radio: CGFloat = Tema.radioM
 
     var body: some View {
-        Group {
-            if let img = Imagenes.compartidas.imagen(url) {
-                Image(uiImage: img).resizable().scaledToFill()
-            } else {
-                Tema.panel2.overlay(Image(systemName: "film").foregroundStyle(Tema.tinta3))
-            }
+        ImagenLocal(url: url) {
+            Tema.panel2.overlay(Image(systemName: "film").foregroundStyle(Tema.tinta3))
         }
         .frame(width: ancho, height: ancho * 1.5)
         .clipShape(.rect(cornerRadius: radio))

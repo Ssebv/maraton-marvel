@@ -34,6 +34,10 @@ public final class Catalogo: Sendable {
     let porPais: [String: [String: String]]
     let imagenes: FicheroImagenes
     let detalles: [Idioma: [String: Detalle]]
+    let mapaMultiverso: FicheroMultiverso
+    let eraDe: [String: Era]
+    /// Los títulos de cada Tierra, calculados una vez (las vistas los piden en cada pasada)
+    let porTierra: [String: [Titulo]]
     let recursos: URL
 
     /// La carpeta Recursos del paquete, o otra (pruebas)
@@ -63,6 +67,7 @@ public final class Catalogo: Sendable {
         ordenEps = orden.eps
         lotes = orden.lotes
         idiomas = try lee("idiomas.json", FicheroIdiomas.self)
+        mapaMultiverso = try lee("multiverso.json", FicheroMultiverso.self)
         let plat = try lee("plataformas.json", FicheroPlataformas.self)
         paises = plat.paises
         porPais = plat.porPais
@@ -73,12 +78,14 @@ public final class Catalogo: Sendable {
         ]
 
         var lista: [Titulo] = [], ids: [String: Titulo] = [:], de: [String: String] = [:], maraton = Set<String>()
+        var eras: [String: Era] = [:]
         for saga in cat.sagas {
             for era in saga.eras {
                 for it in era.items {
                     lista.append(it)
                     ids[it.id] = it
                     de[it.id] = saga.saga
+                    eras[it.id] = era
                     if saga.saga != "comics" && saga.saga != "animacion" { maraton.insert(it.id) }
                 }
             }
@@ -86,7 +93,16 @@ public final class Catalogo: Sendable {
         titulos = lista
         porId = ids
         sagaDe = de
+        eraDe = eras
         idsMaraton = maraton
+        porTierra = Dictionary(cat.multiverso.map { u in
+            if let grupo = u.grupo {
+                // la saga entera; en el UCM, sin los de otro universo
+                let items = (cat.sagas.first { $0.saga == grupo }?.eras ?? []).flatMap(\.items)
+                return (u.num, items.filter { grupo != "ucm" || $0.uni == nil })
+            }
+            return (u.num, (u.ids ?? []).compactMap { ids[$0] })
+        }, uniquingKeysWith: { a, _ in a })
     }
 
     // MARK: Consultas
@@ -180,18 +196,21 @@ public final class Catalogo: Sendable {
     /// más lejano) y luego los aproximados («Otoño de 2026»), en el orden de los datos
     public func estrenosPendientes(hoy: Date = Date()) -> [(estreno: Estreno, dias: Int?)] {
         let cal = Calendar(identifier: .gregorian)
-        let f = DateFormatter()
-        f.calendar = cal
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
         let inicio = cal.startOfDay(for: hoy)
         let conFecha = estrenos
-            .compactMap { e in e.fecha.flatMap(f.date(from:)).map { (e, $0) } }
+            .compactMap { e in e.fecha.flatMap { Self.dia($0, cal) }.map { (e, $0) } }
             .filter { $0.1 >= inicio }
             .sorted { $0.1 < $1.1 }
             .map { (estreno: $0.0, dias: Optional(cal.dateComponents([.day], from: inicio, to: $0.1).day ?? 0)) }
         let sinFecha = estrenos.filter { $0.fecha == nil }.map { (estreno: $0, dias: Int?.none) }
         return conFecha + sinFecha
+    }
+
+    /// «2026-12-18» a medianoche en hora local (sin DateFormatter: no se crea uno por llamada)
+    static func dia(_ texto: String, _ cal: Calendar) -> Date? {
+        let p = texto.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3 else { return nil }
+        return cal.date(from: DateComponents(year: p[0], month: p[1], day: p[2]))
     }
 
     /// La imagen de un estreno: su fondo, su póster propio o el del título

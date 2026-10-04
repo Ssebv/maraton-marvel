@@ -126,11 +126,9 @@ struct SeccionTuMes: View {
     private var locale: Locale { Locale(identifier: ajustes.idioma == .en ? "en_US" : "es_CL") }
 
     private func nombre(_ mes: Mes, conAnio: Bool? = nil) -> String {
-        let f = DateFormatter()
-        f.locale = locale
         let anio = conAnio ?? (mes.anio != cal.component(.year, from: .now))
-        f.setLocalizedDateFormatFromTemplate(anio ? "LLLLyyyy" : "LLLL")
-        return f.string(from: mes.primerDia(cal))
+        let estilo = Date.FormatStyle(locale: locale, calendar: cal)
+        return mes.primerDia(cal).formatted(anio ? estilo.month(.wide).year() : estilo.month(.wide))
     }
 }
 
@@ -147,12 +145,16 @@ private struct Cifra: View {
     }
 }
 
+/// La nota en estrellas. Crece con el tamaño de letra del sistema, con tope:
+/// en «Tus favoritas» va encima de un póster de ancho fijo.
 struct Estrellas: View {
     let n: Int
+    var color: Color = Tema.oro
+    @ScaledMetric(relativeTo: .caption2) private var tamano: CGFloat = 10
     var body: some View {
         HStack(spacing: 1) { ForEach(0..<n, id: \.self) { _ in Image(systemName: "star.fill") } }
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(Tema.oro)
+            .font(.system(size: min(tamano, 13), weight: .bold))
+            .foregroundStyle(color)
             .accessibilityLabel("\(n) ★")
     }
 }
