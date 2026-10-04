@@ -4,7 +4,7 @@ name: Maraton
 options:
   bundleIdPrefix: com.ssebv
   deploymentTarget:
-    iOS: "18.0"
+    iOS: "26.0"
   createIntermediateGroups: true
 packages:
   MaratonKit:

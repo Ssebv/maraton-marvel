@@ -203,6 +203,11 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   carrusel con imagen, titular, medio y «hace 10 h» en el idioma elegido; tocar abre la noticia en Safari dentro de la
   app. Se guardan para verse al instante y sin conexión; se piden al volver a la app (una vez por hora) y al tirar
   para actualizar.
+- [x] **19 · Barra como la de Norte** (Sebastián: «que sea la barra de navegación similar a la de Norte»): la barra
+  de pestañas de iOS se recoge al bajar y encima lleva un accesorio que hace de mini reproductor del maratón: el
+  siguiente título (póster, «Siguiente · X-Men 2/17» o «Sigue · 3 de 10 episodios») que abre su ficha y un ✓ verde
+  que lo marca (las series no lo llevan: van por episodios); al recogerse va en línea, más corto. Íconos rellenos, entrada suave
+  por pestaña (como entradaPestana de Norte). La app pide iOS 26 (el accesorio y el recogerse son de iOS 26).
 - Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago) y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)

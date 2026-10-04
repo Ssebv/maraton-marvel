@@ -103,12 +103,16 @@ struct RaizView: View {
     var body: some View {
         @Bindable var nav = nav
         TabView(selection: $nav.pestana) {
-            Tab(ajustes.tr("Inicio", "Home"), systemImage: "house", value: .inicio) { InicioView() }
-            Tab(ajustes.tr("Cronología", "Timeline"), systemImage: "list.bullet", value: .cronologia) { CronologiaView() }
-            Tab(ajustes.tr("Multiverso", "Multiverse"), systemImage: "globe", value: .multiverso) { MultiversoView() }
-            Tab(ajustes.tr("Progreso", "Progress"), systemImage: "chart.bar", value: .progreso) { ProgresoView() }
-            Tab(ajustes.tr("Ajustes", "Settings"), systemImage: "gearshape", value: .ajustes) { AjustesView() }
+            Tab(ajustes.tr("Inicio", "Home"), systemImage: "house.fill", value: .inicio) { InicioView().entradaPestana(.inicio) }
+            Tab(ajustes.tr("Cronología", "Timeline"), systemImage: "film.stack.fill", value: .cronologia) { CronologiaView().entradaPestana(.cronologia) }
+            Tab(ajustes.tr("Multiverso", "Multiverse"), systemImage: "globe.americas.fill", value: .multiverso) { MultiversoView().entradaPestana(.multiverso) }
+            Tab(ajustes.tr("Progreso", "Progress"), systemImage: "chart.bar.fill", value: .progreso) { ProgresoView().entradaPestana(.progreso) }
+            Tab(ajustes.tr("Ajustes", "Settings"), systemImage: "gearshape.fill", value: .ajustes) { AjustesView().entradaPestana(.ajustes) }
         }
+        // como en Norte: la barra se recoge al bajar y encima va el siguiente título
+        .tint(Tema.rojo)
+        .tabBarMinimizeBehavior(.onScrollDown)
+        .tabViewBottomAccessory { AccesorioSiguiente() }
         .modifier(CapaAvisoLogro(visible: nav.ficha == nil))
         .environment(nav)
         .sheet(item: $nav.ficha) { t in
@@ -145,6 +149,11 @@ struct RaizView: View {
         .task {
             let d = UserDefaults.standard
             if let id = d.string(forKey: "abrir") { nav.ficha = progreso.catalogo.titulo(id) }
+            // `-marcarSiguiente YES`: marca el siguiente a los 3 s (¿se redibuja el accesorio?)
+            if d.bool(forKey: "marcarSiguiente") {
+                try? await Task.sleep(for: .seconds(3))
+                if let t = progreso.siguiente() { progreso.alternar(t.id) }
+            }
             // `-abrir x2 -abrirPersona "Hugh Jackman"`
             if let p = d.string(forKey: "abrirPersona") {
                 nav.rutaFicha.append(RutaPersona(nombre: p, esDireccion: false, desde: nav.ficha?.id))
