@@ -142,7 +142,7 @@ struct ListaView: View {
                 .listRowBackground(Tema.panel)
             } else {
                 Section(ajustes.tr("Añadir a la lista", "Add to the list")) {
-                    let resultados = catalogo?.buscar(busca).prefix(30) ?? []
+                    let resultados = catalogo?.buscar(busca) { !ajustes.sinSpoilers || progreso.visto($0.id) }.prefix(30) ?? []
                     if resultados.isEmpty {
                         Text(ajustes.tr("Nada coincide", "No matches")).foregroundStyle(Tema.tinta2)
                     }

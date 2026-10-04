@@ -139,7 +139,7 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
 - [x] **3 · App SwiftUI**: XcodeGen, tema Norte claro/oscuro, Inicio (siguiente + carruseles), Cronología,
   Progreso, Ajustes y la ficha (dónde ver por país, historia, post-créditos tapados, cambios, extras, reparto,
   tráiler de TMDB en YouTube).
-- [x] **4 · Series y filtros**: episodios por temporada con casillas, buscador y ruta express (faltan más filtros).
+- [x] **4 · Series y filtros**: episodios por temporada con casillas, buscador y ruta express (el resto de filtros, en la 17).
 - [x] **5 · Pasar el progreso**: iOS acepta el «Copiar código» que ya tiene la web y el enlace
   `maraton://importar?v=…&e=…` de «Compartir mi progreso»; se suma sin borrar.
 - [x] **5b · Identidad de la web** (Sebastián: «ve con la recomendación»): navegación del iPhone y lo visual de
@@ -195,6 +195,10 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   las series que sigues (hasta 24 por delante); tocarlo abre su ficha y con la app abierta se ve arriba. Si el permiso
   estaba negado, abre los ajustes de avisos del iPhone. Al abrir, «Desde tu última visita: Vision Quest ya se estrenó»
   en Inicio (hasta 4, se cierra).
+- [x] **17 · Sin spoilers y filtros**: «Sin spoilers» en Ajustes, como la web: en lo no visto, la ficha esconde la
+  sinopsis, la historia, los post-créditos y los títulos de episodio («Episodio 3») con «Mostrar de todos modos», y la
+  búsqueda no mira los episodios. En la Cronología, «Filtros» con los de la web (sin series, sin opcionales, joyas,
+  express, en Disney+ de tu país, esconder lo visto), solo los que sirven en cada saga, guardados y con «Quitar».
 - Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago) y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)

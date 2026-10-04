@@ -15,11 +15,14 @@ struct FichaView: View {
     @State private var verPostCreditos = false
     @State private var buscandoTrailer = false
     @State private var sinTrailer = false
+    /// Sin spoilers: mostrar de todos modos, solo en esta ficha
+    @State private var revela = false
 
     var body: some View {
         if let catalogo {
             let color = Tema.color(saga: catalogo.saga(de: titulo.id))
             let detalle = catalogo.detalle(titulo.id, en: ajustes.idioma)
+            let oculto = ajustes.sinSpoilers && !progreso.visto(titulo.id) && !revela
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     Fotograma(remota: catalogo.urlFotograma(titulo.id), local: catalogo.urlPoster(titulo.id), color: color)
@@ -32,19 +35,24 @@ struct FichaView: View {
                         if catalogo.saga(de: titulo.id) == "comics" { LeerAqui(titulo: titulo) }
                         TuValoracion(id: titulo.id, vista: progreso.visto(titulo.id))
                         EnTusListas(id: titulo.id)
-                        if let res = catalogo.texto(titulo.res, en: ajustes.idioma) {
-                            Text(res).font(.body).foregroundStyle(Tema.tinta)
+                        if oculto {
+                            if titulo.res != nil || titulo.pc != nil || detalle?.larga != nil
+                                || (titulo.esSerie && !catalogo.episodios(de: titulo.id).isEmpty) { avisoSpoilers }
+                        } else {
+                            if let res = catalogo.texto(titulo.res, en: ajustes.idioma) {
+                                Text(res).font(.body).foregroundStyle(Tema.tinta)
+                            }
+                            postCreditos(catalogo, detalle: detalle)
                         }
-                        postCreditos(catalogo, detalle: detalle)
                         pildoras(catalogo)
                         if let n = catalogo.texto(titulo.n, en: ajustes.idioma) {
                             Bloque(titulo: ajustes.tr("Antes de verla", "Before watching"), icono: "lightbulb") { Text(n) }
                         }
-                        if let larga = detalle?.larga {
+                        if !oculto, let larga = detalle?.larga {
                             Bloque(titulo: ajustes.tr("La historia", "The story"), icono: "book") { Text(larga) }
                         }
                         if titulo.esSerie && !catalogo.episodios(de: titulo.id).isEmpty {
-                            Episodios(titulo: titulo, color: color)
+                            Episodios(titulo: titulo, color: color, oculto: oculto)
                         }
                         reparto(catalogo).ancla("reparto")
                         if let cambios = detalle?.cambios, !cambios.isEmpty {
@@ -75,6 +83,7 @@ struct FichaView: View {
                 }
             }
             .conAnclaDepuracion()
+            .onChange(of: titulo.id) { revela = false }
             .background(Tema.fondo)
             .ignoresSafeArea(edges: .top)
             .toolbar(apilada ? .visible : .hidden, for: .navigationBar)
@@ -168,6 +177,25 @@ struct FichaView: View {
         .buttonBorderShape(.capsule)
         .tint(Tema.tinta)
         .labelStyle(.titleAndIcon)
+    }
+
+    /// Lo que la web dice en modo sin spoilers, con su «Mostrar de todos modos»
+    private var avisoSpoilers: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(ajustes.tr("Sinopsis, escenas post-créditos y títulos de episodio ocultos hasta que lo marques como visto.",
+                             "Synopsis, post-credit scenes and episode titles hidden until you mark it as seen."),
+                  systemImage: "eye.slash")
+                .font(.subheadline).foregroundStyle(Tema.tinta2)
+            Button(ajustes.tr("Mostrar de todos modos", "Show anyway")) {
+                withAnimation(.snappy) { revela = true }
+            }
+            .font(.subheadline.weight(.semibold))
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .superficie(radio: Tema.radioL)
     }
 
     /// El recuadro dorado de la web; lo que pasa, tapado hasta tocarlo
@@ -272,6 +300,8 @@ struct Bloque<Contenido: View>: View {
 private struct Episodios: View {
     let titulo: Titulo
     let color: Color
+    /// Sin spoilers: los no vistos dicen «Episodio N»
+    var oculto = false
     @Environment(\.catalogo) private var catalogo
     @Environment(Progreso.self) private var progreso
     @Environment(Ajustes.self) private var ajustes
@@ -283,9 +313,11 @@ private struct Episodios: View {
             ForEach(catalogo?.temporadas(de: titulo.id) ?? [], id: \.numero) { temporada in
                 DisclosureGroup {
                     ForEach(temporada.episodios, id: \.self) { e in
+                        let hecho = progreso.visto(e, de: titulo.id)
                         HStack {
-                            Text("\(e.n). \(catalogo?.nombre(e, de: titulo.id, en: ajustes.idioma) ?? e.t)")
-                                .foregroundStyle(progreso.visto(e, de: titulo.id) ? Tema.tinta2 : Tema.tinta)
+                            Text(oculto && !hecho ? ajustes.tr("Episodio \(e.n)", "Episode \(e.n)")
+                                 : "\(e.n). \(catalogo?.nombre(e, de: titulo.id, en: ajustes.idioma) ?? e.t)")
+                                .foregroundStyle(hecho ? Tema.tinta2 : Tema.tinta)
                             Spacer()
                             Casilla(marcada: progreso.visto(e, de: titulo.id), color: color) {
                                 withAnimation(.snappy) { progreso.alternar(e, de: titulo.id) }

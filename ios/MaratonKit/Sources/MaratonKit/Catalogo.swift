@@ -248,7 +248,8 @@ public final class Catalogo: Sendable {
 
     /// Busca en títulos y episodios (los tres idiomas), reparto y dirección, sin importar
     /// tildes, mayúsculas, guiones ni espacios («spiderman» encuentra «Spider-Man»).
-    public func buscar(_ consulta: String) -> [Titulo] {
+    /// `conEpisodios` dice de qué series se miran los episodios (sin spoilers: solo de las vistas).
+    public func buscar(_ consulta: String, conEpisodios: (Titulo) -> Bool = { _ in true }) -> [Titulo] {
         let q = Texto.compacto(consulta)
         guard !q.isEmpty else { return [] }
         return titulos.filter { t in
@@ -256,6 +257,7 @@ public final class Catalogo: Sendable {
             campos += (t.cast ?? []).map(Optional.some)
             if campos.contains(where: { $0.map { Texto.compacto($0).contains(q) } ?? false }) { return true }
             // y los episodios de las series, en los tres idiomas
+            guard conEpisodios(t) else { return false }
             return episodios(de: t.id).contains { e in
                 Idioma.allCases.contains { Texto.compacto(nombre(e, de: t.id, en: $0)).contains(q) }
             }

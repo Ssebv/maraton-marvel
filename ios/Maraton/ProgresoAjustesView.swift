@@ -116,6 +116,17 @@ struct AjustesView: View {
                     }
                 }
                 Section {
+                    Toggle(isOn: $ajustes.sinSpoilers) {
+                        Label(ajustes.tr("Sin spoilers", "No spoilers"), systemImage: "eye.slash")
+                    }
+                    .tint(Tema.verde)
+                } header: {
+                    Text("Spoilers")
+                } footer: {
+                    Text(ajustes.tr("Esconde la sinopsis, las escenas post-créditos y los títulos de episodio de lo que aún no has visto. En cada ficha puedes mostrarlos a mano.",
+                                    "Hides the synopsis, post-credit scenes and episode titles of what you haven't seen yet. You can show them on each title page."))
+                }
+                Section {
                     Toggle(isOn: Binding(get: { agenda.avisosEstrenos }, set: { on in
                         Task { if on { await agenda.activaEstrenos() } else { agenda.avisosEstrenos = false } }
                     })) {

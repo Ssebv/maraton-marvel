@@ -6,9 +6,11 @@ import MaratonKit
 struct CronologiaView: View {
     @Environment(\.catalogo) private var catalogo
     @Environment(Ajustes.self) private var ajustes
+    @Environment(Progreso.self) private var progreso
     @State private var saga = "xmen"
     @State private var consulta = ""
-    @State private var soloExpress = false
+    /// Los filtros de la web, guardados (como en su URL)
+    @AppStorage("filtros") private var filtrosGuardados = 0
 
     var body: some View {
         NavigationStack {
@@ -59,19 +61,94 @@ struct CronologiaView: View {
                 }
             }
             .scrollIndicators(.hidden)
-            if saga == "ucm" {
-                Toggle(ajustes.tr("Solo la ruta express", "Express route only"), isOn: $soloExpress.animation(.snappy))
+            botonFiltros(catalogo)
+        }
+    }
+
+    private var filtros: Filtros { Filtros(rawValue: filtrosGuardados) }
+
+    /// Solo cuentan los filtros que tienen sentido en la saga del título («Solo
+    /// express» no vacía Animación) y, al buscar, los que el botón muestra en esta saga
+    private func pasa(_ t: Titulo, _ catalogo: Catalogo) -> Bool {
+        let utiles = { (s: String) in catalogo.filtrosUtiles(saga: s).reduce(Filtros()) { $0.union($1) } }
+        let aplican = filtros.intersection(utiles(catalogo.saga(de: t.id) ?? "")).intersection(utiles(saga))
+        return catalogo.pasa(t, aplican, pais: ajustes.pais, visto: progreso.visto(t.id))
+    }
+
+    /// «Filtros» con los que sirven en esta saga; el menú no se cierra al tocar
+    private func botonFiltros(_ catalogo: Catalogo) -> some View {
+        let utiles = catalogo.filtrosUtiles(saga: saga)
+        let puestos = utiles.filter { filtros.contains($0) }.count
+        return HStack(spacing: 8) {
+            Menu {
+                ForEach(utiles, id: \.rawValue) { f in
+                    Toggle(isOn: Binding(get: { filtros.contains(f) }, set: { on in
+                        var nuevo = filtros
+                        if on { nuevo.insert(f) } else { nuevo.remove(f) }
+                        withAnimation(.snappy) { filtrosGuardados = nuevo.rawValue }
+                    })) {
+                        Label(nombre(f), systemImage: icono(f))
+                    }
+                }
+            } label: {
+                Label(puestos > 0 ? ajustes.tr("Filtros · \(puestos)", "Filters · \(puestos)") : ajustes.tr("Filtros", "Filters"),
+                      systemImage: "line.3.horizontal.decrease")
                     .font(.subheadline.weight(.semibold))
-                    .tint(Tema.rojo)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 36)
+                    .background(puestos > 0 ? Tema.rojo : .white.opacity(0.12), in: .capsule)
+            }
+            .menuActionDismissBehavior(.disabled)
+            .buttonStyle(.plain)
+            if puestos > 0 {
+                Button(ajustes.tr("Quitar", "Clear")) { withAnimation(.snappy) { filtrosGuardados = 0 } }
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 36)
+                    .buttonStyle(.plain)
             }
         }
     }
 
+    private func nombre(_ f: Filtros) -> String {
+        switch f {
+        case .sinSeries: ajustes.tr("Sin series", "No series")
+        case .sinOpcionales: ajustes.tr("Sin opcionales", "No optional")
+        case .joyas: ajustes.tr("Solo joyas (nota 7,5 o más)", "Gems only (rated 7.5+)")
+        case .express: ajustes.tr("Solo la ruta express", "Express route only")
+        case .disney: ajustes.tr("Solo en Disney+", "Disney+ only")
+        default: ajustes.tr("Esconder lo visto", "Hide watched")
+        }
+    }
+
+    private func icono(_ f: Filtros) -> String {
+        switch f {
+        case .sinSeries: "tv.slash"
+        case .sinOpcionales: "minus.circle"
+        case .joyas: "star"
+        case .express: "hare"
+        case .disney: "play.tv"
+        default: "eye.slash"
+        }
+    }
+
+    /// Cuando los filtros lo esconden todo
+    private var vacio: some View {
+        ContentUnavailableView {
+            Label(ajustes.tr("Nada con estos filtros", "Nothing matches these filters"), systemImage: "line.3.horizontal.decrease")
+        } actions: {
+            Button(ajustes.tr("Quitar filtros", "Clear filters")) { withAnimation(.snappy) { filtrosGuardados = 0 } }
+                .buttonStyle(.bordered)
+        }
+        .padding(.top, 40)
+    }
+
     private func linea(_ catalogo: Catalogo) -> some View {
         let actual = catalogo.sagas.first { $0.saga == saga }
+        let eras = (actual?.eras ?? []).map { era in (era, era.items.filter { pasa($0, catalogo) }) }
         return LazyVStack(alignment: .leading, spacing: 0) {
-            ForEach(actual?.eras ?? []) { era in
-                let items = era.items.filter { !soloExpress || saga != "ucm" || $0.esExpress }
+            if eras.allSatisfy(\.1.isEmpty) { vacio }
+            ForEach(eras, id: \.0.id) { era, items in
                 if !items.isEmpty {
                     let color = Color(hex: era.c?.first) ?? Tema.color(saga: saga)
                     Estacion(era: era, color: color, items: items)
@@ -84,10 +161,14 @@ struct CronologiaView: View {
     }
 
     private func resultados(_ catalogo: Catalogo) -> some View {
-        let encontrados = catalogo.buscar(consulta)
+        // sin spoilers: los episodios de lo que no has visto no cuentan
+        let todos = catalogo.buscar(consulta) { !ajustes.sinSpoilers || progreso.visto($0.id) }
+        let encontrados = todos.filter { pasa($0, catalogo) }
         return LazyVStack(alignment: .leading, spacing: 0) {
-            if encontrados.isEmpty {
+            if todos.isEmpty {
                 ContentUnavailableView.search(text: consulta).padding(.top, 40)
+            } else if encontrados.isEmpty {
+                vacio
             }
             ForEach(encontrados) { t in
                 Nodo(titulo: t, color: Tema.color(saga: catalogo.saga(de: t.id)), conLinea: false)

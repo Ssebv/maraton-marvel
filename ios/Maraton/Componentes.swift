@@ -8,6 +8,11 @@ import MaratonKit
 final class Ajustes {
     var idioma: Idioma { didSet { UserDefaults.standard.set(idioma.rawValue, forKey: "idioma") } }
     var pais: String { didSet { UserDefaults.standard.set(pais, forKey: "pais") } }
+    /// Sin spoilers, como en la web: esconde sinopsis, post-créditos y títulos de
+    /// episodio de lo que aún no has visto
+    var sinSpoilers = UserDefaults.standard.bool(forKey: "sinSpoilers") {
+        didSet { UserDefaults.standard.set(sinSpoilers, forKey: "sinSpoilers") }
+    }
 
     init(paises: [Pais]) {
         let region = Locale.current.region?.identifier ?? "ES"

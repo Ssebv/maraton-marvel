@@ -863,3 +863,37 @@ struct PruebasNovedades {
         #expect(p.seriesSeguidas == ["xmen97"])
     }
 }
+
+@Suite("Filtros y sin spoilers")
+struct PruebasFiltros {
+    @Test func filtrosComoLaWeb() {
+        let todos = catalogo.titulos
+        let cuenta = { (f: Filtros) in todos.filter { catalogo.pasa($0, f, pais: "ES", visto: false) }.count }
+        #expect(cuenta([]) == todos.count)
+        #expect(cuenta(.sinSeries) == todos.filter { !$0.esSerie }.count)
+        #expect(cuenta(.express) == todos.filter(\.esExpress).count)
+        // las joyas: los cómics no tienen nota y no se esconden por eso
+        let joyas = todos.filter { catalogo.pasa($0, .joyas, pais: "ES", visto: false) }
+        #expect(joyas.allSatisfy { catalogo.saga(de: $0.id) == "comics" || ($0.s ?? 0) >= 7.5 })
+        #expect(joyas.contains { catalogo.saga(de: $0.id) == "comics" })
+        // lo visto se esconde solo con su filtro
+        let t = todos[0]
+        #expect(catalogo.pasa(t, .sinVistos, pais: "ES", visto: false))
+        #expect(!catalogo.pasa(t, .sinVistos, pais: "ES", visto: true))
+        #expect(Filtros([.joyas, .express]).cuantos == 2)
+    }
+
+    @Test func filtrosUtilesPorSaga() {
+        #expect(!catalogo.filtrosUtiles(saga: "animacion").contains(.sinSeries), "Animación es toda series")
+        #expect(!catalogo.filtrosUtiles(saga: "comics").contains(.joyas))
+        #expect(catalogo.filtrosUtiles(saga: "ucm").count == Filtros.todos.count)
+    }
+
+    @Test func buscarSinEpisodiosNoVistos() {
+        // «A mí, mis X-Men» solo es un episodio de X-Men '97
+        let q = "A mí, mis X-Men"
+        #expect(catalogo.buscar(q).contains { $0.id == "xmen97" })
+        #expect(!catalogo.buscar(q, conEpisodios: { _ in false }).contains { $0.id == "xmen97" })
+        #expect(catalogo.buscar("Wolverine", conEpisodios: { _ in false }).count > 0, "el título y el reparto siguen")
+    }
+}
