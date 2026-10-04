@@ -160,8 +160,13 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   Con ella, una pasada de buenas prácticas de SwiftUI: en cada cuadro de las órbitas solo cambia la posición
   (planetas Equatable), títulos por Tierra calculados una vez, imágenes decodificadas fuera del hilo principal,
   sin DateFormatter por llamada, ForEach con ids estables y estrellas que siguen el tamaño de letra.
+- [x] **11 · Horario**: el horario de maratón de la web (días, duración, hora, solo ruta express) con la misma
+  simulación (probada contra simulaHorario con vectores): qué toca cada sesión, cuándo terminas y si llegas a
+  Doomsday (y con cuánto rato llegarías). En Inicio, la sesión de hoy o la próxima; en Ajustes, el resumen. Nativo:
+  avisos 15 min antes de cada sesión que dicen qué toca (se rehacen al marcar) y «Añadir al Calendario» con un
+  evento semanal hasta el día en que terminas, sin pedir permiso de calendario.
 - [x] **6 · En su iPhone**: instalada el 4 oct con su equipo personal (perfil de 7 días: reinstalar al vencer).
-- Después: horario, lector, parte social, widget y App Store.
+- Después: lector, parte social, widget y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 

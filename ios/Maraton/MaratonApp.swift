@@ -13,10 +13,11 @@ struct MaratonApp: App {
     var body: some Scene {
         WindowGroup {
             switch app {
-            case let .listo(catalogo, progreso, ajustes):
+            case let .listo(catalogo, progreso, ajustes, agenda):
                 RaizView()
                     .environment(progreso)
                     .environment(ajustes)
+                    .environment(agenda)
                     .environment(\.catalogo, catalogo)
                     .tint(Tema.rojo)
             case let .error(mensaje):
@@ -28,13 +29,13 @@ struct MaratonApp: App {
 }
 
 enum EstadoApp {
-    case listo(Catalogo, Progreso, Ajustes)
+    case listo(Catalogo, Progreso, Ajustes, Agenda)
     case error(String)
 
     @MainActor static func carga() -> EstadoApp {
         do {
             let c = try Catalogo.cargar()
-            return .listo(c, Progreso(catalogo: c), Ajustes(paises: c.paises))
+            return .listo(c, Progreso(catalogo: c), Ajustes(paises: c.paises), Agenda())
         } catch {
             return .error(String(describing: error))
         }
@@ -49,6 +50,7 @@ extension EnvironmentValues {
 @MainActor @Observable
 final class Navegacion {
     var ficha: Titulo?
+    var horarioAbierto = false
     var pestana = Navegacion.pestanaInicial
     var aviso: String?
     /// El logro recién desbloqueado (aviso arriba) y cuántos más a la vez
@@ -72,6 +74,8 @@ final class Navegacion {
 struct RaizView: View {
     @Environment(Progreso.self) private var progreso
     @Environment(Ajustes.self) private var ajustes
+    @Environment(Agenda.self) private var agenda
+    @Environment(\.scenePhase) private var fase
     @State private var nav = Navegacion()
 
     var body: some View {
@@ -91,6 +95,18 @@ struct RaizView: View {
                 .environment(nav)
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $nav.horarioAbierto) { HorarioView() }
+        // los avisos de sesión dicen qué toca: se rehacen al marcar, al cambiar
+        // el horario o el idioma y al volver a la app (puede haber cambiado el día)
+        .task(id: claveAvisos) {
+            // en primer plano, con un segundo de espera (marcar varios seguidos);
+            // al irse a segundo plano, al momento: lo último marcado ya cuenta
+            if fase == .active {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+            }
+            await agenda.reprograma(progreso: progreso, ajustes: ajustes)
+        }
         .alert(nav.aviso ?? "", isPresented: Binding(get: { nav.aviso != nil }, set: { if !$0 { nav.aviso = nil } })) {
             Button("OK", role: .cancel) {}
         }
@@ -99,6 +115,7 @@ struct RaizView: View {
         .task {
             let d = UserDefaults.standard
             if let id = d.string(forKey: "abrir") { nav.ficha = progreso.catalogo.titulo(id) }
+            if d.bool(forKey: "abrirHorario") { nav.horarioAbierto = true }
             if let s = d.string(forKey: "importar"), let url = URL(string: s) { importa(url) }
         }
         #endif
@@ -116,6 +133,14 @@ struct RaizView: View {
             try? await Task.sleep(for: .seconds(3.5))
             nav.logroNuevo = nil
         }
+    }
+
+    private struct ClaveAvisos: Hashable {
+        let horario: Horario?, avisos: Bool, vistas: Int, eps: Int, idioma: Idioma, activa: Bool
+    }
+    private var claveAvisos: ClaveAvisos {
+        ClaveAvisos(horario: agenda.horario, avisos: agenda.avisos, vistas: Set(progreso.vistas.keys).hashValue,
+                    eps: Set(progreso.eps.keys).hashValue, idioma: ajustes.idioma, activa: fase == .active)
     }
 
     private var conseguidos: Set<String> { Set(progreso.logros().filter(\.conseguido).map(\.id)) }

@@ -11,6 +11,18 @@ struct Vectores: Decodable {
     struct Caso: Decodable { let nombre: String; let claves: [String]; let b64: String }
     let ids: [Caso]
     let eps: [Caso]
+    let horario: [CasoHorario]
+    struct CasoHorario: Decodable {
+        struct Sesion: Decodable { let min: Int; let trozos: [[String]] }
+        let nombre: String
+        let h: Horario
+        let vistas: [String]
+        let eps: [String]
+        let totalMin: Int
+        let nSesiones: Int
+        let seAcaba: Bool
+        let sesiones: [Sesion]
+    }
 }
 
 let vectores: Vectores = {
@@ -462,5 +474,89 @@ struct PruebasEstadisticas {
         let fox4 = catalogo.titulos(de: catalogo.universo("Tierra-121698")!).map(\.id)
         let todos = Set(catalogo.multiverso.filter { $0.opc != true }.flatMap { catalogo.titulos(de: $0).map(\.id) })
         #expect(r.total == todos.count && fox4.contains { !todos.contains($0) })
+    }
+}
+
+@Suite("Horario")
+@MainActor struct PruebasHorario {
+    /// Un lunes de octubre a mediodía, en Chile (con cambio de hora en septiembre)
+    var cal: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "America/Santiago")!; return c }
+    var lunes: Date { cal.date(from: DateComponents(year: 2026, month: 10, day: 5, hour: 12))! }
+
+    @Test func simulaIgualQueLaWeb() {
+        for c in vectores.horario {
+            let p = Progreso(catalogo: catalogo, archivo: nil)
+            _ = p.suma(Dictionary(uniqueKeysWithValues: c.vistas.map { ($0, 1) }), Dictionary(uniqueKeysWithValues: c.eps.map { ($0, 1) }))
+            let sim = p.simula(c.h, desde: lunes, calendario: cal, detalladas: 8)
+            #expect(sim.totalMin == c.totalMin, "\(c.nombre): \(sim.totalMin) vs \(c.totalMin), \(sim.nSesiones) vs \(c.nSesiones)")
+            #expect(sim.nSesiones == c.nSesiones, "\(c.nombre)")
+            #expect(sim.seAcaba == c.seAcaba, "\(c.nombre)")
+            let mias = sim.sesiones.map { s in s.trozos.map { [$0.titulo.id, $0.episodios(en: .es)] } }
+            #expect(mias == c.sesiones.map(\.trozos), "\(c.nombre)")
+            #expect(sim.sesiones.map(\.min) == c.sesiones.map(\.min), "\(c.nombre)")
+        }
+    }
+
+    @Test func soloLosDiasElegidos() {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let h = Horario(dias: [5, 6], min: 90, hora: "21:00", exp: true)
+        let sim = p.simula(h, desde: lunes, calendario: cal)
+        // del lunes 5: viernes 9, sábado 10, viernes 16…
+        #expect(sim.sesiones.map { cal.component(.day, from: $0.fecha) } == [9, 10, 16, 17, 23])
+        #expect(sim.seAcaba && sim.fin.map { Horario.dia($0, cal) }.map { [5, 6].contains($0) } == true)
+        #expect(p.sesionDeHoy(h, hoy: lunes, calendario: cal) == nil)
+        let viernes = cal.date(byAdding: .day, value: 4, to: lunes)!
+        #expect(p.sesionDeHoy(h, hoy: viernes, calendario: cal)?.trozos.first?.titulo.id == sim.sesiones.first?.trozos.first?.titulo.id)
+    }
+
+    @Test func laSesionDeHoyYaHechaNoCorreLasSiguientes() {
+        let h = Horario(dias: [1], min: 120, hora: "21:00", exp: true)
+        let antes = cal.date(bySettingHour: 20, minute: 0, second: 0, of: lunes)!
+        let durante = cal.date(bySettingHour: 22, minute: 0, second: 0, of: lunes)!
+        let despues = cal.date(bySettingHour: 23, minute: 30, second: 0, of: lunes)!
+        let martes = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: lunes))!
+        #expect(h.primerDia(ahora: antes, cal) == cal.startOfDay(for: lunes))
+        #expect(h.primerDia(ahora: durante, cal) == martes)
+        #expect(h.primerDia(ahora: durante, cal, despuesDe: h.min) == cal.startOfDay(for: lunes))
+        #expect(h.primerDia(ahora: despues, cal, despuesDe: h.min) == martes)
+        // un día sin sesión empieza hoy aunque sea tarde
+        let martesNoche = cal.date(bySettingHour: 23, minute: 0, second: 0, of: martes)!
+        #expect(h.primerDia(ahora: martesNoche, cal) == martes)
+    }
+
+    @Test func minutosParaLlegar() {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let h = Horario(dias: [0, 1, 2, 3, 4, 5, 6], min: 60, hora: "21:00", exp: true)
+        // diez días (del lunes 5 al miércoles 14, sin el 15): 1000 min → 100 por sesión
+        let tope = cal.date(from: DateComponents(year: 2026, month: 10, day: 15))!
+        #expect(p.minutosNecesarios(h, total: 1000, antesDe: tope, desde: lunes, calendario: cal) == 100)
+        #expect(p.minutosNecesarios(h, total: 1000, antesDe: cal.startOfDay(for: lunes), desde: lunes, calendario: cal) == nil)
+    }
+
+    @Test func laMetaEsElPrimerEstrenoDeLaLista() throws {
+        let hoy = cal.date(from: DateComponents(year: 2026, month: 10, day: 5, hour: 12))!
+        let o = try #require(catalogo.estrenoObjetivo(hoy: hoy, calendario: cal))
+        let primero = catalogo.estrenos.first { e in e.fecha.flatMap { Catalogo.dia($0, cal) }.map { $0 > hoy } ?? false }
+        #expect(o.estreno.t == primero?.t)
+        // el día del estreno pasada la medianoche ya no cuenta
+        let pasado = cal.date(byAdding: .minute, value: 1, to: o.fecha)!
+        #expect(catalogo.estrenoObjetivo(hoy: pasado, calendario: cal)?.estreno.t != o.estreno.t)
+    }
+
+    @Test func saneaComoLaWeb() {
+        #expect(Horario(dias: [], min: 90, hora: "21:00", exp: true).saneado == nil)
+        #expect(Horario(dias: [7, 9], min: 90, hora: "21:00", exp: true).saneado == nil)
+        #expect(Horario(dias: [1], min: 10, hora: "21:00", exp: true).saneado == nil)
+        #expect(Horario(dias: [1, 8], min: 90, hora: "25:00", exp: false).saneado == Horario(dias: [1], min: 90, hora: "21:00", exp: false))
+        #expect(Horario(dias: [1], min: 90, hora: "00:30", exp: true).saneado?.hora == "00:30")
+        #expect(Horario.porDefecto.saneado == Horario.porDefecto)
+    }
+
+    @Test func textoDeEpisodios() throws {
+        let t = try #require(catalogo.titulos.first { $0.esSerie && catalogo.episodios(de: $0.id).count > 2 })
+        let e = catalogo.episodios(de: t.id)
+        #expect(TrozoSesion(titulo: t, desde: e[0], hasta: e[0]).episodios(en: .es) == "T\(e[0].s)·E\(e[0].n)")
+        #expect(TrozoSesion(titulo: t, desde: e[0], hasta: e[2]).episodios(en: .en) == "S\(e[0].s)·E\(e[0].n)–S\(e[2].s)·E\(e[2].n)")
+        #expect(TrozoSesion(titulo: t, desde: nil, hasta: nil).episodios(en: .es) == "")
     }
 }

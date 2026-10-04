@@ -24,6 +24,9 @@ final class Ajustes {
         }
     }
 
+    /// Para fechas y nombres de días en el idioma elegido
+    var locale: Locale { Locale(identifier: idioma == .en ? "en_US" : idioma == .es ? "es_ES" : "es_CL") }
+
     /// Para tr(es, en) como en la web
     func tr(_ es: String, _ en: String) -> String { idioma == .en ? en : es }
 }
@@ -146,7 +149,7 @@ struct AnclaDepuracion: ViewModifier {
             content.task {
                 guard let a = UserDefaults.standard.string(forKey: "ancla") else { return }
                 try? await Task.sleep(for: .milliseconds(400))
-                lector.scrollTo(a, anchor: .top)
+                lector.scrollTo(a, anchor: UnitPoint(x: 0.5, y: 0.1))
             }
         }
     }

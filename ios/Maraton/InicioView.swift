@@ -16,6 +16,7 @@ struct InicioView: View {
                         VStack(alignment: .leading, spacing: 28) {
                             TarjetasSaga(catalogo: catalogo)
                             Portada(catalogo: catalogo)
+                            TarjetaHorario(catalogo: catalogo).ancla("horario")
                             Estrenos(catalogo: catalogo).ancla("estrenos")
                             Favoritas(catalogo: catalogo)
                             ForEach(catalogo.sagas) { saga in Carrusel(saga: saga, catalogo: catalogo) }

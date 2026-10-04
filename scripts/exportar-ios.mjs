@@ -114,8 +114,31 @@ caso('ids: primero y último', (k, i) => i === 0 || i === ids.length - 1, ids)
 caso('ids: uno de cada tres', (k, i) => i % 3 === 0, ids)
 caso('eps: uno de cada siete', (k, i) => i % 7 === 0, eps)
 caso('eps: últimos diez', (k, i) => i >= eps.length - 10, eps)
+
+// Vectores del horario: la simulaHorario de la web con todos los días de la
+// semana (así las fechas no importan) y progresos fijos
+const simulaTxt = extrae(/(function simulaHorario\([\s\S]*?\n\})/, 'simulaHorario')
+const simulaHorario = Function('DATA', 'EPISODES', `${simulaTxt}; return simulaHorario`)(DATA, EPISODES)
+const horario = []
+const casoH = (nombre, h, selIds, selEps) => {
+  // sin lotes viejos: la web los reparte en sus piezas al cargar (migraMarcas)
+  const vistas = Object.fromEntries(ids.filter(selIds).filter(k => !LOTES_PARTIDOS[k]).map(k => [k, 1]))
+  const marcasEps = Object.fromEntries(eps.filter(selEps).map(k => [k, 1]))
+  const sim = simulaHorario(h, vistas, marcasEps, 8)
+  horario.push({
+    nombre, h, vistas: Object.keys(vistas), eps: Object.keys(marcasEps),
+    totalMin: sim.totalMin, nSesiones: sim.nSesiones, seAcaba: sim.seAcaba,
+    sesiones: sim.sesiones.map(x => ({ min: x.min, trozos: x.trozos.map(t => [t.item.id, t.txt || '']) })),
+  })
+}
+const semana = [0, 1, 2, 3, 4, 5, 6]
+casoH('horario: express desde cero', { dias: semana, min: 90, hora: '21:00', exp: true }, () => false, () => false)
+casoH('horario: completo a medias', { dias: semana, min: 120, hora: '21:00', exp: false }, (k, i) => i % 3 === 0, (k, i) => i % 5 === 0)
+casoH('horario: sesiones cortas', { dias: semana, min: 30, hora: '21:00', exp: false }, (k, i) => i < 20, (k, i) => i < 40)
+casoH('horario: una hora a la semana no se acaba', { dias: [6], min: 60, hora: '21:00', exp: false }, () => false, () => false)
+
 mkdirSync(join(vectores, '..'), { recursive: true })
-writeFileSync(vectores, JSON.stringify({ ids: casos.filter(c => c.nombre.startsWith('ids')), eps: casos.filter(c => c.nombre.startsWith('eps')) }, null, 1) + '\n')
+writeFileSync(vectores, JSON.stringify({ ids: casos.filter(c => c.nombre.startsWith('ids')), eps: casos.filter(c => c.nombre.startsWith('eps')), horario }, null, 1) + '\n')
 
 const pesa = d => readdirSync(d, { withFileTypes: true }).reduce((a, f) => a + (f.isDirectory() ? 0 : 1), 0)
 console.log(`✓ iOS: ${enDatos.size} títulos, ${eps.length} episodios en bits, ${pesa(datos)} JSON y ${nImg} imágenes en ios/MaratonKit/…/Recursos`)

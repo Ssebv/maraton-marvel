@@ -206,6 +206,13 @@ public final class Catalogo: Sendable {
         return conFecha + sinFecha
     }
 
+    /// La meta del horario, como la web: el primer estreno con fecha que aún no
+    /// llega, en el orden de los datos (Doomsday va antes que las series que se
+    /// estrenan antes), con su medianoche local
+    public func estrenoObjetivo(hoy: Date = Date(), calendario cal: Calendar = .current) -> (estreno: Estreno, fecha: Date)? {
+        estrenos.lazy.compactMap { e in e.fecha.flatMap { Self.dia($0, cal) }.map { (e, $0) } }.first { $0.1 > hoy }
+    }
+
     /// «2026-12-18» a medianoche en hora local (sin DateFormatter: no se crea uno por llamada)
     static func dia(_ texto: String, _ cal: Calendar) -> Date? {
         let p = texto.split(separator: "-").compactMap { Int($0) }

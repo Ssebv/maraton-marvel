@@ -82,6 +82,7 @@ struct AjustesView: View {
     @Environment(Progreso.self) private var progreso
     @Environment(Ajustes.self) private var ajustes
     @Environment(Navegacion.self) private var nav
+    @Environment(Agenda.self) private var agenda
     @State private var pegado = ""
 
     var body: some View {
@@ -96,6 +97,16 @@ struct AjustesView: View {
                     }
                     Picker(ajustes.tr("Dónde ver en", "Where to watch in"), selection: $ajustes.pais) {
                         ForEach(catalogo?.paises ?? []) { p in Text(p.nombre).tag(p.id) }
+                    }
+                }
+                Section(ajustes.tr("Horario de maratón", "Marathon schedule")) {
+                    Button { nav.horarioAbierto = true } label: {
+                        LabeledContent {
+                            Text(agenda.horario.map(resumenHorario) ?? ajustes.tr("Sin horario", "No schedule"))
+                        } label: {
+                            Label(ajustes.tr("Tu horario", "Your schedule"), systemImage: "calendar.badge.clock")
+                                .foregroundStyle(Tema.tinta)
+                        }
                     }
                 }
                 Section {
@@ -147,5 +158,14 @@ struct AjustesView: View {
         }
         pegado = ""
         nav.aviso = Avisos.importado(r, ajustes)
+    }
+}
+
+extension AjustesView {
+    /// «V S · 1 h 30 min · 21:00»
+    func resumenHorario(_ h: Horario) -> String {
+        let letras = ajustes.idioma == .en ? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] : ["D", "L", "M", "X", "J", "V", "S"]
+        let dias = Horario.diasEnOrden.filter(h.dias.contains).map { letras[$0] }.joined(separator: " ")
+        return "\(dias) · \(Formato.duracion(h.min)) · \(h.hora)"
     }
 }
