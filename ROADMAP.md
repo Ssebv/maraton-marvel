@@ -151,8 +151,11 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
 - [x] **8 · Notas y reseñas**: estrellas (tocar la misma la quita) y reseña de hasta 280 caracteres en la ficha,
   «Tus favoritas» (4–5 estrellas) en Inicio, las notas entran con el «Copiar código» de la web sin pisar las de aquí
   y los 2 logros que faltaban (Crítico, Pluma afilada): ya son los 29.
+- [x] **9 · Estadísticas**: en Progreso, «Tu mes» (horas, títulos, episodios, días activos y racha, la saga del mes,
+  diferencia con el mes anterior y tu favorito) con su calendario (toca un día para ver lo marcado) y el «Diario del
+  maratón» con los últimos 30, plegado a 5. Solo cuentan las marcas con fecha, como en la web.
 - [ ] **6 · En su iPhone**: Xcode › Signing con su Apple ID (equipo personal) y probar en el teléfono real.
-- Después: Multiverso, estadísticas, horario, lector, parte social, widget y App Store.
+- Después: Multiverso, horario, lector, parte social, widget y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 

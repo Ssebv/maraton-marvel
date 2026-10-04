@@ -51,6 +51,8 @@ struct ProgresoView: View {
                             .padding(14)
                             .superficie(radio: Tema.radioL)
                         }
+                        SeccionTuMes().padding(.top, 16).ancla("mes")
+                        SeccionDiario()
                         SeccionLogros().padding(.top, 16).ancla("logros")
                     }
                     .padding(16)

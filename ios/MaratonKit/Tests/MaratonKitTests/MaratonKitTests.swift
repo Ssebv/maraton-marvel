@@ -361,3 +361,47 @@ struct PruebasNotas {
         #expect(l["critico"]?.conseguido == true && l["resenas"]?.conseguido == true)
     }
 }
+
+@Suite("Estadísticas")
+@MainActor
+struct PruebasEstadisticas {
+    var cal: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "America/Santiago")!; return c }
+    func ms(_ d: Int, _ m: Int = 9, h: Int = 21) -> Double {
+        cal.date(from: DateComponents(year: 2026, month: m, day: d, hour: h))!.timeIntervalSince1970 * 1000
+    }
+
+    @Test func tuMesComoLaWeb() throws {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let eps = catalogo.episodios(de: "xmen97")
+        try #require(eps.count >= 3)
+        _ = p.suma(["logan": ms(1), "the-wolverine": ms(2), "cap1": ms(2), "dofp": ms(20, 8), "xmen1": 1],
+                   Dictionary(uniqueKeysWithValues: eps.prefix(2).map { ($0.clave("xmen97"), ms(3)) }))
+        p.ponEstrellas(4, a: "the-wolverine"); p.ponEstrellas(4, a: "logan"); p.ponEstrellas(5, a: "dofp")
+        let sep = Mes(clave: 2026 * 12 + 8)
+        let r = p.resumen(mes: sep, calendario: cal)
+        #expect(r.titulos == 3 && r.episodios == 2, "agosto y la marca por bits no cuentan")
+        #expect(r.porDia == [1: 1, 2: 2, 3: 2] && r.dias == 3 && r.racha == 3)
+        #expect(r.saga?.id == "xmen" && r.saga?.n == 2)
+        #expect(r.favorito == "the-wolverine", "a igual nota, el último marcado")
+        let serie = try #require(catalogo.titulo("xmen97"))
+        let esperado = Double(["logan", "the-wolverine", "cap1"].compactMap { catalogo.titulo($0)?.d }.reduce(0, +))
+            + Double(serie.d ?? 0) * 2 / Double(eps.count)
+        #expect(abs(r.minutos - esperado) < 0.001)
+        #expect(p.resumen(mes: sep.anterior, calendario: cal).favorito == "dofp")
+        let meses = p.mesesConMarcas(hoy: Date(timeIntervalSince1970: ms(3, 10) / 1000), calendario: cal)
+        #expect(meses.map(\.mes) == [10, 9, 8], "el actual siempre, sin el 1970 de las marcas por bits")
+    }
+
+    @Test func marcasDelDiaYDiario() {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let eps = catalogo.episodios(de: "xmen97")
+        _ = p.suma(["logan": ms(2, h: 22), "cap1": ms(2, h: 10), "dofp": ms(1)],
+                   Dictionary(uniqueKeysWithValues: eps.prefix(3).map { ($0.clave("xmen97"), ms(2, h: 15)) }))
+        let dia = Date(timeIntervalSince1970: ms(2, h: 12) / 1000)
+        let m = p.marcas(dia: dia, calendario: cal)
+        #expect(m.map(\.id) == ["cap1", "xmen97", "logan"])
+        #expect(m[1].episodios == 3 && m[0].episodios == 0)
+        #expect(p.diario().map(\.id) == ["logan", "cap1", "dofp"])
+        #expect(p.diario(limite: 1).count == 1)
+    }
+}
