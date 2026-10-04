@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import MaratonKit
 
 /// La ficha de un título: datos, dónde verlo, historia, post-créditos (tapados
@@ -26,6 +27,7 @@ struct FichaView: View {
                         cabecera(catalogo, color: color)
                             .padding(.top, -96)
                         botonVisto(color: color)
+                        if catalogo.saga(de: titulo.id) == "comics" { LeerAqui(titulo: titulo) }
                         TuValoracion(id: titulo.id, vista: progreso.visto(titulo.id))
                         if let res = catalogo.texto(titulo.res, en: ajustes.idioma) {
                             Text(res).font(.body).foregroundStyle(Tema.tinta)
@@ -108,11 +110,14 @@ struct FichaView: View {
 
     private func botonVisto(color: Color) -> some View {
         let visto = progreso.visto(titulo.id)
+        let comic = catalogo?.saga(de: titulo.id) == "comics"
         return Button {
             withAnimation(.snappy) { progreso.alternar(titulo.id) }
         } label: {
-            Text(visto ? ajustes.tr("✓ Vista — marcar pendiente", "✓ Seen — mark as pending")
-                       : ajustes.tr("Marcar como vista", "Mark as seen"))
+            Text(comic ? (visto ? ajustes.tr("✓ Leído — marcar pendiente", "✓ Read — mark as pending")
+                                : ajustes.tr("Marcar como leído", "Mark as read"))
+                       : visto ? ajustes.tr("✓ Vista — marcar pendiente", "✓ Seen — mark as pending")
+                               : ajustes.tr("Marcar como vista", "Mark as seen"))
                 .font(.body.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 50)
         }
@@ -386,5 +391,100 @@ private struct TuValoracion: View {
         guard let b = borrador else { return }
         borrador = nil
         if b != (progreso.nota(id).txt ?? "") { progreso.ponTexto(b, a: id) }
+    }
+}
+
+/// «Leer aquí» en la ficha de un cómic, como TuArchivo de la web: eliges tu
+/// archivo, se copia dentro de la app y se abre a pantalla completa
+struct LeerAqui: View {
+    let titulo: Titulo
+    @Environment(Biblioteca.self) private var biblioteca
+    @Environment(Progreso.self) private var progreso
+    @Environment(Ajustes.self) private var ajustes
+    @State private var eligiendo = false
+    @State private var ocupado = false
+    @State private var error: String?
+    @State private var confirmaQuitar = false
+    @State private var leyendo = false
+
+    /// .cbz y .cbr no son tipos del sistema: se declaran en project.yml
+    static let tipos: [UTType] = [.pdf, .zip, .image] + ["cbz", "cbr"].compactMap { UTType(filenameExtension: $0) }
+
+    var body: some View {
+        let archivo = biblioteca.archivos[titulo.id]
+        Bloque(titulo: ajustes.tr("Leer aquí", "Read here"), icono: "book.pages") {
+            VStack(alignment: .leading, spacing: 10) {
+                if let archivo {
+                    Button { leyendo = true } label: {
+                        Label(seguir ?? ajustes.tr("Abrir", "Open"), systemImage: "book")
+                            .font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.borderedProminent).buttonBorderShape(.capsule).tint(Tema.rojo)
+                    HStack(spacing: 10) {
+                        Button(ajustes.tr("Cambiar archivo", "Change file")) { eligiendo = true }
+                        Button(ajustes.tr("Quitar", "Remove"), role: .destructive) { confirmaQuitar = true }
+                    }
+                    .buttonStyle(.bordered).buttonBorderShape(.capsule)
+                    Text("\(nombre(archivo)) · \(archivo.tam.formatted(.byteCount(style: .file))) · \(ajustes.tr("guardado en este iPhone", "stored on this iPhone"))")
+                        .font(.caption).foregroundStyle(Tema.tinta2)
+                } else {
+                    Button { eligiendo = true } label: {
+                        Label(ajustes.tr("Elegir mi archivo (CBZ, PDF o imágenes)", "Pick my file (CBZ, PDF or images)"), systemImage: "folder")
+                            .font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.bordered).buttonBorderShape(.capsule)
+                    Text(ajustes.tr("Se lee dentro de la app y el archivo se queda en este iPhone: no se sube a ningún sitio. Vale un CBZ, un PDF o las páginas como imágenes (elige varias a la vez). Los CBR que son RAR aún no se abren: pásalos a CBZ.",
+                                    "It opens inside the app and the file stays on this iPhone: nothing gets uploaded. A CBZ, a PDF or the pages as images (pick several at once) work. CBRs that are RAR archives can't be opened yet: convert them to CBZ."))
+                        .font(.caption).foregroundStyle(Tema.tinta2)
+                }
+                if ocupado { ProgressView(ajustes.tr("Guardando…", "Saving…")).font(.caption) }
+                if let error { Text(error).font(.caption).foregroundStyle(Tema.rojo) }
+            }
+            .disabled(ocupado)
+        }
+        .fileImporter(isPresented: $eligiendo, allowedContentTypes: Self.tipos, allowsMultipleSelection: true) { r in
+            Task { await guarda(r) }
+        }
+        .confirmationDialog(ajustes.tr("¿Quitar el archivo de este iPhone?", "Remove the file from this iPhone?"),
+                            isPresented: $confirmaQuitar, titleVisibility: .visible) {
+            Button(ajustes.tr("Quitar el archivo", "Remove the file"), role: .destructive) {
+                biblioteca.quita(titulo.id)
+                progreso.olvidaLectura(titulo.id)
+            }
+        } message: {
+            Text(ajustes.tr("Lo marcado y tus notas se quedan.", "Your marks and notes stay."))
+        }
+        .fullScreenCover(isPresented: $leyendo) { LectorView(titulo: titulo) }
+        #if DEBUG
+        // capturas: `-abrir c-… -leer YES` abre el lector
+        .task { if UserDefaults.standard.bool(forKey: "leer") && archivo != nil { leyendo = true } }
+        #endif
+    }
+
+    /// «Seguir leyendo · pág. 4 de 24»
+    private var seguir: String? {
+        guard let l = progreso.lecturas[titulo.id], l.t > 1, !progreso.visto(titulo.id) else { return nil }
+        return ajustes.tr("Seguir leyendo · pág. \(l.p + 1) de \(l.t)", "Keep reading · p. \(l.p + 1) of \(l.t)")
+    }
+
+    private func nombre(_ a: ArchivoComic) -> String {
+        a.tipo == .imagenes && Int(a.nombre) != nil ? ajustes.tr("\(a.nombre) imágenes", "\(a.nombre) images") : a.nombre
+    }
+
+    private func guarda(_ r: Result<[URL], Error>) async {
+        error = nil
+        guard case let .success(urls) = r, !urls.isEmpty else {
+            if case let .failure(e) = r { error = Lectura.texto(de: e, ajustes) }
+            return
+        }
+        ocupado = true
+        defer { ocupado = false }
+        do {
+            try await biblioteca.guarda(urls, para: titulo.id)
+            progreso.olvidaLectura(titulo.id)
+            leyendo = true
+        } catch {
+            self.error = Lectura.texto(de: error, ajustes)
+        }
     }
 }

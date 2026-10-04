@@ -560,3 +560,134 @@ struct PruebasEstadisticas {
         #expect(TrozoSesion(titulo: t, desde: nil, hasta: nil).episodios(en: .es) == "")
     }
 }
+
+// MARK: Lector de cómics
+
+import Compression
+
+/// Un ZIP armado a mano (sin CRC: el lector no lo mira), con DEFLATE de verdad
+/// en las entradas que lo piden
+func zipDePrueba(_ entradas: [(nombre: String, datos: Data, deflate: Bool)]) -> Data {
+    func le16(_ v: Int) -> Data { withUnsafeBytes(of: UInt16(v).littleEndian) { Data($0) } }
+    func le32(_ v: Int) -> Data { withUnsafeBytes(of: UInt32(v).littleEndian) { Data($0) } }
+    var zip = Data(), cd = Data()
+    for e in entradas {
+        var comp = e.datos
+        if e.deflate {
+            var buf = [UInt8](repeating: 0, count: e.datos.count + 1024)
+            let n = e.datos.withUnsafeBytes { compression_encode_buffer(&buf, buf.count, $0.bindMemory(to: UInt8.self).baseAddress!, e.datos.count, nil, COMPRESSION_ZLIB) }
+            comp = Data(buf[0..<n])
+        }
+        let nombre = Data(e.nombre.utf8), metodo = e.deflate ? 8 : 0, local = zip.count
+        let cabecera: [Data] = [le32(0x04034b50), le16(20), le16(0x800), le16(metodo), le32(0), le32(0),
+                                le32(comp.count), le32(e.datos.count), le16(nombre.count), le16(0), nombre, comp]
+        let central: [Data] = [le32(0x02014b50), le16(20), le16(20), le16(0x800), le16(metodo), le32(0), le32(0),
+                               le32(comp.count), le32(e.datos.count), le16(nombre.count), le16(0), le16(0), le16(0), le16(0),
+                               le32(0), le32(local), nombre]
+        cabecera.forEach { zip.append($0) }
+        central.forEach { cd.append($0) }
+    }
+    let off = zip.count
+    let fin: [Data] = [cd, le32(0x06054b50), le16(0), le16(0), le16(entradas.count), le16(entradas.count),
+                       le32(cd.count), le32(off), le16(0)]
+    fin.forEach { zip.append($0) }
+    return zip
+}
+
+@Suite("Lector")
+struct PruebasLector {
+    let dir: URL = {
+        let d = FileManager.default.temporaryDirectory.appendingPathComponent("lector-\(UUID().uuidString)")
+        try! FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+        return d
+    }()
+    func escribe(_ nombre: String, _ datos: Data) -> URL {
+        let u = dir.appendingPathComponent(nombre)
+        try! datos.write(to: u)
+        return u
+    }
+    let pagina = Data((0..<5000).map { UInt8($0 % 7) })
+
+    @Test func leeElZipEnOrdenNaturalYSinBasura() throws {
+        let u = escribe("x.cbz", zipDePrueba([
+            ("p10.jpg", Data("diez".utf8), false), ("p2.jpg", pagina, true), ("p1.png", Data("uno".utf8), false),
+            ("__MACOSX/._p1.png", Data("no".utf8), false), (".DS_Store", Data(), false), ("info.txt", Data("no".utf8), false),
+            ("carpeta/", Data(), false),
+        ]))
+        let z = try ArchivoZip(url: u)
+        #expect(z.nombres == ["p1.png", "p2.jpg", "p10.jpg"])
+        #expect(try z.pagina(0) == Data("uno".utf8))
+        #expect(try z.pagina(1) == pagina, "DEFLATE")
+        #expect(try z.pagina(2) == Data("diez".utf8))
+        #expect(throws: ErrorLector.danado(pagina: 3)) { try z.pagina(3) }
+        // DEFLATE que dice ocupar 0 bytes comprimidos (CBZ dañado): error, no cierre de la app
+        var roto = zipDePrueba([("a.jpg", pagina, true)])
+        roto.replaceSubrange(18..<22, with: [0, 0, 0, 0])
+        let cd = roto.count - 22 - (46 + 5)
+        roto.replaceSubrange(cd + 20 ..< cd + 24, with: [0, 0, 0, 0])
+        let z2 = try ArchivoZip(url: escribe("roto.cbz", roto))
+        #expect(throws: ErrorLector.danado(pagina: 0)) { try z2.pagina(0) }
+    }
+
+    @Test func rechazaRarYBasura() {
+        let rar = escribe("x.cbr", Data([0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0, 0]))
+        #expect(throws: ErrorLector.rar) { try ArchivoZip(url: rar) }
+        #expect(throws: ErrorLector.noEsZip) { try ArchivoZip(url: escribe("y.cbz", Data("hola, no soy un zip".utf8))) }
+        #expect(throws: ErrorLector.sinPaginas) { try ArchivoZip(url: escribe("z.cbz", zipDePrueba([("a.txt", Data("t".utf8), true)]))) }
+    }
+
+    @MainActor @Test func bibliotecaGuardaCambiaYQuita() async throws {
+        let carpeta = dir.appendingPathComponent("Comics")
+        let b = Biblioteca(carpeta: carpeta)
+        let cbr = escribe("Mi comic.cbr", zipDePrueba([("1.jpg", pagina, true)]))  // .cbr que es ZIP: vale
+        let a = try await b.guarda([cbr], para: "c-dofp")
+        #expect(a.tipo == .zip && a.nombre == "Mi comic.cbr" && a.tam > 0)
+        guard case let .zip(z) = try b.fuente("c-dofp") else { Issue.record("no es zip"); return }
+        #expect(z.total == 1)
+        // un RAR de verdad no se guarda y el de antes sigue
+        let rar = escribe("r.cbr", Data([0x52, 0x61, 0x72, 0x21, 0, 0]))
+        await #expect(throws: ErrorLector.rar) { try await b.guarda([rar], para: "c-dofp") }
+        #expect(b.archivos["c-dofp"]?.nombre == "Mi comic.cbr")
+        // cambiar por imágenes sueltas: en orden natural, y el CBZ de antes se borra
+        let imgs = ["b10.png", "b2.png", "nota.txt"].map { escribe($0, Data($0.utf8)) }
+        let i = try await b.guarda(imgs, para: "c-dofp")
+        #expect(i.tipo == .imagenes && i.nombre == "2")
+        guard case let .imagenes(pags) = try b.fuente("c-dofp") else { Issue.record("no son imágenes"); return }
+        #expect(try pags.map { try Data(contentsOf: $0) } == [Data("b2.png".utf8), Data("b10.png".utf8)])
+        #expect(!FileManager.default.fileExists(atPath: carpeta.appendingPathComponent("c-dofp.cbz").path))
+        // otra biblioteca sobre la misma carpeta lo encuentra; quitar lo borra
+        #expect(Biblioteca(carpeta: carpeta).archivos["c-dofp"] == i)
+        b.quita("c-dofp")
+        #expect(b.archivos.isEmpty && Biblioteca(carpeta: carpeta).archivos.isEmpty)
+        #expect(throws: ErrorLector.vacio) { try b.fuente("c-dofp") }
+    }
+
+    @MainActor @Test func paginaPorLaQueVas() throws {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let id = try #require(catalogo.titulos.first { catalogo.saga(de: $0.id) == "comics" }).id
+        p.ponPagina(40, de: 24, a: id)
+        #expect(p.lecturas[id]?.p == 23 && p.lecturas[id]?.t == 24)
+        // leerlo entero la olvida
+        p.alternar(id)
+        #expect(p.lecturas[id] == nil)
+        p.alternar(id)
+        p.ponPagina(3, de: 24, a: id)
+        p.olvidaLectura(id)
+        #expect(p.lecturas.isEmpty)
+    }
+
+    @MainActor @Test func lasLecturasDeLaWebEntranSaneadas() throws {
+        let p = Progreso(catalogo: catalogo, archivo: nil)
+        let ids = catalogo.titulos.filter { catalogo.saga(de: $0.id) == "comics" }.map(\.id)
+        let (a, b, c) = (ids[0], ids[1], ids[2])
+        p.ponPagina(1, de: 10, a: a)
+        p.alternar(c)
+        let json = #"{"v":{},"l":{"\#(a)":{"p":7,"t":10},"\#(b)":{"p":30,"t":20,"f":5},"\#(c)":{"p":2,"t":9},"nada":{"p":1,"t":5},"\#(ids[3])":{"p":1.5,"t":4},"\#(ids[4])":{"p":true,"t":4}}}"#
+        let r = try #require(p.importa(codigoWeb: Data(json.utf8).base64EncodedString()))
+        #expect(r.lecturas == 1)
+        #expect(p.lecturas[a]?.p == 1, "la de aquí no se pisa")
+        #expect(p.lecturas[b] == Lectura(p: 19, t: 20, f: 5), "p se corta a t-1")
+        #expect(p.lecturas[c] == nil, "ya leído")
+        #expect(p.lecturas["nada"] == nil && p.lecturas[ids[3]] == nil && p.lecturas[ids[4]] == nil)
+    }
+}

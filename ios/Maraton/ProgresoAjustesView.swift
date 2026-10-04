@@ -83,6 +83,7 @@ struct AjustesView: View {
     @Environment(Ajustes.self) private var ajustes
     @Environment(Navegacion.self) private var nav
     @Environment(Agenda.self) private var agenda
+    @Environment(Biblioteca.self) private var biblioteca
     @State private var pegado = ""
 
     var body: some View {
@@ -126,6 +127,7 @@ struct AjustesView: View {
                     Text(ajustes.tr("En la web: Ajustes › Tu progreso › «Copiar código», y pégalo aquí. También sirve el enlace de «Compartir mi progreso» de otro iPhone. Se suma a lo marcado; no se borra nada.",
                                     "On the web: Settings › Your progress › “Copy code”, then paste it here. A “Share my progress” link from another iPhone works too. It adds to what you marked; nothing is erased."))
                 }
+                if let catalogo, !biblioteca.archivos.isEmpty { tusComics(catalogo) }
                 Section(ajustes.tr("Acerca de", "About")) {
                     Text(ajustes.tr("App no oficial, sin relación con Marvel ni Disney. Los nombres y personajes son de sus dueños.",
                                     "Unofficial app, not affiliated with Marvel or Disney. Names and characters belong to their owners."))
@@ -137,6 +139,33 @@ struct AjustesView: View {
             .scrollContentBackground(.hidden)
             .background(Tema.fondo)
             .navigationTitle(ajustes.tr("Ajustes", "Settings"))
+        }
+    }
+
+    /// Los archivos de cómic guardados, en el orden del maratón; deslizar borra
+    private func tusComics(_ catalogo: Catalogo) -> some View {
+        let ids = catalogo.titulos.map(\.id).filter { biblioteca.archivos[$0] != nil }
+        return Section {
+            ForEach(ids, id: \.self) { id in
+                if let t = catalogo.titulo(id), let a = biblioteca.archivos[id] {
+                    Button { nav.ficha = t } label: {
+                        LabeledContent {
+                            Text(a.tam.formatted(.byteCount(style: .file)))
+                        } label: {
+                            Text(catalogo.nombre(t, en: ajustes.idioma)).foregroundStyle(Tema.tinta)
+                            Text(a.tipo == .imagenes && Int(a.nombre) != nil ? ajustes.tr("\(a.nombre) imágenes", "\(a.nombre) images") : a.nombre)
+                        }
+                    }
+                }
+            }
+            .onDelete { filas in
+                for i in filas { biblioteca.quita(ids[i]); progreso.olvidaLectura(ids[i]) }
+            }
+        } header: {
+            Text(ajustes.tr("Tus cómics", "Your comics"))
+        } footer: {
+            Text(ajustes.tr("Ocupan \(biblioteca.total.formatted(.byteCount(style: .file))) en este iPhone. Desliza para quitar uno; lo marcado se queda.",
+                            "They take \(biblioteca.total.formatted(.byteCount(style: .file))) on this iPhone. Swipe to remove one; your marks stay."))
         }
     }
 

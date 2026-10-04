@@ -41,5 +41,17 @@ targets:
           - CFBundleURLName: com.ssebv.maraton
             CFBundleURLSchemes: [maraton]
         UIAppFonts: [ArchivoBlack.ttf]
+        # .cbz/.cbr no son tipos del sistema: sin esto el selector de archivos no los deja elegir
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.ssebv.maraton.cbz
+            UTTypeDescription: Comic Book ZIP
+            UTTypeConformsTo: [public.zip-archive, public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [cbz]
+          - UTTypeIdentifier: com.ssebv.maraton.cbr
+            UTTypeDescription: Comic Book RAR
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [cbr]
         CFBundleDevelopmentRegion: es
         CFBundleLocalizations: [es, en]

@@ -10,6 +10,8 @@ public final class Progreso {
     public private(set) var eps: [String: Double] = [:]
     /// Tus estrellas y reseñas, como KEY_NOTAS de la web
     public private(set) var notas: [String: Nota] = [:]
+    /// Por qué página vas en cada cómic, como KEY_LECTOR de la web
+    public private(set) var lecturas: [String: Lectura] = [:]
 
     @ObservationIgnored public let catalogo: Catalogo
     @ObservationIgnored let archivo: URL?
@@ -26,6 +28,7 @@ public final class Progreso {
             vistas = migraLotes(g.v)
             eps = g.e
             notas = g.n ?? [:]
+            lecturas = g.l ?? [:]
         } else {
             apartarAntesDeGuardar = true
         }
@@ -43,6 +46,25 @@ public final class Progreso {
 
     public func alternar(_ id: String) {
         vistas[id] = visto(id) ? nil : ahora
+        // leído entero: ya no se va «por la página N» (como onLeido de la web)
+        if vistas[id] != nil { lecturas[id] = nil }
+        guarda()
+    }
+
+    // MARK: Lecturas
+
+    /// Guarda la página por la que vas (no escribe si no cambió)
+    public func ponPagina(_ p: Int, de t: Int, a id: String) {
+        guard t > 0, p >= 0 else { return }
+        let p = min(p, t - 1)
+        if let l = lecturas[id], l.p == p, l.t == t { return }
+        lecturas[id] = Lectura(p: p, t: t, f: ahora)
+        guarda()
+    }
+
+    /// Al cambiar o quitar el archivo, la página de antes no vale
+    public func olvidaLectura(_ id: String) {
+        guard lecturas.removeValue(forKey: id) != nil else { return }
         guarda()
     }
 
@@ -139,7 +161,7 @@ public final class Progreso {
 
     /// El código de la web (Ajustes › Tu progreso › «Copiar código»): JSON
     /// {v, e, n, l} en base64 sobre UTF-8. Aquí se usan v y e, con su momento,
-    /// y las notas n. nil si el texto no es un código de la web.
+    /// las notas n y la página de cada cómic l. nil si el texto no es un código de la web.
     @discardableResult
     public func importa(codigoWeb: String) -> Importado? {
         let limpio = codigoWeb.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -151,17 +173,20 @@ public final class Progreso {
         }
         let v = marcas(json["v"]), e = marcas(json["e"])
         guard json["v"] is [String: Any] || json["e"] is [String: Any] else { return nil }
-        return suma(v, e, notas: Nota.sanea(json["n"]))
+        return suma(v, e, notas: Nota.sanea(json["n"]), lecturas: Lectura.sanea(json["l"]))
     }
 
     public struct Importado: Sendable, Equatable {
         public let titulos: Int
         public let episodios: Int
         public var notas = 0
+        /// Páginas por las que ibas en cómics de la web
+        public var lecturas = 0
     }
 
-    func suma(_ v: [String: Double], _ e: [String: Double], notas nuevas: [String: Nota] = [:]) -> Importado {
-        var nv = 0, ne = 0, nn = 0
+    func suma(_ v: [String: Double], _ e: [String: Double], notas nuevas: [String: Nota] = [:],
+              lecturas nuevasL: [String: Lectura] = [:]) -> Importado {
+        var nv = 0, ne = 0, nn = 0, nl = 0
         let epsValidos = Set(catalogo.ordenEps)
         for (id, marca) in migraLotes(v) where vistas[id] == nil && catalogo.titulo(id) != nil {
             vistas[id] = marca; nv += 1
@@ -179,8 +204,12 @@ public final class Progreso {
         for (id, n) in porId where notas[id] == nil && catalogo.titulo(id) != nil {
             notas[id] = n; nn += 1
         }
-        if nv + ne + nn > 0 { guarda() }
-        return Importado(titulos: nv, episodios: ne, notas: nn)
+        // por dónde ibas en la web, si aquí no lo tienes ni está leído
+        for (id, l) in nuevasL where lecturas[id] == nil && vistas[id] == nil && catalogo.titulo(id) != nil {
+            lecturas[id] = l; nl += 1
+        }
+        if nv + ne + nn + nl > 0 { guarda() }
+        return Importado(titulos: nv, episodios: ne, notas: nn, lecturas: nl)
     }
 
     /// Quien tenía marcado un lote viejo (p. ej. «sony») conserva la marca en
@@ -197,8 +226,8 @@ public final class Progreso {
 
     // MARK: Guardar
 
-    /// n es opcional: los progreso.json de antes de las notas no la tienen
-    struct Guardado: Codable { let v: [String: Double]; let e: [String: Double]; var n: [String: Nota]? }
+    /// n y l son opcionales: los progreso.json de antes de las notas no la tienen
+    struct Guardado: Codable { let v: [String: Double]; let e: [String: Double]; var n: [String: Nota]?; var l: [String: Lectura]? }
 
     var ahora: Double { (Date().timeIntervalSince1970 * 1000).rounded() }
 
@@ -213,7 +242,7 @@ public final class Progreso {
                 try fm.moveItem(at: archivo, to: respaldo)
                 apartarAntesDeGuardar = false
             }
-            try JSONEncoder().encode(Guardado(v: vistas, e: eps, n: notas)).write(to: archivo, options: .atomic)
+            try JSONEncoder().encode(Guardado(v: vistas, e: eps, n: notas, l: lecturas.isEmpty ? nil : lecturas)).write(to: archivo, options: .atomic)
         } catch {
             // sin disco no hay nada que hacer: la marca sigue en memoria
         }

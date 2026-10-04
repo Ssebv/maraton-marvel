@@ -13,9 +13,10 @@ struct MaratonApp: App {
     var body: some Scene {
         WindowGroup {
             switch app {
-            case let .listo(catalogo, progreso, ajustes, agenda):
+            case let .listo(catalogo, progreso, ajustes, agenda, biblioteca):
                 RaizView()
                     .environment(progreso)
+                    .environment(biblioteca)
                     .environment(ajustes)
                     .environment(agenda)
                     .environment(\.catalogo, catalogo)
@@ -29,13 +30,13 @@ struct MaratonApp: App {
 }
 
 enum EstadoApp {
-    case listo(Catalogo, Progreso, Ajustes, Agenda)
+    case listo(Catalogo, Progreso, Ajustes, Agenda, Biblioteca)
     case error(String)
 
     @MainActor static func carga() -> EstadoApp {
         do {
             let c = try Catalogo.cargar()
-            return .listo(c, Progreso(catalogo: c), Ajustes(paises: c.paises), Agenda())
+            return .listo(c, Progreso(catalogo: c), Ajustes(paises: c.paises), Agenda(), Biblioteca())
         } catch {
             return .error(String(describing: error))
         }
@@ -175,7 +176,8 @@ enum Avisos {
     /// «Progreso importado: N títulos y N episodios nuevos» (y las notas, si llegaron)
     @MainActor static func importado(_ r: Progreso.Importado, _ ajustes: Ajustes) -> String {
         let notas = r.notas > 0 ? ajustes.tr(" y \(r.notas) notas", ", \(r.notas) ratings") : ""
-        return ajustes.tr("Progreso importado: \(r.titulos) títulos, \(r.episodios) episodios nuevos\(notas).",
-                          "Progress imported: \(r.titulos) titles, \(r.episodios) new episodes\(notas).")
+        let lecturas = r.lecturas > 0 ? ajustes.tr(" y \(r.lecturas) cómics a medias", ", \(r.lecturas) comics in progress") : ""
+        return ajustes.tr("Progreso importado: \(r.titulos) títulos, \(r.episodios) episodios nuevos\(notas)\(lecturas).",
+                          "Progress imported: \(r.titulos) titles, \(r.episodios) new episodes\(notas)\(lecturas).")
     }
 }

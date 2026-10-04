@@ -189,6 +189,9 @@ struct Nodo: View {
                         HStack(spacing: 6) {
                             if titulo.esExpress { Etiqueta(texto: "Express") }
                             if titulo.esOpcional { Etiqueta(texto: ajustes.tr("Opcional", "Optional")) }
+                            if !visto, let l = progreso.lecturas[titulo.id], l.t > 1 {
+                                Etiqueta(texto: ajustes.tr("pág. \(l.p + 1)/\(l.t)", "p. \(l.p + 1)/\(l.t)"))
+                            }
                             if titulo.esSerie, case let (v, t) = progreso.vistosDe(serie: titulo.id), t > 0, v > 0, v < t {
                                 Barra(fraccion: Double(v) / Double(t), color: color).frame(width: 90)
                             }

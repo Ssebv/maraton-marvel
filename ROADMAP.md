@@ -166,7 +166,13 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   avisos 15 min antes de cada sesión que dicen qué toca (se rehacen al marcar) y «Añadir al Calendario» con un
   evento semanal hasta el día en que terminas, sin pedir permiso de calendario.
 - [x] **6 · En su iPhone**: instalada el 4 oct con su equipo personal (perfil de 7 días: reinstalar al vencer).
-- Después: lector, parte social, widget y App Store.
+- [x] **12 · Lector de cómics**: «Leer aquí» en la ficha de cada cómic, como la web: eliges tu CBZ/ZIP, PDF o las
+  páginas como imágenes, se copia dentro de la app (nada se sube) y se abre a pantalla completa (deslizar o tocar los
+  lados, el centro esconde los controles, pellizcar amplía, «Al ancho» o «Ver entera», «Marcar como leído» en la
+  última). Recuerda la página («Seguir leyendo · pág. 4 de 24», «pág. 4/24» en la cronología) y la de la web entra
+  con «Copiar código». «Tus cómics» en Ajustes con lo que ocupan. Los CBR que son RAR no se abren (iOS no trae
+  descompresor): pasarlos a CBZ. Sin doble página (la app va en vertical).
+- Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago), widget y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 
