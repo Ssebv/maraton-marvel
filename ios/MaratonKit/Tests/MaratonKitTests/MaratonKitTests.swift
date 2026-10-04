@@ -897,3 +897,24 @@ struct PruebasFiltros {
         #expect(catalogo.buscar("Wolverine", conEpisodios: { _ in false }).count > 0, "el título y el reparto siguen")
     }
 }
+
+@Suite("Noticias")
+struct PruebasNoticias {
+    @Test func leeComoLaWeb() throws {
+        let json = """
+        {"gen":"2026-10-04T15:25:46Z","es":[
+          {"t":"Doomsday","url":"https://a.com/x","medio":"Espinof","f":1790344875000,"img":"noticias/0e7ad6982ee0f38b.webp"},
+          {"t":"Sin https","url":"http://a.com/y"},
+          {"t":"Imagen rara","url":"https://a.com/z","img":"../../etc/passwd"},
+          {"url":"https://a.com/sin-titular"}],
+         "en":"no es una lista"}
+        """
+        let n = try #require(Noticias.lee(Data(json.utf8)))
+        #expect(n.es.map(\.titular) == ["Doomsday", "Imagen rara"])
+        #expect(n.es[0].fecha == Date(timeIntervalSince1970: 1_790_344_875))
+        #expect(Noticias.urlImagen(n.es[0])?.absoluteString == "https://ssebv.github.io/maraton-marvel/noticias/0e7ad6982ee0f38b.webp")
+        #expect(n.es[1].imagen == nil)
+        #expect(n.en.isEmpty)
+        #expect(Noticias.lee(Data("[]".utf8)) == nil)
+    }
+}

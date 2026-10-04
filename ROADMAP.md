@@ -199,6 +199,10 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   sinopsis, la historia, los post-créditos y los títulos de episodio («Episodio 3») con «Mostrar de todos modos», y la
   búsqueda no mira los episodios. En la Cronología, «Filtros» con los de la web (sin series, sin opcionales, joyas,
   express, en Disney+ de tu país, esconder lo visto), solo los que sirven en cada saga, guardados y con «Quitar».
+- [x] **18 · Noticias**: las de la barra lateral de la web (las que trae cada mañana la tarea diaria) en Inicio: un
+  carrusel con imagen, titular, medio y «hace 10 h» en el idioma elegido; tocar abre la noticia en Safari dentro de la
+  app. Se guardan para verse al instante y sin conexión; se piden al volver a la app (una vez por hora) y al tirar
+  para actualizar.
 - Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago) y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)

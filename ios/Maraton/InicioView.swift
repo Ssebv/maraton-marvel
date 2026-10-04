@@ -6,6 +6,8 @@ import MaratonKit
 /// siguiente título en grande y un carrusel por saga.
 struct InicioView: View {
     @Environment(\.catalogo) private var catalogo
+    @Environment(\.scenePhase) private var fase
+    @State private var noticiero = Noticiero()
 
     var body: some View {
         NavigationStack {
@@ -19,6 +21,7 @@ struct InicioView: View {
                             Portada(catalogo: catalogo)
                             TarjetaHorario(catalogo: catalogo).ancla("horario")
                             Estrenos(catalogo: catalogo).ancla("estrenos")
+                            NoticiasInicio(noticiero: noticiero).ancla("noticias")
                             Favoritas(catalogo: catalogo)
                             ForEach(catalogo.sagas) { saga in Carrusel(saga: saga, catalogo: catalogo) }
                         }
@@ -28,6 +31,8 @@ struct InicioView: View {
                 }
             }
             .conAnclaDepuracion()
+            .refreshable { await noticiero.actualiza(forzando: true) }
+            .task(id: fase) { if fase == .active { await noticiero.actualiza() } }
             .background(Tema.fondo)
             .ignoresSafeArea(edges: .top)
             .toolbar(.hidden, for: .navigationBar)
