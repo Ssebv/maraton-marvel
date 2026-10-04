@@ -918,3 +918,82 @@ struct PruebasNoticias {
         #expect(Noticias.lee(Data("[]".utf8)) == nil)
     }
 }
+
+@Suite("Perfil compartible y duelo")
+@MainActor
+struct PruebasPerfil {
+    // hecho con generarPerfil de la web (nombre con tilde y emoji)
+    let deLaWeb = "https://ssebv.github.io/maraton-marvel/?perfil=eyJuIjoiU2ViYXN0acOhbiDwn6a4IiwidiI6IkJRQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQSIsImUiOiIiLCJyIjpbWzIsNV1dLCJ0IjoxNzkwMDAwMDAwMDAwfQ"
+
+    @Test func leeElEnlaceDeLaWeb() throws {
+        let p = try #require(PerfilCompartido.lee(deLaWeb))
+        #expect(p.n == "Sebastián 🦸")
+        #expect(p.fecha == Date(timeIntervalSince1970: 1_790_000_000))
+        let otro = Progreso.ajeno(p, catalogo: catalogo)
+        #expect(Set(otro.vistas.keys) == ["first-class", "dofp"])
+        #expect(otro.nota("dofp").p == 5)
+        // también solo el código, con espacios alrededor
+        let cod = String(deLaWeb.split(separator: "=", maxSplits: 1)[1])
+        #expect(PerfilCompartido.lee("  \(cod)\n") == p)
+    }
+
+    @Test func idaYVuelta() throws {
+        let yo = Progreso(catalogo: catalogo, archivo: nil)
+        yo.alternar("first-class"); yo.alternar("logan")
+        yo.ponEstrellas(4, a: "logan")
+        let p = yo.perfil(nombre: "  Ana  ")
+        #expect(p.n == "Ana")
+        let leido = try #require(PerfilCompartido.lee(p.enlace.absoluteString))
+        #expect(leido == p)
+        let otro = Progreso.ajeno(leido, catalogo: catalogo)
+        #expect(Set(otro.vistas.keys) == Set(yo.vistas.keys))
+        #expect(otro.nota("logan").p == 4)
+        #expect(yo.perfil(nombre: " ").n == "Alguien")
+    }
+
+    @Test func rechazaLoQueNoEsPerfil() {
+        #expect(PerfilCompartido.lee("hola") == nil)
+        #expect(PerfilCompartido.lee("https://ssebv.github.io/maraton-marvel/?perfil=") == nil)
+        // JSON válido pero sin v, o con tipos raros
+        let sinV = Data(#"{"n":"x","e":""}"#.utf8).base64EncodedString()
+        #expect(PerfilCompartido.lee(sinV) == nil)
+        let raro = Data(#"{"n":5,"v":"AQ","r":[[9999,5],["a",1],[1,9]],"t":"ayer"}"#.utf8).base64EncodedString()
+        let p = PerfilCompartido.lee(raro)
+        #expect(p?.n == "Alguien")
+        #expect(p?.r == [[9999, 5]])
+        #expect(p?.t == nil)
+        // una posición fuera del orden no rompe nada
+        #expect(p.map { Progreso.ajeno($0, catalogo: catalogo).notas.isEmpty } == true)
+    }
+
+    @Test func dentroDelMensaje() throws {
+        let p = try #require(PerfilCompartido.lee(deLaWeb))
+        #expect(PerfilCompartido.lee("Así voy en el maratón. Ábrelo: \(deLaWeb) ¡suerte!") == p)
+    }
+
+    @Test func rivalesConElMismoNombre() {
+        let cat = catalogo
+        func perfil(_ n: String, _ ids: Set<String>) -> PerfilCompartido {
+            PerfilCompartido(n: n, v: Bits.codifica(ids, orden: cat.ordenIds), e: "")
+        }
+        var l = Rivales.agrega(perfil("Alguien", ["logan"]), a: [])
+        // otra persona sin nombre: no pisa a la primera
+        l = Rivales.agrega(perfil("Alguien", ["dofp"]), a: l)
+        #expect(l.map(\.n) == ["Alguien", "Alguien 2"])
+        // la primera con un enlace nuevo (ha visto más): se pone al día
+        l = Rivales.agrega(perfil("Alguien", ["logan", "first-class"]), a: l)
+        #expect(l.count == 2)
+        #expect(Bits.decodifica(l[0].v, orden: cat.ordenIds) == ["logan", "first-class"])
+    }
+
+    @Test func duelo() throws {
+        let yo = Progreso(catalogo: catalogo, archivo: nil)
+        yo.alternar("first-class"); yo.alternar("logan"); yo.alternar("c-dofp")
+        let el = Progreso.ajeno(try #require(PerfilCompartido.lee(deLaWeb)), catalogo: catalogo)
+        let d = yo.duelo(contra: el)
+        #expect(d.comunes == 1)
+        #expect(d.soloEl == ["dofp"])
+        #expect(d.soloYo == ["logan"], "el cómic no cuenta en el duelo")
+        #expect(d.diferencia == 0)
+    }
+}

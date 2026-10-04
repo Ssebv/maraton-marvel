@@ -13,6 +13,25 @@ final class Ajustes {
     var sinSpoilers = UserDefaults.standard.bool(forKey: "sinSpoilers") {
         didSet { UserDefaults.standard.set(sinSpoilers, forKey: "sinSpoilers") }
     }
+    /// El nombre con el que compartes tu perfil
+    var nombrePerfil = UserDefaults.standard.string(forKey: "nombrePerfil") ?? "" {
+        didSet { UserDefaults.standard.set(nombrePerfil, forKey: "nombrePerfil") }
+    }
+    /// Los perfiles de tus rivales (modo duelo): una foto fija de su maratón
+    var rivales: [PerfilCompartido] = UserDefaults.standard.data(forKey: "rivales")
+        .flatMap { try? JSONDecoder().decode([PerfilCompartido].self, from: $0) } ?? [] {
+        didSet { UserDefaults.standard.set(try? JSONEncoder().encode(rivales), forKey: "rivales") }
+    }
+
+    /// Un enlace nuevo de quien ya está lo pone al día; otra persona con el
+    /// mismo nombre entra numerada (Rivales.agrega)
+    func agregaRival(_ p: PerfilCompartido) { rivales = Rivales.agrega(p, a: rivales) }
+
+    /// «Poner al día» desde su página: ocupa su sitio y conserva su nombre
+    func reemplazaRival(_ nombre: String, con p: PerfilCompartido) {
+        guard let i = rivales.firstIndex(where: { $0.n == nombre }) else { return agregaRival(p) }
+        rivales[i] = p.llamado(nombre)
+    }
 
     init(paises: [Pais]) {
         let region = Locale.current.region?.identifier ?? "ES"

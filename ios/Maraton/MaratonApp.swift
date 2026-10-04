@@ -159,6 +159,8 @@ struct RaizView: View {
                 nav.rutaFicha.append(RutaPersona(nombre: p, esDireccion: false, desde: nav.ficha?.id))
             }
             if d.bool(forKey: "abrirHorario") { nav.horarioAbierto = true }
+            // `-anadeRival <enlace de perfil>` (capturas del duelo)
+            if let s = d.string(forKey: "anadeRival"), let p = PerfilCompartido.lee(s) { ajustes.agregaRival(p) }
             if let s = d.string(forKey: "importar"), let url = URL(string: s) { importa(url) }
             if d.bool(forKey: "capturaWidget") {
                 PuenteWidget.publica(progreso: progreso, ajustes: ajustes, agenda: agenda)

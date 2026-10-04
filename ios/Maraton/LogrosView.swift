@@ -7,12 +7,15 @@ struct SeccionLogros: View {
     @Environment(\.catalogo) private var catalogo
     @Environment(Progreso.self) private var progreso
     @Environment(Ajustes.self) private var ajustes
+    /// Los de otra persona (página de un rival); nil = los tuyos
+    var ajenos: [Logro]? = nil
+    var titulo: String? = nil
 
     var body: some View {
-        let logros = progreso.logros()
+        let logros = ajenos ?? progreso.logros()
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
-                Text(ajustes.tr("Logros", "Achievements")).font(.title3.weight(.bold))
+                Text(titulo ?? ajustes.tr("Logros", "Achievements")).font(.title3.weight(.bold))
                 Spacer()
                 Text(ajustes.tr("\(logros.filter(\.conseguido).count) de \(logros.count)",
                                 "\(logros.filter(\.conseguido).count) of \(logros.count)"))

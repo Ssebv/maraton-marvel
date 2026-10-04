@@ -208,7 +208,14 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   siguiente título (póster, «Siguiente · X-Men 2/17» o «Sigue · 3 de 10 episodios») que abre su ficha y un ✓ verde
   que lo marca (las series no lo llevan: van por episodios); al recogerse va en línea, más corto. Íconos rellenos, entrada suave
   por pestaña (como entradaPestana de Norte). La app pide iOS 26 (el accesorio y el recogerse son de iOS 26).
-- Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago) y App Store.
+- [x] **20 · Perfil compartible y duelos** (Sebastián: «continúa con el desarrollo en swift»): lo social que no
+  necesita la nube, como el perfil `?perfil=` y el Modo duelo de la web. En Progreso, «Duelos»: «Compartir mi perfil»
+  (pide el nombre una vez) manda el MISMO enlace de la web (lo visto en bits, tus estrellas y la fecha), que abre
+  cualquiera; «Añadir rival» acepta ese enlace de la app o de la web (también pegado en Ajustes › Importar, que ya no
+  lo confunde con tu progreso). Con varios rivales, un ranking con oro, plata y bronce; cada rival abre su página:
+  su %, el duelo contigo (quién va delante, en común, lo que solo vio cada uno), «Ya vio y tú no» (abren su ficha),
+  sus valoraciones y sus logros, y «Poner al día» con un enlace nuevo. Es una foto fija: no se actualiza solo.
+- Después: parte social en vivo (necesita la nube; el login con Apple pide la cuenta de pago) y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 

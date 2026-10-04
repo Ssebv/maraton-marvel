@@ -108,6 +108,8 @@ struct CabeceraPestana<Contenido: View>: View {
     var fotograma: URL? = nil
     var fondo: URL? = nil
     var color: Color = Tema.rojo
+    /// Más aire arriba cuando va bajo una barra de navegación (página apilada)
+    var arriba: CGFloat = 64
     @ViewBuilder var contenido: Contenido
 
     var body: some View {
@@ -121,7 +123,7 @@ struct CabeceraPestana<Contenido: View>: View {
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
-        .padding(.top, 64)
+        .padding(.top, arriba)
         .padding(.bottom, 20)
         .background {
             ZStack {

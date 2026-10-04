@@ -6,7 +6,7 @@ struct ProgresoView: View {
     @Environment(\.catalogo) private var catalogo
     @Environment(Progreso.self) private var progreso
     @Environment(Ajustes.self) private var ajustes
-    @State private var ruta: [RutaLista] = []
+    @State private var ruta = NavigationPath()
     #if DEBUG
     @State private var listaDepuracionAbierta = false
     #endif
@@ -56,6 +56,7 @@ struct ProgresoView: View {
                             .superficie(radio: Tema.radioL)
                         }
                         SeccionListas().padding(.top, 16).ancla("listas")
+                        SeccionDuelos().padding(.top, 16).ancla("duelos")
                         SeccionTuMes().padding(.top, 16).ancla("mes")
                         SeccionDiario()
                         SeccionLogros().padding(.top, 16).ancla("logros")
@@ -68,20 +69,23 @@ struct ProgresoView: View {
             .ignoresSafeArea(edges: .top)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: RutaLista.self) { ListaView(id: $0.id) }
+            .navigationDestination(for: RutaRival.self) { RivalView(nombre: $0.nombre) }
             #if DEBUG
             // capturas: `-abrirLista <id>`
             // (una vez: la tarea de la raíz vuelve a correr al volver atrás)
             .task {
-                guard !listaDepuracionAbierta, let id = UserDefaults.standard.string(forKey: "abrirLista") else { return }
+                guard !listaDepuracionAbierta else { return }
                 listaDepuracionAbierta = true
-                ruta = [RutaLista(id: id)]
+                if let id = UserDefaults.standard.string(forKey: "abrirLista") { ruta.append(RutaLista(id: id)) }
+                // `-abrirRival <nombre>`
+                if let n = UserDefaults.standard.string(forKey: "abrirRival") { ruta.append(RutaRival(nombre: n)) }
             }
             #endif
         }
     }
 }
 
-private struct Dato: View {
+struct Dato: View {
     let valor: String
     let texto: String
     var body: some View {
@@ -220,6 +224,14 @@ struct AjustesView: View {
             r = progreso.importa(v: v, e: e)
         } else if let deLaWeb = progreso.importa(codigoWeb: texto) {
             r = deLaWeb
+        } else if let rival = PerfilCompartido.lee(texto) {
+            // el enlace de «Compartir mi perfil» de otra persona: no es tu
+            // progreso, así que no se suma; entra en tus duelos
+            ajustes.agregaRival(rival)
+            pegado = ""
+            nav.aviso = ajustes.tr("Ese es el perfil de \(rival.n): entra en tus duelos (Progreso › Duelos), sin tocar tu progreso.",
+                                   "That’s \(rival.n)’s profile: it goes into your duels (Progress › Duels), without touching your progress.")
+            return
         } else {
             nav.aviso = ajustes.tr("Ese código no es de la app.", "That code isn't from the app.")
             return
