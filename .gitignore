@@ -13,3 +13,5 @@ ios/*.xcodeproj/
 ios/**/xcuserdata/
 ios/MaratonKit/Tests/MaratonKitTests/vectores.json
 ios/Maraton/Info.plist
+ios/MaratonWidget/Info.plist
+ios/*/*.entitlements

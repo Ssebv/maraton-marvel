@@ -18,9 +18,15 @@ targets:
   Maraton:
     type: application
     platform: iOS
-    sources: [Maraton]
+    sources: [Maraton, Compartido]
     dependencies:
       - package: MaratonKit
+      - target: MaratonWidget
+    # La app y el widget comparten un grupo del llavero (Compartido/FotoWidget.swift)
+    entitlements:
+      path: Maraton/Maraton.entitlements
+      properties:
+        keychain-access-groups: ["$(AppIdentifierPrefix)com.ssebv.maraton.compartido"]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ssebv.maraton
@@ -55,3 +61,28 @@ targets:
               public.filename-extension: [cbr]
         CFBundleDevelopmentRegion: es
         CFBundleLocalizations: [es, en]
+        GrupoLlavero: "$(AppIdentifierPrefix)com.ssebv.maraton.compartido"
+  MaratonWidget:
+    type: app-extension
+    platform: iOS
+    sources: [MaratonWidget, Compartido]
+    entitlements:
+      path: MaratonWidget/MaratonWidget.entitlements
+      properties:
+        keychain-access-groups: ["$(AppIdentifierPrefix)com.ssebv.maraton.compartido"]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ssebv.maraton.widget
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "Maratón"
+        SKIP_INSTALL: YES
+    info:
+      path: MaratonWidget/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: es
+        GrupoLlavero: "$(AppIdentifierPrefix)com.ssebv.maraton.compartido"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

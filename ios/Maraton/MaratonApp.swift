@@ -107,6 +107,7 @@ struct RaizView: View {
                 guard !Task.isCancelled else { return }
             }
             await agenda.reprograma(progreso: progreso, ajustes: ajustes)
+            PuenteWidget.publica(progreso: progreso, ajustes: ajustes, agenda: agenda)
         }
         .alert(nav.aviso ?? "", isPresented: Binding(get: { nav.aviso != nil }, set: { if !$0 { nav.aviso = nil } })) {
             Button("OK", role: .cancel) {}
@@ -118,6 +119,10 @@ struct RaizView: View {
             if let id = d.string(forKey: "abrir") { nav.ficha = progreso.catalogo.titulo(id) }
             if d.bool(forKey: "abrirHorario") { nav.horarioAbierto = true }
             if let s = d.string(forKey: "importar"), let url = URL(string: s) { importa(url) }
+            if d.bool(forKey: "capturaWidget") {
+                PuenteWidget.publica(progreso: progreso, ajustes: ajustes, agenda: agenda)
+                CapturaWidget.dibuja()
+            }
         }
         #endif
         // maraton://importar?v=…&e=… (el enlace «Pasar al iPhone» de la web)
@@ -147,6 +152,11 @@ struct RaizView: View {
     private var conseguidos: Set<String> { Set(progreso.logros().filter(\.conseguido).map(\.id)) }
 
     private func importa(_ url: URL) {
+        // maraton://abrir?id=… (tocar el widget)
+        if let id = Enlace.abrir(url) {
+            nav.ficha = progreso.catalogo.titulo(id)
+            return
+        }
         guard let (v, e) = Enlace.lee(url) else { return }
         let r = progreso.importa(v: v, e: e)
         nav.aviso = Avisos.importado(r, ajustes)
@@ -161,6 +171,13 @@ enum Enlace {
         let q = Dictionary((c.queryItems ?? []).map { ($0.name, $0.value ?? "") }, uniquingKeysWith: { a, _ in a })
         let v = q["v"] ?? "", e = q["e"] ?? ""
         return v.isEmpty && e.isEmpty ? nil : (v, e)
+    }
+
+    /// maraton://abrir?id=… → el id del título
+    static func abrir(_ url: URL) -> String? {
+        guard let c = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              c.scheme == "maraton", c.host == "abrir" else { return nil }
+        return c.queryItems?.first { $0.name == "id" }?.value
     }
 
     static func crea(v: String, e: String) -> URL? {

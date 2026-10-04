@@ -172,7 +172,13 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   última). Recuerda la página («Seguir leyendo · pág. 4 de 24», «pág. 4/24» en la cronología) y la de la web entra
   con «Copiar código». «Tus cómics» en Ajustes con lo que ocupan. Los CBR que son RAR no se abren (iOS no trae
   descompresor): pasarlos a CBZ. Sin doble página (la app va en vertical).
-- Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago), widget y App Store.
+- [x] **13 · Widget «Tu maratón»**: en el escritorio, pequeño (póster a sangre, el siguiente y el %) y mediano
+  (póster, «Siguiente en X-Men · 1 / 17», vistos / total, horas que faltan y la próxima sesión del horario o la
+  cuenta atrás a Doomsday); en la pantalla bloqueada, anillo con el %, rectángulo con el siguiente y la línea
+  «Doomsday en 75 días». Tocarlo abre la ficha. Se redibuja al marcar, al cambiar horario o idioma, cada medianoche
+  y al empezar cada sesión. Sin App Group (la cuenta gratis no deja registrarlo desde la terminal): la app deja una
+  foto pequeña en un grupo del llavero compartido y el widget lee el póster del paquete de la app.
+- Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago) y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)
 
