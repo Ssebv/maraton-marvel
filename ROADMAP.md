@@ -184,6 +184,12 @@ SwiftUI nativa por etapas, primero para el iPhone de Sebastián (cuenta Apple gr
   ficha, un chip por lista (lleno si está dentro) y «Nueva lista», que la crea con ese título. Se guardan en
   progreso.json y las de la web entran con su «Copiar código» (se suman sin borrar). Arreglado: la «l» de ese código
   son las listas, no las páginas de los cómics como suponía la etapa 12 (la web no manda esas páginas).
+- [x] **15 · Página de cada persona**: como FichaPersona de la web. En la ficha, el reparto y la dirección se tocan
+  (la dirección separada: «Anthony y Joe Russo» son dos) y abren su página dentro de la misma hoja, con «volver»: foto,
+  a quién interpreta en ese título (con los nombres de España o del doblaje latino), nacimiento y lugar, edad, desde
+  cuándo trabaja, créditos y cuántas veces sale en el maratón, su primera vez en el maratón, la biografía de TMDB (o la
+  Wikipedia si es del oficio, o TMDB en inglés), «En tu maratón» (sus títulos con su papel; abren su ficha encima),
+  «Conocido también por» e IMDb. Caché de 30 días por persona e idioma; un fallo de red no se guarda.
 - Después: parte social (necesita la nube; el login con Apple pide la cuenta de pago) y App Store.
 
 ## Fase 7 — Comunidades (plan del 16 sep 2026; decidido «como recomiendas» y TODO GRATIS)

@@ -50,7 +50,9 @@ extension EnvironmentValues {
 /// La ficha que está abierta, compartida por todas las pestañas
 @MainActor @Observable
 final class Navegacion {
-    var ficha: Titulo?
+    var ficha: Titulo? { didSet { if ficha?.id != oldValue?.id { rutaFicha = NavigationPath() } } }
+    /// Lo apilado dentro de la hoja de la ficha (personas y sus títulos)
+    var rutaFicha = NavigationPath()
     var horarioAbierto = false
     var pestana = Navegacion.pestanaInicial
     var aviso: String?
@@ -91,7 +93,13 @@ struct RaizView: View {
         .modifier(CapaAvisoLogro(visible: nav.ficha == nil))
         .environment(nav)
         .sheet(item: $nav.ficha) { t in
-            FichaView(titulo: t)
+            // con su navegación: el reparto abre la página de cada persona y
+            // sus títulos abren su ficha encima, con «volver»
+            NavigationStack(path: $nav.rutaFicha) {
+                FichaView(titulo: t)
+                    .navigationDestination(for: RutaPersona.self) { PersonaView(ruta: $0) }
+                    .navigationDestination(for: Titulo.self) { FichaView(titulo: $0, apilada: true) }
+            }
                 .modifier(CapaAvisoLogro())
                 .environment(nav)
                 .presentationDragIndicator(.visible)
@@ -117,6 +125,10 @@ struct RaizView: View {
         .task {
             let d = UserDefaults.standard
             if let id = d.string(forKey: "abrir") { nav.ficha = progreso.catalogo.titulo(id) }
+            // `-abrir x2 -abrirPersona "Hugh Jackman"`
+            if let p = d.string(forKey: "abrirPersona") {
+                nav.rutaFicha.append(RutaPersona(nombre: p, esDireccion: false, desde: nav.ficha?.id))
+            }
             if d.bool(forKey: "abrirHorario") { nav.horarioAbierto = true }
             if let s = d.string(forKey: "importar"), let url = URL(string: s) { importa(url) }
             if d.bool(forKey: "capturaWidget") {

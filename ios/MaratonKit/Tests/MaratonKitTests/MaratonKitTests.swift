@@ -752,3 +752,73 @@ struct PruebasListas {
         #expect(try #require(p.importa(codigoWeb: Data(mas.utf8).base64EncodedString())).listas == 0, "nada nuevo")
     }
 }
+
+@Suite("Personas")
+struct PruebasPersonas {
+    @Test func separaLaDireccion() {
+        #expect(Personas.separa(direccion: "Anthony y Joe Russo") == ["Anthony Russo", "Joe Russo"])
+        #expect(Personas.separa(direccion: "Markus y McFeely (creadores)") == ["Markus", "McFeely"])
+        #expect(Personas.separa(direccion: "Robert N. Skir, Marty Isenberg y David Wise (creadores)") == ["Robert N. Skir", "Marty Isenberg", "David Wise"])
+        #expect(Personas.separa(direccion: "James Mangold") == ["James Mangold"])
+        #expect(Personas.limpia("Vin Diesel (voz)") == "Vin Diesel")
+    }
+
+    @Test func leeLaRespuestaDeTMDB() throws {
+        let logan = try #require(catalogo.tmdb("logan"))
+        let inverso = catalogo.tmdbInverso
+        #expect(inverso["\(logan.tipo):\(logan.numero)"] == "logan")
+        let j: [String: Any] = [
+            "name": "Hugh Jackman", "biography": "  Actor australiano.  ", "birthday": "1968-10-12", "deathday": NSNull(),
+            "place_of_birth": "Sydney, New South Wales, Australia [now]", "imdb_id": "nm0413168", "profile_path": "/x.jpg",
+            "combined_credits": [
+                "cast": [
+                    ["id": logan.numero, "media_type": logan.tipo, "character": "Logan / Wolverine (voice)", "release_date": "2017-03-01"],
+                    ["id": 1, "media_type": "movie", "character": "Phineas", "title": "The Greatest Showman", "poster_path": "/g.jpg",
+                     "vote_count": 9000, "release_date": "2017-12-20"],
+                    ["id": 2, "media_type": "tv", "character": "Himself", "name": "Late Show", "poster_path": "/l.jpg", "vote_count": 99999],
+                    ["id": 3, "media_type": "movie", "character": "Prisoner", "title": "Paperback Hero", "poster_path": "/p.jpg",
+                     "vote_count": 10, "release_date": "1999-01-01", "genre_ids": [18]],
+                    ["id": 4, "media_type": "movie", "title": "Doc", "poster_path": "/d.jpg", "vote_count": 50000, "genre_ids": [99],
+                     "release_date": "1980-01-01"],
+                ] as [[String: Any]],
+                "crew": [["id": 1, "media_type": "movie", "job": "Producer", "title": "The Greatest Showman", "poster_path": "/g.jpg"],
+                         ["id": 5, "media_type": "movie", "job": "Thanks", "title": "Drive", "poster_path": "/dr.jpg", "vote_count": 20000],
+                         ["id": 6, "media_type": "tv", "character": "Hugh Jackman (voice)", "name": "Rick", "poster_path": "/r.jpg", "vote_count": 20000]],
+            ] as [String: Any],
+        ]
+        let d = DatosPersona.lee(j, inverso: inverso)
+        #expect(d.bio == "Actor australiano." && d.lugar == "Sydney, New South Wales, Australia" && d.muerte == nil)
+        #expect(d.enMaraton == ["logan"] && d.papeles["logan"] == "Logan / Wolverine")
+        #expect(d.carrera.desde == 1999, "sin el documental de 1980")
+        #expect(d.carrera.conocido.map(\.t) == ["The Greatest Showman", "Paperback Hero"], "sin repetidos, sin él mismo, sin lo del maratón")
+        #expect(d.carrera.creditos == 3)
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/Santiago")!
+        let hoy = try #require(cal.date(from: DateComponents(year: 2026, month: 10, day: 4)))
+        #expect(d.edad(hoy: hoy, calendario: cal) == 57)
+    }
+
+    @Test func eligeEntreHomonimos() {
+        let logan = catalogo.tmdb("logan")!
+        let inv = catalogo.tmdbInverso
+        let rs: [[String: Any]] = [["id": 1, "name": "Hugh Jackman"],
+                                   ["id": 2, "name": "Hugh Jackman", "known_for": [["media_type": logan.tipo, "id": logan.numero]]]]
+        #expect(Personas.elige(rs, nombre: "Hugh Jackman", inverso: inv) == 2)
+        #expect(Personas.elige([["id": 7, "name": "Otro"], ["id": 8, "name": "Hugh Jackmán"]], nombre: "Hugh Jackman", inverso: inv) == 8)
+        #expect(Personas.elige([], nombre: "x", inverso: inv) == nil)
+    }
+
+    @Test func dondeSaleYComoSeLlama() {
+        let ids = catalogo.titulos(dePersona: "Hugh Jackman").map(\.id)
+        #expect(ids.contains("logan") && ids.contains("xmen1"))
+        #expect(catalogo.titulos(dePersona: "Joe Russo").contains { $0.dir?.contains("Russo") == true })
+        let modok = catalogo.personas(de: catalogo.titulo("modok")!)
+        #expect(modok.filter { $0.nombre == "Patton Oswalt" }.map(\.esDireccion) == [true], "quien dirige y actúa, una vez")
+        #expect(catalogo.personaje("Logan / Wolverine", en: .es) == "Logan / Lobezno")
+        #expect(catalogo.personaje("Logan / Wolverine", en: .latam) == "Logan / Wolverine")
+        #expect(catalogo.personaje("Steve Rogers / Captain America", en: .es) == "Steve Rogers / Capitán América")
+        #expect(catalogo.personaje("Clint Barton / Hawkeye", en: .latam) == "Clint Barton / Hawkeye")
+        #expect(catalogo.personaje("Wolverine", en: .en) == "Wolverine")
+        #expect(Personas.esDelOficio(descripcion: "actor australiano", texto: String(repeating: "Hugh es actor. ", count: 10)))
+        #expect(!Personas.esDelOficio(descripcion: "futbolista y entrenador", texto: String(repeating: "Juega al fútbol como actor. ", count: 10)))
+    }
+}

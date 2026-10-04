@@ -151,9 +151,15 @@ public struct RefTMDB: Codable, Sendable, Hashable {
 struct FicheroCatalogo: Codable { let sagas: [Saga]; let estrenos: [Estreno]; let multiverso: [Universo]; let joyaMin: Double }
 struct FicheroOrden: Codable { let ids: [String]; let eps: [String]; let lotes: [String: [String]] }
 struct FicheroIdiomas: Codable {
-    struct Traduccion: Codable { let textos: [String: String]?; let titulos: [String: String]; let episodios: [String: [String: String]] }
+    struct Traduccion: Codable {
+        let textos: [String: String]?; let titulos: [String: String]; let episodios: [String: [String: String]]
+        /// latam: [«Lobezno», «Wolverine»] (TERMINOS_LATAM)
+        let terminos: [[String]]?
+    }
     let en: Traduccion
     let latam: Traduccion
+    /// PERSONAJES_ES: «captain america» → «Capitán América»
+    let personajes: [String: String]?
 }
 struct FicheroPlataformas: Codable { let paises: [Pais]; let porPais: [String: [String: String]] }
 struct FicheroImagenes: Codable { let posters: [String: String]; let postersEn: [String: String]?; let personas: [String: String]; let tmdb: [String: RefTMDB]; let tmdbKey: String?; let fotogramas: [String: String]? }

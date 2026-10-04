@@ -19,7 +19,7 @@ const fallos = []
 const tmp = mkdtempSync(join(tmpdir(), 'maraton-ios-'))
 const mod = {}
 for (const f of ['data', 'episodes', 'episodios-en', 'episodios-latam', 'en-textos', 'titulos', 'titulos-en',
-  'people', 'posters', 'posters-en', 'plataformas', 'tmdb', 'orden', 'fondos']) {
+  'people', 'posters', 'posters-en', 'plataformas', 'tmdb', 'orden', 'fondos', 'latam']) {
   const org = join(raiz, 'src', f + '.js')
   if (!existsSync(org)) { fallos.push(`falta src/${f}.js`); continue }
   copyFileSync(org, join(tmp, f + '.mjs'))
@@ -28,7 +28,7 @@ for (const f of ['data', 'episodes', 'episodios-en', 'episodios-latam', 'en-text
 rmSync(tmp, { recursive: true, force: true })
 
 const { DATA, ESTRENOS, MULTIVERSO, JOYA_MIN, EPISODES, EPISODIOS_EN, EPISODIOS_LATAM, EN_TEXTOS, TITULOS_LATAM,
-  TITULOS_EN, PEOPLE, POSTERS, POSTERS_EN, PAISES, PLATAFORMAS, TMDB, TMDB_KEY, FOTOGRAMAS, ORDEN_CONGELADO } = mod
+  TITULOS_EN, PEOPLE, POSTERS, POSTERS_EN, PAISES, PLATAFORMAS, TMDB, TMDB_KEY, FOTOGRAMAS, ORDEN_CONGELADO, TERMINOS_LATAM } = mod
 
 // Lo que vive dentro de App.jsx y no en un módulo: se extrae por su texto y,
 // si cambia de forma, el script falla en vez de exportar algo a medias.
@@ -48,6 +48,8 @@ const MAPA_ARISTAS = objeto(/const MAPA_ARISTAS = (\[[\s\S]*?\n\])/, 'MAPA_ARIST
 const ANILLOS = objeto(/const ANILLOS = (\[[\s\S]*?\n\])/, 'ANILLOS')
 const ORBITAS = objeto(/const ORBITAS = (\{[\s\S]*?\n\})/, 'ORBITAS')
 const NUM_EN = objeto(/const NUM_EN = (\{[\s\S]*?\})\n/, 'NUM_EN')
+// los personajes de TMDB (en inglés) como se dicen en España, para la página de cada persona
+const PERSONAJES_ES = objeto(/const PERSONAJES_ES = (\{[\s\S]*?\n\})/, 'PERSONAJES_ES')
 const CORTO_SISTEMA = objeto(/const CORTO_SISTEMA = (\{[^\n]*\})\n/, 'CORTO_SISTEMA')
 
 // El orden de los bits: congelado + lo nuevo detrás (igual que ORDEN_IDS/ORDEN_EPS)
@@ -74,7 +76,8 @@ escribe('multiverso.json', { aristas: MAPA_ARISTAS, anillos: ANILLOS, orbitas: O
 escribe('orden.json', { ids, eps, lotes: LOTES_PARTIDOS })
 escribe('idiomas.json', {
   en: { textos: EN_TEXTOS, titulos: TITULOS_EN, episodios: EPISODIOS_EN },
-  latam: { titulos: TITULOS_LATAM, episodios: EPISODIOS_LATAM },
+  latam: { titulos: TITULOS_LATAM, episodios: EPISODIOS_LATAM, terminos: TERMINOS_LATAM },
+  personajes: PERSONAJES_ES,
 })
 escribe('plataformas.json', { paises: PAISES, porPais: PLATAFORMAS })
 escribe('imagenes.json', { posters: POSTERS, postersEn: POSTERS_EN, personas: PEOPLE, tmdb: TMDB, tmdbKey: TMDB_KEY, fotogramas: FOTOGRAMAS })

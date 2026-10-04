@@ -6,6 +6,8 @@ import MaratonKit
 /// hasta tocarlos), episodios, cambios de actor, extras y reparto
 struct FichaView: View {
     let titulo: Titulo
+    /// Abierta desde la página de una persona: con barra para volver
+    var apilada = false
     @Environment(\.catalogo) private var catalogo
     @Environment(Progreso.self) private var progreso
     @Environment(Ajustes.self) private var ajustes
@@ -44,7 +46,7 @@ struct FichaView: View {
                         if titulo.esSerie && !catalogo.episodios(de: titulo.id).isEmpty {
                             Episodios(titulo: titulo, color: color)
                         }
-                        reparto(catalogo)
+                        reparto(catalogo).ancla("reparto")
                         if let cambios = detalle?.cambios, !cambios.isEmpty {
                             Bloque(titulo: ajustes.tr("Cambios de actor", "Recasts"), icono: "person.2") {
                                 ForEach(cambios, id: \.self) { c in
@@ -72,8 +74,11 @@ struct FichaView: View {
                     .padding(.bottom, 28)
                 }
             }
+            .conAnclaDepuracion()
             .background(Tema.fondo)
             .ignoresSafeArea(edges: .top)
+            .toolbar(apilada ? .visible : .hidden, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
         }
     }
 
@@ -201,25 +206,32 @@ struct FichaView: View {
 
     @ViewBuilder
     private func reparto(_ catalogo: Catalogo) -> some View {
-        let personas = (titulo.dir.map { [($0, ajustes.tr("Dirección", "Director"))] } ?? [])
-            + (titulo.cast ?? []).map { ($0, "") }
+        // la dirección separada («Anthony y Joe Russo» son dos) y sin «(voz)»
+        let personas = catalogo.personas(de: titulo)
         if !personas.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Rotulo(texto: ajustes.tr("Dirección y reparto", "Director and cast"))
                 ScrollView(.horizontal) {
                     HStack(alignment: .top, spacing: 16) {
-                        ForEach(personas, id: \.0) { p, papel in
-                            VStack(spacing: 6) {
-                                ImagenLocal(url: catalogo.urlFoto(persona: p)) {
-                                    Tema.panel2.overlay(Image(systemName: "person.fill").foregroundStyle(Tema.tinta3))
+                        ForEach(personas, id: \.nombre) { p in
+                            NavigationLink(value: RutaPersona(nombre: p.nombre, esDireccion: p.esDireccion, desde: titulo.id)) {
+                                VStack(spacing: 6) {
+                                    ImagenLocal(url: catalogo.urlFoto(persona: p.nombre)) {
+                                        Tema.panel2.overlay(Image(systemName: "person.fill").foregroundStyle(Tema.tinta3))
+                                    }
+                                    .frame(width: 76, height: 76)
+                                    .clipShape(.circle)
+                                    .overlay(Circle().strokeBorder(Tema.linea, lineWidth: 2))
+                                    Text(p.nombre).font(.caption.weight(.semibold)).multilineTextAlignment(.center)
+                                        .foregroundStyle(Tema.tinta)
+                                    if p.esDireccion {
+                                        Text(ajustes.tr("Dirección", "Director")).font(.caption2).foregroundStyle(Tema.tinta2)
+                                    }
                                 }
-                                .frame(width: 76, height: 76)
-                                .clipShape(.circle)
-                                .overlay(Circle().strokeBorder(Tema.linea, lineWidth: 2))
-                                Text(p).font(.caption.weight(.semibold)).multilineTextAlignment(.center)
-                                if !papel.isEmpty { Text(papel).font(.caption2).foregroundStyle(Tema.tinta2) }
+                                .frame(width: 88)
                             }
-                            .frame(width: 88)
+                            .buttonStyle(.plain)
+                            .accessibilityHint(ajustes.tr("Abre su página", "Opens their page"))
                         }
                     }
                 }
