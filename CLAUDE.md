@@ -13,6 +13,8 @@ PWA en Preact + Vite que se publica en GitHub Pages desde `docs/` (rama `main`).
   -destination 'platform=iOS Simulator,name=Maratón iPhone' build`. Usar el simulador «Maratón iPhone»: otras
   sesiones usan los de Xcode. En depuración, `simctl launch … -pestana cronologia -abrir dofp -importar <enlace> -ancla estrenos` (`-ancla` baja a
   una sección marcada con `.ancla(…)`).
+  Fluidez: `xcodebuild test -configuration Release -scheme Maraton -only-testing:MaratonUITests -destination 'id=<UDID>'`
+  da los tirones por pantalla (Hitch Time Ratio, < 5 ms/s bien) solo en el iPhone (desbloqueado; pide Face ID).
 
 ## Qué no tocar
 - `src/orden.js` es GENERADO (`npm run contrato`) y solo crece por el final: los bits de los perfiles dependen de él.
