@@ -123,6 +123,16 @@ struct PruebasCatalogo {
         #expect(catalogo.posicionEnSaga("c-giantsize") == nil, "los cómics no están en el maratón")
     }
 
+    @Test func vecinosEnSaga() throws {
+        let v = catalogo.vecinosEnSaga("origins-wolverine")
+        #expect(v.anterior?.id == "first-class" && v.siguiente?.id == "xmen1")
+        #expect(catalogo.vecinosEnSaga("first-class").anterior == nil, "la primera no tiene anterior")
+        let ultimo = try #require(catalogo.titulos.last { catalogo.saga(de: $0.id) == "xmen" && catalogo.idsMaraton.contains($0.id) })
+        #expect(catalogo.vecinosEnSaga(ultimo.id).siguiente == nil, "la última no tiene siguiente")
+        let c = catalogo.vecinosEnSaga("c-giantsize")
+        #expect(c.anterior == nil && c.siguiente == nil, "los cómics no están en el maratón")
+    }
+
     @Test func buscarVacioNoDevuelveNada() {
         #expect(catalogo.buscar("  ").isEmpty)
     }

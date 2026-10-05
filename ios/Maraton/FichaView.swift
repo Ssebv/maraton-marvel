@@ -2,8 +2,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 import MaratonKit
 
-/// La ficha de un título: datos, dónde verlo, historia, post-créditos (tapados
-/// hasta tocarlos), episodios, cambios de actor, extras y reparto
+/// La ficha de un título: el fotograma con su título, las acciones (marcar,
+/// tráiler, listas), la tira de datos, historia, post-créditos (tapados hasta
+/// tocarlos), episodios, reparto, cambios de actor, extras y su lugar en la saga
 struct FichaView: View {
     let titulo: Titulo
     /// Abierta desde la página de una persona: con barra para volver
@@ -17,6 +18,8 @@ struct FichaView: View {
     @State private var sinTrailer = false
     /// Sin spoilers: mostrar de todos modos, solo en esta ficha
     @State private var revela = false
+    /// La historia larga desplegada
+    @State private var historiaEntera = false
 
     var body: some View {
         if let catalogo {
@@ -25,32 +28,22 @@ struct FichaView: View {
             let oculto = ajustes.sinSpoilers && !progreso.visto(titulo.id) && !revela
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    Fotograma(remota: catalogo.urlFotograma(titulo.id), local: catalogo.urlPoster(titulo.id), color: color)
-                        .frame(height: 210)
-                        .overlay(LinearGradient(colors: [.clear, Tema.fondo], startPoint: .center, endPoint: .bottom))
-                    VStack(alignment: .leading, spacing: 18) {
-                        cabecera(catalogo, color: color)
-                            .padding(.top, -96)
-                        botonVisto(color: color)
-                        if catalogo.saga(de: titulo.id) == "comics" { LeerAqui(titulo: titulo) }
-                        TuValoracion(id: titulo.id, vista: progreso.visto(titulo.id))
-                        EnTusListas(id: titulo.id)
+                    heroe(catalogo, color: color)
+                    VStack(alignment: .leading, spacing: 24) {
+                        acciones(catalogo, color: color)
+                        datos(catalogo, oculto: oculto)
                         if oculto {
                             if titulo.res != nil || titulo.pc != nil || detalle?.larga != nil
                                 || (titulo.esSerie && !catalogo.episodios(de: titulo.id).isEmpty) { avisoSpoilers }
                         } else {
-                            if let res = catalogo.texto(titulo.res, en: ajustes.idioma) {
-                                Text(res).font(.body).foregroundStyle(Tema.tinta)
-                            }
+                            sinopsis(catalogo, larga: detalle?.larga)
                             postCreditos(catalogo, detalle: detalle)
                         }
-                        pildoras(catalogo)
                         if let n = catalogo.texto(titulo.n, en: ajustes.idioma) {
                             Bloque(titulo: ajustes.tr("Antes de verla", "Before watching"), icono: "lightbulb") { Text(n) }
                         }
-                        if !oculto, let larga = detalle?.larga {
-                            Bloque(titulo: ajustes.tr("La historia", "The story"), icono: "book") { Text(larga) }
-                        }
+                        if catalogo.saga(de: titulo.id) == "comics" { LeerAqui(titulo: titulo) }
+                        TuValoracion(id: titulo.id, vista: progreso.visto(titulo.id))
                         if titulo.esSerie && !catalogo.episodios(de: titulo.id).isEmpty {
                             Episodios(titulo: titulo, color: color, oculto: oculto)
                         }
@@ -77,13 +70,16 @@ struct FichaView: View {
                                 }
                             }
                         }
+                        EnLaSaga(titulo: titulo).ancla("saga")
+                        enlaces(catalogo)
                     }
                     .padding(.horizontal, 20)
+                    .padding(.top, 18)
                     .padding(.bottom, 28)
                 }
             }
             .conAnclaDepuracion()
-            .onChange(of: titulo.id) { revela = false }
+            .onChange(of: titulo.id) { revela = false; historiaEntera = false }
             .background(Tema.fondo)
             .ignoresSafeArea(edges: .top)
             .toolbar(apilada ? .visible : .hidden, for: .navigationBar)
@@ -91,60 +87,173 @@ struct FichaView: View {
         }
     }
 
-    private func cabecera(_ catalogo: Catalogo, color: Color) -> some View {
-        HStack(alignment: .bottom, spacing: 16) {
-            Poster(url: catalogo.urlPoster(titulo.id, idioma: ajustes.idioma), ancho: 118, radio: Tema.radioL)
-                .overlay { if progreso.visto(titulo.id) { SelloVista().transition(.scale.combined(with: .opacity)) } }
-                .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
-            VStack(alignment: .leading, spacing: 6) {
-                if let plat = catalogo.plataforma(titulo, pais: ajustes.pais) {
-                    Text(plat)
-                        .font(.footnote.weight(.semibold))
-                        .padding(.horizontal, 10).padding(.vertical, 5)
-                        .background(Tema.verde.opacity(0.16), in: .rect(cornerRadius: Tema.radioS + 2))
-                        .foregroundStyle(Tema.verde)
+    /// El fotograma a todo lo ancho que se funde con el fondo, con el póster,
+    /// la saga y su lugar en ella, el título y lo esencial debajo
+    private func heroe(_ catalogo: Catalogo, color: Color) -> some View {
+        let saga = catalogo.saga(de: titulo.id)
+        let nombreSaga = catalogo.texto(catalogo.sagas.first { $0.saga == saga }?.titulo, en: ajustes.idioma)
+        let pos = catalogo.posicionEnSaga(titulo.id)
+        return ZStack(alignment: .bottomLeading) {
+            Fotograma(remota: catalogo.urlFotograma(titulo.id, ancho: 1280), local: catalogo.urlPoster(titulo.id), color: color)
+                .frame(height: 400)
+                .overlay {
+                    LinearGradient(stops: [.init(color: Tema.fondo.opacity(0), location: 0.3),
+                                           .init(color: Tema.fondo.opacity(0.75), location: 0.68),
+                                           .init(color: Tema.fondo, location: 1)],
+                                   startPoint: .top, endPoint: .bottom)
                 }
-                Text(catalogo.nombre(titulo, en: ajustes.idioma))
-                    .font(.title2.weight(.bold)).foregroundStyle(Tema.tinta)
-                HStack(spacing: 4) {
-                    if let s = titulo.s {
-                        Text("★ \(String(format: "%.1f", s)) \(ajustes.tr("en IMDb", "on IMDb"))").foregroundStyle(Tema.oro).bold()
+            HStack(alignment: .bottom, spacing: 16) {
+                Poster(url: catalogo.urlPoster(titulo.id, idioma: ajustes.idioma), ancho: 104, radio: Tema.radioL)
+                    .overlay { if progreso.visto(titulo.id) { SelloVista().transition(.scale.combined(with: .opacity)) } }
+                    .shadow(color: .black.opacity(0.4), radius: 16, y: 10)
+                VStack(alignment: .leading, spacing: 8) {
+                    if let nombreSaga {
+                        Rotulo(texto: nombreSaga + (pos.map { " · \($0.posicion)/\($0.total)" } ?? ""), color: Tema.tinta2, punto: color)
                     }
-                    if let r = titulo.r {
-                        Text("· \(String(r))").foregroundStyle(Tema.azul).bold()
-                        Text(ajustes.tr("estreno", "release")).foregroundStyle(Tema.tinta2)
+                    Text(catalogo.nombre(titulo, en: ajustes.idioma))
+                        .font(.title.weight(.heavy))
+                        .foregroundStyle(Tema.tinta)
+                        .lineLimit(4)
+                        .minimumScaleFactor(0.75)
+                        .accessibilityAddTraits(.isHeader)
+                    if let plat = catalogo.plataforma(titulo, pais: ajustes.pais) {
+                        Label(plat, systemImage: "play.tv")
+                            .font(.footnote.weight(.semibold))
+                            .lineLimit(1)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(Tema.verde.opacity(0.16), in: .capsule)
+                            .foregroundStyle(Tema.verde)
                     }
                 }
-                .font(.subheadline)
-                Text([titulo.h.flatMap { $0 == "—" ? nil : $0 }, titulo.esSerie ? Formato.meta(titulo, catalogo: catalogo) : titulo.d.map(Formato.duracion), titulo.a]
-                        .compactMap { $0 }.joined(separator: " · "))
-                    .font(.subheadline).foregroundStyle(Tema.tinta2)
             }
+            .padding(.horizontal, 20)
         }
     }
 
-    private func botonVisto(color: Color) -> some View {
+    /// Marcar, tráiler y listas en una fila: el principal ancho, los otros redondos
+    private func acciones(_ catalogo: Catalogo, color: Color) -> some View {
         let visto = progreso.visto(titulo.id)
-        let comic = catalogo?.saga(de: titulo.id) == "comics"
-        return Button {
-            withAnimation(.snappy) { progreso.alternar(titulo.id) }
-        } label: {
-            Text(comic ? (visto ? ajustes.tr("✓ Leído — marcar pendiente", "✓ Read — mark as pending")
-                                : ajustes.tr("Marcar como leído", "Mark as read"))
-                       : visto ? ajustes.tr("✓ Vista — marcar pendiente", "✓ Seen — mark as pending")
-                               : ajustes.tr("Marcar como vista", "Mark as seen"))
-                .font(.body.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: 50)
+        let comic = catalogo.saga(de: titulo.id) == "comics"
+        return HStack(spacing: 12) {
+            Button {
+                withAnimation(.snappy) { progreso.alternar(titulo.id) }
+            } label: {
+                Label(comic ? (visto ? ajustes.tr("Leído", "Read") : ajustes.tr("Marcar como leído", "Mark as read"))
+                            : (visto ? ajustes.tr("Vista", "Seen") : ajustes.tr("Marcar como vista", "Mark as seen")),
+                      systemImage: visto ? "checkmark" : "plus")
+                    .contentTransition(.symbolEffect(.replace))
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 52)
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .tint(visto ? Tema.verde : color)
+            .shadow(color: (visto ? Tema.verde : color).opacity(0.4), radius: 12, y: 5)
+            .sensoryFeedback(.success, trigger: visto) { _, nuevo in nuevo }
+            .accessibilityHint(visto ? ajustes.tr("Toca para dejarla pendiente", "Tap to mark as pending") : "")
+            if let ref = catalogo.tmdb(titulo.id), let clave = catalogo.claveTMDB {
+                Button {
+                    Task { await abreTrailer(ref: ref, clave: clave) }
+                } label: {
+                    Group {
+                        if buscandoTrailer { ProgressView() } else { Image(systemName: "play.fill") }
+                    }
+                    .modifier(Redondo())
+                }
+                .buttonStyle(.plain)
+                .disabled(buscandoTrailer)
+                .accessibilityLabel(ajustes.tr("Tráiler", "Trailer"))
+                .alert(ajustes.tr("No encontré el tráiler", "No trailer found"), isPresented: $sinTrailer) {
+                    Button("OK", role: .cancel) {}
+                }
+            }
+            MenuListas(id: titulo.id)
         }
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.capsule)
-        .tint(visto ? Tema.verde : color)
-        .shadow(color: (visto ? Tema.verde : color).opacity(0.4), radius: 12, y: 5)
-        .sensoryFeedback(.success, trigger: visto) { _, nuevo in nuevo }
     }
 
-    /// Tráiler, IMDb y Letterboxd en píldoras, como en la web
-    private func pildoras(_ catalogo: Catalogo) -> some View {
+    /// La tira de datos, como la de la App Store: nota, estreno, duración,
+    /// cuándo pasa y las escenas en los créditos (sin spoilers, estas no)
+    private func datos(_ catalogo: Catalogo, oculto: Bool) -> some View {
+        var celdas: [(rotulo: String, valor: String, pie: String?)] = []
+        if let s = titulo.s { celdas.append(("IMDb", String(format: "%.1f", s), "★★★★★".prefix(Int((s / 2).rounded())).description)) }
+        if let r = titulo.r { celdas.append((ajustes.tr("Estreno", "Release"), String(r), nil)) }
+        if titulo.esSerie {
+            let temporadas = catalogo.temporadas(de: titulo.id)
+            let eps = temporadas.reduce(0) { $0 + $1.episodios.count }
+            if eps > 0 {
+                celdas.append((ajustes.tr("Episodios", "Episodes"), "\(eps)",
+                               ajustes.tr("\(temporadas.count) temporada\(temporadas.count == 1 ? "" : "s")",
+                                          "\(temporadas.count) season\(temporadas.count == 1 ? "" : "s")")))
+            }
+        } else if let d = titulo.d {
+            celdas.append((ajustes.tr("Duración", "Runtime"), Formato.duracion(d), nil))
+        }
+        if let h = catalogo.texto(titulo.h, en: ajustes.idioma), h != "—" { celdas.append((ajustes.tr("Ocurre en", "Set in"), h, nil)) }
+        if !oculto, let pc = catalogo.texto(titulo.pc, en: ajustes.idioma) {
+            celdas.append((ajustes.tr("Post-créditos", "Post-credits"),
+                           pc == "0" ? ajustes.tr("Ninguna", "None") : pc.split(separator: " ").first.map(String.init) ?? pc,
+                           pc == "0" ? nil : pc.split(separator: " ").dropFirst().joined(separator: " ")
+                               .trimmingCharacters(in: CharacterSet(charactersIn: "()"))))
+        }
+        if let a = titulo.a { celdas.append((ajustes.tr("Autores", "Creators"), a, nil)) }
+        return ScrollView(.horizontal) {
+            HStack(alignment: .top, spacing: 0) {
+                ForEach(Array(celdas.enumerated()), id: \.offset) { i, c in
+                    if i > 0 { Rectangle().fill(Tema.linea).frame(width: 1, height: 44).padding(.top, 6) }
+                    VStack(spacing: 4) {
+                        Text(c.rotulo.uppercased())
+                            .font(.caption2.weight(.bold)).tracking(0.8)
+                            .foregroundStyle(Tema.tinta3)
+                        Text(c.valor)
+                            .font(.title3.weight(.bold).monospacedDigit())
+                            .foregroundStyle(i == 0 && titulo.s != nil ? Tema.oro : Tema.tinta)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.7)
+                        if let pie = c.pie, !pie.isEmpty {
+                            Text(pie).font(.caption).foregroundStyle(Tema.tinta2).lineLimit(2).multilineTextAlignment(.center)
+                        }
+                    }
+                    .frame(minWidth: 92, maxWidth: 150)
+                    .padding(.horizontal, 6)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 8)
+        }
+        .scrollIndicators(.hidden)
+        .superficie(radio: Tema.radioL)
+    }
+
+    /// El resumen y, debajo, la historia larga plegada en cuatro líneas
+    @ViewBuilder
+    private func sinopsis(_ catalogo: Catalogo, larga: String?) -> some View {
+        let res = catalogo.texto(titulo.res, en: ajustes.idioma)
+        if res != nil || larga != nil {
+            VStack(alignment: .leading, spacing: 12) {
+                if let res {
+                    Text(res).font(.title3.weight(.medium)).foregroundStyle(Tema.tinta)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let larga {
+                    Text(larga)
+                        .font(.body).foregroundStyle(Tema.tinta2)
+                        .lineLimit(historiaEntera ? nil : 4)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button(historiaEntera ? ajustes.tr("Leer menos", "Read less") : ajustes.tr("Leer la historia", "Read the story")) {
+                        withAnimation(.snappy) { historiaEntera.toggle() }
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .tint(Tema.tinta)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// IMDb y Letterboxd al final, como enlaces discretos
+    private func enlaces(_ catalogo: Catalogo) -> some View {
         // sin el sufijo de temporadas («Cloak & Dagger (S1–S2)») y con & codificado
         let enIngles = catalogo.nombre(titulo, en: .en)
             .replacingOccurrences(of: #"\s*\([^)]*\)$"#, with: "", options: .regularExpression)
@@ -152,24 +261,11 @@ struct FichaView: View {
         permitidos.remove(charactersIn: "&=+?/#")
         let q = enIngles.addingPercentEncoding(withAllowedCharacters: permitidos) ?? enIngles
         return HStack(spacing: 10) {
-            if let ref = catalogo.tmdb(titulo.id), let clave = catalogo.claveTMDB {
-                Button {
-                    Task { await abreTrailer(ref: ref, clave: clave) }
-                } label: {
-                    Group {
-                        if buscandoTrailer { ProgressView() } else { Label(ajustes.tr("Tráiler", "Trailer"), systemImage: "play.fill") }
-                    }
-                }
-                .disabled(buscandoTrailer)
-                .alert(ajustes.tr("No encontré el tráiler", "No trailer found"), isPresented: $sinTrailer) {
-                    Button("OK", role: .cancel) {}
-                }
-            }
             if let imdb = URL(string: "https://www.imdb.com/find/?q=\(q)") {
-                Link(destination: imdb) { Label("IMDb", systemImage: "arrow.up.right.square") }
+                Link(destination: imdb) { Label("IMDb", systemImage: "arrow.up.right") }
             }
             if let lb = URL(string: "https://letterboxd.com/search/films/\(q)/") {
-                Link(destination: lb) { Label("Letterboxd", systemImage: "arrow.up.right.square") }
+                Link(destination: lb) { Label("Letterboxd", systemImage: "arrow.up.right") }
             }
         }
         .font(.subheadline.weight(.semibold))
@@ -177,6 +273,7 @@ struct FichaView: View {
         .buttonBorderShape(.capsule)
         .tint(Tema.tinta)
         .labelStyle(.titleAndIcon)
+        .frame(maxWidth: .infinity)
     }
 
     /// Lo que la web dice en modo sin spoilers, con su «Mostrar de todos modos»
@@ -536,97 +633,104 @@ struct LeerAqui: View {
 
 /// «Tus listas»: un chip por lista (lleno si el título está en ella) y «Nueva
 /// lista», que la crea con este título dentro
-private struct EnTusListas: View {
+/// Botón redondo de 52 pt junto al principal (tráiler, listas)
+private struct Redondo: ViewModifier {
+    var activo = false
+    func body(content: Content) -> some View {
+        content
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(activo ? Color.black : Tema.tinta)
+            .frame(width: 52, height: 52)
+            .background(activo ? Tema.oro : Tema.panel2, in: .circle)
+            .overlay(Circle().strokeBorder(activo ? .clear : Tema.linea, lineWidth: 1))
+            .contentShape(.circle)
+    }
+}
+
+/// Tus listas en un menú: cada una con su marca y, al final, «Nueva lista».
+/// El botón se pinta de oro si el título está en alguna.
+private struct MenuListas: View {
     let id: String
     @Environment(Progreso.self) private var progreso
     @Environment(Ajustes.self) private var ajustes
     @State private var creando = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(ajustes.tr("Tus listas", "Your lists")).font(.headline).foregroundStyle(Tema.tinta)
-            Fluir(espacio: 8) {
+        let dentro = progreso.listas.filter { $0.items.contains(id) }.count
+        Menu {
+            Section(ajustes.tr("Tus listas", "Your lists")) {
                 ForEach(progreso.listas) { l in
-                    let dentro = l.items.contains(id)
-                    Button {
-                        withAnimation(.snappy) { progreso.alternar(id, enLista: l.id) }
-                    } label: {
-                        Label(l.nombre, systemImage: dentro ? "checkmark" : "plus")
-                            .lineLimit(1)
-                            .contentTransition(.symbolEffect(.replace))
-                    }
-                    .buttonStyle(ChipLista(dentro: dentro))
-                    .accessibilityValue(dentro ? ajustes.tr("En la lista", "On the list") : "")
-                    .sensoryFeedback(.selection, trigger: dentro)
+                    Toggle(l.nombre, isOn: Binding(get: { l.items.contains(id) },
+                                                   set: { _ in withAnimation(.snappy) { progreso.alternar(id, enLista: l.id) } }))
                 }
-                Button { creando = true } label: {
-                    Label(ajustes.tr("Nueva lista", "New list"), systemImage: "plus")
-                }
-                .buttonStyle(ChipLista(dentro: false, discreto: true))
             }
+            // marcar varias seguidas sin que se cierre; «Nueva lista» sí lo cierra (si no, su alerta no sale)
+            .menuActionDismissBehavior(.disabled)
+            Button { creando = true } label: { Label(ajustes.tr("Nueva lista", "New list"), systemImage: "plus") }
+        } label: {
+            Image(systemName: dentro > 0 ? "bookmark.fill" : "bookmark")
+                .contentTransition(.symbolEffect(.replace))
+                .modifier(Redondo(activo: dentro > 0))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .sensoryFeedback(.selection, trigger: dentro)
+        .accessibilityLabel(ajustes.tr("Tus listas", "Your lists"))
+        .accessibilityValue(dentro > 0 ? ajustes.tr("En \(dentro) lista\(dentro == 1 ? "" : "s")", "On \(dentro) list\(dentro == 1 ? "" : "s")") : "")
         .modifier(PideNombre(titulo: ajustes.tr("Nueva lista", "New list"), activo: $creando) { nombre in
             if let l = progreso.creaLista(nombre) { progreso.alternar(id, enLista: l) }
         })
     }
 }
 
-private struct ChipLista: ButtonStyle {
-    let dentro: Bool
-    var discreto = false
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.subheadline.weight(.semibold))
-            .padding(.horizontal, 14)
-            .frame(minHeight: 36)
-            .foregroundStyle(dentro ? Color.black : discreto ? Tema.tinta2 : Tema.tinta)
-            .background(dentro ? Tema.oro : Tema.panel2, in: .capsule)
-            .overlay(Capsule().strokeBorder(discreto ? Tema.linea : .clear, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
-            .opacity(configuration.isPressed ? 0.7 : 1)
-            .contentShape(.capsule)
-    }
-}
+/// El de antes y el de después en su saga: tocarlos abre su ficha encima
+private struct EnLaSaga: View {
+    let titulo: Titulo
+    @Environment(\.catalogo) private var catalogo
+    @Environment(Progreso.self) private var progreso
+    @Environment(Ajustes.self) private var ajustes
 
-/// Fila que salta de línea cuando no cabe (los chips de las listas)
-struct Fluir: Layout {
-    var espacio: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let filas = reparte(ancho: proposal.width ?? .infinity, subviews)
-        let alto = filas.map(\.alto).reduce(0, +) + espacio * CGFloat(max(0, filas.count - 1))
-        return CGSize(width: proposal.width ?? filas.map(\.ancho).max() ?? 0, height: alto)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var y = bounds.minY
-        for f in reparte(ancho: bounds.width, subviews) {
-            var x = bounds.minX
-            for i in f.indices {
-                let t = subviews[i].sizeThatFits(.init(width: bounds.width, height: nil))
-                subviews[i].place(at: CGPoint(x: x, y: y), proposal: .init(width: min(t.width, bounds.width), height: t.height))
-                x += min(t.width, bounds.width) + espacio
+    var body: some View {
+        if let catalogo {
+            let v = catalogo.vecinosEnSaga(titulo.id)
+            if v.anterior != nil || v.siguiente != nil {
+                VStack(alignment: .leading, spacing: 12) {
+                    Rotulo(texto: ajustes.tr("En la saga", "In the saga"))
+                    HStack(alignment: .top, spacing: 12) {
+                        tarjeta(v.anterior, rotulo: ajustes.tr("Antes", "Before"), catalogo: catalogo)
+                        tarjeta(v.siguiente, rotulo: ajustes.tr("Después", "After"), catalogo: catalogo)
+                    }
+                }
             }
-            y += f.alto + espacio
         }
     }
 
-    private struct Fila { var indices: [Int] = []; var ancho: CGFloat = 0; var alto: CGFloat = 0 }
-
-    private func reparte(ancho: CGFloat, _ subviews: Subviews) -> [Fila] {
-        var filas: [Fila] = [Fila()]
-        for (i, v) in subviews.enumerated() {
-            let t = v.sizeThatFits(.init(width: ancho, height: nil))
-            let w = min(t.width, ancho)
-            if !filas[filas.count - 1].indices.isEmpty && filas[filas.count - 1].ancho + espacio + w > ancho {
-                filas.append(Fila())
+    @ViewBuilder
+    private func tarjeta(_ t: Titulo?, rotulo: String, catalogo: Catalogo) -> some View {
+        if let t {
+            NavigationLink(value: t) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Poster(url: catalogo.urlPoster(t.id, idioma: ajustes.idioma), ancho: 64, radio: Tema.radioM)
+                        .overlay(alignment: .bottomTrailing) {
+                            if progreso.visto(t.id) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.title3).foregroundStyle(.white, Tema.verde)
+                                    .padding(4)
+                            }
+                        }
+                    Text(rotulo.uppercased()).font(.caption2.weight(.bold)).tracking(0.8).foregroundStyle(Tema.tinta3)
+                    Text(catalogo.nombre(t, en: ajustes.idioma))
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(Tema.tinta)
+                        .lineLimit(2).multilineTextAlignment(.leading)
+                    Text(Formato.meta(t, catalogo: catalogo)).font(.caption).foregroundStyle(Tema.tinta2).lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(14)
+                .superficie(radio: Tema.radioL)
+                .contentShape(.rect)
             }
-            var f = filas[filas.count - 1]
-            f.ancho += (f.indices.isEmpty ? 0 : espacio) + w
-            f.alto = max(f.alto, t.height)
-            f.indices.append(i)
-            filas[filas.count - 1] = f
+            .buttonStyle(.plain)
+            .accessibilityHint(ajustes.tr("Abre su ficha", "Opens its page"))
+        } else {
+            Color.clear.frame(maxWidth: .infinity, maxHeight: 1)
         }
-        return filas
     }
 }

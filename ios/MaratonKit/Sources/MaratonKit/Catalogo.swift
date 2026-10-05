@@ -235,9 +235,21 @@ public final class Catalogo: Sendable {
 
     /// Posición de un título del maratón dentro de su saga (1…n) y cuántos tiene
     public func posicionEnSaga(_ id: String) -> (posicion: Int, total: Int)? {
-        guard let saga = sagaDe[id] else { return nil }
-        let ids = titulos.filter { sagaDe[$0.id] == saga && idsMaraton.contains($0.id) }.map(\.id)
-        return ids.firstIndex(of: id).map { ($0 + 1, ids.count) }
+        let ts = enSaga(id)
+        return ts.firstIndex { $0.id == id }.map { ($0 + 1, ts.count) }
+    }
+
+    /// El título de antes y el de después en su saga, en el orden del maratón
+    public func vecinosEnSaga(_ id: String) -> (anterior: Titulo?, siguiente: Titulo?) {
+        let ts = enSaga(id)
+        guard let i = ts.firstIndex(where: { $0.id == id }) else { return (nil, nil) }
+        return (i > 0 ? ts[i - 1] : nil, i + 1 < ts.count ? ts[i + 1] : nil)
+    }
+
+    /// Los títulos del maratón de la saga de `id` (vacío si no está en el maratón)
+    private func enSaga(_ id: String) -> [Titulo] {
+        guard let saga = sagaDe[id] else { return [] }
+        return titulos.filter { sagaDe[$0.id] == saga && idsMaraton.contains($0.id) }
     }
 
     public func tmdb(_ id: String) -> RefTMDB? { imagenes.tmdb[id] }
