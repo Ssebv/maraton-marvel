@@ -105,11 +105,9 @@ struct PersonaView: View {
         return VStack(spacing: 10) {
             Group {
                 if let local = catalogo.urlFoto(persona: ruta.nombre) {
-                    ImagenLocal(url: local) { Tema.panel2 }
+                    ImagenCacheada(url: local) { Tema.panel2 }
                 } else {
-                    AsyncImage(url: datos?.foto.flatMap { URL(string: "https://image.tmdb.org/t/p/w342\($0)") }) { i in
-                        i.resizable().scaledToFill()
-                    } placeholder: {
+                    ImagenCacheada(url: datos?.foto.flatMap { URL(string: "https://image.tmdb.org/t/p/w342\($0)") }) {
                         Tema.panel2.overlay(Image(systemName: "person.fill").font(.largeTitle).foregroundStyle(Tema.tinta3))
                     }
                 }
@@ -320,9 +318,7 @@ struct PersonaView: View {
                 LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(lista, id: \.self) { x in
                         VStack(alignment: .leading, spacing: 4) {
-                            AsyncImage(url: URL(string: "https://image.tmdb.org/t/p/w185\(x.p)")) { i in
-                                i.resizable().scaledToFill()
-                            } placeholder: {
+                            ImagenCacheada(url: URL(string: "https://image.tmdb.org/t/p/w185\(x.p)")) {
                                 Tema.panel2.overlay(Image(systemName: "film").foregroundStyle(Tema.tinta3))
                             }
                             .frame(width: 84, height: 126)

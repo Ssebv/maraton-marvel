@@ -77,9 +77,8 @@ private struct TarjetaNoticia: View {
             Tema.panel2
                 .frame(width: 260, height: 146)
                 .overlay {
-                    AsyncImage(url: Noticias.urlImagen(noticia)) { fase in
-                        if let img = fase.image { img.resizable().scaledToFill() }
-                        else { Image(systemName: "newspaper").font(.title).foregroundStyle(Tema.tinta3) }
+                    ImagenCacheada(url: Noticias.urlImagen(noticia)) {
+                        Image(systemName: "newspaper").font(.title).foregroundStyle(Tema.tinta3)
                     }
                 }
                 .clipped()

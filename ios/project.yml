@@ -22,6 +22,9 @@ targets:
     dependencies:
       - package: MaratonKit
       - target: MaratonWidget
+    # la sonda de fluidez (MaratonUITests) va en su esquema
+    scheme:
+      testTargets: [MaratonUITests]
     # La app y el widget comparten un grupo del llavero (Compartido/FotoWidget.swift)
     entitlements:
       path: Maraton/Maraton.entitlements
@@ -86,3 +89,18 @@ targets:
         GrupoLlavero: "$(AppIdentifierPrefix)com.ssebv.maraton.compartido"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  # Sonda de fluidez: mide los tirones al deslizar cada pantalla (ver FluidezTests.swift)
+  MaratonUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [MaratonUITests]
+    dependencies:
+      - target: Maraton
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ssebv.maraton.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Maraton
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"

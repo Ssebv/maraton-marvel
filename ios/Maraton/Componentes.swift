@@ -55,8 +55,11 @@ final class Ajustes {
     func tr(_ es: String, _ en: String) -> String { idioma == .en ? en : es }
 }
 
-/// Las imágenes del paquete (WebP), decodificadas fuera del hilo principal
-/// una vez y guardadas listas para pintar. @unchecked: NSCache es seguro entre hilos.
+/// Las imágenes del paquete (WebP) y las de la red (TMDB, noticias), decodificadas
+/// fuera del hilo principal una vez y guardadas listas para pintar. AsyncImage no
+/// guarda nada y decodifica en el hilo principal cada vez que una imagen vuelve a
+/// la pantalla: al deslizar un carrusel eso eran tirones (medido en el iPhone).
+/// @unchecked: NSCache es seguro entre hilos.
 final class Imagenes: @unchecked Sendable {
     static let compartidas = Imagenes()
     /// Decodificadas pesan mucho más que el WebP (un póster ~0,7 MB): tope de 80 MB
@@ -69,16 +72,20 @@ final class Imagenes: @unchecked Sendable {
     /// La ya preparada, si está (para pintarla en la primera pasada sin parpadeo)
     func enCache(_ url: URL?) -> UIImage? { url.flatMap { cache.object(forKey: $0 as NSURL) } }
 
-    func imagen(_ url: URL) async -> UIImage? {
+    @concurrent func imagen(_ url: URL) async -> UIImage? {
         if let i = enCache(url) { return i }
-        guard let i = await UIImage(contentsOfFile: url.path)?.byPreparingForDisplay() else { return nil }
+        // la red pasa por la caché de URLSession: volver a una ficha no la descarga otra vez
+        let cruda = url.isFileURL ? UIImage(contentsOfFile: url.path)
+            : (try? await URLSession.shared.data(from: url)).flatMap { UIImage(data: $0.0) }
+        guard let i = await cruda?.byPreparingForDisplay() else { return nil }
         cache.setObject(i, forKey: url as NSURL, cost: i.cgImage.map { $0.bytesPerRow * $0.height } ?? 0)
         return i
     }
 }
 
-/// Una imagen del paquete que llena su marco; mientras se decodifica, `relleno`
-struct ImagenLocal<Relleno: View>: View {
+/// Una imagen (del paquete o de la red) que llena su marco; mientras se
+/// prepara, `relleno`. Las de la red aparecen con un fundido.
+struct ImagenCacheada<Relleno: View>: View {
     let url: URL?
     @ViewBuilder var relleno: Relleno
     @State private var cargada: (url: URL, imagen: UIImage)?
@@ -86,11 +93,11 @@ struct ImagenLocal<Relleno: View>: View {
     var body: some View {
         // la de la url actual: una celda reciclada no enseña la imagen de otra
         if let img = cargada.flatMap({ $0.url == url ? $0.imagen : nil }) ?? Imagenes.compartidas.enCache(url) {
-            Image(uiImage: img).resizable().scaledToFill()
+            Image(uiImage: img).resizable().scaledToFill().transition(.opacity)
         } else {
             relleno.task(id: url) {
                 guard let url, let img = await Imagenes.compartidas.imagen(url) else { return }
-                cargada = (url, img)
+                withAnimation(url.isFileURL ? nil : .easeOut(duration: 0.3)) { cargada = (url, img) }
             }
         }
     }
@@ -102,7 +109,7 @@ struct Poster: View {
     var radio: CGFloat = Tema.radioM
 
     var body: some View {
-        ImagenLocal(url: url) {
+        ImagenCacheada(url: url) {
             Tema.panel2.overlay(Image(systemName: "film").foregroundStyle(Tema.tinta3))
         }
         .frame(width: ancho, height: ancho * 1.5)

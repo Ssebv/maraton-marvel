@@ -360,7 +360,7 @@ struct FichaView: View {
                             NavigationLink(value: RutaPersona(nombre: p.nombre, esDireccion: p.esDireccion, desde: titulo.id,
                                                               origen: "reparto:\(titulo.id):\(p.nombre)")) {
                                 VStack(spacing: 6) {
-                                    ImagenLocal(url: catalogo.urlFoto(persona: p.nombre)) {
+                                    ImagenCacheada(url: catalogo.urlFoto(persona: p.nombre)) {
                                         Tema.panel2.overlay(Image(systemName: "person.fill").foregroundStyle(Tema.tinta3))
                                     }
                                     .frame(width: 76, height: 76)
@@ -377,6 +377,7 @@ struct FichaView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityHint(ajustes.tr("Abre su página", "Opens their page"))
+                            .accessibilityIdentifier("reparto")  // la sonda de fluidez lo busca
                         }
                     }
                 }

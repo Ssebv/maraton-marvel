@@ -77,14 +77,10 @@ struct Fotograma: View {
                 LinearGradient(colors: [color.opacity(0.55), .black], startPoint: .topLeading, endPoint: .bottomTrailing)
             }
             .overlay {
-                if local != nil { ImagenLocal(url: local) { Color.clear } }
+                if local != nil { ImagenCacheada(url: local) { Color.clear } }
             }
             .overlay {
-                if let remota {
-                    AsyncImage(url: remota, transaction: Transaction(animation: .easeOut(duration: 0.35))) { fase in
-                        if let imagen = fase.image { imagen.resizable().scaledToFill().transition(.opacity) }
-                    }
-                }
+                if let remota { ImagenCacheada(url: remota) { Color.clear } }
             }
             .clipped()
             .accessibilityHidden(true)
