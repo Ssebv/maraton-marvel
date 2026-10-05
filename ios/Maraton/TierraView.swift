@@ -101,10 +101,10 @@ struct TierraView: View {
                 .foregroundStyle(Tema.tinta2)
                 .contentTransition(.numericText())
             if let sig = progreso.siguiente(en: u) {
-                Button { nav.abre(sig, desde: "tierra:\(sig.id)") } label: {
+                Button { nav.abre(sig, desde: "tierra-siguiente") } label: {
                     HStack(spacing: 12) {
                         Poster(url: catalogo.urlPoster(sig.id, idioma: ajustes.idioma), ancho: 40, radio: Tema.radioS + 2)
-                            .origenZoom("tierra:\(sig.id)", radio: Tema.radioS + 2)
+                            .origenZoom("tierra-siguiente", radio: Tema.radioS + 2)
                         VStack(alignment: .leading, spacing: 2) {
                             Rotulo(texto: ajustes.tr("Siguiente", "Next"), color: color)
                             Text(catalogo.nombre(sig, en: ajustes.idioma)).font(.body.weight(.semibold))
