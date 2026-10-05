@@ -1,7 +1,8 @@
 // La página de cada persona del reparto o la dirección, como FichaPersona de
 // la web: quién es, a quién interpreta, su carrera y, lo que ninguna web
-// tiene, dónde más sale dentro de tu maratón. Se abre desde la ficha, dentro
-// de la misma hoja (con «volver»), y sus títulos abren su ficha encima.
+// tiene, dónde más sale dentro de tu maratón (y cuántos de esos llevas). Se
+// abre desde la ficha creciendo desde su foto (con «volver»), y sus títulos
+// abren su ficha encima.
 import SwiftUI
 import MaratonKit
 
@@ -32,38 +33,55 @@ struct PersonaView: View {
         if let catalogo {
             let titulos = catalogo.titulos(dePersona: ruta.nombre, enTMDB: datos?.enMaraton ?? [])
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    cabecera(catalogo)
-                    cifras(titulos)
-                    primeraVez(catalogo, titulos)
-                    biografia
-                    // sin el título del que vienes (como tambienEn de la web); las cifras sí lo cuentan
-                    let otros = titulos.filter { $0.id != ruta.desde }
-                    if !otros.isEmpty { enTuMaraton(catalogo, otros) }
-                    if let c = datos?.carrera.conocido, !c.isEmpty { conocido(c).ancla("conocido") }
-                    if let imdb = datos?.imdb, let url = URL(string: "https://www.imdb.com/name/\(imdb)/") {
-                        Link(destination: url) {
-                            Label(ajustes.tr("Su ficha completa en IMDb", "Full profile on IMDb"), systemImage: "arrow.up.right.square")
-                                .font(.subheadline.weight(.semibold))
+                VStack(alignment: .leading, spacing: 0) {
+                    cabecera(catalogo, titulos)
+                    VStack(alignment: .leading, spacing: 24) {
+                        cifras(titulos)
+                        primeraVez(catalogo, titulos)
+                        biografia
+                        // sin el título del que vienes (como tambienEn de la web); las cifras sí lo cuentan
+                        let otros = titulos.filter { $0.id != ruta.desde }
+                        if !otros.isEmpty { enTuMaraton(catalogo, otros).ancla("maraton") }
+                        if let c = datos?.carrera.conocido, !c.isEmpty { conocido(c).ancla("conocido") }
+                        if let url = urlIMDb {
+                            Link(destination: url) {
+                                Label(ajustes.tr("Su ficha completa en IMDb", "Full profile on IMDb"), systemImage: "arrow.up.right")
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                            .buttonStyle(.glass)
+                            .buttonBorderShape(.capsule)
+                            .tint(Tema.tinta)
+                            .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.glass)
-                        .buttonBorderShape(.capsule)
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 28)
                 }
-                .padding(20)
             }
             .conAnclaDepuracion()
             .background(Tema.fondo)
             // su nombre sube a la barra al pasar la cabecera
-            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 110 } action: { _, pasado in
+            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 260 } action: { _, pasado in
                 withAnimation(.easeOut(duration: 0.2)) { nombreEnBarra = pasado }
             }
+            .ignoresSafeArea(edges: .top)
             .navigationTitle(nombreEnBarra ? ruta.nombre : "")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.visible, for: .navigationBar)
+            .toolbar {
+                if let url = urlIMDb {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ShareLink(item: url) { Image(systemName: "square.and.arrow.up").foregroundStyle(Tema.tinta) }
+                            .accessibilityLabel(ajustes.tr("Compartir", "Share"))
+                    }
+                }
+            }
             .task(id: ajustes.idioma) { await carga(catalogo) }
         }
     }
+
+    private var urlIMDb: URL? { datos?.imdb.flatMap { URL(string: "https://www.imdb.com/name/\($0)/") } }
 
     private func carga(_ catalogo: Catalogo) async {
         guard let clave = catalogo.claveTMDB else { estado = .sinFicha; return }
@@ -80,74 +98,130 @@ struct PersonaView: View {
 
     // MARK: Partes
 
-    private func cabecera(_ catalogo: Catalogo) -> some View {
-        HStack(spacing: 16) {
+    /// El fotograma del título del que vienes, desenfocado y fundido con el fondo;
+    /// encima, su foto grande al centro, el nombre, su papel y de dónde es
+    private func cabecera(_ catalogo: Catalogo, _ titulos: [Titulo]) -> some View {
+        let fondo = (ruta.desde ?? titulos.first?.id).flatMap { catalogo.urlFotograma($0) }
+        return VStack(spacing: 10) {
             Group {
                 if let local = catalogo.urlFoto(persona: ruta.nombre) {
                     ImagenLocal(url: local) { Tema.panel2 }
                 } else {
-                    AsyncImage(url: datos?.foto.flatMap { URL(string: "https://image.tmdb.org/t/p/w185\($0)") }) { i in
+                    AsyncImage(url: datos?.foto.flatMap { URL(string: "https://image.tmdb.org/t/p/w342\($0)") }) { i in
                         i.resizable().scaledToFill()
                     } placeholder: {
-                        Tema.panel2.overlay(Image(systemName: "person.fill").font(.title).foregroundStyle(Tema.tinta3))
+                        Tema.panel2.overlay(Image(systemName: "person.fill").font(.largeTitle).foregroundStyle(Tema.tinta3))
                     }
                 }
             }
-            .frame(width: 104, height: 104)
+            .frame(width: 150, height: 150)
             .clipShape(.circle)
-            .overlay(Circle().strokeBorder(Tema.oro.opacity(0.7), lineWidth: 2.5))
-            .shadow(color: .black.opacity(0.3), radius: 10, y: 6)
+            .padding(5)
+            .glassEffect(.regular, in: .circle)
+            .shadow(color: .black.opacity(0.35), radius: 18, y: 10)
             .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(ruta.nombre).font(.title2.weight(.bold)).foregroundStyle(Tema.tinta)
-                if let papel = ruta.desde.flatMap({ datos?.papeles[$0] }) {
-                    (Text(ajustes.tr("Interpreta a ", "Plays ")) + Text(catalogo.personaje(papel, en: ajustes.idioma)).bold())
-                        .font(.subheadline).foregroundStyle(Tema.tinta)
-                } else {
-                    Text(ruta.esDireccion ? ajustes.tr("Dirección", "Director") : ajustes.tr("Reparto", "Cast"))
-                        .font(.subheadline).foregroundStyle(Tema.tinta2)
-                }
-                if let d = datos, d.nacimiento != nil || d.lugar != nil {
-                    Text([d.nacimiento.flatMap(fecha), d.lugar].compactMap { $0 }.joined(separator: " · "))
-                        .font(.caption).foregroundStyle(Tema.tinta2)
-                }
+            .padding(.bottom, 6)
+            Text(ruta.nombre)
+                .font(.largeTitle.weight(.heavy))
+                .foregroundStyle(Tema.tinta)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.7)
+                .accessibilityAddTraits(.isHeader)
+            if let papel = ruta.desde.flatMap({ datos?.papeles[$0] }) {
+                (Text(ajustes.tr("Interpreta a ", "Plays ")) + Text(catalogo.personaje(papel, en: ajustes.idioma)).bold())
+                    .font(.headline.weight(.regular)).foregroundStyle(Tema.tinta)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text(ruta.esDireccion ? ajustes.tr("Dirección", "Director") : ajustes.tr("Reparto", "Cast"))
+                    .font(.headline.weight(.regular)).foregroundStyle(Tema.tinta2)
             }
+            if let d = datos, d.nacimiento != nil || d.lugar != nil {
+                Text([d.nacimiento.flatMap(fecha), d.lugar].compactMap { $0 }.joined(separator: " · "))
+                    .font(.footnote).foregroundStyle(Tema.tinta2)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.top, 110)
+        .background(alignment: .top) {
+            Fotograma(remota: fondo, color: Tema.oro)
+                .frame(height: 300)
+                .blur(radius: 14)
+                .overlay {
+                    LinearGradient(stops: [.init(color: Tema.fondo.opacity(0.1), location: 0),
+                                           .init(color: Tema.fondo.opacity(0.55), location: 0.6),
+                                           .init(color: Tema.fondo, location: 1)],
+                                   startPoint: .top, endPoint: .bottom)
+                }
+                .clipped()
         }
     }
 
+    /// Sus cifras, con la misma tira que la ficha
     @ViewBuilder
     private func cifras(_ titulos: [Titulo]) -> some View {
         let d = datos
         let edad = d?.edad()
         if let d, edad != nil || d.carrera.desde != nil || titulos.count > 1 {
             HStack(alignment: .top, spacing: 0) {
-                if let edad { cifra("\(edad)", d.muerte != nil ? ajustes.tr("años al morir", "at death") : ajustes.tr("años", "years old")) }
-                if let desde = d.carrera.desde { cifra(String(desde), ajustes.tr("empezó", "first credit")) }
-                if d.carrera.creditos > 0 { cifra("\(d.carrera.creditos)", ajustes.tr("créditos", "credits")) }
-                if titulos.count > 1 { cifra("\(titulos.count)", ajustes.tr("en el maratón", "in the marathon")) }
+                let celdas: [(String, String)] = [
+                    edad.map { ("\($0)", d.muerte != nil ? ajustes.tr("Años al morir", "At death") : ajustes.tr("Años", "Age")) },
+                    d.carrera.desde.map { (String($0), ajustes.tr("Empezó", "Since")) },
+                    d.carrera.creditos > 0 ? ("\(d.carrera.creditos)", ajustes.tr("Créditos", "Credits")) : nil,
+                    titulos.count > 1 ? ("\(titulos.count)", ajustes.tr("Maratón", "Marathon")) : nil,
+                ].compactMap { $0 }
+                ForEach(Array(celdas.enumerated()), id: \.offset) { i, c in
+                    if i > 0 { Rectangle().fill(Tema.linea).frame(width: 1, height: 36).padding(.top, 4) }
+                    VStack(spacing: 4) {
+                        Text(c.1.uppercased())
+                            .font(.caption2.weight(.bold)).tracking(0.8)
+                            .foregroundStyle(Tema.tinta3)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                        Text(c.0).font(.title3.weight(.bold).monospacedDigit()).foregroundStyle(Tema.tinta)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .combine)
+                }
             }
             .padding(.vertical, 14)
+            .padding(.horizontal, 6)
             .superficie(radio: Tema.radioL)
         }
     }
 
-    private func cifra(_ valor: String, _ texto: String) -> some View {
-        VStack(spacing: 2) {
-            Text(valor).font(.title3.weight(.bold).monospacedDigit()).foregroundStyle(Tema.oro)
-            Text(texto).font(.caption).foregroundStyle(Tema.tinta2)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-    }
-
+    /// Su debut en el maratón, con su póster (abre su ficha salvo que vengas de ella)
     @ViewBuilder
     private func primeraVez(_ catalogo: Catalogo, _ titulos: [Titulo]) -> some View {
         if titulos.count > 1, let p = titulos.filter({ $0.r != nil }).min(by: { $0.r! < $1.r! }) {
-            let nombre = catalogo.nombre(p, en: ajustes.idioma)
-            let anio = nombre.contains(String(p.r!)) ? "" : " (\(p.r!))"
-            let como = datos?.papeles[p.id].map { ajustes.tr(", como \(catalogo.personaje($0, en: ajustes.idioma))", ", as \($0)") } ?? ""
-            (Text(ajustes.tr("Su primera vez en el maratón: ", "First time in the marathon: ")) + Text(nombre + anio).bold() + Text(como))
-                .font(.subheadline).foregroundStyle(Tema.tinta)
+            let clave = "primera:\(ruta.nombre):\(p.id)"
+            let tarjeta = HStack(spacing: 14) {
+                Poster(url: catalogo.urlPoster(p.id, idioma: ajustes.idioma), ancho: 52, radio: Tema.radioS + 2)
+                    .origenZoom(clave, radio: Tema.radioS + 2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Rotulo(texto: ajustes.tr("Su debut en el maratón", "Marathon debut"), color: Tema.oro)
+                    Text(catalogo.nombre(p, en: ajustes.idioma)).font(.headline).foregroundStyle(Tema.tinta)
+                        .multilineTextAlignment(.leading)
+                    let como = datos?.papeles[p.id].map { catalogo.personaje($0, en: ajustes.idioma) }
+                    Text([p.r.map(String.init), como.map { ajustes.tr("como \($0)", "as \($0)") }].compactMap { $0 }.joined(separator: " · "))
+                        .font(.subheadline).foregroundStyle(Tema.tinta2)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+                if p.id != ruta.desde {
+                    Image(systemName: "chevron.right").font(.footnote.weight(.bold)).foregroundStyle(Tema.tinta3)
+                }
+            }
+            .padding(14)
+            .superficie(radio: Tema.radioL)
+            .contentShape(.rect)
+            if p.id == ruta.desde {
+                tarjeta
+            } else {
+                NavigationLink(value: RutaTitulo(titulo: p, origen: clave)) { tarjeta }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(ajustes.tr("Abre su ficha", "Opens its page"))
+            }
         }
     }
 
@@ -175,6 +249,7 @@ struct PersonaView: View {
                         withAnimation(.snappy) { bioEntera.toggle() }
                     }
                     .font(.subheadline.weight(.semibold))
+                    .tint(Tema.tinta)
                 }
                 if d.bioFuente == "wikipedia" {
                     HStack(spacing: 4) {
@@ -195,8 +270,16 @@ struct PersonaView: View {
 
     private func enTuMaraton(_ catalogo: Catalogo, _ titulos: [Titulo]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Rotulo(texto: ruta.desde == nil ? ajustes.tr("En tu maratón (\(titulos.count))", "In your marathon (\(titulos.count))")
-                                            : ajustes.tr("También en tu maratón (\(titulos.count))", "Also in your marathon (\(titulos.count))"))
+            let vistos = titulos.filter { progreso.visto($0.id) }.count
+            HStack(alignment: .firstTextBaseline) {
+                Rotulo(texto: ruta.desde == nil ? ajustes.tr("En tu maratón", "In your marathon")
+                                                : ajustes.tr("También en tu maratón", "Also in your marathon"))
+                Spacer()
+                Text(ajustes.tr("\(vistos) de \(titulos.count) vistos", "\(vistos) of \(titulos.count) seen"))
+                    .font(.footnote.monospacedDigit()).foregroundStyle(Tema.tinta2)
+                    .contentTransition(.numericText(value: Double(vistos)))
+            }
+            Barra(fraccion: Double(vistos) / Double(titulos.count), color: Tema.oro)
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(titulos) { t in
