@@ -10,6 +10,8 @@ struct RutaPersona: Hashable {
     let nombre: String
     let esDireccion: Bool
     let desde: String?
+    /// La clave de lo que se tocó (su foto en el reparto): crece desde ahí
+    var origen: String?
 }
 
 struct PersonaView: View {
@@ -23,6 +25,8 @@ struct PersonaView: View {
     enum Estado: Equatable { case cargando, listo(DatosPersona), sinFicha, sinRed }
 
     private var datos: DatosPersona? { if case let .listo(d) = estado { d } else { nil } }
+
+    @State private var nombreEnBarra = false
 
     var body: some View {
         if let catalogo {
@@ -42,7 +46,7 @@ struct PersonaView: View {
                             Label(ajustes.tr("Su ficha completa en IMDb", "Full profile on IMDb"), systemImage: "arrow.up.right.square")
                                 .font(.subheadline.weight(.semibold))
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.glass)
                         .buttonBorderShape(.capsule)
                     }
                 }
@@ -50,6 +54,11 @@ struct PersonaView: View {
             }
             .conAnclaDepuracion()
             .background(Tema.fondo)
+            // su nombre sube a la barra al pasar la cabecera
+            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 110 } action: { _, pasado in
+                withAnimation(.easeOut(duration: 0.2)) { nombreEnBarra = pasado }
+            }
+            .navigationTitle(nombreEnBarra ? ruta.nombre : "")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.visible, for: .navigationBar)
             .task(id: ajustes.idioma) { await carga(catalogo) }
@@ -191,9 +200,10 @@ struct PersonaView: View {
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(titulos) { t in
-                        NavigationLink(value: t) {
+                        NavigationLink(value: RutaTitulo(titulo: t, origen: "persona:\(ruta.nombre):\(t.id)")) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Poster(url: catalogo.urlPoster(t.id, idioma: ajustes.idioma), ancho: 96, radio: Tema.radioM)
+                                    .origenZoom("persona:\(ruta.nombre):\(t.id)")
                                     .overlay(alignment: .topTrailing) {
                                         if progreso.visto(t.id) {
                                             Image(systemName: "checkmark.circle.fill").font(.title3)

@@ -21,7 +21,7 @@ struct AccesorioSiguiente: View {
         HStack(spacing: 10) {
             let catalogo = progreso.catalogo
             if let t = progreso.siguiente() {
-                Button { nav.ficha = t } label: {
+                Button { nav.abre(t, desde: "muelle") } label: {
                     HStack(spacing: 10) {
                         Poster(url: catalogo.urlPoster(t.id, idioma: ajustes.idioma), ancho: compacto ? 18 : 24, radio: 4)
                         VStack(alignment: .leading, spacing: 0) {
@@ -34,6 +34,7 @@ struct AccesorioSiguiente: View {
                         Spacer(minLength: 0)
                     }
                     .contentShape(.rect)
+                    .origenZoom("muelle", radio: Tema.radioXL)
                 }
                 .accessibilityLabel(ajustes.tr("Siguiente: \(catalogo.nombre(t, en: ajustes.idioma))", "Next: \(catalogo.nombre(t, en: ajustes.idioma))"))
                 .accessibilityHint(ajustes.tr("Abre su ficha", "Opens its page"))

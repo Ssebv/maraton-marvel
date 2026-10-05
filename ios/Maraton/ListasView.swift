@@ -211,9 +211,10 @@ private struct FilaLista: View {
             Casilla(marcada: vista, color: Tema.oro) {
                 withAnimation(.snappy) { progreso.alternarVista(titulo.id, enLista: lista.id) }
             }
-            Button { nav.ficha = titulo } label: {
+            Button { nav.abre(titulo, desde: "lista:\(titulo.id)") } label: {
                 HStack(spacing: 12) {
                     Poster(url: catalogo?.urlPoster(titulo.id, idioma: ajustes.idioma), ancho: 40, radio: Tema.radioS + 2)
+                        .origenZoom("lista:\(titulo.id)", radio: Tema.radioS + 2)
                         .opacity(vista ? 0.6 : 1)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(catalogo?.nombre(titulo, en: ajustes.idioma) ?? titulo.t)

@@ -85,9 +85,10 @@ struct SeccionTuMes: View {
     }
 
     private func favorito(_ t: Titulo) -> some View {
-        Button { nav.ficha = t } label: {
+        Button { nav.abre(t, desde: "favmes:\(t.id)") } label: {
             HStack(spacing: 12) {
                 Poster(url: catalogo?.urlPoster(t.id, idioma: ajustes.idioma), ancho: 44, radio: Tema.radioS)
+                    .origenZoom("favmes:\(t.id)", radio: Tema.radioS)
                 VStack(alignment: .leading, spacing: 3) {
                     Rotulo(texto: ajustes.tr("Tu favorito del mes", "Your favorite this month"), color: Tema.oro)
                     Text(catalogo?.nombre(t, en: ajustes.idioma) ?? t.t).font(.subheadline.weight(.semibold)).foregroundStyle(Tema.tinta)
@@ -228,7 +229,7 @@ private struct DelDia: View {
                 .locale(Locale(identifier: ajustes.idioma == .en ? "en_US" : "es_CL"))))
             ForEach(progreso.marcas(dia: fecha)) { m in
                 if let t = catalogo?.titulo(m.id) {
-                    Fila(titulo: t, detalle: m.episodios > 0
+                    Fila(titulo: t, seccion: "dia", detalle: m.episodios > 0
                          ? ajustes.tr("\(m.episodios) episodio\(m.episodios == 1 ? "" : "s")", "\(m.episodios) episode\(m.episodios == 1 ? "" : "s")")
                          : t.id.hasPrefix("c-") ? ajustes.tr("Leído", "Read") : ajustes.tr("Completa", "In full"))
                 }
@@ -241,6 +242,8 @@ private struct DelDia: View {
 /// Fila con carátula que abre la ficha (calendario y diario)
 private struct Fila: View {
     let titulo: Titulo
+    /// «dia» o «diario»: el mismo título puede salir en los dos (clave de su zoom)
+    let seccion: String
     let detalle: String
     @Environment(\.catalogo) private var catalogo
     @Environment(Progreso.self) private var progreso
@@ -248,9 +251,10 @@ private struct Fila: View {
     @Environment(Navegacion.self) private var nav
 
     var body: some View {
-        Button { nav.ficha = titulo } label: {
+        Button { nav.abre(titulo, desde: "estad:\(seccion):\(titulo.id)") } label: {
             HStack(spacing: 12) {
                 Poster(url: catalogo?.urlPoster(titulo.id, idioma: ajustes.idioma), ancho: 36, radio: Tema.radioS)
+                    .origenZoom("estad:\(seccion):\(titulo.id)", radio: Tema.radioS)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(catalogo?.nombre(titulo, en: ajustes.idioma) ?? titulo.t)
                         .font(.subheadline.weight(.semibold)).foregroundStyle(Tema.tinta).lineLimit(1)
@@ -290,7 +294,7 @@ struct SeccionDiario: View {
                     Rotulo(texto: mes.primerDia(cal).formatted(.dateTime.month(.wide).year(actual ? .omitted : .defaultDigits).locale(locale)))
                     ForEach(filas, id: \.id) { x in
                         if let t = catalogo?.titulo(x.id) {
-                            Fila(titulo: t, detalle: x.fecha.formatted(.dateTime.weekday(.abbreviated).day().locale(locale)))
+                            Fila(titulo: t, seccion: "diario", detalle: x.fecha.formatted(.dateTime.weekday(.abbreviated).day().locale(locale)))
                         }
                     }
                 }

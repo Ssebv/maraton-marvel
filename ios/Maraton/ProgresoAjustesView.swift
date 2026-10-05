@@ -191,7 +191,7 @@ struct AjustesView: View {
         return Section {
             ForEach(ids, id: \.self) { id in
                 if let t = catalogo.titulo(id), let a = biblioteca.archivos[id] {
-                    Button { nav.ficha = t } label: {
+                    Button { nav.abre(t) } label: {
                         LabeledContent {
                             Text(a.tam.formatted(.byteCount(style: .file)))
                         } label: {

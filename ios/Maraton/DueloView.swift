@@ -358,8 +358,9 @@ private struct Posters: View {
                 LazyHStack(spacing: 12) {
                     ForEach(ids, id: \.self) { id in
                         if let t = catalogo.titulo(id) {
-                            Button { nav.ficha = t } label: {
+                            Button { nav.abre(t, desde: "duelo:\(titulo):\(id)") } label: {
                                 Poster(url: catalogo.urlPoster(id, idioma: ajustes.idioma), ancho: 96)
+                                    .origenZoom("duelo:\(titulo):\(id)")
                                     .overlay(alignment: .bottomLeading) {
                                         if let n = estrellas[id] {
                                             Estrellas(n: n, color: Tema.oroVivo)

@@ -13,6 +13,7 @@ struct FichaView: View {
     @Environment(Progreso.self) private var progreso
     @Environment(Ajustes.self) private var ajustes
     @Environment(\.openURL) private var abrirURL
+    @Environment(Navegacion.self) private var nav
     @State private var verPostCreditos = false
     @State private var buscandoTrailer = false
     @State private var sinTrailer = false
@@ -20,6 +21,8 @@ struct FichaView: View {
     @State private var revela = false
     /// La historia larga desplegada
     @State private var historiaEntera = false
+    /// Pasado el fotograma, el título sube a la barra (como en las apps de Apple)
+    @State private var tituloEnBarra = false
 
     var body: some View {
         if let catalogo {
@@ -81,9 +84,21 @@ struct FichaView: View {
             .conAnclaDepuracion()
             .onChange(of: titulo.id) { revela = false; historiaEntera = false }
             .background(Tema.fondo)
+            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 300 } action: { _, pasado in
+                withAnimation(.easeOut(duration: 0.2)) { tituloEnBarra = pasado }
+            }
             .ignoresSafeArea(edges: .top)
-            .toolbar(apilada ? .visible : .hidden, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .navigationTitle(tituloEnBarra ? catalogo.nombre(titulo, en: ajustes.idioma) : "")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // la de arriba del todo se cierra con ✕ (o bajándola); las apiladas, con «volver»
+                if !apilada {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { nav.ficha = nil } label: { Image(systemName: "xmark").foregroundStyle(Tema.tinta) }
+                            .accessibilityLabel(ajustes.tr("Cerrar", "Close"))
+                    }
+                }
+            }
         }
     }
 
@@ -121,7 +136,7 @@ struct FichaView: View {
                             .font(.footnote.weight(.semibold))
                             .lineLimit(1)
                             .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(Tema.verde.opacity(0.16), in: .capsule)
+                            .glassEffect(.regular.tint(Tema.verde.opacity(0.18)), in: .capsule)
                             .foregroundStyle(Tema.verde)
                     }
                 }
@@ -134,40 +149,42 @@ struct FichaView: View {
     private func acciones(_ catalogo: Catalogo, color: Color) -> some View {
         let visto = progreso.visto(titulo.id)
         let comic = catalogo.saga(de: titulo.id) == "comics"
-        return HStack(spacing: 12) {
-            Button {
-                withAnimation(.snappy) { progreso.alternar(titulo.id) }
-            } label: {
-                Label(comic ? (visto ? ajustes.tr("Leído", "Read") : ajustes.tr("Marcar como leído", "Mark as read"))
-                            : (visto ? ajustes.tr("Vista", "Seen") : ajustes.tr("Marcar como vista", "Mark as seen")),
-                      systemImage: visto ? "checkmark" : "plus")
-                    .contentTransition(.symbolEffect(.replace))
-                    .font(.body.weight(.semibold))
-                    .frame(maxWidth: .infinity, minHeight: 52)
-            }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .tint(visto ? Tema.verde : color)
-            .shadow(color: (visto ? Tema.verde : color).opacity(0.4), radius: 12, y: 5)
-            .sensoryFeedback(.success, trigger: visto) { _, nuevo in nuevo }
-            .accessibilityHint(visto ? ajustes.tr("Toca para dejarla pendiente", "Tap to mark as pending") : "")
-            if let ref = catalogo.tmdb(titulo.id), let clave = catalogo.claveTMDB {
+        // vidrio líquido: los tres se funden entre sí al cambiar
+        return GlassEffectContainer(spacing: 12) {
+            HStack(spacing: 12) {
                 Button {
-                    Task { await abreTrailer(ref: ref, clave: clave) }
+                    withAnimation(.snappy) { progreso.alternar(titulo.id) }
                 } label: {
-                    Group {
-                        if buscandoTrailer { ProgressView() } else { Image(systemName: "play.fill") }
+                    Label(comic ? (visto ? ajustes.tr("Leído", "Read") : ajustes.tr("Marcar como leído", "Mark as read"))
+                                : (visto ? ajustes.tr("Vista", "Seen") : ajustes.tr("Marcar como vista", "Mark as seen")),
+                          systemImage: visto ? "checkmark" : "plus")
+                        .contentTransition(.symbolEffect(.replace))
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                }
+                .buttonStyle(.glassProminent)
+                .buttonBorderShape(.capsule)
+                .tint(visto ? Tema.verde : color)
+                .sensoryFeedback(.success, trigger: visto) { _, nuevo in nuevo }
+                .accessibilityHint(visto ? ajustes.tr("Toca para dejarla pendiente", "Tap to mark as pending") : "")
+                if let ref = catalogo.tmdb(titulo.id), let clave = catalogo.claveTMDB {
+                    Button {
+                        Task { await abreTrailer(ref: ref, clave: clave) }
+                    } label: {
+                        Group {
+                            if buscandoTrailer { ProgressView() } else { Image(systemName: "play.fill") }
+                        }
+                        .modifier(Redondo())
                     }
-                    .modifier(Redondo())
+                    .buttonStyle(.plain)
+                    .disabled(buscandoTrailer)
+                    .accessibilityLabel(ajustes.tr("Tráiler", "Trailer"))
+                    .alert(ajustes.tr("No encontré el tráiler", "No trailer found"), isPresented: $sinTrailer) {
+                        Button("OK", role: .cancel) {}
+                    }
                 }
-                .buttonStyle(.plain)
-                .disabled(buscandoTrailer)
-                .accessibilityLabel(ajustes.tr("Tráiler", "Trailer"))
-                .alert(ajustes.tr("No encontré el tráiler", "No trailer found"), isPresented: $sinTrailer) {
-                    Button("OK", role: .cancel) {}
-                }
+                MenuListas(id: titulo.id)
             }
-            MenuListas(id: titulo.id)
         }
     }
 
@@ -269,7 +286,7 @@ struct FichaView: View {
             }
         }
         .font(.subheadline.weight(.semibold))
-        .buttonStyle(.bordered)
+        .buttonStyle(.glass)
         .buttonBorderShape(.capsule)
         .tint(Tema.tinta)
         .labelStyle(.titleAndIcon)
@@ -287,7 +304,7 @@ struct FichaView: View {
                 withAnimation(.snappy) { revela = true }
             }
             .font(.subheadline.weight(.semibold))
-            .buttonStyle(.bordered)
+            .buttonStyle(.glass)
             .buttonBorderShape(.capsule)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -339,13 +356,15 @@ struct FichaView: View {
                 ScrollView(.horizontal) {
                     HStack(alignment: .top, spacing: 16) {
                         ForEach(personas, id: \.nombre) { p in
-                            NavigationLink(value: RutaPersona(nombre: p.nombre, esDireccion: p.esDireccion, desde: titulo.id)) {
+                            NavigationLink(value: RutaPersona(nombre: p.nombre, esDireccion: p.esDireccion, desde: titulo.id,
+                                                              origen: "reparto:\(titulo.id):\(p.nombre)")) {
                                 VStack(spacing: 6) {
                                     ImagenLocal(url: catalogo.urlFoto(persona: p.nombre)) {
                                         Tema.panel2.overlay(Image(systemName: "person.fill").foregroundStyle(Tema.tinta3))
                                     }
                                     .frame(width: 76, height: 76)
                                     .clipShape(.circle)
+                                    .origenZoom("reparto:\(titulo.id):\(p.nombre)", radio: 38)
                                     .overlay(Circle().strokeBorder(Tema.linea, lineWidth: 2))
                                     Text(p.nombre).font(.caption.weight(.semibold)).multilineTextAlignment(.center)
                                         .foregroundStyle(Tema.tinta)
@@ -633,17 +652,17 @@ struct LeerAqui: View {
 
 /// «Tus listas»: un chip por lista (lleno si el título está en ella) y «Nueva
 /// lista», que la crea con este título dentro
-/// Botón redondo de 52 pt junto al principal (tráiler, listas)
+/// Botón redondo de vidrio de 52 pt junto al principal (tráiler, listas);
+/// activo, teñido de oro
 private struct Redondo: ViewModifier {
     var activo = false
     func body(content: Content) -> some View {
         content
             .font(.title3.weight(.semibold))
-            .foregroundStyle(activo ? Color.black : Tema.tinta)
+            .foregroundStyle(activo ? Color.white : Tema.tinta)
             .frame(width: 52, height: 52)
-            .background(activo ? Tema.oro : Tema.panel2, in: .circle)
-            .overlay(Circle().strokeBorder(activo ? .clear : Tema.linea, lineWidth: 1))
             .contentShape(.circle)
+            .glassEffect(activo ? .regular.tint(Tema.oro).interactive() : .regular.interactive(), in: .circle)
     }
 }
 
@@ -706,9 +725,10 @@ private struct EnLaSaga: View {
     @ViewBuilder
     private func tarjeta(_ t: Titulo?, rotulo: String, catalogo: Catalogo) -> some View {
         if let t {
-            NavigationLink(value: t) {
+            NavigationLink(value: RutaTitulo(titulo: t, origen: "saga:\(titulo.id):\(t.id)")) {
                 VStack(alignment: .leading, spacing: 8) {
                     Poster(url: catalogo.urlPoster(t.id, idioma: ajustes.idioma), ancho: 64, radio: Tema.radioM)
+                        .origenZoom("saga:\(titulo.id):\(t.id)")
                         .overlay(alignment: .bottomTrailing) {
                             if progreso.visto(t.id) {
                                 Image(systemName: "checkmark.circle.fill")

@@ -254,9 +254,10 @@ struct Nodo: View {
                 .background(Circle().fill(Tema.fondo).frame(width: 30, height: 30))
             }
             .frame(width: columna)
-            Button { nav.ficha = titulo } label: {
+            Button { nav.abre(titulo, desde: "crono:\(titulo.id)") } label: {
                 HStack(spacing: 12) {
                     Poster(url: catalogo?.urlPoster(titulo.id, idioma: ajustes.idioma), ancho: 48, radio: Tema.radioS + 2)
+                        .origenZoom("crono:\(titulo.id)", radio: Tema.radioS + 2)
                         .opacity(visto ? 0.6 : 1)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(catalogo?.nombre(titulo, en: ajustes.idioma) ?? titulo.t)

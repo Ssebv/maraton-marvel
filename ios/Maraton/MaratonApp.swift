@@ -62,12 +62,17 @@ enum EstadoApp {
 
 extension EnvironmentValues {
     @Entry var catalogo: Catalogo? = nil
+    /// Donde se emparejan los zooms: lo que tocas y la ficha o persona que crece desde ahí
+    @Entry var espacioZoom: Namespace.ID? = nil
 }
 
 /// La ficha que está abierta, compartida por todas las pestañas
 @MainActor @Observable
 final class Navegacion {
     var ficha: Titulo? { didSet { if ficha?.id != oldValue?.id { rutaFicha = NavigationPath() } } }
+    /// Lo que se tocó para abrirla (la ficha crece desde ahí y vuelve ahí al cerrar);
+    /// nil desde el widget o un aviso: entonces sube desde abajo
+    var origen: String?
     /// Lo apilado dentro de la hoja de la ficha (personas y sus títulos)
     var rutaFicha = NavigationPath()
     var horarioAbierto = false
@@ -82,6 +87,13 @@ final class Navegacion {
     /// (borrar una reseña y volver a escribirla) no repite el aviso
     @ObservationIgnored var anunciados: Set<String> = []
     enum Pestana: String, Hashable { case inicio, cronologia, multiverso, progreso, ajustes }
+
+    /// Abre la ficha; `desde` es la clave de lo tocado (ver `origenZoom`)
+    func abre(_ t: Titulo?, desde origen: String? = nil) {
+        guard let t else { return }
+        self.origen = origen
+        ficha = t
+    }
 
     /// En depuración, `-pestana cronologia` al lanzar (capturas del simulador)
     static var pestanaInicial: Pestana {
@@ -99,6 +111,7 @@ struct RaizView: View {
     @Environment(Agenda.self) private var agenda
     @Environment(\.scenePhase) private var fase
     @State private var nav = Navegacion()
+    @Namespace private var zoom
 
     var body: some View {
         @Bindable var nav = nav
@@ -115,17 +128,20 @@ struct RaizView: View {
         .tabViewBottomAccessory { AccesorioSiguiente() }
         .modifier(CapaAvisoLogro(visible: nav.ficha == nil))
         .environment(nav)
-        .sheet(item: $nav.ficha) { t in
-            // con su navegación: el reparto abre la página de cada persona y
-            // sus títulos abren su ficha encima, con «volver»
+        .environment(\.espacioZoom, zoom)
+        // a pantalla completa, creciendo desde el póster que tocaste (y se cierra
+        // bajándola, de vuelta a él); con su navegación: el reparto abre la página
+        // de cada persona y sus títulos abren su ficha encima, también con zoom
+        .fullScreenCover(item: $nav.ficha) { t in
             NavigationStack(path: $nav.rutaFicha) {
                 FichaView(titulo: t)
-                    .navigationDestination(for: RutaPersona.self) { PersonaView(ruta: $0) }
-                    .navigationDestination(for: Titulo.self) { FichaView(titulo: $0, apilada: true) }
+                    .navigationDestination(for: RutaPersona.self) { PersonaView(ruta: $0).zoomDesde($0.origen) }
+                    .navigationDestination(for: RutaTitulo.self) { FichaView(titulo: $0.titulo, apilada: true).zoomDesde($0.origen) }
             }
                 .modifier(CapaAvisoLogro())
+                .zoomDesde(nav.origen)
                 .environment(nav)
-                .presentationDragIndicator(.visible)
+                .environment(\.espacioZoom, zoom)
         }
         .sheet(isPresented: $nav.horarioAbierto) { HorarioView() }
         // los avisos de sesión dicen qué toca: se rehacen al marcar, al cambiar
@@ -148,7 +164,12 @@ struct RaizView: View {
         // Para capturas en el simulador: `simctl launch … -pestana cronologia -abrir dofp`
         .task {
             let d = UserDefaults.standard
-            if let id = d.string(forKey: "abrir") { nav.ficha = progreso.catalogo.titulo(id) }
+            if let id = d.string(forKey: "abrir"), d.string(forKey: "abrirDesde") == nil { nav.abre(progreso.catalogo.titulo(id)) }
+            // `-abrirDesde muelle` (o `-abrir id -abrirDesde fila:id`): la abre a los 8 s con su zoom (grabar con recordVideo)
+            if let o = d.string(forKey: "abrirDesde") {
+                try? await Task.sleep(for: .seconds(8))  // lo que tarda en pintarse en el simulador
+                nav.abre(o == "muelle" ? progreso.siguiente() : d.string(forKey: "abrir").flatMap(progreso.catalogo.titulo), desde: o)
+            }
             // `-marcarSiguiente YES`: marca el siguiente a los 3 s (¿se redibuja el accesorio?)
             if d.bool(forKey: "marcarSiguiente") {
                 try? await Task.sleep(for: .seconds(3))
@@ -156,7 +177,7 @@ struct RaizView: View {
             }
             // `-abrir x2 -abrirPersona "Hugh Jackman"`
             if let p = d.string(forKey: "abrirPersona") {
-                nav.rutaFicha.append(RutaPersona(nombre: p, esDireccion: false, desde: nav.ficha?.id))
+                nav.rutaFicha.append(RutaPersona(nombre: p, esDireccion: false, desde: nav.ficha?.id, origen: nil))
             }
             if d.bool(forKey: "abrirHorario") { nav.horarioAbierto = true }
             // `-anadeRival <enlace de perfil>` (capturas del duelo)
@@ -205,7 +226,7 @@ struct RaizView: View {
     private func importa(_ url: URL) {
         // maraton://abrir?id=… (tocar el widget)
         if let id = Enlace.abrir(url) {
-            nav.ficha = progreso.catalogo.titulo(id)
+            nav.abre(progreso.catalogo.titulo(id))
             return
         }
         guard let (v, e) = Enlace.lee(url) else { return }

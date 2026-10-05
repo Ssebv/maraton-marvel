@@ -101,9 +101,10 @@ struct TierraView: View {
                 .foregroundStyle(Tema.tinta2)
                 .contentTransition(.numericText())
             if let sig = progreso.siguiente(en: u) {
-                Button { nav.ficha = sig } label: {
+                Button { nav.abre(sig, desde: "tierra:\(sig.id)") } label: {
                     HStack(spacing: 12) {
                         Poster(url: catalogo.urlPoster(sig.id, idioma: ajustes.idioma), ancho: 40, radio: Tema.radioS + 2)
+                            .origenZoom("tierra:\(sig.id)", radio: Tema.radioS + 2)
                         VStack(alignment: .leading, spacing: 2) {
                             Rotulo(texto: ajustes.tr("Siguiente", "Next"), color: color)
                             Text(catalogo.nombre(sig, en: ajustes.idioma)).font(.body.weight(.semibold))
@@ -164,7 +165,7 @@ struct TierraView: View {
                 VStack(spacing: 0) {
                     ForEach(lista, id: \.arista) { c in
                         if c.arista != lista.first?.arista { Divider().padding(.leading, 14) }
-                        Button { nav.ficha = c.otro } label: {
+                        Button { nav.abre(c.otro) } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text("\(catalogo.nombre(c.aqui, en: ajustes.idioma)) ↔ \(catalogo.nombre(c.otro, en: ajustes.idioma))")
                                     .font(.subheadline.weight(.semibold))

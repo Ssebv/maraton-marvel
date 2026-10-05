@@ -191,3 +191,43 @@ extension View {
         #endif
     }
 }
+
+/// Un título apilado dentro de la ficha, con la clave de lo que se tocó (su zoom)
+struct RutaTitulo: Hashable {
+    let titulo: Titulo
+    let origen: String?
+}
+
+/// Lo que se toca para abrir algo con zoom: la ficha o la persona crecen desde aquí
+struct OrigenZoom: ViewModifier {
+    let clave: String
+    var radio: CGFloat
+    @Environment(\.espacioZoom) private var espacio
+
+    func body(content: Content) -> some View {
+        if let espacio {
+            content.matchedTransitionSource(id: clave, in: espacio) { $0.clipShape(.rect(cornerRadius: radio)) }
+        } else {
+            content
+        }
+    }
+}
+
+/// Lo que se abre: con clave crece desde su origen y vuelve ahí; sin ella, la transición de siempre
+struct ZoomDesde: ViewModifier {
+    let clave: String?
+    @Environment(\.espacioZoom) private var espacio
+
+    func body(content: Content) -> some View {
+        if let clave, let espacio {
+            content.navigationTransition(.zoom(sourceID: clave, in: espacio))
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func origenZoom(_ clave: String, radio: CGFloat = Tema.radioM) -> some View { modifier(OrigenZoom(clave: clave, radio: radio)) }
+    func zoomDesde(_ clave: String?) -> some View { modifier(ZoomDesde(clave: clave)) }
+}

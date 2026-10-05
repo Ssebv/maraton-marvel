@@ -62,7 +62,7 @@ private struct Cabecera: View {
                 .contentTransition(.numericText(value: Double(r.vistos)))
             if let (e, dias) = catalogo.proximoEstreno() {
                 Button {
-                    if let id = e.id, let t = catalogo.titulo(id) { nav.ficha = t }
+                    nav.abre(e.id.flatMap(catalogo.titulo))
                 } label: {
                     let cuando = dias == 0 ? ajustes.tr("¡hoy!", "today!")
                         : dias == 1 ? ajustes.tr("mañana", "tomorrow")
@@ -117,10 +117,11 @@ private struct TarjetasSaga: View {
         let vistos = items.filter { progreso.visto($0.id) }.count
         let sigue = progreso.siguiente { catalogo.saga(de: $0.id) == saga.saga }
         return Button {
-            if let sigue { nav.ficha = sigue }
+            nav.abre(sigue, desde: "sigue:\(saga.saga)")
         } label: {
             HStack(spacing: 10) {
                 Poster(url: sigue.flatMap { catalogo.urlPoster($0.id, idioma: ajustes.idioma) }, ancho: 40, radio: Tema.radioS + 2)
+                    .origenZoom("sigue:\(saga.saga)", radio: Tema.radioS + 2)
                 VStack(alignment: .leading, spacing: 5) {
                     HStack {
                         Rotulo(texto: saga.saga == "xmen" ? "X-Men" : ajustes.tr("UCM", "MCU"), color: color)
@@ -180,7 +181,7 @@ private struct Portada: View {
                     .buttonStyle(.borderedProminent)
                     .tint(color)
                     .shadow(color: color.opacity(0.45), radius: 10, y: 4)
-                    Button { nav.ficha = t } label: {
+                    Button { nav.abre(t, desde: "destacado") } label: {
                         Label(ajustes.tr("Ficha", "Details"), systemImage: "info.circle")
                             .font(.body.weight(.semibold))
                             .frame(minHeight: 44)
@@ -199,10 +200,11 @@ private struct Portada: View {
                 }
             }
             .clipShape(.rect(cornerRadius: Tema.radioXL))
+            .origenZoom("destacado", radio: Tema.radioXL)
             .shadow(color: .black.opacity(0.25), radius: 18, y: 10)
             .padding(.horizontal, 16)
             .environment(\.colorScheme, .dark)
-            .onTapGesture { nav.ficha = t }
+            .onTapGesture { nav.abre(t, desde: "destacado") }
         }
     }
 }
@@ -245,7 +247,7 @@ private struct Estrenos: View {
         case nil: catalogo.texto(e.aprox, en: ajustes.idioma) ?? ajustes.tr("Sin fecha", "TBA")
         }
         return Button {
-            if let titulo { nav.ficha = titulo }
+            nav.abre(titulo, desde: "estreno:\(e.t)")
         } label: {
             VStack(alignment: .leading, spacing: 6) {
                 Spacer(minLength: 0)
@@ -275,6 +277,7 @@ private struct Estrenos: View {
                 }
             }
             .clipShape(.rect(cornerRadius: Tema.radioXL))
+            .origenZoom("estreno:\(e.t)", radio: Tema.radioXL)
             .environment(\.colorScheme, .dark)
         }
         .buttonStyle(.plain)
@@ -313,8 +316,9 @@ private struct Carrusel: View {
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 12) {
                     ForEach(titulos) { t in
-                        Button { nav.ficha = t } label: {
+                        Button { nav.abre(t, desde: "fila:\(t.id)") } label: {
                             Poster(url: catalogo.urlPoster(t.id, idioma: ajustes.idioma), ancho: 104)
+                                .origenZoom("fila:\(t.id)")
                                 .overlay {
                                     if progreso.visto(t.id) { SelloVista().scaleEffect(0.8) }
                                 }
@@ -351,8 +355,9 @@ private struct Favoritas: View {
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 12) {
                         ForEach(lista, id: \.0.id) { t, p in
-                            Button { nav.ficha = t } label: {
+                            Button { nav.abre(t, desde: "favoritas:\(t.id)") } label: {
                                 Poster(url: catalogo.urlPoster(t.id, idioma: ajustes.idioma), ancho: 104)
+                                    .origenZoom("favoritas:\(t.id)")
                                     .overlay(alignment: .bottomLeading) {
                                         Estrellas(n: p, color: Tema.oroVivo)
                                         .padding(.horizontal, 6).padding(.vertical, 4)
