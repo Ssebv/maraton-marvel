@@ -117,6 +117,7 @@ struct FichaView: View {
                                            .init(color: Tema.fondo, location: 1)],
                                    startPoint: .top, endPoint: .bottom)
                 }
+                .estirable()
             HStack(alignment: .bottom, spacing: 16) {
                 Poster(url: catalogo.urlPoster(titulo.id, idioma: ajustes.idioma), ancho: 104, radio: Tema.radioL)
                     .overlay { if progreso.visto(titulo.id) { SelloVista().transition(.scale.combined(with: .opacity)) } }
@@ -748,6 +749,7 @@ private struct EnLaSaga: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .menuTitulo(t, conVerFicha: false)
             .accessibilityHint(ajustes.tr("Abre su ficha", "Opens its page"))
         } else {
             Color.clear.frame(maxWidth: .infinity, maxHeight: 1)

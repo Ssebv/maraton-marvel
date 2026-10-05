@@ -155,6 +155,7 @@ struct PersonaView: View {
                                    startPoint: .top, endPoint: .bottom)
                 }
                 .clipped()
+                .estirable()  // después del recorte: se estira todo junto
         }
     }
 
@@ -301,6 +302,7 @@ struct PersonaView: View {
                             .frame(width: 96)
                         }
                         .buttonStyle(.plain)
+                        .menuTitulo(t, conVerFicha: false)
                     }
                 }
             }

@@ -286,6 +286,7 @@ struct Nodo: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .menuTitulo(titulo)
         }
     }
 }

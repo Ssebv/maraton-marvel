@@ -231,6 +231,7 @@ private struct FilaLista: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .menuTitulo(titulo)
         }
         .padding(.leading, -8)
     }

@@ -371,6 +371,7 @@ private struct Posters: View {
                                     }
                             }
                             .buttonStyle(.plain)
+                            .menuTitulo(t)
                             .accessibilityLabel(catalogo.nombre(t, en: ajustes.idioma))
                             .accessibilityValue(estrellas[id].map { ajustes.tr("\($0) estrellas", "\($0) stars") } ?? "")
                         }

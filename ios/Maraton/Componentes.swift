@@ -231,3 +231,90 @@ extension View {
     func origenZoom(_ clave: String, radio: CGFloat = Tema.radioM) -> some View { modifier(OrigenZoom(clave: clave, radio: radio)) }
     func zoomDesde(_ clave: String?) -> some View { modifier(ZoomDesde(clave: clave)) }
 }
+
+/// Mantener presionado un póster, como en las apps de Apple: vista previa con su
+/// fotograma y, debajo, marcar como vista, añadir a una lista y ver la ficha
+struct MenuTitulo: ViewModifier {
+    let titulo: Titulo
+    /// Dentro de la ficha (apilado) «Ver ficha» no hace falta: tocarlo ya la abre encima
+    var conVerFicha = true
+    @Environment(\.catalogo) private var catalogo
+    @Environment(Progreso.self) private var progreso
+    @Environment(Ajustes.self) private var ajustes
+    @Environment(Navegacion.self) private var nav
+
+    func body(content: Content) -> some View {
+        let visto = progreso.visto(titulo.id)
+        let comic = catalogo?.saga(de: titulo.id) == "comics"
+        content.contextMenu {
+            Button {
+                withAnimation(.snappy) { progreso.alternar(titulo.id) }
+            } label: {
+                if visto {
+                    Label(ajustes.tr("Marcar pendiente", "Mark as pending"), systemImage: "arrow.uturn.backward")
+                } else {
+                    Label(comic ? ajustes.tr("Marcar como leído", "Mark as read") : ajustes.tr("Marcar como vista", "Mark as seen"),
+                          systemImage: "checkmark.circle")
+                }
+            }
+            if !progreso.listas.isEmpty {
+                Menu {
+                    ForEach(progreso.listas) { l in
+                        Toggle(l.nombre, isOn: Binding(get: { l.items.contains(titulo.id) },
+                                                       set: { _ in progreso.alternar(titulo.id, enLista: l.id) }))
+                    }
+                } label: {
+                    Label(ajustes.tr("Tus listas", "Your lists"), systemImage: "bookmark")
+                }
+            }
+            if conVerFicha {
+                Button { nav.abre(titulo) } label: { Label(ajustes.tr("Ver ficha", "View details"), systemImage: "info.circle") }
+            }
+        } preview: {
+            if let catalogo { VistaPrevia(titulo: titulo, catalogo: catalogo, idioma: ajustes.idioma, visto: visto) }
+        }
+    }
+}
+
+/// La vista previa del menú: fotograma, título, datos y el resumen (la vista
+/// previa no hereda el entorno: todo llega por parámetro)
+private struct VistaPrevia: View {
+    let titulo: Titulo
+    let catalogo: Catalogo
+    let idioma: Idioma
+    let visto: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Fotograma(remota: catalogo.urlFotograma(titulo.id), local: catalogo.urlPoster(titulo.id),
+                      color: Tema.color(saga: catalogo.saga(de: titulo.id)))
+                .frame(height: 170)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(catalogo.nombre(titulo, en: idioma)).font(.headline).foregroundStyle(Tema.tinta)
+                HStack(spacing: 6) {
+                    Text(Formato.meta(titulo, catalogo: catalogo))
+                    if visto { Text("· ✓").foregroundStyle(Tema.verde).bold() }
+                }
+                .font(.footnote).foregroundStyle(Tema.tinta2)
+                if let res = catalogo.texto(titulo.res, en: idioma) {
+                    Text(res).font(.subheadline).foregroundStyle(Tema.tinta).lineLimit(3)
+                }
+            }
+            .padding(14)
+        }
+        .frame(width: 320)
+        .background(Tema.panel)
+    }
+}
+
+extension View {
+    func menuTitulo(_ t: Titulo, conVerFicha: Bool = true) -> some View { modifier(MenuTitulo(titulo: t, conVerFicha: conVerFicha)) }
+
+    /// Cabecera que se estira al tirar hacia abajo desde arriba del todo
+    func estirable() -> some View {
+        visualEffect { contenido, g in
+            let y = max(0, g.frame(in: .scrollView).minY)
+            return contenido.scaleEffect(1 + y / max(g.size.height, 1), anchor: .bottom)
+        }
+    }
+}

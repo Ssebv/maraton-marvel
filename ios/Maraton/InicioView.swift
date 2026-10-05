@@ -324,6 +324,7 @@ private struct Carrusel: View {
                                 }
                         }
                         .buttonStyle(.plain)
+                        .menuTitulo(t)
                         .accessibilityLabel(catalogo.nombre(t, en: ajustes.idioma))
                     }
                 }
@@ -366,6 +367,7 @@ private struct Favoritas: View {
                                     }
                             }
                             .buttonStyle(.plain)
+                            .menuTitulo(t)
                             .accessibilityLabel(catalogo.nombre(t, en: ajustes.idioma))
                             .accessibilityValue(ajustes.tr("\(p) estrellas", "\(p) stars"))
                         }
